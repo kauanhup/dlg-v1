@@ -6,6 +6,7 @@ import {
   RotateCcw,
   Clock
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 const features = [
   {
@@ -40,11 +41,40 @@ const features = [
   },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+} as const;
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.25, 0.46, 0.45, 0.94],
+    },
+  },
+} as const;
+
 const Features = () => {
   return (
     <section id="features" className="py-20 sm:py-28">
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <motion.div 
+          className="text-center max-w-2xl mx-auto mb-16"
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+        >
           <p className="text-primary text-sm font-medium mb-3">RECURSOS</p>
           <h2 className="text-3xl sm:text-4xl font-display font-bold mb-4">
             Tudo que você precisa
@@ -52,22 +82,33 @@ const Features = () => {
           <p className="text-muted-foreground">
             Ferramentas profissionais para gerenciar seu crescimento no Telegram.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <motion.div 
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+        >
           {features.map((feature, index) => (
-            <div
+            <motion.div
               key={index}
-              className="p-6 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors"
+              variants={cardVariants}
+              whileHover={{ 
+                y: -4,
+                transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }
+              }}
+              className="p-6 rounded-xl border border-border bg-card hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-colors"
             >
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                 <feature.icon className="w-5 h-5 text-primary" />
               </div>
               <h3 className="font-display font-semibold mb-2 text-foreground">{feature.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
