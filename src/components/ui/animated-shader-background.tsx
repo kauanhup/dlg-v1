@@ -17,8 +17,9 @@ const AnimatedShaderBackground = ({ className }: AnimatedShaderBackgroundProps) 
     
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: 'low-power' });
+      // Limit pixel ratio for performance
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
       container.appendChild(renderer.domElement);
     } catch (err) {
       console.error('WebGL not supported:', err);
@@ -39,8 +40,6 @@ const AnimatedShaderBackground = ({ className }: AnimatedShaderBackgroundProps) 
         uniform float iTime;
         uniform vec2 iResolution;
 
-        #define NUM_OCTAVES 3
-
         float rand(vec2 n) {
           return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
         }
@@ -49,50 +48,33 @@ const AnimatedShaderBackground = ({ className }: AnimatedShaderBackgroundProps) 
           vec2 ip = floor(p);
           vec2 u = fract(p);
           u = u*u*(3.0-2.0*u);
-
           float res = mix(
             mix(rand(ip), rand(ip + vec2(1.0, 0.0)), u.x),
             mix(rand(ip + vec2(0.0, 1.0)), rand(ip + vec2(1.0, 1.0)), u.x), u.y);
           return res * res;
         }
 
-        float fbm(vec2 x) {
-          float v = 0.0;
-          float a = 0.3;
-          vec2 shift = vec2(100);
-          mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
-          for (int i = 0; i < NUM_OCTAVES; ++i) {
-            v += a * noise(x);
-            x = rot * x * 2.0 + shift;
-            a *= 0.4;
-          }
-          return v;
-        }
-
         void main() {
-          vec2 shake = vec2(sin(iTime * 1.2) * 0.005, cos(iTime * 2.1) * 0.005);
-          vec2 p = ((gl_FragCoord.xy + shake * iResolution.xy) - iResolution.xy * 0.5) / iResolution.y * mat2(6.0, -4.0, 4.0, 6.0);
-          vec2 v;
+          vec2 uv = gl_FragCoord.xy / iResolution.xy;
+          vec2 p = (uv - 0.5) * 2.0;
+          
           vec4 o = vec4(0.0);
-
-          float f = 2.0 + fbm(p + vec2(iTime * 5.0, 0.0)) * 0.5;
-
-          for (float i = 0.0; i < 35.0; i++) {
-            v = p + cos(i * i + (iTime + p.x * 0.08) * 0.025 + i * vec2(13.0, 11.0)) * 3.5 + vec2(sin(iTime * 3.0 + i) * 0.003, cos(iTime * 3.5 - i) * 0.003);
-            float tailNoise = fbm(v + vec2(iTime * 0.5, i)) * 0.3 * (1.0 - (i / 35.0));
-            vec4 auroraColors = vec4(
-              0.1 + 0.3 * sin(i * 0.2 + iTime * 0.4),
-              0.3 + 0.5 * cos(i * 0.3 + iTime * 0.5),
-              0.7 + 0.3 * sin(i * 0.4 + iTime * 0.3),
+          float t = iTime * 0.3;
+          
+          // Simplified aurora - only 12 iterations
+          for (float i = 0.0; i < 12.0; i++) {
+            vec2 v = p + cos(i * i + t + i * vec2(13.0, 11.0)) * 2.0;
+            float n = noise(v * 2.0 + t);
+            vec4 col = vec4(
+              0.1 + 0.2 * sin(i * 0.3 + t),
+              0.3 + 0.4 * cos(i * 0.4 + t),
+              0.6 + 0.3 * sin(i * 0.5 + t),
               1.0
             );
-            vec4 currentContribution = auroraColors * exp(sin(i * i + iTime * 0.8)) / length(max(v, vec2(v.x * f * 0.015, v.y * 1.5)));
-            float thinnessFactor = smoothstep(0.0, 1.0, i / 35.0) * 0.6;
-            o += currentContribution * (1.0 + tailNoise * 0.8) * thinnessFactor;
+            o += col * exp(-length(v) * 0.5) * (0.3 + n * 0.2);
           }
-
-          o = tanh(pow(o / 100.0, vec4(1.6)));
-          gl_FragColor = o * 1.5;
+          
+          gl_FragColor = clamp(o * 0.15, 0.0, 1.0);
         }
       `
     });
@@ -102,18 +84,30 @@ const AnimatedShaderBackground = ({ className }: AnimatedShaderBackgroundProps) 
     scene.add(mesh);
 
     let frameId: number;
-    const animate = () => {
-      material.uniforms.iTime.value += 0.016;
-      renderer.render(scene, camera);
+    let lastTime = 0;
+    const targetFPS = 30;
+    const frameInterval = 1000 / targetFPS;
+    
+    const animate = (currentTime: number) => {
       frameId = requestAnimationFrame(animate);
+      
+      const delta = currentTime - lastTime;
+      if (delta < frameInterval) return;
+      
+      lastTime = currentTime - (delta % frameInterval);
+      material.uniforms.iTime.value += 0.033;
+      renderer.render(scene, camera);
     };
-    animate();
+    requestAnimationFrame(animate);
 
     const handleResize = () => {
       const w = container.clientWidth;
       const h = container.clientHeight;
-      renderer.setSize(w, h);
-      material.uniforms.iResolution.value.set(w, h);
+      // Render at half resolution for performance
+      renderer.setSize(w * 0.5, h * 0.5, false);
+      renderer.domElement.style.width = w + 'px';
+      renderer.domElement.style.height = h + 'px';
+      material.uniforms.iResolution.value.set(w * 0.5, h * 0.5);
     };
     window.addEventListener('resize', handleResize);
     handleResize();
