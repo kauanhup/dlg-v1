@@ -1,6 +1,14 @@
+import { motion } from "framer-motion";
+
 const Footer = () => {
   return (
-    <footer className="py-8 border-t border-border">
+    <motion.footer 
+      className="py-8 border-t border-border"
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+    >
       <div className="container mx-auto px-4 sm:px-6">
         <p className="text-muted-foreground text-sm text-center">
           © 2025 SWEXTRATOR. Criado por{" "}
@@ -14,7 +22,7 @@ const Footer = () => {
           </a>
         </p>
       </div>
-    </footer>
+    </motion.footer>
   );
 };
 

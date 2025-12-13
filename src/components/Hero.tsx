@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
 import AnimatedShaderBackground from "./ui/animated-shader-background";
 import { AnimatedText } from "./ui/animated-shiny-text";
+import { motion } from "framer-motion";
 
 const Hero = () => {
   return (
@@ -16,7 +17,12 @@ const Hero = () => {
         <div className="max-w-3xl mx-auto text-center">
 
           {/* Title */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold tracking-tight mb-6 fade-in-delay-1 leading-[1.1]">
+          <motion.h1 
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold tracking-tight mb-6 leading-[1.1]"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+          >
             Escale seus grupos com{" "}
             <AnimatedText 
               text="automação inteligente"
@@ -24,16 +30,26 @@ const Hero = () => {
               gradientColors="linear-gradient(90deg, hsl(var(--primary)), hsl(var(--foreground)), hsl(var(--primary)))"
               className="inline-block"
             />
-          </h1>
+          </motion.h1>
 
           {/* Description */}
-          <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto mb-8 sm:mb-10 fade-in-delay-2 px-2">
+          <motion.p 
+            className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto mb-8 sm:mb-10 px-2"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
+          >
             Gerencie múltiplas contas, extraia e transfira membros automaticamente. 
             Sistema completo para crescer com segurança.
-          </p>
+          </motion.p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-8 sm:mb-10 fade-in-delay-3 px-4">
+          <motion.div 
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-8 sm:mb-10 px-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+          >
             <Link to="/comprar" className="w-full sm:w-auto">
               <Button size="lg" className="w-full sm:w-auto sm:min-w-[180px] h-12 bg-primary hover:bg-primary/90 text-primary-foreground">
                 Começar Agora
@@ -45,7 +61,7 @@ const Hero = () => {
                 Já tenho licença
               </Button>
             </Link>
-          </div>
+          </motion.div>
 
         </div>
       </div>
