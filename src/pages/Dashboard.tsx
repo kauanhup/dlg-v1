@@ -87,8 +87,8 @@ const Dashboard = () => {
         className="border-b border-border bg-card/80 backdrop-blur-xl sticky top-0 z-50"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-3 group">
+          <div className="flex items-center justify-between h-16 gap-4">
+            <Link to="/" className="flex items-center gap-3 group flex-shrink-0">
               <motion.div 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -98,7 +98,16 @@ const Dashboard = () => {
               </motion.div>
             </Link>
 
-            <Link to="/">
+            <div className="flex-1 flex justify-center overflow-x-auto scrollbar-hide">
+              <ExpandableTabs 
+                tabs={tabItems} 
+                activeIndex={activeTabIndex}
+                onChange={handleTabChange}
+                className="border-none bg-transparent shadow-none"
+              />
+            </div>
+
+            <Link to="/" className="flex-shrink-0">
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-2">
                 <LogOut className="w-4 h-4" />
                 <span className="hidden sm:inline">Sair</span>
@@ -109,24 +118,8 @@ const Dashboard = () => {
       </motion.header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Expandable Tabs Navigation */}
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="w-full mb-8"
-        >
-          <ExpandableTabs 
-            tabs={tabItems} 
-            activeIndex={activeTabIndex}
-            onChange={handleTabChange}
-            className="w-full justify-center"
-          />
-        </motion.div>
-
-        {/* Main Content */}
         <main className="max-w-4xl mx-auto space-y-6">
-            {activeTab === "licencas" && (
+          {activeTab === "licencas" && (
               <motion.div
                 key="licencas"
                 variants={staggerContainer}
@@ -644,9 +637,9 @@ const Dashboard = () => {
                 </motion.div>
               </motion.div>
             )}
-          </main>
-        </div>
+        </main>
       </div>
+    </div>
   );
 };
 
