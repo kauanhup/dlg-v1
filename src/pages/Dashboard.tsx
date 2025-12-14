@@ -115,14 +115,17 @@ const LojaSection = () => {
       <div className="grid sm:grid-cols-2 gap-4">
         {/* Sessions Brasileiras */}
         <div className="bg-card border border-border rounded-md p-5 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-success/10 rounded-md flex items-center justify-center">
-              <Globe className="w-5 h-5 text-success" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-success/10 rounded-md flex items-center justify-center">
+                <Globe className="w-5 h-5 text-success" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground text-sm">Sessions Brasileiras</h3>
+                <p className="text-xs text-muted-foreground">Números do Brasil</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-foreground text-sm">Sessions Brasileiras</h3>
-              <p className="text-xs text-muted-foreground">Números do Brasil</p>
-            </div>
+            <span className="text-xs bg-success/10 text-success px-2 py-1 rounded-md font-medium">142 disponíveis</span>
           </div>
           <div className="space-y-2">
             {brPackages.map((item, i) => (
@@ -179,14 +182,17 @@ const LojaSection = () => {
 
         {/* Sessions Estrangeiras */}
         <div className="bg-card border border-border rounded-md p-5 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
-              <Globe className="w-5 h-5 text-primary" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
+                <Globe className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground text-sm">Sessions Estrangeiras</h3>
+                <p className="text-xs text-muted-foreground">Números internacionais</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-foreground text-sm">Sessions Estrangeiras</h3>
-              <p className="text-xs text-muted-foreground">Números internacionais</p>
-            </div>
+            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-md font-medium">89 disponíveis</span>
           </div>
           <div className="space-y-2">
             {intlPackages.map((item, i) => (
@@ -639,7 +645,7 @@ const Dashboard = () => {
                       </div>
                       <div>
                         <p className="text-sm text-foreground">Session BR #{num}</p>
-                        <p className="text-xs text-muted-foreground">+55 11 9xxxx-xxx{num}</p>
+                        <p className="text-xs text-muted-foreground">+55 11 98745-632{num}</p>
                       </div>
                     </div>
                     <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
@@ -676,7 +682,7 @@ const Dashboard = () => {
                       </div>
                       <div>
                         <p className="text-sm text-foreground">Session INT #{num}</p>
-                        <p className="text-xs text-muted-foreground">+1 555 xxxx-xxx{num}</p>
+                        <p className="text-xs text-muted-foreground">+1 555 847-923{num}</p>
                       </div>
                     </div>
                     <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
