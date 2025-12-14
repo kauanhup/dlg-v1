@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { UserProfileSidebar } from "@/components/ui/menu";
 import { cn } from "@/lib/utils";
 import { 
   Key, 
@@ -41,8 +42,7 @@ import {
   Mail,
   Sun,
   Menu,
-  X,
-  ChevronLeft
+  X
 } from "lucide-react";
 
 const fadeIn = {
@@ -51,20 +51,11 @@ const fadeIn = {
   transition: { duration: 0.3 }
 };
 
-const navItems = [
-  { id: "licencas", title: "Licenças", icon: Key },
-  { id: "numeros", title: "Números", icon: Phone },
-  { id: "comprar", title: "Loja", icon: CreditCard },
-  { id: "configuracoes", title: "Configurações", icon: Settings },
-  { id: "ajuda", title: "Ajuda", icon: HelpCircle },
-  { id: "perfil", title: "Perfil", icon: User },
-];
-
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("licencas");
   const [isDarkTheme, setIsDarkTheme] = useState(true);
   const [showApiKey, setShowApiKey] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const userLicense = {
@@ -91,76 +82,37 @@ const Dashboard = () => {
     { date: "12 Dez 2024, 09:15", device: "Firefox - Mac", location: "Rio de Janeiro, BR", status: "failed" },
   ];
 
+  const user = {
+    name: "João Dev",
+    email: "joao@email.com",
+    initials: "JD"
+  };
+
+  const navItems = [
+    { label: "Licenças", icon: <Key className="h-full w-full" />, onClick: () => setActiveTab("licencas"), isActive: activeTab === "licencas" },
+    { label: "Números", icon: <Phone className="h-full w-full" />, onClick: () => setActiveTab("numeros"), isActive: activeTab === "numeros" },
+    { label: "Loja", icon: <CreditCard className="h-full w-full" />, onClick: () => setActiveTab("comprar"), isActive: activeTab === "comprar" },
+    { label: "Configurações", icon: <Settings className="h-full w-full" />, onClick: () => setActiveTab("configuracoes"), isActive: activeTab === "configuracoes", isSeparator: true },
+    { label: "Ajuda", icon: <HelpCircle className="h-full w-full" />, onClick: () => setActiveTab("ajuda"), isActive: activeTab === "ajuda" },
+    { label: "Perfil", icon: <User className="h-full w-full" />, onClick: () => setActiveTab("perfil"), isActive: activeTab === "perfil" },
+  ];
+
+  const logoutItem = {
+    label: "Sair",
+    icon: <LogOut className="h-full w-full" />,
+    onClick: () => navigate("/")
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar Desktop */}
-      <aside className={cn(
-        "hidden lg:flex flex-col border-r border-border bg-card/50 backdrop-blur-xl transition-all duration-300 sticky top-0 h-screen",
-        sidebarCollapsed ? "w-[72px]" : "w-[240px]"
-      )}>
-        {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-border/50">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center flex-shrink-0">
-              <Zap className="w-5 h-5 text-primary-foreground" />
-            </div>
-            {!sidebarCollapsed && (
-              <span className="font-display font-bold text-foreground">SWEX</span>
-            )}
-          </Link>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          >
-            <ChevronLeft className={cn("w-4 h-4 transition-transform", sidebarCollapsed && "rotate-180")} />
-          </Button>
-        </div>
-
-        {/* Nav Items */}
-        <nav className="flex-1 p-3 space-y-1">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
-                activeTab === item.id 
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-              )}
-            >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
-              {!sidebarCollapsed && <span>{item.title}</span>}
-            </button>
-          ))}
-        </nav>
-
-        {/* User Footer */}
-        <div className="p-3 border-t border-border/50">
-          <div className={cn(
-            "flex items-center gap-3 p-2 rounded-xl bg-secondary/30",
-            sidebarCollapsed && "justify-center"
-          )}>
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-bold text-primary-foreground">JD</span>
-            </div>
-            {!sidebarCollapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-foreground truncate">João Dev</p>
-                <p className="text-[10px] text-muted-foreground truncate">joao@email.com</p>
-              </div>
-            )}
-            {!sidebarCollapsed && (
-              <Link to="/">
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
-                  <LogOut className="w-4 h-4" />
-                </Button>
-              </Link>
-            )}
-          </div>
-        </div>
+      <aside className="hidden lg:flex flex-col border-r border-border w-[280px] sticky top-0 h-screen">
+        <UserProfileSidebar 
+          user={user}
+          navItems={navItems}
+          logoutItem={logoutItem}
+          className="h-full"
+        />
       </aside>
 
       {/* Mobile Header */}
@@ -189,22 +141,22 @@ const Dashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             className="absolute top-14 left-0 right-0 bg-background border-b border-border p-3 space-y-1"
           >
-            {navItems.map((item) => (
+            {navItems.map((item, index) => (
               <button
-                key={item.id}
+                key={index}
                 onClick={() => {
-                  setActiveTab(item.id);
+                  item.onClick?.();
                   setMobileMenuOpen(false);
                 }}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
-                  activeTab === item.id 
+                  item.isActive 
                     ? "bg-primary text-primary-foreground" 
                     : "text-muted-foreground hover:bg-secondary/50"
                 )}
               >
-                <item.icon className="w-5 h-5" />
-                <span>{item.title}</span>
+                <span className="w-5 h-5">{item.icon}</span>
+                <span>{item.label}</span>
               </button>
             ))}
           </motion.div>
