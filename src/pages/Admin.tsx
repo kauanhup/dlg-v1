@@ -148,41 +148,11 @@ const SalesChart = ({ data }: { data: typeof salesData }) => {
 // Dashboard Overview
 const DashboardSection = () => {
   const [dashboardTab, setDashboardTab] = useState<'sessions' | 'subscriptions'>('sessions');
-  
-  // Editable pricing state
-  const [precos, setPrecos] = useState({
-    brasileiras: { custo: 8.00, venda: 25.00 },
-    estrangeiras: { custo: 5.00, venda: 15.00 }
-  });
 
-  // Sessions inventory state
-  const [sessionsData, setSessionsData] = useState({
-    brasileiras: { total: 1250, vendidas: 930 },
-    estrangeiras: { total: 890, vendidas: 745 }
-  });
-
-  // Calculate financials
-  const calcBrasileiras = {
-    disponíveis: sessionsData.brasileiras.total - sessionsData.brasileiras.vendidas,
-    custoTotal: sessionsData.brasileiras.vendidas * precos.brasileiras.custo,
-    receitaTotal: sessionsData.brasileiras.vendidas * precos.brasileiras.venda,
-    lucro: sessionsData.brasileiras.vendidas * (precos.brasileiras.venda - precos.brasileiras.custo),
-    lucroPorUnidade: precos.brasileiras.venda - precos.brasileiras.custo
-  };
-
-  const calcEstrangeiras = {
-    disponíveis: sessionsData.estrangeiras.total - sessionsData.estrangeiras.vendidas,
-    custoTotal: sessionsData.estrangeiras.vendidas * precos.estrangeiras.custo,
-    receitaTotal: sessionsData.estrangeiras.vendidas * precos.estrangeiras.venda,
-    lucro: sessionsData.estrangeiras.vendidas * (precos.estrangeiras.venda - precos.estrangeiras.custo),
-    lucroPorUnidade: precos.estrangeiras.venda - precos.estrangeiras.custo
-  };
-
-  const totais = {
-    vendidas: sessionsData.brasileiras.vendidas + sessionsData.estrangeiras.vendidas,
-    custoTotal: calcBrasileiras.custoTotal + calcEstrangeiras.custoTotal,
-    receitaTotal: calcBrasileiras.receitaTotal + calcEstrangeiras.receitaTotal,
-    lucroTotal: calcBrasileiras.lucro + calcEstrangeiras.lucro
+  // Sessions stats
+  const sessionsStats = {
+    brasileiras: { total: 1250, vendidas: 930, disponíveis: 320 },
+    estrangeiras: { total: 890, vendidas: 745, disponíveis: 145 }
   };
 
   // Subscriptions stats for dashboard
@@ -232,159 +202,73 @@ const DashboardSection = () => {
       {/* Sessions Tab Content */}
       {dashboardTab === 'sessions' && (
         <div className="space-y-6">
-          {/* Resumo Geral */}
+          {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard title="Sessions Vendidas" value={totais.vendidas.toLocaleString('pt-BR')} change="+18%" icon={Package} />
-            <StatCard title="Custo Total" value={`R$ ${totais.custoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} change="" icon={DollarSign} trend="down" />
-            <StatCard title="Receita Total" value={`R$ ${totais.receitaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} change="+12%" icon={TrendingUp} />
-            <StatCard title="Lucro Líquido" value={`R$ ${totais.lucroTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} change="+15%" icon={Activity} />
+            <StatCard title="Brasileiras (Total)" value={sessionsStats.brasileiras.total.toLocaleString('pt-BR')} change="+8%" icon={Globe} />
+            <StatCard title="Estrangeiras (Total)" value={sessionsStats.estrangeiras.total.toLocaleString('pt-BR')} change="+12%" icon={Globe} />
+            <StatCard title="Vendidas (Total)" value={(sessionsStats.brasileiras.vendidas + sessionsStats.estrangeiras.vendidas).toLocaleString('pt-BR')} change="+18%" icon={ShoppingCart} />
+            <StatCard title="Disponíveis" value={(sessionsStats.brasileiras.disponíveis + sessionsStats.estrangeiras.disponíveis).toLocaleString('pt-BR')} change="" icon={Package} />
           </div>
 
-          {/* Cards de Preço Editáveis */}
+          {/* Sessions Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Brasileiras */}
             <div className="bg-card border border-border rounded-lg p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                   <Globe className="w-5 h-5 text-primary" />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">Sessions Brasileiras</h3>
-                  <p className="text-xs text-muted-foreground">{sessionsData.brasileiras.vendidas} vendidas de {sessionsData.brasileiras.total}</p>
-                </div>
+                <h3 className="font-semibold text-foreground">Sessions Brasileiras</h3>
               </div>
-
-              {/* Campos Editáveis */}
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div>
-                  <label className="text-xs text-muted-foreground block mb-1">Custo por unidade</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={precos.brasileiras.custo}
-                      onChange={(e) => setPrecos(prev => ({
-                        ...prev,
-                        brasileiras: { ...prev.brasileiras, custo: parseFloat(e.target.value) || 0 }
-                      }))}
-                      className="w-full bg-background border border-border rounded-md py-2 pl-9 pr-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground block mb-1">Preço de venda</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={precos.brasileiras.venda}
-                      onChange={(e) => setPrecos(prev => ({
-                        ...prev,
-                        brasileiras: { ...prev.brasileiras, venda: parseFloat(e.target.value) || 0 }
-                      }))}
-                      className="w-full bg-background border border-border rounded-md py-2 pl-9 pr-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Resumo Financeiro */}
-              <div className="space-y-2 pt-3 border-t border-border">
+              <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Lucro por unidade</span>
-                  <span className="font-medium text-success">R$ {calcBrasileiras.lucroPorUnidade.toFixed(2)}</span>
+                  <span className="text-sm text-muted-foreground">Total</span>
+                  <span className="font-medium text-foreground">{sessionsStats.brasileiras.total}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Custo total pago</span>
-                  <span className="font-medium text-destructive">R$ {calcBrasileiras.custoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-sm text-muted-foreground">Vendidas</span>
+                  <span className="font-medium text-foreground">{sessionsStats.brasileiras.vendidas}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Receita vendas</span>
-                  <span className="font-medium text-foreground">R$ {calcBrasileiras.receitaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-sm text-muted-foreground">Disponíveis</span>
+                  <span className="font-medium text-success">{sessionsStats.brasileiras.disponíveis}</span>
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t border-border">
-                  <span className="text-sm font-medium text-foreground">Lucro total</span>
-                  <span className="font-bold text-success">R$ {calcBrasileiras.lucro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                <div className="w-full bg-muted rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-primary h-2 rounded-full" 
+                    style={{ width: `${(sessionsStats.brasileiras.disponíveis / sessionsStats.brasileiras.total) * 100}%` }}
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Estrangeiras */}
             <div className="bg-card border border-border rounded-lg p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                   <Globe className="w-5 h-5 text-primary" />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">Sessions Estrangeiras</h3>
-                  <p className="text-xs text-muted-foreground">{sessionsData.estrangeiras.vendidas} vendidas de {sessionsData.estrangeiras.total}</p>
-                </div>
+                <h3 className="font-semibold text-foreground">Sessions Estrangeiras</h3>
               </div>
-
-              {/* Campos Editáveis */}
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div>
-                  <label className="text-xs text-muted-foreground block mb-1">Custo por unidade</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={precos.estrangeiras.custo}
-                      onChange={(e) => setPrecos(prev => ({
-                        ...prev,
-                        estrangeiras: { ...prev.estrangeiras, custo: parseFloat(e.target.value) || 0 }
-                      }))}
-                      className="w-full bg-background border border-border rounded-md py-2 pl-9 pr-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground block mb-1">Preço de venda</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={precos.estrangeiras.venda}
-                      onChange={(e) => setPrecos(prev => ({
-                        ...prev,
-                        estrangeiras: { ...prev.estrangeiras, venda: parseFloat(e.target.value) || 0 }
-                      }))}
-                      className="w-full bg-background border border-border rounded-md py-2 pl-9 pr-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Resumo Financeiro */}
-              <div className="space-y-2 pt-3 border-t border-border">
+              <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Lucro por unidade</span>
-                  <span className="font-medium text-success">R$ {calcEstrangeiras.lucroPorUnidade.toFixed(2)}</span>
+                  <span className="text-sm text-muted-foreground">Total</span>
+                  <span className="font-medium text-foreground">{sessionsStats.estrangeiras.total}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Custo total pago</span>
-                  <span className="font-medium text-destructive">R$ {calcEstrangeiras.custoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-sm text-muted-foreground">Vendidas</span>
+                  <span className="font-medium text-foreground">{sessionsStats.estrangeiras.vendidas}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Receita vendas</span>
-                  <span className="font-medium text-foreground">R$ {calcEstrangeiras.receitaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-sm text-muted-foreground">Disponíveis</span>
+                  <span className="font-medium text-success">{sessionsStats.estrangeiras.disponíveis}</span>
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t border-border">
-                  <span className="text-sm font-medium text-foreground">Lucro total</span>
-                  <span className="font-bold text-success">R$ {calcEstrangeiras.lucro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                <div className="w-full bg-muted rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-primary h-2 rounded-full" 
+                    style={{ width: `${(sessionsStats.estrangeiras.disponíveis / sessionsStats.estrangeiras.total) * 100}%` }}
+                  />
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Gráfico de Vendas */}
-          <div className="bg-card border border-border rounded-lg p-4">
-            <h3 className="font-semibold text-foreground mb-4">Vendas por Mês</h3>
-            <SalesChart data={salesData} />
           </div>
         </div>
       )}
