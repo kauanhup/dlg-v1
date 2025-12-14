@@ -59,7 +59,8 @@ import {
   Menu,
   X,
   Star,
-  Heart
+  Heart,
+  Monitor
 } from "lucide-react";
 
 const fadeIn = {
@@ -106,14 +107,15 @@ const Dashboard = () => {
   ];
 
   const activeSessions = [
-    { device: "Chrome - Windows", location: "São Paulo, BR", current: true, lastActive: "Agora" },
-    { device: "Safari - iPhone", location: "São Paulo, BR", current: false, lastActive: "2h atrás" },
+    { device: "Windows 11 Pro - PC Principal", location: "São Paulo, BR", current: true, lastActive: "Agora" },
+    { device: "Windows 10 - Notebook Dell", location: "São Paulo, BR", current: false, lastActive: "2h atrás" },
+    { device: "Windows 11 - PC Escritório", location: "Campinas, BR", current: false, lastActive: "1 dia atrás" },
   ];
 
   const loginHistory = [
-    { date: "14 Dez 2024, 10:32", device: "Chrome - Windows", location: "São Paulo, BR", status: "success" },
-    { date: "13 Dez 2024, 18:45", device: "Safari - iPhone", location: "São Paulo, BR", status: "success" },
-    { date: "12 Dez 2024, 09:15", device: "Firefox - Mac", location: "Rio de Janeiro, BR", status: "failed" },
+    { date: "14 Dez 2024, 10:32", device: "Google Chrome", location: "São Paulo, BR", status: "success" },
+    { date: "13 Dez 2024, 18:45", device: "Google Chrome", location: "São Paulo, BR", status: "success" },
+    { date: "12 Dez 2024, 09:15", device: "IP Desconhecido", location: "Rio de Janeiro, BR", status: "failed" },
   ];
 
   const user = {
@@ -866,36 +868,24 @@ const Dashboard = () => {
                   <Shield className="w-4 h-4 text-primary" />
                   Segurança
                 </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
-                    <div className="flex items-center gap-3">
-                      <Lock className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-foreground">Senha</p>
-                        <p className="text-xs text-muted-foreground">Última alteração: 30 dias</p>
-                      </div>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                  <div className="flex items-center gap-3">
+                    <Lock className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-foreground">Senha</p>
+                      <p className="text-xs text-muted-foreground">Última alteração: 30 dias</p>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-8 text-xs">Alterar</Button>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
-                    <div className="flex items-center gap-3">
-                      <Smartphone className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-foreground">Autenticação 2FA</p>
-                        <p className="text-xs text-muted-foreground">Não configurado</p>
-                      </div>
-                    </div>
-                    <span className="text-xs bg-warning/20 text-warning px-2 py-0.5 rounded font-medium">Configurar</span>
-                  </div>
+                  <Button variant="ghost" size="sm" className="h-8 text-xs">Alterar</Button>
                 </div>
               </div>
 
-              {/* Sessões Ativas */}
+              {/* Sessões Ativas - Bot */}
               <div className="bg-card border border-border rounded-md p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Smartphone className="w-4 h-4 text-primary" />
-                    Sessões Ativas
+                    <Monitor className="w-4 h-4 text-primary" />
+                    Sessões Ativas (Bot)
                   </h3>
                   <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive">
                     Encerrar todas
