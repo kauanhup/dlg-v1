@@ -127,7 +127,6 @@ const Dashboard = () => {
     { date: "14 Dez 2024, 10:32", device: "Google Chrome", location: "São Paulo, BR", status: "success", reason: "" },
     { date: "13 Dez 2024, 18:45", device: "Google Chrome", location: "São Paulo, BR", status: "success", reason: "" },
     { date: "12 Dez 2024, 09:15", device: "Google Chrome", location: "Rio de Janeiro, BR", status: "failed", reason: "Senha incorreta" },
-    { date: "11 Dez 2024, 22:30", device: "IP Desconhecido", location: "Desconhecido", status: "failed", reason: "IP bloqueado" },
   ];
 
   const user = {
@@ -137,12 +136,20 @@ const Dashboard = () => {
     plan: "Plano Pro"
   };
 
+  const sidebarTabs = ["perfil", "preferencias", "historico", "ajuda"];
+  
   const profileNavItems = [
     { label: "Minha Conta", icon: <User className="h-full w-full" />, onClick: () => setActiveTab("perfil") },
     { label: "Preferências", icon: <Settings className="h-full w-full" />, onClick: () => setActiveTab("preferencias") },
     { label: "Histórico", icon: <History className="h-full w-full" />, onClick: () => setActiveTab("historico") },
     { label: "Ajuda", icon: <HelpCircle className="h-full w-full" />, onClick: () => setActiveTab("ajuda"), isSeparator: true },
   ];
+
+  const sidebarActiveIndex = sidebarTabs.indexOf(activeTab);
+  
+  const handleSidebarChange = (index: number) => {
+    setActiveTab(sidebarTabs[index]);
+  };
 
   const logoutItem = {
     label: "Sair",
@@ -164,6 +171,8 @@ const Dashboard = () => {
           navItems={profileNavItems}
           logoutItem={logoutItem}
           onAvatarChange={(avatar) => setSelectedAvatarId(avatar.id)}
+          activeIndex={sidebarActiveIndex >= 0 ? sidebarActiveIndex : null}
+          onActiveChange={handleSidebarChange}
           className="h-full border-r-0"
         />
       </aside>
@@ -217,25 +226,34 @@ const Dashboard = () => {
 
           {/* Center: Navigation */}
           <nav className="flex-1 flex justify-center">
-            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md">
+            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md relative">
               {[
                 { label: "Licenças", tab: "licencas", icon: Key },
                 { label: "Números", tab: "numeros", icon: Phone },
                 { label: "Loja", tab: "comprar", icon: CreditCard },
               ].map((item) => (
-                <button
+                <motion.button
                   key={item.tab}
                   onClick={() => setActiveTab(item.tab)}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors",
+                    "relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors",
                     activeTab === item.tab
-                      ? "bg-card text-foreground shadow-sm"
+                      ? "text-foreground"
                       : "text-muted-foreground hover:text-foreground"
                   )}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <item.icon className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{item.label}</span>
-                </button>
+                  {activeTab === item.tab && (
+                    <motion.div
+                      layoutId="mobile-tab-bg"
+                      className="absolute inset-0 bg-card rounded shadow-sm"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <item.icon className="w-3.5 h-3.5 relative z-10" />
+                  <span className="hidden sm:inline relative z-10">{item.label}</span>
+                </motion.button>
               ))}
             </div>
           </nav>
@@ -292,25 +310,34 @@ const Dashboard = () => {
       <main className="flex-1 pt-14 lg:pt-0 min-w-0">
         {/* Desktop Header */}
         <header className="hidden lg:flex items-center justify-between h-14 px-6 border-b border-border bg-card sticky top-0 z-40">
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-1 relative">
             {[
               { label: "Licenças", tab: "licencas", icon: Key },
               { label: "Números", tab: "numeros", icon: Phone },
               { label: "Loja", tab: "comprar", icon: CreditCard },
             ].map((item) => (
-              <button
+              <motion.button
                 key={item.tab}
                 onClick={() => setActiveTab(item.tab)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 text-[13px] font-medium rounded-md transition-colors",
+                  "relative flex items-center gap-2 px-4 py-2 text-[13px] font-medium rounded-md transition-colors",
                   activeTab === item.tab
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
+                whileTap={{ scale: 0.97 }}
               >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </button>
+                {activeTab === item.tab && (
+                  <motion.div
+                    layoutId="header-tab-bg"
+                    className="absolute inset-0 bg-muted rounded-md"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <item.icon className="w-4 h-4 relative z-10" />
+                <span className="relative z-10">{item.label}</span>
+              </motion.button>
             ))}
           </nav>
         </header>
@@ -660,16 +687,20 @@ const Dashboard = () => {
 
         {/* Histórico */}
         {activeTab === "historico" && (
-          <motion.div {...fadeIn} className="max-w-4xl mx-auto space-y-6">
-            <div>
-              <h1 className="text-xl font-display font-bold text-foreground">Histórico</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Veja suas atividades recentes</p>
+          <motion.div {...fadeIn} className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-lg font-semibold text-foreground">Histórico</h1>
+                <p className="text-sm text-muted-foreground">Veja suas atividades recentes</p>
+              </div>
             </div>
 
-            <div className="space-y-4">
+            {/* Grid de cards */}
+            <div className="grid gap-4 sm:grid-cols-2">
               {/* Histórico de Compras */}
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
+              <div className="bg-card border border-border rounded-md p-5 space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <CreditCard className="w-4 h-4 text-primary" />
                   Compras Recentes
                 </h3>
@@ -677,8 +708,9 @@ const Dashboard = () => {
                   {[
                     { item: "Licença 30 Dias", date: "16 Dez 2024", value: "R$ 49,90", status: "Aprovado" },
                     { item: "Pacote +5 Números", date: "10 Dez 2024", value: "R$ 29,90", status: "Aprovado" },
+                    { item: "Licença 30 Dias", date: "16 Nov 2024", value: "R$ 49,90", status: "Aprovado" },
                   ].map((purchase, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
+                    <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-success/10 rounded-lg flex items-center justify-center">
                           <CheckCircle className="w-4 h-4 text-success" />
@@ -695,21 +727,17 @@ const Dashboard = () => {
                     </div>
                   ))}
                 </div>
-                <Button variant="outline" size="sm" className="w-full h-8 gap-1.5">
-                  <Download className="w-3.5 h-3.5" />
-                  Exportar histórico
-                </Button>
               </div>
 
               {/* Histórico de Logins */}
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
+              <div className="bg-card border border-border rounded-md p-5 space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Shield className="w-4 h-4 text-primary" />
                   Logins Recentes
                 </h3>
                 <div className="space-y-2">
                   {loginHistory.map((login, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
+                    <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           "w-8 h-8 rounded-lg flex items-center justify-center",
@@ -739,37 +767,42 @@ const Dashboard = () => {
               </div>
 
               {/* Sessões Ativas - Bot */}
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
-                  <Monitor className="w-4 h-4 text-primary" />
-                  Sessões Ativas (Bot)
-                </h3>
-                <div className="space-y-2">
+              <motion.div 
+                className="bg-card border border-border rounded-md p-5 space-y-4 sm:col-span-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Monitor className="w-4 h-4 text-primary" />
+                    Sessões Ativas (Bot)
+                  </h3>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive">
+                    Encerrar todas
+                  </Button>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-3">
                   {activeSessions.map((session, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
+                    <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                          <Monitor className="w-4 h-4 text-primary" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-foreground">{session.device}</p>
-                            {session.current && (
-                              <span className="text-[9px] bg-success/20 text-success px-1.5 py-0.5 rounded font-medium">ATUAL</span>
-                            )}
-                          </div>
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${session.current ? 'bg-success' : 'bg-muted-foreground'}`} />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{session.device}</p>
                           <p className="text-xs text-muted-foreground">{session.location} • {session.lastActive}</p>
                         </div>
                       </div>
-                      {!session.current && (
-                        <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive">
+                      {session.current ? (
+                        <span className="text-[9px] bg-success/20 text-success px-1.5 py-0.5 rounded font-medium flex-shrink-0">ATUAL</span>
+                      ) : (
+                        <Button variant="ghost" size="sm" className="h-6 text-[10px] text-muted-foreground flex-shrink-0 px-2">
                           Encerrar
                         </Button>
                       )}
                     </div>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         )}

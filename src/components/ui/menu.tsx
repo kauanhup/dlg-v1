@@ -34,13 +34,17 @@ interface UserProfileSidebarProps {
   };
   className?: string;
   onAvatarChange?: (avatar: Avatar) => void;
+  activeIndex?: number | null;
+  onActiveChange?: (index: number) => void;
 }
 
 export const UserProfileSidebar = React.forwardRef<HTMLDivElement, UserProfileSidebarProps>(
-  ({ user, navItems, logoutItem, className, onAvatarChange }, ref) => {
-    const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
+  ({ user, navItems, logoutItem, className, onAvatarChange, activeIndex: controlledActiveIndex, onActiveChange }, ref) => {
+    const [internalActiveIndex, setInternalActiveIndex] = React.useState<number | null>(null);
     const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
     const [avatarOpen, setAvatarOpen] = React.useState(false);
+
+    const activeIndex = controlledActiveIndex !== undefined ? controlledActiveIndex : internalActiveIndex;
 
     const selectedAvatar = avatars.find(a => a.id === user.selectedAvatarId) || null;
 
@@ -123,13 +127,18 @@ export const UserProfileSidebar = React.forwardRef<HTMLDivElement, UserProfileSi
               {item.isSeparator && (
                 <div className="my-2 mx-2 border-t border-border" />
               )}
-              <button
+              <motion.button
                 onClick={() => {
-                  setActiveIndex(index);
+                  if (onActiveChange) {
+                    onActiveChange(index);
+                  } else {
+                    setInternalActiveIndex(index);
+                  }
                   item.onClick?.();
                 }}
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
+                whileTap={{ scale: 0.98 }}
                 className={cn(
                   "relative w-full flex items-center gap-3 px-3 py-2 text-[13px] font-medium transition-colors duration-150",
                   activeIndex === index
@@ -172,7 +181,7 @@ export const UserProfileSidebar = React.forwardRef<HTMLDivElement, UserProfileSi
 
                 <span className="relative z-10 w-4 h-4 flex-shrink-0 [&>svg]:w-4 [&>svg]:h-4">{item.icon}</span>
                 <span className="relative z-10">{item.label}</span>
-              </button>
+              </motion.button>
             </React.Fragment>
           ))}
         </nav>
