@@ -11,6 +11,17 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -922,13 +933,40 @@ const Dashboard = () => {
                     />
                   </div>
                   <div className="pt-2 space-y-2">
-                    <Button 
-                      size="sm" 
-                      className="w-full h-9 bg-gradient-primary hover:opacity-90 transition-all shadow-lg shadow-primary/20"
-                    >
-                      <Lock className="w-3.5 h-3.5 mr-2" />
-                      Alterar senha
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          className="w-full h-9 bg-gradient-primary hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                        >
+                          <Lock className="w-3.5 h-3.5 mr-2" />
+                          Alterar senha
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="max-w-md">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="flex items-center gap-2">
+                            <Shield className="w-5 h-5 text-primary" />
+                            Confirmar alteração de senha
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className="text-left">
+                            Tem certeza que deseja alterar sua senha? Por motivos de segurança, você será desconectado de todos os dispositivos e precisará fazer login novamente.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => {
+                              localStorage.removeItem("isLoggedIn");
+                              navigate("/login");
+                            }}
+                            className="bg-primary hover:bg-primary/90"
+                          >
+                            Sim, alterar senha
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                     <p className="text-[10px] text-muted-foreground text-center">
                       Por segurança, você será desconectado após alterar a senha
                     </p>
