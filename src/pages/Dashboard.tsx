@@ -109,24 +109,23 @@ const Dashboard = () => {
       </motion.header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Expandable Tabs Navigation */}
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="w-full mb-6"
-          >
-            <ExpandableTabs 
-              tabs={tabItems} 
-              activeIndex={activeTabIndex}
-              onChange={handleTabChange}
-              className="w-full justify-center"
-            />
-          </motion.div>
+        {/* Expandable Tabs Navigation */}
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="w-full mb-8"
+        >
+          <ExpandableTabs 
+            tabs={tabItems} 
+            activeIndex={activeTabIndex}
+            onChange={handleTabChange}
+            className="w-full justify-center"
+          />
+        </motion.div>
 
-          {/* Main Content */}
-          <main className="flex-1 space-y-6">
+        {/* Main Content */}
+        <main className="max-w-4xl mx-auto space-y-6">
             {activeTab === "licencas" && (
               <motion.div
                 key="licencas"
@@ -648,7 +647,6 @@ const Dashboard = () => {
           </main>
         </div>
       </div>
-    </div>
   );
 };
 
