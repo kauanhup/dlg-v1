@@ -44,7 +44,8 @@ import {
   AlertCircle,
   UserCheck,
   Repeat,
-  Plus
+  Plus,
+  BarChart3
 } from "lucide-react";
 
 const fadeIn = {
@@ -146,6 +147,8 @@ const SalesChart = ({ data }: { data: typeof salesData }) => {
 
 // Dashboard Overview
 const DashboardSection = () => {
+  const [dashboardTab, setDashboardTab] = useState<'overview' | 'sessions' | 'subscriptions'>('overview');
+  
   // Calculate totals from sales data
   const totalBrasileiras = salesData.reduce((acc, d) => acc + d.brasileiras, 0);
   const totalEstrangeiras = salesData.reduce((acc, d) => acc + d.estrangeiras, 0);
@@ -180,6 +183,32 @@ const DashboardSection = () => {
     failed: "Falhou"
   };
 
+  // Sessions stats for dashboard
+  const sessionsStats = {
+    totalBrasileiras: 1250,
+    totalEstrangeiras: 890,
+    disponiveisBrasileiras: 320,
+    disponiveisEstrangeiras: 145,
+    vendidasHoje: 45,
+    vendidasMes: 580,
+  };
+
+  // Subscriptions stats for dashboard
+  const subscriptionsStats = {
+    totalAssinantes: 234,
+    assinantesAtivos: 198,
+    mrrTotal: 15680,
+    churnRate: 2.5,
+    novasHoje: 8,
+    novasMes: 67,
+  };
+
+  const dashboardTabs = [
+    { id: 'overview', label: 'Visão Geral', icon: BarChart3 },
+    { id: 'sessions', label: 'Sessions', icon: Package },
+    { id: 'subscriptions', label: 'Assinaturas', icon: CreditCard },
+  ] as const;
+
   return (
     <motion.div {...fadeIn} className="space-y-6">
       <div>
@@ -187,134 +216,295 @@ const DashboardSection = () => {
         <p className="text-sm text-muted-foreground">Visão geral do sistema</p>
       </div>
 
-      {/* Main Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Usuários Totais" value="1,234" change="+12%" icon={Users} />
-        <StatCard 
-          title="Sessions Vendidas" 
-          value={totalSessions.toLocaleString('pt-BR')} 
-          change="+18%" 
-          icon={Package} 
-        />
-        <StatCard 
-          title="Receita Total" 
-          value={`R$ ${receitaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
-          change="+8.2%" 
-          icon={DollarSign} 
-        />
-        <StatCard 
-          title="Lucro Líquido" 
-          value={`R$ ${lucroLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
-          change="+15%" 
-          icon={TrendingUp} 
-        />
-      </div>
-
-      {/* Pricing Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-card border border-border rounded-lg p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-              <Globe className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-medium text-foreground">Sessions Brasileiras</h3>
-              <p className="text-xs text-muted-foreground">Preço fixo por tipo</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-background/50 rounded-md p-2">
-              <p className="text-lg font-bold text-foreground">R$ {SESSION_PRICES.brasileiras.venda.toFixed(2)}</p>
-              <p className="text-[10px] text-muted-foreground">Venda</p>
-            </div>
-            <div className="bg-background/50 rounded-md p-2">
-              <p className="text-lg font-bold text-muted-foreground">R$ {SESSION_PRICES.brasileiras.custo.toFixed(2)}</p>
-              <p className="text-[10px] text-muted-foreground">Custo</p>
-            </div>
-            <div className="bg-background/50 rounded-md p-2">
-              <p className="text-lg font-bold text-success">R$ {(SESSION_PRICES.brasileiras.venda - SESSION_PRICES.brasileiras.custo).toFixed(2)}</p>
-              <p className="text-[10px] text-muted-foreground">Lucro</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-card border border-border rounded-lg p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-              <Globe className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-medium text-foreground">Sessions Estrangeiras</h3>
-              <p className="text-xs text-muted-foreground">Preço fixo por tipo</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-background/50 rounded-md p-2">
-              <p className="text-lg font-bold text-foreground">R$ {SESSION_PRICES.estrangeiras.venda.toFixed(2)}</p>
-              <p className="text-[10px] text-muted-foreground">Venda</p>
-            </div>
-            <div className="bg-background/50 rounded-md p-2">
-              <p className="text-lg font-bold text-muted-foreground">R$ {SESSION_PRICES.estrangeiras.custo.toFixed(2)}</p>
-              <p className="text-[10px] text-muted-foreground">Custo</p>
-            </div>
-            <div className="bg-background/50 rounded-md p-2">
-              <p className="text-lg font-bold text-success">R$ {(SESSION_PRICES.estrangeiras.venda - SESSION_PRICES.estrangeiras.custo).toFixed(2)}</p>
-              <p className="text-[10px] text-muted-foreground">Lucro</p>
-            </div>
-          </div>
+      {/* Central Menu Tabs */}
+      <div className="flex justify-center">
+        <div className="bg-card border border-border rounded-lg p-1 flex gap-1">
+          {dashboardTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setDashboardTab(tab.id)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
+                dashboardTab === tab.id
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Sales Chart */}
-      <div className="bg-card border border-border rounded-lg p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="font-semibold text-foreground">Vendas por Mês</h2>
-            <p className="text-xs text-muted-foreground">Sessions vendidas nos últimos 6 meses</p>
+      {/* Overview Tab Content */}
+      {dashboardTab === 'overview' && (
+        <div className="space-y-6">
+          {/* Main Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard title="Usuários Totais" value="1,234" change="+12%" icon={Users} />
+            <StatCard 
+              title="Sessions Vendidas" 
+              value={totalSessions.toLocaleString('pt-BR')} 
+              change="+18%" 
+              icon={Package} 
+            />
+            <StatCard 
+              title="Receita Total" 
+              value={`R$ ${receitaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+              change="+8.2%" 
+              icon={DollarSign} 
+            />
+            <StatCard 
+              title="Lucro Líquido" 
+              value={`R$ ${lucroLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+              change="+15%" 
+              icon={TrendingUp} 
+            />
+          </div>
+
+          {/* Pricing Info Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-card border border-border rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Globe className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-foreground">Sessions Brasileiras</h3>
+                  <p className="text-xs text-muted-foreground">Preço fixo por tipo</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-background/50 rounded-md p-2">
+                  <p className="text-lg font-bold text-foreground">R$ {SESSION_PRICES.brasileiras.venda.toFixed(2)}</p>
+                  <p className="text-[10px] text-muted-foreground">Venda</p>
+                </div>
+                <div className="bg-background/50 rounded-md p-2">
+                  <p className="text-lg font-bold text-muted-foreground">R$ {SESSION_PRICES.brasileiras.custo.toFixed(2)}</p>
+                  <p className="text-[10px] text-muted-foreground">Custo</p>
+                </div>
+                <div className="bg-background/50 rounded-md p-2">
+                  <p className="text-lg font-bold text-success">R$ {(SESSION_PRICES.brasileiras.venda - SESSION_PRICES.brasileiras.custo).toFixed(2)}</p>
+                  <p className="text-[10px] text-muted-foreground">Lucro</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-card border border-border rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Globe className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-foreground">Sessions Estrangeiras</h3>
+                  <p className="text-xs text-muted-foreground">Preço fixo por tipo</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-background/50 rounded-md p-2">
+                  <p className="text-lg font-bold text-foreground">R$ {SESSION_PRICES.estrangeiras.venda.toFixed(2)}</p>
+                  <p className="text-[10px] text-muted-foreground">Venda</p>
+                </div>
+                <div className="bg-background/50 rounded-md p-2">
+                  <p className="text-lg font-bold text-muted-foreground">R$ {SESSION_PRICES.estrangeiras.custo.toFixed(2)}</p>
+                  <p className="text-[10px] text-muted-foreground">Custo</p>
+                </div>
+                <div className="bg-background/50 rounded-md p-2">
+                  <p className="text-lg font-bold text-success">R$ {(SESSION_PRICES.estrangeiras.venda - SESSION_PRICES.estrangeiras.custo).toFixed(2)}</p>
+                  <p className="text-[10px] text-muted-foreground">Lucro</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Sales Chart */}
+          <div className="bg-card border border-border rounded-lg p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-semibold text-foreground">Vendas por Mês</h2>
+                <p className="text-xs text-muted-foreground">Sessions vendidas nos últimos 6 meses</p>
+              </div>
+            </div>
+            <SalesChart data={salesData} />
+          </div>
+
+          {/* Recent Orders */}
+          <div className="bg-card border border-border rounded-lg">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <h2 className="font-semibold text-foreground">Pedidos Recentes</h2>
+              <Button variant="ghost" size="sm" className="text-xs">Ver todos</Button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Pedido</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Tipo</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Qtd</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentOrders.map((order) => (
+                    <tr key={order.id} className="border-b border-border/50 last:border-0">
+                      <td className="p-4 text-sm font-medium text-foreground">{order.id}</td>
+                      <td className="p-4 text-sm text-muted-foreground">{order.user}</td>
+                      <td className="p-4 text-sm text-muted-foreground">{order.type}</td>
+                      <td className="p-4 text-sm text-foreground">{order.qty}</td>
+                      <td className="p-4 text-sm font-medium text-foreground">{order.amount}</td>
+                      <td className="p-4">
+                        <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[order.status as keyof typeof statusStyles])}>
+                          {statusLabels[order.status as keyof typeof statusLabels]}
+                        </span>
+                      </td>
+                      <td className="p-4 text-sm text-muted-foreground">{order.date}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-        <SalesChart data={salesData} />
-      </div>
+      )}
 
-      {/* Recent Orders */}
-      <div className="bg-card border border-border rounded-lg">
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <h2 className="font-semibold text-foreground">Pedidos Recentes</h2>
-          <Button variant="ghost" size="sm" className="text-xs">Ver todos</Button>
+      {/* Sessions Tab Content */}
+      {dashboardTab === 'sessions' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <StatCard title="Brasileiras (Total)" value={sessionsStats.totalBrasileiras.toLocaleString('pt-BR')} change="+8%" icon={Globe} />
+            <StatCard title="Estrangeiras (Total)" value={sessionsStats.totalEstrangeiras.toLocaleString('pt-BR')} change="+12%" icon={Globe} />
+            <StatCard title="Vendidas Hoje" value={sessionsStats.vendidasHoje.toString()} change="+5" icon={ShoppingCart} />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-card border border-border rounded-lg p-4">
+              <h3 className="font-semibold text-foreground mb-4">Sessions Brasileiras</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Total em estoque</span>
+                  <span className="font-medium text-foreground">{sessionsStats.totalBrasileiras}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Disponíveis</span>
+                  <span className="font-medium text-success">{sessionsStats.disponiveisBrasileiras}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Vendidas</span>
+                  <span className="font-medium text-foreground">{sessionsStats.totalBrasileiras - sessionsStats.disponiveisBrasileiras}</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-primary h-2 rounded-full" 
+                    style={{ width: `${(sessionsStats.disponiveisBrasileiras / sessionsStats.totalBrasileiras) * 100}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground text-right">
+                  {((sessionsStats.disponiveisBrasileiras / sessionsStats.totalBrasileiras) * 100).toFixed(1)}% disponível
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-card border border-border rounded-lg p-4">
+              <h3 className="font-semibold text-foreground mb-4">Sessions Estrangeiras</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Total em estoque</span>
+                  <span className="font-medium text-foreground">{sessionsStats.totalEstrangeiras}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Disponíveis</span>
+                  <span className="font-medium text-success">{sessionsStats.disponiveisEstrangeiras}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Vendidas</span>
+                  <span className="font-medium text-foreground">{sessionsStats.totalEstrangeiras - sessionsStats.disponiveisEstrangeiras}</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-primary h-2 rounded-full" 
+                    style={{ width: `${(sessionsStats.disponiveisEstrangeiras / sessionsStats.totalEstrangeiras) * 100}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground text-right">
+                  {((sessionsStats.disponiveisEstrangeiras / sessionsStats.totalEstrangeiras) * 100).toFixed(1)}% disponível
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-lg p-4">
+            <h3 className="font-semibold text-foreground mb-4">Vendas de Sessions</h3>
+            <SalesChart data={salesData} />
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Pedido</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Tipo</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Qtd</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentOrders.map((order) => (
-                <tr key={order.id} className="border-b border-border/50 last:border-0">
-                  <td className="p-4 text-sm font-medium text-foreground">{order.id}</td>
-                  <td className="p-4 text-sm text-muted-foreground">{order.user}</td>
-                  <td className="p-4 text-sm text-muted-foreground">{order.type}</td>
-                  <td className="p-4 text-sm text-foreground">{order.qty}</td>
-                  <td className="p-4 text-sm font-medium text-foreground">{order.amount}</td>
-                  <td className="p-4">
-                    <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[order.status as keyof typeof statusStyles])}>
-                      {statusLabels[order.status as keyof typeof statusLabels]}
-                    </span>
-                  </td>
-                  <td className="p-4 text-sm text-muted-foreground">{order.date}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      )}
+
+      {/* Subscriptions Tab Content */}
+      {dashboardTab === 'subscriptions' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard title="Total Assinantes" value={subscriptionsStats.totalAssinantes.toString()} change="+15%" icon={Users} />
+            <StatCard title="Assinantes Ativos" value={subscriptionsStats.assinantesAtivos.toString()} change="+8%" icon={CheckCircle} />
+            <StatCard 
+              title="MRR" 
+              value={`R$ ${subscriptionsStats.mrrTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+              change="+12%" 
+              icon={DollarSign} 
+            />
+            <StatCard title="Churn Rate" value={`${subscriptionsStats.churnRate}%`} change="-0.5%" icon={TrendingUp} />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-card border border-border rounded-lg p-4">
+              <h3 className="font-semibold text-foreground mb-4">Resumo de Assinaturas</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Novas hoje</span>
+                  <span className="font-medium text-success">+{subscriptionsStats.novasHoje}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Novas este mês</span>
+                  <span className="font-medium text-foreground">{subscriptionsStats.novasMes}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Cancelamentos</span>
+                  <span className="font-medium text-destructive">{subscriptionsStats.totalAssinantes - subscriptionsStats.assinantesAtivos}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Taxa de retenção</span>
+                  <span className="font-medium text-success">{((subscriptionsStats.assinantesAtivos / subscriptionsStats.totalAssinantes) * 100).toFixed(1)}%</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-card border border-border rounded-lg p-4">
+              <h3 className="font-semibold text-foreground mb-4">Receita Recorrente</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">MRR Atual</span>
+                  <span className="font-medium text-foreground">R$ {subscriptionsStats.mrrTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">ARR Projetado</span>
+                  <span className="font-medium text-foreground">R$ {(subscriptionsStats.mrrTotal * 12).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Ticket Médio</span>
+                  <span className="font-medium text-foreground">R$ {(subscriptionsStats.mrrTotal / subscriptionsStats.assinantesAtivos).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">LTV Estimado</span>
+                  <span className="font-medium text-success">R$ {((subscriptionsStats.mrrTotal / subscriptionsStats.assinantesAtivos) * 12).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </motion.div>
   );
 };
