@@ -349,122 +349,88 @@ const Dashboard = () => {
         {activeTab === "licencas" && (
           <motion.div {...fadeIn} className="space-y-6">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-lg font-semibold text-foreground">Minhas Licenças</h1>
-                <p className="text-sm text-muted-foreground">Gerencie suas licenças ativas</p>
-              </div>
+            <div>
+              <h1 className="text-lg font-semibold text-foreground">Minhas Licenças</h1>
+              <p className="text-sm text-muted-foreground">Gerencie suas licenças ativas</p>
             </div>
 
             {/* Main License Card */}
-            <motion.div 
-              className="bg-card border border-border rounded-md overflow-hidden"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              {/* License Header */}
-              <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 border-b border-border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
-                      <Key className="w-6 h-6 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground">Plano {userLicense.plan}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-                          <span className="text-xs text-success font-medium">Ativa</span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">•</span>
-                        <span className="text-xs text-muted-foreground">{userLicense.daysLeft} dias restantes</span>
-                      </div>
+            <div className="bg-card border border-border rounded-md p-5 space-y-5">
+              {/* License Info Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
+                    <Key className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Plano {userLicense.plan}</h3>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
+                      <span className="text-xs text-success font-medium">Ativa</span>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" className="h-8 gap-1.5">
-                    <Copy className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline text-xs">Copiar Chave</span>
-                  </Button>
+                </div>
+                <Button variant="outline" size="sm" className="h-8 gap-1.5">
+                  <Copy className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline text-xs">Copiar</span>
+                </Button>
+              </div>
+
+              {/* License Details Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="bg-muted/50 rounded-md p-3">
+                  <p className="text-xs text-muted-foreground mb-1">Chave</p>
+                  <p className="text-sm font-mono text-foreground truncate">{userLicense.key}</p>
+                </div>
+                <div className="bg-muted/50 rounded-md p-3">
+                  <p className="text-xs text-muted-foreground mb-1">Ativada em</p>
+                  <p className="text-sm text-foreground">{userLicense.activatedAt}</p>
+                </div>
+                <div className="bg-muted/50 rounded-md p-3">
+                  <p className="text-xs text-muted-foreground mb-1">Expira em</p>
+                  <p className="text-sm text-foreground">{userLicense.expiresAt}</p>
                 </div>
               </div>
 
-              {/* License Details */}
-              <div className="p-5 space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="bg-muted/50 rounded-md p-4 transition-all hover:bg-muted/70">
-                    <div className="flex items-center gap-2 mb-2">
-                      <KeyRound className="w-4 h-4 text-primary" />
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Chave</p>
-                    </div>
-                    <p className="text-sm font-mono text-foreground truncate">{userLicense.key}</p>
-                  </div>
-                  <div className="bg-muted/50 rounded-md p-4 transition-all hover:bg-muted/70">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle className="w-4 h-4 text-success" />
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ativada em</p>
-                    </div>
-                    <p className="text-sm text-foreground">{userLicense.activatedAt}</p>
-                  </div>
-                  <div className="bg-muted/50 rounded-md p-4 transition-all hover:bg-muted/70">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Clock className="w-4 h-4 text-warning" />
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Expira em</p>
-                    </div>
-                    <p className="text-sm text-foreground">{userLicense.expiresAt}</p>
-                  </div>
+              {/* Progress Bar */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Tempo restante</span>
+                  <span className="text-foreground font-medium">{userLicense.daysLeft} de 30 dias</span>
                 </div>
-
-                {/* Progress Bar */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tempo restante</span>
-                    <span className="text-foreground font-semibold">{userLicense.daysLeft} de 30 dias</span>
-                  </div>
-                  <div className="h-3 bg-muted rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(userLicense.daysLeft / 30) * 100}%` }}
-                      transition={{ duration: 0.8, ease: "easeOut" }}
-                      className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full relative"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                    </motion.div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <Button size="sm" className="flex-1 h-10 bg-gradient-primary hover:opacity-90 shadow-lg shadow-primary/20">
-                    <Zap className="w-4 h-4 mr-2" />
-                    Renovar Licença
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1 h-10 border-primary/30 hover:bg-primary/5">
-                    <Sparkles className="w-4 h-4 mr-2 text-primary" />
-                    Upgrade Vitalício
-                  </Button>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(userLicense.daysLeft / 30) * 100}%` }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="h-full bg-primary rounded-full"
+                  />
                 </div>
               </div>
-            </motion.div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button size="sm" className="flex-1 h-9">
+                  <Zap className="w-4 h-4 mr-2" />
+                  Renovar Licença
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1 h-9">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Upgrade
+                </Button>
+              </div>
+            </div>
 
             {/* Warning Alert */}
-            <motion.div 
-              className="bg-warning/10 border border-warning/30 rounded-md p-4 flex items-start gap-3"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <div className="w-10 h-10 bg-warning/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="w-5 h-5 text-warning" />
-              </div>
+            <div className="bg-warning/10 border border-warning/30 rounded-md p-4 flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0" />
               <div className="flex-1">
-                <p className="text-sm font-semibold text-foreground">Sua licença expira em breve!</p>
-                <p className="text-sm text-muted-foreground mt-0.5">Renove agora e ganhe <span className="text-warning font-medium">10% de desconto</span> no próximo período.</p>
+                <p className="text-sm text-foreground">Sua licença expira em breve! <span className="text-warning font-medium">10% de desconto</span> na renovação.</p>
               </div>
               <Button size="sm" variant="outline" className="hidden sm:flex h-8 border-warning/30 text-warning hover:bg-warning/10 hover:text-warning">
                 Renovar
               </Button>
-            </motion.div>
+            </div>
           </motion.div>
         )}
 
