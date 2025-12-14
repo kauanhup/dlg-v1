@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ExpandableTabs } from "@/components/ui/expandable-tabs";
+import { cn } from "@/lib/utils";
 import { 
   Key, 
   CheckCircle, 
@@ -39,7 +39,10 @@ import {
   Eye,
   EyeOff,
   Mail,
-  Sun
+  Sun,
+  Menu,
+  X,
+  ChevronLeft
 } from "lucide-react";
 
 const fadeIn = {
@@ -48,24 +51,21 @@ const fadeIn = {
   transition: { duration: 0.3 }
 };
 
-const tabItems = [
-  { title: "Licenças", icon: Key },
-  { title: "Números", icon: Phone },
-  { type: "separator" as const },
-  { title: "Loja", icon: CreditCard },
-  { title: "Config", icon: Settings },
-  { title: "Ajuda", icon: HelpCircle },
-  { type: "separator" as const },
-  { title: "Perfil", icon: User },
+const navItems = [
+  { id: "licencas", title: "Licenças", icon: Key },
+  { id: "numeros", title: "Números", icon: Phone },
+  { id: "comprar", title: "Loja", icon: CreditCard },
+  { id: "configuracoes", title: "Configurações", icon: Settings },
+  { id: "ajuda", title: "Ajuda", icon: HelpCircle },
+  { id: "perfil", title: "Perfil", icon: User },
 ];
 
-const tabIdMap = ["licencas", "numeros", null, "comprar", "configuracoes", "ajuda", null, "perfil"];
-
 const Dashboard = () => {
-  const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState("licencas");
   const [isDarkTheme, setIsDarkTheme] = useState(true);
   const [showApiKey, setShowApiKey] = useState(false);
-  const activeTab = tabIdMap[activeTabIndex] || "licencas";
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const userLicense = {
     key: "SWEX-XXXX-XXXX-XXXX",
@@ -91,44 +91,130 @@ const Dashboard = () => {
     { date: "12 Dez 2024, 09:15", device: "Firefox - Mac", location: "Rio de Janeiro, BR", status: "failed" },
   ];
 
-  const handleTabChange = (index: number | null) => {
-    if (index !== null && tabIdMap[index] !== null) {
-      setActiveTabIndex(index);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14 gap-4">
-            <Link to="/" className="flex-shrink-0">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <Zap className="w-4 h-4 text-primary-foreground" />
-              </div>
-            </Link>
-
-            <div className="flex-1 flex justify-center">
-              <ExpandableTabs 
-                tabs={tabItems} 
-                activeIndex={activeTabIndex}
-                onChange={handleTabChange}
-                className="border-border/50 bg-card/50 backdrop-blur-sm"
-              />
+    <div className="min-h-screen bg-background flex">
+      {/* Sidebar Desktop */}
+      <aside className={cn(
+        "hidden lg:flex flex-col border-r border-border bg-card/50 backdrop-blur-xl transition-all duration-300 sticky top-0 h-screen",
+        sidebarCollapsed ? "w-[72px]" : "w-[240px]"
+      )}>
+        {/* Logo */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-border/50">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center flex-shrink-0">
+              <Zap className="w-5 h-5 text-primary-foreground" />
             </div>
+            {!sidebarCollapsed && (
+              <span className="font-display font-bold text-foreground">SWEX</span>
+            )}
+          </Link>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            <ChevronLeft className={cn("w-4 h-4 transition-transform", sidebarCollapsed && "rotate-180")} />
+          </Button>
+        </div>
 
-            <Link to="/" className="flex-shrink-0">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground h-8 px-3">
-                <LogOut className="w-4 h-4" />
-              </Button>
-            </Link>
+        {/* Nav Items */}
+        <nav className="flex-1 p-3 space-y-1">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+                activeTab === item.id 
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+              )}
+            >
+              <item.icon className="w-5 h-5 flex-shrink-0" />
+              {!sidebarCollapsed && <span>{item.title}</span>}
+            </button>
+          ))}
+        </nav>
+
+        {/* User Footer */}
+        <div className="p-3 border-t border-border/50">
+          <div className={cn(
+            "flex items-center gap-3 p-2 rounded-xl bg-secondary/30",
+            sidebarCollapsed && "justify-center"
+          )}>
+            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-bold text-primary-foreground">JD</span>
+            </div>
+            {!sidebarCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-foreground truncate">João Dev</p>
+                <p className="text-[10px] text-muted-foreground truncate">joao@email.com</p>
+              </div>
+            )}
+            {!sidebarCollapsed && (
+              <Link to="/">
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
-      </header>
+      </aside>
 
-      {/* Content */}
-      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
+        <div className="flex items-center justify-between h-14 px-4">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+              <Zap className="w-4 h-4 text-primary-foreground" />
+            </div>
+            <span className="font-display font-bold text-foreground">SWEX</span>
+          </Link>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-9 w-9 p-0"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
+        </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="absolute top-14 left-0 right-0 bg-background border-b border-border p-3 space-y-1"
+          >
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setMobileMenuOpen(false);
+                }}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
+                  activeTab === item.id 
+                    ? "bg-primary text-primary-foreground" 
+                    : "text-muted-foreground hover:bg-secondary/50"
+                )}
+              >
+                <item.icon className="w-5 h-5" />
+                <span>{item.title}</span>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </div>
+
+      {/* Main Content */}
+      <main className="flex-1 lg:pt-0 pt-14">
+        {/* Content */}
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Licenças */}
         {activeTab === "licencas" && (
@@ -257,7 +343,7 @@ const Dashboard = () => {
                 <p className="text-sm font-medium text-foreground">Precisa de mais números?</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Adicione com desconto especial</p>
               </div>
-              <Button size="sm" variant="outline" className="h-8" onClick={() => setActiveTabIndex(3)}>
+              <Button size="sm" variant="outline" className="h-8" onClick={() => setActiveTab("comprar")}>
                 Ver pacotes
               </Button>
             </div>
@@ -837,7 +923,8 @@ const Dashboard = () => {
             </div>
           </motion.div>
         )}
-      </div>
+        </div>
+      </main>
     </div>
   );
 };
