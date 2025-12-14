@@ -1139,6 +1139,41 @@ const Admin = () => {
           >
             <Menu className="w-5 h-5 text-foreground" />
           </button>
+
+          {/* Center Menu */}
+          <nav className="flex-1 flex justify-center absolute left-1/2 -translate-x-1/2">
+            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md relative">
+              {[
+                { label: "Sessions", tab: "sessions", icon: Globe },
+                { label: "Assinaturas", tab: "subscriptions", icon: CreditCard },
+              ].map((item) => (
+                <motion.button
+                  key={item.tab}
+                  onClick={() => setActiveTab(item.tab)}
+                  className={cn(
+                    "relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors",
+                    activeTab === item.tab
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {activeTab === item.tab && (
+                    <motion.div
+                      layoutId="admin-mobile-tab-bg"
+                      className="absolute inset-0 bg-card rounded shadow-sm"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <item.icon className="w-3.5 h-3.5 relative z-10" />
+                  <span className="hidden sm:inline relative z-10">{item.label}</span>
+                </motion.button>
+              ))}
+            </div>
+          </nav>
+
+          <div className="w-9 h-9" />
         </div>
       </header>
 
@@ -1193,6 +1228,39 @@ const Admin = () => {
 
       {/* Main Content */}
       <main className="flex-1 pt-14 lg:pt-0 min-w-0">
+        {/* Desktop Header with Center Menu */}
+        <header className="hidden lg:flex items-center justify-center h-14 px-6 border-b border-border bg-card sticky top-0 z-40">
+          <nav className="flex items-center gap-1 relative">
+            {[
+              { label: "Sessions", tab: "sessions", icon: Globe },
+              { label: "Assinaturas", tab: "subscriptions", icon: CreditCard },
+            ].map((item) => (
+              <motion.button
+                key={item.tab}
+                onClick={() => setActiveTab(item.tab)}
+                className={cn(
+                  "relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                  activeTab === item.tab
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                whileTap={{ scale: 0.95 }}
+              >
+                {activeTab === item.tab && (
+                  <motion.div
+                    layoutId="admin-desktop-tab-bg"
+                    className="absolute inset-0 bg-muted rounded-md"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <item.icon className="w-4 h-4 relative z-10" />
+                <span className="relative z-10">{item.label}</span>
+              </motion.button>
+            ))}
+          </nav>
+        </header>
+        
         {/* Page Content */}
         <div className="p-4 sm:p-6">
           {renderContent()}
