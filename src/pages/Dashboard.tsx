@@ -107,9 +107,9 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
       {/* Sidebar Desktop - Profile Only */}
-      <aside className="hidden lg:flex flex-col w-[280px] sticky top-0 h-screen p-4">
+      <aside className="hidden xl:flex flex-col w-[280px] sticky top-0 h-screen p-4 flex-shrink-0">
         <UserProfileSidebar 
           user={{
             name: user.name,
@@ -123,8 +123,8 @@ const Dashboard = () => {
         />
       </aside>
 
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
+      {/* Mobile/Tablet Header */}
+      <div className="xl:hidden fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="flex items-center justify-between h-14 px-4">
           <Link to="/" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
@@ -132,22 +132,55 @@ const Dashboard = () => {
             </div>
             <span className="font-display font-bold text-foreground">SWEX</span>
           </Link>
+          
+          {/* Tablet: Show navigation inline */}
+          <div className="hidden md:flex items-center gap-1">
+            {[
+              { label: "Licenças", tab: "licencas", icon: Key },
+              { label: "Números", tab: "numeros", icon: Phone },
+              { label: "Loja", tab: "comprar", icon: CreditCard },
+              { label: "Config", tab: "configuracoes", icon: Settings },
+            ].map((item) => (
+              <button
+                key={item.tab}
+                onClick={() => setActiveTab(item.tab)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                  activeTab === item.tab
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-secondary/50"
+                )}
+              >
+                <item.icon className="w-3.5 h-3.5" />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* User avatar for tablet */}
+          <div className="hidden md:flex xl:hidden items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+              <span className="text-xs font-bold text-primary-foreground">{user.initials}</span>
+            </div>
+          </div>
+
+          {/* Mobile: Burger menu */}
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-9 w-9 p-0"
+            className="h-9 w-9 p-0 md:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </Button>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu Dropdown */}
         {mobileMenuOpen && (
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="absolute top-14 left-0 right-0 bg-background border-b border-border p-3 space-y-1"
+            className="absolute top-14 left-0 right-0 bg-background border-b border-border p-3 space-y-1 md:hidden"
           >
             {[
               { label: "Licenças", icon: <Key className="h-full w-full" />, onClick: () => setActiveTab("licencas") },
@@ -161,20 +194,35 @@ const Dashboard = () => {
                   item.onClick?.();
                   setMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-muted-foreground hover:bg-secondary/50"
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
+                  "text-muted-foreground hover:bg-secondary/50"
+                )}
               >
                 <span className="w-5 h-5">{item.icon}</span>
                 <span>{item.label}</span>
               </button>
             ))}
+            <div className="pt-2 mt-2 border-t border-border">
+              <button
+                onClick={() => {
+                  navigate("/");
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Sair</span>
+              </button>
+            </div>
           </motion.div>
         )}
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 lg:pt-0 pt-14">
-        {/* Glow Menu Header */}
-        <div className="hidden lg:flex justify-center py-4 px-4 border-b border-border/50 bg-background/50 backdrop-blur-sm sticky top-0 z-40">
+      <main className="flex-1 pt-14 xl:pt-0 min-w-0">
+        {/* Glow Menu Header - Desktop only (xl+) */}
+        <div className="hidden xl:flex justify-center py-4 px-4 border-b border-border/50 bg-background/50 backdrop-blur-sm sticky top-0 z-40">
           <MenuBar
             items={[
               {
@@ -217,7 +265,7 @@ const Dashboard = () => {
         </div>
         
         {/* Content */}
-        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         
         {/* Licenças */}
         {activeTab === "licencas" && (
