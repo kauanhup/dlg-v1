@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { 
   Key, 
   Clock, 
@@ -37,8 +38,21 @@ const staggerContainer = {
   }
 };
 
+const tabItems = [
+  { title: "Licenças", icon: Key },
+  { title: "Números", icon: Phone },
+  { type: "separator" as const },
+  { title: "Comprar", icon: CreditCard },
+  { title: "Config", icon: Settings },
+  { title: "Ajuda", icon: HelpCircle },
+];
+
+const tabIdMap = ["licencas", "numeros", null, "comprar", "configuracoes", "ajuda"];
+
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState("licencas");
+  const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
+  
+  const activeTab = tabIdMap[activeTabIndex] || "licencas";
   
   // Mock data for UI
   const userLicense = {
@@ -55,13 +69,11 @@ const Dashboard = () => {
     { id: 2, number: "+55 21 9xxxx-xxxx", status: "active", addedAt: "12 Dez 2024" },
   ];
 
-  const menuItems = [
-    { id: "licencas", label: "Minhas Licenças", icon: Key },
-    { id: "numeros", label: "Números/Sessions", icon: Phone },
-    { id: "comprar", label: "Comprar Mais", icon: CreditCard },
-    { id: "configuracoes", label: "Configurações", icon: Settings },
-    { id: "ajuda", label: "Ajuda", icon: HelpCircle },
-  ];
+  const handleTabChange = (index: number | null) => {
+    if (index !== null && tabIdMap[index] !== null) {
+      setActiveTabIndex(index);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -120,35 +132,20 @@ const Dashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar */}
-          <motion.aside 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+          {/* Expandable Tabs Navigation */}
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="lg:w-64 flex-shrink-0"
+            className="w-full mb-6"
           >
-            <nav className="space-y-1">
-              {menuItems.map((item, index) => (
-                <motion.button
-                  key={item.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.1 + index * 0.05 }}
-                  whileHover={{ x: 4 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
-                    activeTab === item.id 
-                      ? "bg-gradient-primary text-primary-foreground glow-sm" 
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
-                </motion.button>
-              ))}
-            </nav>
-          </motion.aside>
+            <ExpandableTabs 
+              tabs={tabItems} 
+              activeIndex={activeTabIndex}
+              onChange={handleTabChange}
+              className="w-full justify-center"
+            />
+          </motion.div>
 
           {/* Main Content */}
           <main className="flex-1 space-y-6">
@@ -336,7 +333,7 @@ const Dashboard = () => {
                       </p>
                     </div>
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button onClick={() => setActiveTab("comprar")} className="bg-gradient-primary hover:opacity-90">
+                      <Button onClick={() => setActiveTabIndex(3)} className="bg-gradient-primary hover:opacity-90">
                         Comprar Números
                       </Button>
                     </motion.div>
