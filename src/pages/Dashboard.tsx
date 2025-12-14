@@ -1032,6 +1032,21 @@ const Dashboard = () => {
           </motion.div>
         )}
         </div>
+
+        {/* Footer */}
+        <footer className="mt-auto py-4 px-4 border-t border-border bg-card/50">
+          <p className="text-xs text-muted-foreground text-center">
+            © 2025 SWEXTRATOR. Desenvolvido por{" "}
+            <a 
+              href="https://wa.me/5565996498222" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline transition-colors"
+            >
+              Kauan Hup
+            </a>
+          </p>
+        </footer>
       </main>
     </div>
   );
