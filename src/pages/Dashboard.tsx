@@ -800,196 +800,151 @@ const Dashboard = () => {
 
         {/* Perfil Expandido */}
         {activeTab === "perfil" && (
-          <motion.div {...fadeIn} className="space-y-8">
-            <div>
-              <h1 className="text-xl font-display font-bold text-foreground">Meu Perfil</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Gerencie todas as suas configurações</p>
+          <motion.div {...fadeIn} className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-lg font-semibold text-foreground">Minha Conta</h1>
+                <p className="text-sm text-muted-foreground">Gerencie suas informações</p>
+              </div>
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Coluna 1 - Informações da Conta */}
-              <div className="space-y-6">
-                {/* Info Básica */}
-                <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                  <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
-                    <User className="w-4 h-4 text-primary" />
-                    Informações
-                  </h3>
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-gradient-primary rounded-full flex items-center justify-center">
-                      <User className="w-6 h-6 text-primary-foreground" />
+            {/* Profile Card */}
+            <div className="bg-card border border-border rounded-md p-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="w-16 h-16 rounded-md overflow-hidden bg-muted flex items-center justify-center border border-border flex-shrink-0">
+                  {selectedAvatarId ? (
+                    <div className="w-16 h-16 flex items-center justify-center [&>svg]:w-16 [&>svg]:h-16">
+                      {avatars.find(a => a.id === selectedAvatarId)?.svg}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-display font-bold text-foreground">João Silva</p>
-                      <p className="text-xs text-muted-foreground">joao@email.com</p>
+                  ) : (
+                    <div className="w-16 h-16 bg-primary flex items-center justify-center">
+                      <span className="text-xl font-semibold text-primary-foreground">{user.initials}</span>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-8">
-                      <Settings className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="bg-secondary/40 rounded-lg p-3 flex items-center justify-between">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Email</p>
-                        <p className="text-xs text-foreground mt-0.5">joao@email.com</p>
-                      </div>
-                      <Mail className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                    <div className="bg-secondary/40 rounded-lg p-3 flex items-center justify-between">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Membro desde</p>
-                        <p className="text-xs text-foreground mt-0.5">Dezembro 2024</p>
-                      </div>
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-base font-semibold text-foreground">{user.name}</h2>
+                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-medium">{user.plan}</span>
+                    <span className="text-xs text-muted-foreground">Membro desde Dez 2024</span>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                {/* Preferências */}
-                <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                  <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
-                    <Settings className="w-4 h-4 text-primary" />
-                    Preferências
-                  </h3>
-                  <div className="space-y-3">
-                    <div 
-                      className="bg-secondary/40 rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-secondary/60 transition-colors"
-                      onClick={() => setIsDarkTheme(!isDarkTheme)}
-                    >
-                      <div className="flex items-center gap-3">
-                        {isDarkTheme ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-warning" />}
-                        <div>
-                          <p className="text-xs font-medium text-foreground">Tema</p>
-                          <p className="text-[10px] text-muted-foreground">{isDarkTheme ? "Escuro" : "Claro"}</p>
-                        </div>
-                      </div>
-                      <div className={`w-10 h-5 rounded-full transition-colors ${isDarkTheme ? 'bg-primary' : 'bg-secondary'} relative`}>
-                        <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all ${isDarkTheme ? 'right-0.5' : 'left-0.5'}`} />
-                      </div>
+            {/* Grid de cards */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Informações */}
+              <div className="bg-card border border-border rounded-md p-5 space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <User className="w-4 h-4 text-primary" />
+                  Informações
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Nome</p>
+                      <p className="text-sm text-foreground mt-0.5">{user.name}</p>
                     </div>
-                    <div className="bg-secondary/40 rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-secondary/60 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <Bell className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-xs font-medium text-foreground">Notificações</p>
-                          <p className="text-[10px] text-muted-foreground">Email e push</p>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    <Button variant="ghost" size="sm" className="h-8 text-xs">Editar</Button>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Email</p>
+                      <p className="text-sm text-foreground mt-0.5">{user.email}</p>
                     </div>
-                    <div className="bg-secondary/40 rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-secondary/60 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <Globe className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-xs font-medium text-foreground">Idioma</p>
-                          <p className="text-[10px] text-muted-foreground">Português (BR)</p>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                    <div className="bg-secondary/40 rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-secondary/60 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-xs font-medium text-foreground">Fuso Horário</p>
-                          <p className="text-[10px] text-muted-foreground">America/Sao_Paulo (GMT-3)</p>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                    </div>
+                    <Button variant="ghost" size="sm" className="h-8 text-xs">Editar</Button>
                   </div>
                 </div>
               </div>
 
-              {/* Coluna 2 - Segurança */}
-              <div className="space-y-6">
-                {/* Segurança */}
-                <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                  <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-primary" />
-                    Segurança
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="bg-secondary/40 rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-secondary/60 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <Lock className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-xs font-medium text-foreground">Alterar Senha</p>
-                          <p className="text-[10px] text-muted-foreground">Última alteração: 30 dias atrás</p>
-                        </div>
+              {/* Segurança */}
+              <div className="bg-card border border-border rounded-md p-5 space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-primary" />
+                  Segurança
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                    <div className="flex items-center gap-3">
+                      <Lock className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-foreground">Senha</p>
+                        <p className="text-xs text-muted-foreground">Última alteração: 30 dias</p>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </div>
-                    <div className="bg-secondary/40 rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-secondary/60 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <Smartphone className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-xs font-medium text-foreground">Autenticação 2FA</p>
-                          <p className="text-[10px] text-muted-foreground">Não configurado</p>
-                        </div>
+                    <Button variant="ghost" size="sm" className="h-8 text-xs">Alterar</Button>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                    <div className="flex items-center gap-3">
+                      <Smartphone className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-foreground">Autenticação 2FA</p>
+                        <p className="text-xs text-muted-foreground">Não configurado</p>
                       </div>
-                      <span className="text-[10px] bg-warning/20 text-warning px-2 py-0.5 rounded font-medium">Configurar</span>
                     </div>
-                  </div>
-                </div>
-
-                {/* Sessões Ativas */}
-                <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
-                      <Smartphone className="w-4 h-4 text-primary" />
-                      Sessões Ativas
-                    </h3>
-                    <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive">
-                      Encerrar todas
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    {activeSessions.map((session, i) => (
-                      <div key={i} className="bg-secondary/40 rounded-lg p-3 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-2 h-2 rounded-full ${session.current ? 'bg-success' : 'bg-muted-foreground'}`} />
-                          <div>
-                            <p className="text-xs font-medium text-foreground">{session.device}</p>
-                            <p className="text-[10px] text-muted-foreground">{session.location} • {session.lastActive}</p>
-                          </div>
-                        </div>
-                        {session.current ? (
-                          <span className="text-[10px] bg-success/20 text-success px-2 py-0.5 rounded font-medium">Atual</span>
-                        ) : (
-                          <Button variant="ghost" size="sm" className="h-6 text-[10px] text-muted-foreground">
-                            Encerrar
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Histórico de Login */}
-                <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                  <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
-                    <History className="w-4 h-4 text-primary" />
-                    Histórico de Login
-                  </h3>
-                  <div className="space-y-2">
-                    {loginHistory.map((login, i) => (
-                      <div key={i} className="bg-secondary/40 rounded-lg p-3 flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-medium text-foreground">{login.device}</p>
-                          <p className="text-[10px] text-muted-foreground">{login.date} • {login.location}</p>
-                        </div>
-                        <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${
-                          login.status === 'success' ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'
-                        }`}>
-                          {login.status === 'success' ? 'Sucesso' : 'Falhou'}
-                        </span>
-                      </div>
-                    ))}
+                    <span className="text-xs bg-warning/20 text-warning px-2 py-0.5 rounded font-medium">Configurar</span>
                   </div>
                 </div>
               </div>
 
+              {/* Sessões Ativas */}
+              <div className="bg-card border border-border rounded-md p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Smartphone className="w-4 h-4 text-primary" />
+                    Sessões Ativas
+                  </h3>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive">
+                    Encerrar todas
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {activeSessions.map((session, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${session.current ? 'bg-success' : 'bg-muted-foreground'}`} />
+                        <div className="min-w-0">
+                          <p className="text-sm text-foreground truncate">{session.device}</p>
+                          <p className="text-xs text-muted-foreground">{session.location} • {session.lastActive}</p>
+                        </div>
+                      </div>
+                      {session.current ? (
+                        <span className="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-medium flex-shrink-0">Atual</span>
+                      ) : (
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground flex-shrink-0">
+                          Encerrar
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Histórico de Login */}
+              <div className="bg-card border border-border rounded-md p-5 space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <History className="w-4 h-4 text-primary" />
+                  Histórico de Login
+                </h3>
+                <div className="space-y-2">
+                  {loginHistory.map((login, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-foreground truncate">{login.device}</p>
+                        <p className="text-xs text-muted-foreground truncate">{login.date} • {login.location}</p>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded font-medium flex-shrink-0 ${
+                        login.status === 'success' ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'
+                      }`}>
+                        {login.status === 'success' ? 'Sucesso' : 'Falhou'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
