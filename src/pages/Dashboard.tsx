@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { UserProfileSidebar } from "@/components/ui/menu";
 import { MenuBar } from "@/components/ui/glow-menu";
+import { AvatarPicker } from "@/components/ui/avatar-picker";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -528,6 +529,15 @@ const Dashboard = () => {
             </div>
 
             <div className="space-y-4">
+              {/* Avatar */}
+              <div className="bg-card border border-border rounded-md p-5 space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <User className="w-4 h-4 text-primary" />
+                  Avatar
+                </h3>
+                <AvatarPicker />
+              </div>
+
               {/* Tema */}
               <div className="bg-card border border-border rounded-md p-5 space-y-4">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
