@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { UserProfileSidebar } from "@/components/ui/menu";
+import { SidebarWithSubmenu } from "@/components/ui/sidebar-with-submenu";
 import { cn } from "@/lib/utils";
 import { 
   Key, 
@@ -42,7 +42,9 @@ import {
   Mail,
   Sun,
   Menu,
-  X
+  X,
+  LayoutDashboard,
+  Receipt
 } from "lucide-react";
 
 const fadeIn = {
@@ -85,32 +87,43 @@ const Dashboard = () => {
   const user = {
     name: "João Dev",
     email: "joao@email.com",
-    initials: "JD"
+    initials: "JD",
+    plan: "Plano Pro"
   };
 
-  const navItems = [
-    { label: "Licenças", icon: <Key className="h-full w-full" />, onClick: () => setActiveTab("licencas"), isActive: activeTab === "licencas" },
-    { label: "Números", icon: <Phone className="h-full w-full" />, onClick: () => setActiveTab("numeros"), isActive: activeTab === "numeros" },
-    { label: "Loja", icon: <CreditCard className="h-full w-full" />, onClick: () => setActiveTab("comprar"), isActive: activeTab === "comprar" },
-    { label: "Configurações", icon: <Settings className="h-full w-full" />, onClick: () => setActiveTab("configuracoes"), isActive: activeTab === "configuracoes", isSeparator: true },
-    { label: "Ajuda", icon: <HelpCircle className="h-full w-full" />, onClick: () => setActiveTab("ajuda"), isActive: activeTab === "ajuda" },
-    { label: "Perfil", icon: <User className="h-full w-full" />, onClick: () => setActiveTab("perfil"), isActive: activeTab === "perfil" },
+  const navigation = [
+    { name: "Licenças", icon: <Key className="h-full w-full" />, onClick: () => setActiveTab("licencas"), isActive: activeTab === "licencas" },
+    { name: "Números", icon: <Phone className="h-full w-full" />, onClick: () => setActiveTab("numeros"), isActive: activeTab === "numeros" },
+    { name: "Loja", icon: <CreditCard className="h-full w-full" />, onClick: () => setActiveTab("comprar"), isActive: activeTab === "comprar" },
   ];
 
-  const logoutItem = {
-    label: "Sair",
-    icon: <LogOut className="h-full w-full" />,
-    onClick: () => navigate("/")
-  };
+  const footerNavigation = [
+    { name: "Ajuda", icon: <HelpCircle className="h-full w-full" />, onClick: () => setActiveTab("ajuda"), isActive: activeTab === "ajuda" },
+    { name: "Configurações", icon: <Settings className="h-full w-full" />, onClick: () => setActiveTab("configuracoes"), isActive: activeTab === "configuracoes" },
+  ];
+
+  const nestedNavItems = [
+    {
+      label: "Conta",
+      icon: <User className="h-full w-full" />,
+      items: [
+        { name: "Perfil", onClick: () => setActiveTab("perfil"), isActive: activeTab === "perfil" },
+        { name: "Segurança", onClick: () => setActiveTab("configuracoes"), isActive: false },
+        { name: "Notificações", onClick: () => setActiveTab("configuracoes"), isActive: false },
+      ]
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar Desktop */}
-      <aside className="hidden lg:flex flex-col border-r border-border w-[280px] sticky top-0 h-screen">
-        <UserProfileSidebar 
+      <aside className="hidden lg:flex flex-col w-[280px] sticky top-0 h-screen">
+        <SidebarWithSubmenu 
           user={user}
-          navItems={navItems}
-          logoutItem={logoutItem}
+          navigation={navigation}
+          footerNavigation={footerNavigation}
+          nestedNavItems={nestedNavItems}
+          onLogout={() => navigate("/")}
           className="h-full"
         />
       </aside>
@@ -141,7 +154,7 @@ const Dashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             className="absolute top-14 left-0 right-0 bg-background border-b border-border p-3 space-y-1"
           >
-            {navItems.map((item, index) => (
+            {[...navigation, ...footerNavigation].map((item, index) => (
               <button
                 key={index}
                 onClick={() => {
@@ -156,7 +169,7 @@ const Dashboard = () => {
                 )}
               >
                 <span className="w-5 h-5">{item.icon}</span>
-                <span>{item.label}</span>
+                <span>{item.name}</span>
               </button>
             ))}
           </motion.div>
