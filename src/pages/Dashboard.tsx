@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { UserProfileSidebar } from "@/components/ui/menu";
-import { MenuBar } from "@/components/ui/glow-menu";
 import { AvatarPicker, avatars } from "@/components/ui/avatar-picker";
 import {
   Popover,
@@ -350,7 +349,7 @@ const Dashboard = () => {
 
       {/* Mobile/Tablet Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
-        <div className="flex items-center justify-between h-14 px-4">
+        <div className="flex items-center h-14 px-4">
           {/* Profile dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -396,7 +395,7 @@ const Dashboard = () => {
           </DropdownMenu>
 
           {/* Center: Navigation */}
-          <nav className="flex-1 flex justify-center">
+          <nav className="flex-1 flex justify-center absolute left-1/2 -translate-x-1/2">
             <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md relative">
               {[
                 { label: "Licenças", tab: "licencas", icon: Key },
@@ -429,15 +428,19 @@ const Dashboard = () => {
             </div>
           </nav>
 
-          {/* Menu toggle */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-8 w-8 p-0 md:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </Button>
+          {/* Menu toggle - right side */}
+          <div className="ml-auto">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 w-8 p-0 md:hidden"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </Button>
+            {/* Invisible spacer for md+ screens to balance */}
+            <div className="hidden md:block w-8 h-8" />
+          </div>
         </div>
 
         {/* Mobile dropdown menu */}
