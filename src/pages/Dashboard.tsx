@@ -80,6 +80,171 @@ const fadeIn = {
   transition: { duration: 0.3 }
 };
 
+const LojaSection = () => {
+  const [brCustomQty, setBrCustomQty] = useState<number>(5);
+  const [intlCustomQty, setIntlCustomQty] = useState<number>(5);
+  const [brUsingCustom, setBrUsingCustom] = useState(false);
+  const [intlUsingCustom, setIntlUsingCustom] = useState(false);
+
+  const brPricePerSession = 9.98;
+  const intlPricePerSession = 5.98;
+
+  const brPackages = [
+    { qty: 5, price: "R$ 49,90" },
+    { qty: 10, price: "R$ 89,90" },
+    { qty: 25, price: "R$ 199,90", popular: true },
+  ];
+
+  const intlPackages = [
+    { qty: 5, price: "R$ 29,90" },
+    { qty: 10, price: "R$ 49,90" },
+    { qty: 25, price: "R$ 99,90", popular: true },
+  ];
+
+  const formatPrice = (value: number) => {
+    return `R$ ${value.toFixed(2).replace('.', ',')}`;
+  };
+
+  return (
+    <motion.div {...fadeIn} className="space-y-6">
+      <div>
+        <h1 className="text-lg font-semibold text-foreground">Loja</h1>
+        <p className="text-sm text-muted-foreground">Adquira pacotes de sessions</p>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        {/* Sessions Brasileiras */}
+        <div className="bg-card border border-border rounded-md p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-success/10 rounded-md flex items-center justify-center">
+              <Globe className="w-5 h-5 text-success" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground text-sm">Sessions Brasileiras</h3>
+              <p className="text-xs text-muted-foreground">Números do Brasil</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {brPackages.map((item, i) => (
+              <div 
+                key={i}
+                onClick={() => setBrUsingCustom(false)}
+                className={cn(
+                  "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-colors",
+                  !brUsingCustom && item.popular 
+                    ? "bg-primary/10 border border-primary/20" 
+                    : "bg-muted/50 hover:bg-muted"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-foreground text-sm">+{item.qty} sessions</span>
+                  {item.popular && (
+                    <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">TOP</span>
+                  )}
+                </div>
+                <span className="font-semibold text-primary text-sm">{item.price}</span>
+              </div>
+            ))}
+            {/* Custom Quantity */}
+            <div 
+              onClick={() => setBrUsingCustom(true)}
+              className={cn(
+                "p-3 rounded-md text-sm cursor-pointer transition-colors",
+                brUsingCustom 
+                  ? "bg-primary/10 border border-primary/20" 
+                  : "bg-muted/50 hover:bg-muted"
+              )}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-foreground text-sm">Quantidade personalizada</span>
+                <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">5+</span>
+              </div>
+              {brUsingCustom && (
+                <div className="flex items-center gap-3 mt-3">
+                  <input
+                    type="number"
+                    min={5}
+                    value={brCustomQty}
+                    onChange={(e) => setBrCustomQty(Math.max(5, parseInt(e.target.value) || 5))}
+                    className="w-20 h-8 px-2 text-sm bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <span className="text-muted-foreground text-xs">sessions</span>
+                  <span className="ml-auto font-semibold text-primary text-sm">{formatPrice(brCustomQty * brPricePerSession)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <Button size="sm" className="w-full h-9">Comprar</Button>
+        </div>
+
+        {/* Sessions Estrangeiras */}
+        <div className="bg-card border border-border rounded-md p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
+              <Globe className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground text-sm">Sessions Estrangeiras</h3>
+              <p className="text-xs text-muted-foreground">Números internacionais</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {intlPackages.map((item, i) => (
+              <div 
+                key={i}
+                onClick={() => setIntlUsingCustom(false)}
+                className={cn(
+                  "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-colors",
+                  !intlUsingCustom && item.popular 
+                    ? "bg-primary/10 border border-primary/20" 
+                    : "bg-muted/50 hover:bg-muted"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-foreground text-sm">+{item.qty} sessions</span>
+                  {item.popular && (
+                    <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">MELHOR</span>
+                  )}
+                </div>
+                <span className="font-semibold text-primary text-sm">{item.price}</span>
+              </div>
+            ))}
+            {/* Custom Quantity */}
+            <div 
+              onClick={() => setIntlUsingCustom(true)}
+              className={cn(
+                "p-3 rounded-md text-sm cursor-pointer transition-colors",
+                intlUsingCustom 
+                  ? "bg-primary/10 border border-primary/20" 
+                  : "bg-muted/50 hover:bg-muted"
+              )}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-foreground text-sm">Quantidade personalizada</span>
+                <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">5+</span>
+              </div>
+              {intlUsingCustom && (
+                <div className="flex items-center gap-3 mt-3">
+                  <input
+                    type="number"
+                    min={5}
+                    value={intlCustomQty}
+                    onChange={(e) => setIntlCustomQty(Math.max(5, parseInt(e.target.value) || 5))}
+                    className="w-20 h-8 px-2 text-sm bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <span className="text-muted-foreground text-xs">sessions</span>
+                  <span className="ml-auto font-semibold text-primary text-sm">{formatPrice(intlCustomQty * intlPricePerSession)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <Button size="sm" className="w-full h-9">Comprar</Button>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("licencas");
@@ -487,111 +652,7 @@ const Dashboard = () => {
 
         {/* Comprar */}
         {activeTab === "comprar" && (
-          <motion.div {...fadeIn} className="space-y-6">
-            <div>
-              <h1 className="text-lg font-semibold text-foreground">Loja</h1>
-              <p className="text-sm text-muted-foreground">Adquira pacotes de sessions</p>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              {/* Sessions Brasileiras */}
-              <div className="bg-card border border-border rounded-md p-5 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-success/10 rounded-md flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-success" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground text-sm">Sessions Brasileiras</h3>
-                    <p className="text-xs text-muted-foreground">Números do Brasil</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {[
-                    { qty: "+5 sessions", price: "R$ 49,90" },
-                    { qty: "+10 sessions", price: "R$ 89,90" },
-                    { qty: "+25 sessions", price: "R$ 199,90", popular: true },
-                  ].map((item, i) => (
-                    <div 
-                      key={i}
-                      className={cn(
-                        "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-colors",
-                        item.popular 
-                          ? "bg-primary/10 border border-primary/20" 
-                          : "bg-muted/50 hover:bg-muted"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-foreground text-sm">{item.qty}</span>
-                        {item.popular && (
-                          <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">TOP</span>
-                        )}
-                      </div>
-                      <span className="font-semibold text-primary text-sm">{item.price}</span>
-                    </div>
-                  ))}
-                </div>
-                <Button size="sm" className="w-full h-9">Comprar</Button>
-              </div>
-
-              {/* Sessions Estrangeiras */}
-              <div className="bg-card border border-border rounded-md p-5 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground text-sm">Sessions Estrangeiras</h3>
-                    <p className="text-xs text-muted-foreground">Números internacionais</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {[
-                    { qty: "+5 sessions", price: "R$ 29,90" },
-                    { qty: "+10 sessions", price: "R$ 49,90" },
-                    { qty: "+25 sessions", price: "R$ 99,90", popular: true },
-                  ].map((item, i) => (
-                    <div 
-                      key={i}
-                      className={cn(
-                        "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-colors",
-                        item.popular 
-                          ? "bg-primary/10 border border-primary/20" 
-                          : "bg-muted/50 hover:bg-muted"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-foreground text-sm">{item.qty}</span>
-                        {item.popular && (
-                          <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">MELHOR</span>
-                        )}
-                      </div>
-                      <span className="font-semibold text-primary text-sm">{item.price}</span>
-                    </div>
-                  ))}
-                </div>
-                <Button size="sm" className="w-full h-9">Comprar</Button>
-              </div>
-            </div>
-
-            {/* Upgrade */}
-            <div className="bg-muted/30 border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <Shield className="w-5 h-5 text-warning" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">Upgrade Vitalício</p>
-                  <p className="text-xs text-muted-foreground">Pague uma vez, use para sempre</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <p className="text-lg font-bold text-warning">R$ 1.997</p>
-                <Link to="/comprar">
-                  <Button size="sm" variant="outline" className="h-8">
-                    Ver
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </motion.div>
+          <LojaSection />
         )}
 
         {/* Preferências */}
