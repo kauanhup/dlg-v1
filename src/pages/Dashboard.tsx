@@ -849,38 +849,40 @@ const Dashboard = () => {
                   Informações
                 </h3>
                 <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs text-muted-foreground">Nome</label>
-                    <input 
-                      type="text"
-                      defaultValue={user.name}
-                      className="w-full h-9 px-3 text-sm bg-muted/50 border border-border rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
+                  <div className="p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Nome</p>
+                      <p className="text-sm text-foreground mt-0.5">{user.name}</p>
+                    </div>
                   </div>
-                  <div className="p-3 bg-muted/50 rounded-md">
+                  <div className="p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
                     <div>
                       <p className="text-xs text-muted-foreground">Email</p>
                       <p className="text-sm text-foreground mt-0.5">{user.email}</p>
                     </div>
                   </div>
-                  <div className="p-3 bg-muted/50 rounded-md">
+                  <div className="p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
                     <div>
                       <p className="text-xs text-muted-foreground">Plano</p>
                       <p className="text-sm text-foreground mt-0.5">{user.plan}</p>
                     </div>
                   </div>
-                  <div className="p-3 bg-muted/50 rounded-md">
+                  <div className="p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
                     <div>
                       <p className="text-xs text-muted-foreground">Membro desde</p>
                       <p className="text-sm text-foreground mt-0.5">Dezembro 2024</p>
                     </div>
                   </div>
-                  <Button size="sm" className="w-full h-8">Salvar alterações</Button>
                 </div>
               </div>
 
               {/* Segurança - Alterar Senha */}
-              <div className="bg-card border border-border rounded-md p-5 space-y-4">
+              <motion.div 
+                className="bg-card border border-border rounded-md p-5 space-y-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Shield className="w-4 h-4 text-primary" />
                   Alterar Senha
@@ -888,16 +890,16 @@ const Dashboard = () => {
                 <div className="space-y-3">
                   <div className="space-y-1.5">
                     <label className="text-xs text-muted-foreground">Senha atual</label>
-                    <div className="relative">
+                    <div className="relative group">
                       <input 
                         type={showApiKey ? "text" : "password"}
                         defaultValue="senha123"
-                        className="w-full h-9 px-3 pr-10 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full h-10 px-3 pr-10 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                       />
                       <button 
                         type="button"
                         onClick={() => setShowApiKey(!showApiKey)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       >
                         {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -907,21 +909,32 @@ const Dashboard = () => {
                     <label className="text-xs text-muted-foreground">Nova senha</label>
                     <input 
                       type="password"
-                      placeholder="••••••••"
-                      className="w-full h-9 px-3 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      placeholder="Mínimo 8 caracteres"
+                      className="w-full h-10 px-3 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs text-muted-foreground">Confirmar nova senha</label>
                     <input 
                       type="password"
-                      placeholder="••••••••"
-                      className="w-full h-9 px-3 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      placeholder="Repita a nova senha"
+                      className="w-full h-10 px-3 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                     />
                   </div>
-                  <Button size="sm" className="w-full h-8 mt-2">Salvar nova senha</Button>
+                  <div className="pt-2 space-y-2">
+                    <Button 
+                      size="sm" 
+                      className="w-full h-9 bg-gradient-primary hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                    >
+                      <Lock className="w-3.5 h-3.5 mr-2" />
+                      Alterar senha
+                    </Button>
+                    <p className="text-[10px] text-muted-foreground text-center">
+                      Por segurança, você será desconectado após alterar a senha
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </motion.div>
 
             </div>
           </motion.div>
