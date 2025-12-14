@@ -1,10 +1,7 @@
-// 1. Import Dependencies
 import * as React from 'react';
 import { motion } from 'framer-motion';
-import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// 2. Define Prop Types
 interface NavItem {
   icon: React.ReactNode;
   label: string;
@@ -31,97 +28,91 @@ interface UserProfileSidebarProps {
   className?: string;
 }
 
-// 3. Define Animation Variants
-const sidebarVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, x: -20 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 100,
-      damping: 15,
-    },
-  },
-};
-
-// 4. Create the Component
 export const UserProfileSidebar = React.forwardRef<HTMLDivElement, UserProfileSidebarProps>(
   ({ user, navItems, logoutItem, className }, ref) => {
+    const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
+
     return (
-      <motion.aside
+      <aside
         ref={ref}
         className={cn(
-          'flex h-full w-full max-w-xs flex-col rounded-xl border border-border/50 bg-card/50 backdrop-blur-xl p-4 text-card-foreground shadow-sm',
+          'flex h-full w-full max-w-[260px] flex-col bg-background/60 p-3',
           className
         )}
-        initial="hidden"
-        animate="visible"
-        variants={sidebarVariants}
-        aria-label="User Profile Menu"
       >
-        {/* User Info Header */}
-        <motion.div variants={itemVariants} className="flex items-center space-x-4 p-2">
-          {user.avatarUrl ? (
-            <img
-              src={user.avatarUrl}
-              alt={`${user.name}'s avatar`}
-              className="h-12 w-12 rounded-full object-cover"
-            />
-          ) : (
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-              <span className="text-sm font-bold text-primary-foreground">
-                {user.initials || user.name.charAt(0)}
-              </span>
+        {/* User Card */}
+        <div className="relative mb-6">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-accent/10 rounded-2xl blur-xl" />
+          <div className="relative bg-card/80 border border-border/40 rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name}
+                  className="h-11 w-11 rounded-xl object-cover ring-2 ring-primary/20"
+                />
+              ) : (
+                <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-accent flex items-center justify-center ring-2 ring-primary/20">
+                  <span className="text-sm font-bold text-primary-foreground">
+                    {user.initials || user.name.charAt(0)}
+                  </span>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-foreground truncate">{user.name}</p>
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              </div>
             </div>
-          )}
-          <div className="flex flex-col truncate">
-            <span className="font-semibold text-lg text-foreground">{user.name}</span>
-            <span className="text-sm text-muted-foreground truncate">{user.email}</span>
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div variants={itemVariants} className="my-4 border-t border-border/50" />
-
-        {/* Navigation Links */}
-        <nav className="flex-1 space-y-1" role="navigation">
+        {/* Nav Items */}
+        <nav className="flex-1 space-y-1">
           {navItems.map((item, index) => (
             <React.Fragment key={index}>
-              {item.isSeparator && <motion.div variants={itemVariants} className="h-6" />}
+              {item.isSeparator && <div className="h-4" />}
               <motion.button
-                onClick={item.onClick}
-                variants={itemVariants}
-                className="group flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                onClick={() => {
+                  setActiveIndex(index);
+                  item.onClick?.();
+                }}
+                className={cn(
+                  "relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+                  activeIndex === index
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                whileHover={{ x: 4 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <span className="mr-3 h-5 w-5">{item.icon}</span>
-                <span>{item.label}</span>
-                <ChevronRight className="ml-auto h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
+                {activeIndex === index && (
+                  <motion.div
+                    layoutId="sidebar-active"
+                    className="absolute inset-0 bg-secondary/80 rounded-xl"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  />
+                )}
+                <span className="relative z-10 w-5 h-5">{item.icon}</span>
+                <span className="relative z-10">{item.label}</span>
               </motion.button>
             </React.Fragment>
           ))}
         </nav>
 
-        {/* Logout Button */}
-        <motion.div variants={itemVariants} className="mt-4">
-          <button
+        {/* Logout */}
+        <div className="pt-4 mt-4 border-t border-border/30">
+          <motion.button
             onClick={logoutItem.onClick}
-            className="group flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+            whileHover={{ x: 4 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <span className="mr-3 h-5 w-5">{logoutItem.icon}</span>
+            <span className="w-5 h-5">{logoutItem.icon}</span>
             <span>{logoutItem.label}</span>
-          </button>
-        </motion.div>
-      </motion.aside>
+          </motion.button>
+        </div>
+      </aside>
     );
   }
 );
