@@ -45,9 +45,11 @@ const tabItems = [
   { title: "Comprar", icon: CreditCard },
   { title: "Config", icon: Settings },
   { title: "Ajuda", icon: HelpCircle },
+  { type: "separator" as const },
+  { title: "Perfil", icon: User },
 ];
 
-const tabIdMap = ["licencas", "numeros", null, "comprar", "configuracoes", "ajuda"];
+const tabIdMap = ["licencas", "numeros", null, "comprar", "configuracoes", "ajuda", null, "perfil"];
 
 const Dashboard = () => {
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
@@ -86,46 +88,22 @@ const Dashboard = () => {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-6">
-              <Link to="/" className="flex items-center gap-3 group">
-                <motion.div 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-9 h-9 bg-gradient-primary rounded-lg flex items-center justify-center"
-                >
-                  <Zap className="w-5 h-5 text-primary-foreground" />
-                </motion.div>
-                <div className="flex flex-col">
-                  <span className="font-display font-bold text-foreground group-hover:text-primary transition-colors">SWEXTRATOR</span>
-                  <span className="text-[9px] text-muted-foreground -mt-0.5">v2.0.1</span>
-                </div>
-              </Link>
-              
-              <Link to="/" className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <Home className="w-4 h-4" />
-                <span>Início</span>
-              </Link>
-            </div>
-
-            <div className="flex items-center gap-4">
+            <Link to="/" className="flex items-center gap-3 group">
               <motion.div 
-                whileHover={{ scale: 1.02 }}
-                className="flex items-center gap-3 cursor-pointer"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-9 h-9 bg-gradient-primary rounded-lg flex items-center justify-center"
               >
-                <div className="w-9 h-9 bg-secondary rounded-full flex items-center justify-center border border-border">
-                  <User className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-medium text-foreground">João Silva</p>
-                  <p className="text-xs text-muted-foreground">joao@email.com</p>
-                </div>
+                <Zap className="w-5 h-5 text-primary-foreground" />
               </motion.div>
-              <Link to="/">
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-                  <LogOut className="w-5 h-5" />
-                </Button>
-              </Link>
-            </div>
+            </Link>
+
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-2">
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Sair</span>
+              </Button>
+            </Link>
           </div>
         </div>
       </motion.header>
@@ -613,6 +591,56 @@ const Dashboard = () => {
                         Abrir Chamado
                       </Button>
                     </motion.div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+
+            {activeTab === "perfil" && (
+              <motion.div
+                key="perfil"
+                variants={staggerContainer}
+                initial="initial"
+                animate="animate"
+                className="space-y-6"
+              >
+                <motion.div variants={fadeInUp}>
+                  <h1 className="text-2xl font-display font-bold text-foreground">Meu Perfil</h1>
+                  <p className="text-muted-foreground mt-1">Gerencie suas informações</p>
+                </motion.div>
+
+                <motion.div 
+                  variants={fadeInUp}
+                  className="bg-card border border-border rounded-2xl p-6 space-y-6"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center">
+                      <User className="w-8 h-8 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="font-display font-bold text-foreground text-lg">João Silva</h3>
+                      <p className="text-muted-foreground">joao@email.com</p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4">
+                    {[
+                      { label: "Nome completo", value: "João Silva" },
+                      { label: "Email", value: "joao@email.com" },
+                      { label: "Membro desde", value: "Dezembro 2024" },
+                    ].map((item, i) => (
+                      <div key={i} className="bg-secondary/50 rounded-xl p-4 border border-border/50">
+                        <p className="text-sm text-muted-foreground">{item.label}</p>
+                        <p className="text-foreground mt-1">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <Button variant="outline" className="gap-2">
+                      <Settings className="w-4 h-4" />
+                      Editar Perfil
+                    </Button>
                   </div>
                 </motion.div>
               </motion.div>
