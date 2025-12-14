@@ -80,13 +80,86 @@ const StatCard = ({
   </div>
 );
 
+// Pricing Configuration
+const SESSION_PRICES = {
+  brasileiras: { venda: 25.00, custo: 8.00 },
+  estrangeiras: { venda: 15.00, custo: 5.00 }
+};
+
+// Sales Data for Chart
+const salesData = [
+  { mes: "Jul", brasileiras: 45, estrangeiras: 32, receita: 1605 },
+  { mes: "Ago", brasileiras: 52, estrangeiras: 41, receita: 1915 },
+  { mes: "Set", brasileiras: 38, estrangeiras: 55, receita: 1775 },
+  { mes: "Out", brasileiras: 67, estrangeiras: 48, receita: 2395 },
+  { mes: "Nov", brasileiras: 81, estrangeiras: 62, receita: 2955 },
+  { mes: "Dez", brasileiras: 94, estrangeiras: 78, receita: 3520 },
+];
+
+// Simple Bar Chart Component
+const SalesChart = ({ data }: { data: typeof salesData }) => {
+  const maxReceita = Math.max(...data.map(d => d.receita));
+  
+  return (
+    <div className="space-y-3">
+      {data.map((item) => (
+        <div key={item.mes} className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground w-8">{item.mes}</span>
+          <div className="flex-1 flex gap-1 h-6">
+            <div 
+              className="bg-primary/80 rounded-sm flex items-center justify-end pr-1"
+              style={{ width: `${(item.brasileiras / (item.brasileiras + item.estrangeiras)) * 100}%` }}
+            >
+              <span className="text-[10px] text-primary-foreground font-medium">{item.brasileiras}</span>
+            </div>
+            <div 
+              className="bg-primary/40 rounded-sm flex items-center justify-end pr-1"
+              style={{ width: `${(item.estrangeiras / (item.brasileiras + item.estrangeiras)) * 100}%` }}
+            >
+              <span className="text-[10px] text-foreground font-medium">{item.estrangeiras}</span>
+            </div>
+          </div>
+          <span className="text-xs font-medium text-foreground w-20 text-right">
+            R$ {item.receita.toLocaleString('pt-BR')}
+          </span>
+        </div>
+      ))}
+      <div className="flex items-center gap-4 pt-2 border-t border-border">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-primary/80 rounded-sm" />
+          <span className="text-xs text-muted-foreground">Brasileiras</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-primary/40 rounded-sm" />
+          <span className="text-xs text-muted-foreground">Estrangeiras</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Dashboard Overview
 const DashboardSection = () => {
+  // Calculate totals from sales data
+  const totalBrasileiras = salesData.reduce((acc, d) => acc + d.brasileiras, 0);
+  const totalEstrangeiras = salesData.reduce((acc, d) => acc + d.estrangeiras, 0);
+  const totalSessions = totalBrasileiras + totalEstrangeiras;
+  
+  const receitaBrasileiras = totalBrasileiras * SESSION_PRICES.brasileiras.venda;
+  const receitaEstrangeiras = totalEstrangeiras * SESSION_PRICES.estrangeiras.venda;
+  const receitaTotal = receitaBrasileiras + receitaEstrangeiras;
+  
+  const custoBrasileiras = totalBrasileiras * SESSION_PRICES.brasileiras.custo;
+  const custoEstrangeiras = totalEstrangeiras * SESSION_PRICES.estrangeiras.custo;
+  const custoTotal = custoBrasileiras + custoEstrangeiras;
+  
+  const lucroLiquido = receitaTotal - custoTotal;
+
   const recentOrders = [
-    { id: "#ORD-001", user: "João Silva", amount: "R$ 199,90", status: "completed", date: "14 Dez" },
-    { id: "#ORD-002", user: "Maria Santos", amount: "R$ 89,90", status: "pending", date: "14 Dez" },
-    { id: "#ORD-003", user: "Pedro Costa", amount: "R$ 49,90", status: "completed", date: "13 Dez" },
-    { id: "#ORD-004", user: "Ana Lima", amount: "R$ 299,90", status: "failed", date: "13 Dez" },
+    { id: "#ORD-001", user: "João Silva", type: "Brasileiras", qty: 10, amount: "R$ 250,00", status: "completed", date: "14 Dez" },
+    { id: "#ORD-002", user: "Maria Santos", type: "Estrangeiras", qty: 5, amount: "R$ 75,00", status: "pending", date: "14 Dez" },
+    { id: "#ORD-003", user: "Pedro Costa", type: "Brasileiras", qty: 3, amount: "R$ 75,00", status: "completed", date: "13 Dez" },
+    { id: "#ORD-004", user: "Ana Lima", type: "Estrangeiras", qty: 20, amount: "R$ 300,00", status: "failed", date: "13 Dez" },
   ];
 
   const statusStyles = {
@@ -108,11 +181,93 @@ const DashboardSection = () => {
         <p className="text-sm text-muted-foreground">Visão geral do sistema</p>
       </div>
 
+      {/* Main Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Usuários Totais" value="1,234" change="+12%" icon={Users} />
-        <StatCard title="Receita Mensal" value="R$ 45.890" change="+8.2%" icon={DollarSign} />
-        <StatCard title="Pedidos Hoje" value="89" change="+24%" icon={ShoppingCart} />
-        <StatCard title="Sessions Ativas" value="456" change="-3%" icon={Activity} trend="down" />
+        <StatCard 
+          title="Sessions Vendidas" 
+          value={totalSessions.toLocaleString('pt-BR')} 
+          change="+18%" 
+          icon={Package} 
+        />
+        <StatCard 
+          title="Receita Total" 
+          value={`R$ ${receitaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+          change="+8.2%" 
+          icon={DollarSign} 
+        />
+        <StatCard 
+          title="Lucro Líquido" 
+          value={`R$ ${lucroLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+          change="+15%" 
+          icon={TrendingUp} 
+        />
+      </div>
+
+      {/* Pricing Info Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+              <Globe className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-medium text-foreground">Sessions Brasileiras</h3>
+              <p className="text-xs text-muted-foreground">Preço fixo por tipo</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="bg-background/50 rounded-md p-2">
+              <p className="text-lg font-bold text-foreground">R$ {SESSION_PRICES.brasileiras.venda.toFixed(2)}</p>
+              <p className="text-[10px] text-muted-foreground">Venda</p>
+            </div>
+            <div className="bg-background/50 rounded-md p-2">
+              <p className="text-lg font-bold text-muted-foreground">R$ {SESSION_PRICES.brasileiras.custo.toFixed(2)}</p>
+              <p className="text-[10px] text-muted-foreground">Custo</p>
+            </div>
+            <div className="bg-background/50 rounded-md p-2">
+              <p className="text-lg font-bold text-success">R$ {(SESSION_PRICES.brasileiras.venda - SESSION_PRICES.brasileiras.custo).toFixed(2)}</p>
+              <p className="text-[10px] text-muted-foreground">Lucro</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+              <Globe className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-medium text-foreground">Sessions Estrangeiras</h3>
+              <p className="text-xs text-muted-foreground">Preço fixo por tipo</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="bg-background/50 rounded-md p-2">
+              <p className="text-lg font-bold text-foreground">R$ {SESSION_PRICES.estrangeiras.venda.toFixed(2)}</p>
+              <p className="text-[10px] text-muted-foreground">Venda</p>
+            </div>
+            <div className="bg-background/50 rounded-md p-2">
+              <p className="text-lg font-bold text-muted-foreground">R$ {SESSION_PRICES.estrangeiras.custo.toFixed(2)}</p>
+              <p className="text-[10px] text-muted-foreground">Custo</p>
+            </div>
+            <div className="bg-background/50 rounded-md p-2">
+              <p className="text-lg font-bold text-success">R$ {(SESSION_PRICES.estrangeiras.venda - SESSION_PRICES.estrangeiras.custo).toFixed(2)}</p>
+              <p className="text-[10px] text-muted-foreground">Lucro</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sales Chart */}
+      <div className="bg-card border border-border rounded-lg p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="font-semibold text-foreground">Vendas por Mês</h2>
+            <p className="text-xs text-muted-foreground">Sessions vendidas nos últimos 6 meses</p>
+          </div>
+        </div>
+        <SalesChart data={salesData} />
       </div>
 
       {/* Recent Orders */}
@@ -127,6 +282,8 @@ const DashboardSection = () => {
               <tr className="border-b border-border">
                 <th className="text-left text-xs font-medium text-muted-foreground p-4">Pedido</th>
                 <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
+                <th className="text-left text-xs font-medium text-muted-foreground p-4">Tipo</th>
+                <th className="text-left text-xs font-medium text-muted-foreground p-4">Qtd</th>
                 <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
                 <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
                 <th className="text-left text-xs font-medium text-muted-foreground p-4">Data</th>
@@ -137,6 +294,8 @@ const DashboardSection = () => {
                 <tr key={order.id} className="border-b border-border/50 last:border-0">
                   <td className="p-4 text-sm font-medium text-foreground">{order.id}</td>
                   <td className="p-4 text-sm text-muted-foreground">{order.user}</td>
+                  <td className="p-4 text-sm text-muted-foreground">{order.type}</td>
+                  <td className="p-4 text-sm text-foreground">{order.qty}</td>
                   <td className="p-4 text-sm font-medium text-foreground">{order.amount}</td>
                   <td className="p-4">
                     <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[order.status as keyof typeof statusStyles])}>
