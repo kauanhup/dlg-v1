@@ -73,15 +73,22 @@ const Login = () => {
     // Simular login (depois substituir por auth real)
     localStorage.setItem("isLoggedIn", "true");
     
+    // Check if admin credentials
+    const isAdmin = email.toLowerCase() === "admin@swextractor.com" && password === "admin123";
+    
     if (isLogin) {
-      toast.success("Login realizado!", "Bem-vindo de volta.");
+      toast.success("Login realizado!", isAdmin ? "Bem-vindo, Administrador." : "Bem-vindo de volta.");
     } else {
       toast.success("Conta criada!", "Sua conta foi criada com sucesso.");
     }
 
-    // Navigate to redirect URL or dashboard after a short delay
+    // Navigate to admin or user dashboard
     setTimeout(() => {
-      navigate(redirectUrl);
+      if (isAdmin) {
+        navigate("/admin");
+      } else {
+        navigate(redirectUrl);
+      }
     }, 1000);
   };
 
