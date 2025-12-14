@@ -65,7 +65,7 @@ export const UserProfileSidebar = React.forwardRef<HTMLDivElement, UserProfileSi
                 <button className="relative group focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-md">
                   {selectedAvatar ? (
                     <div className="h-10 w-10 rounded-md overflow-hidden border border-border bg-muted flex items-center justify-center transition-transform group-hover:scale-105">
-                      <div className="scale-[1.1]">{selectedAvatar.svg}</div>
+                      <div className="w-10 h-10 flex items-center justify-center [&>svg]:w-10 [&>svg]:h-10">{selectedAvatar.svg}</div>
                     </div>
                   ) : user.avatarUrl ? (
                     <img
