@@ -1006,6 +1006,8 @@ const SessionsSection = () => {
     brasileiras: "9.98",
     estrangeiras: "5.98"
   });
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const fileInputRef = useState<HTMLInputElement | null>(null);
 
   const sessionsStats = {
     total: 231,
@@ -1016,12 +1018,55 @@ const SessionsSection = () => {
     estrangeiras: { total: 101, disponiveis: 57, vendidas: 36 }
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const fileNames = Array.from(files).map(f => f.name);
+      setUploadedFiles(prev => [...prev, ...fileNames]);
+      // Reset input
+      e.target.value = '';
+    }
+  };
+
   return (
     <motion.div {...fadeIn} className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">Sessions</h1>
-        <p className="text-sm text-muted-foreground">Gerenciar estoque de sessions importadas (.session)</p>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-xl font-semibold text-foreground">Sessions</h1>
+          <p className="text-sm text-muted-foreground">Gerenciar estoque de sessions importadas (.session)</p>
+        </div>
+        <div>
+          <input
+            type="file"
+            accept=".session"
+            multiple
+            onChange={handleFileUpload}
+            className="hidden"
+            id="session-upload"
+          />
+          <label htmlFor="session-upload">
+            <Button asChild size="sm">
+              <span>
+                <Plus className="w-4 h-4 mr-2" /> Importar Sessions
+              </span>
+            </Button>
+          </label>
+        </div>
       </div>
+
+      {/* Uploaded Files Feedback */}
+      {uploadedFiles.length > 0 && (
+        <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+          <p className="text-sm text-success font-medium mb-2">Arquivos importados:</p>
+          <div className="flex flex-wrap gap-2">
+            {uploadedFiles.map((file, idx) => (
+              <span key={idx} className="text-xs bg-success/20 text-success px-2 py-1 rounded-md">
+                {file}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
