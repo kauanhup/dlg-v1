@@ -585,7 +585,7 @@ const Admin = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [selectedAvatarId] = useState<number>(1);
+  const [selectedAvatarId, setSelectedAvatarId] = useState<number>(1);
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
@@ -651,6 +651,7 @@ const Admin = () => {
           logoutItem={logoutItem}
           activeIndex={sidebarActiveIndex >= 0 ? sidebarActiveIndex : 0}
           onActiveChange={handleSidebarChange}
+          onAvatarChange={(avatar) => setSelectedAvatarId(avatar.id)}
           className="h-full border-r-0"
         />
       </aside>
@@ -708,6 +709,7 @@ const Admin = () => {
                   handleSidebarChange(index);
                   setIsMobileSidebarOpen(false);
                 }}
+                onAvatarChange={(avatar) => setSelectedAvatarId(avatar.id)}
                 className="h-full border-r-0"
               />
             </motion.aside>
