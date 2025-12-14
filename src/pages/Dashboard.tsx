@@ -822,13 +822,13 @@ const Dashboard = () => {
             {/* Profile Card */}
             <div className="bg-card border border-border rounded-md p-5">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="w-16 h-16 rounded-md overflow-hidden bg-muted flex items-center justify-center border border-border flex-shrink-0">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-muted flex items-center justify-center border border-border flex-shrink-0">
                   {selectedAvatarId ? (
-                    <div className="w-16 h-16 flex items-center justify-center [&>svg]:w-16 [&>svg]:h-16">
+                    <div className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full">
                       {avatars.find(a => a.id === selectedAvatarId)?.svg}
                     </div>
                   ) : (
-                    <div className="w-16 h-16 bg-primary flex items-center justify-center">
+                    <div className="w-full h-full bg-primary flex items-center justify-center">
                       <span className="text-xl font-semibold text-primary-foreground">{user.initials}</span>
                     </div>
                   )}
@@ -849,12 +849,13 @@ const Dashboard = () => {
                   Informações
                 </h3>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Nome</p>
-                      <p className="text-sm text-foreground mt-0.5">{user.name}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" className="h-8 text-xs">Editar</Button>
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-muted-foreground">Nome</label>
+                    <input 
+                      type="text"
+                      defaultValue={user.name}
+                      className="w-full h-9 px-3 text-sm bg-muted/50 border border-border rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
                   </div>
                   <div className="p-3 bg-muted/50 rounded-md">
                     <div>
@@ -874,6 +875,7 @@ const Dashboard = () => {
                       <p className="text-sm text-foreground mt-0.5">Dezembro 2024</p>
                     </div>
                   </div>
+                  <Button size="sm" className="w-full h-8">Salvar alterações</Button>
                 </div>
               </div>
 
