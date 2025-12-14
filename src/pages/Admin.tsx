@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { UserProfileSidebar } from "@/components/ui/menu";
 import { avatars } from "@/components/ui/avatar-picker";
@@ -36,7 +36,9 @@ import {
   ChevronDown,
   Shield,
   Ban,
-  RefreshCw
+  RefreshCw,
+  Menu,
+  X
 } from "lucide-react";
 
 const fadeIn = {
@@ -582,6 +584,7 @@ const SettingsSection = () => {
 const Admin = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [selectedAvatarId] = useState<number>(1);
 
   useEffect(() => {
@@ -653,8 +656,15 @@ const Admin = () => {
       </aside>
 
       {/* Mobile/Tablet Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-card border-b border-border">
         <div className="flex items-center justify-between h-14 px-4">
+          <button
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="w-9 h-9 rounded-md flex items-center justify-center hover:bg-muted transition-colors"
+          >
+            <Menu className="w-5 h-5 text-foreground" />
+          </button>
+          
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
               <LayoutDashboard className="w-4 h-4 text-primary-foreground" />
@@ -662,54 +672,57 @@ const Admin = () => {
             <span className="text-sm font-semibold text-foreground">Admin</span>
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="w-9 h-9 rounded-md overflow-hidden bg-muted border border-border flex items-center justify-center hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50">
-                {selectedAvatarId ? (
-                  <div className="w-9 h-9 flex items-center justify-center [&>svg]:w-9 [&>svg]:h-9">
-                    {avatars.find(a => a.id === selectedAvatarId)?.svg}
-                  </div>
-                ) : (
-                  <span className="text-xs font-semibold text-primary-foreground bg-primary w-full h-full flex items-center justify-center">{adminUser.initials}</span>
-                )}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-card border border-border">
-              <DropdownMenuLabel className="font-normal px-3 py-2">
-                <p className="text-sm font-medium text-foreground">{adminUser.name}</p>
-                <p className="text-xs text-muted-foreground">{adminUser.email}</p>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setActiveTab("dashboard")} className="px-3 py-2 cursor-pointer">
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                Dashboard
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveTab("users")} className="px-3 py-2 cursor-pointer">
-                <Users className="mr-2 h-4 w-4" />
-                Usuários
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveTab("orders")} className="px-3 py-2 cursor-pointer">
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                Pedidos
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveTab("sessions")} className="px-3 py-2 cursor-pointer">
-                <Globe className="mr-2 h-4 w-4" />
-                Sessions
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setActiveTab("settings")} className="px-3 py-2 cursor-pointer">
-                <Settings className="mr-2 h-4 w-4" />
-                Configurações
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/login")} className="px-3 py-2 cursor-pointer text-destructive focus:text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sair
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="w-9 h-9" /> {/* Spacer for centering */}
         </div>
       </header>
+
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {isMobileSidebarOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="lg:hidden fixed inset-0 bg-black/50 z-50"
+              onClick={() => setIsMobileSidebarOpen(false)}
+            />
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="lg:hidden fixed left-0 top-0 bottom-0 w-[280px] z-50 bg-card border-r border-border"
+            >
+              <div className="absolute top-3 right-3">
+                <button
+                  onClick={() => setIsMobileSidebarOpen(false)}
+                  className="w-8 h-8 rounded-md flex items-center justify-center hover:bg-muted transition-colors"
+                >
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
+              <UserProfileSidebar 
+                user={{
+                  name: adminUser.name,
+                  email: adminUser.email,
+                  initials: adminUser.initials,
+                  selectedAvatarId: selectedAvatarId
+                }}
+                navItems={profileNavItems}
+                logoutItem={logoutItem}
+                activeIndex={sidebarActiveIndex >= 0 ? sidebarActiveIndex : 0}
+                onActiveChange={(index) => {
+                  handleSidebarChange(index);
+                  setIsMobileSidebarOpen(false);
+                }}
+                className="h-full border-r-0"
+              />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
       <main className="flex-1 pt-14 lg:pt-0 min-w-0">
