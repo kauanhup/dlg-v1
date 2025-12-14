@@ -116,8 +116,13 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
+      {/* Background Effects */}
+      <div className="fixed inset-0 bg-gradient-mesh pointer-events-none" />
+      <div className="fixed top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
+      
       {/* Sidebar Desktop */}
-      <aside className="hidden lg:flex flex-col w-[280px] sticky top-0 h-screen">
+      <aside className="hidden lg:flex flex-col w-[300px] sticky top-0 h-screen">
         <SidebarWithSubmenu 
           user={user}
           navigation={navigation}
@@ -129,18 +134,18 @@ const Dashboard = () => {
       </aside>
 
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
-        <div className="flex items-center justify-between h-14 px-4">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <Zap className="w-4 h-4 text-primary-foreground" />
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 glass-strong">
+        <div className="flex items-center justify-between h-16 px-4">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center glow-sm">
+              <Zap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-display font-bold text-foreground">SWEX</span>
+            <span className="font-display font-bold text-foreground text-lg">SWEX</span>
           </Link>
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-9 w-9 p-0"
+            className="h-10 w-10 p-0 rounded-xl hover:bg-secondary/60"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -152,7 +157,7 @@ const Dashboard = () => {
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="absolute top-14 left-0 right-0 bg-background border-b border-border p-3 space-y-1"
+            className="absolute top-16 left-0 right-0 glass-strong border-t border-border/50 p-4 space-y-2"
           >
             {[...navigation, ...footerNavigation].map((item, index) => (
               <button
@@ -162,10 +167,10 @@ const Dashboard = () => {
                   setMobileMenuOpen(false);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
                   item.isActive 
-                    ? "bg-primary text-primary-foreground" 
-                    : "text-muted-foreground hover:bg-secondary/50"
+                    ? "bg-gradient-primary text-primary-foreground shadow-lg glow-sm" 
+                    : "text-muted-foreground hover:bg-secondary/60"
                 )}
               >
                 <span className="w-5 h-5">{item.icon}</span>
@@ -177,88 +182,104 @@ const Dashboard = () => {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 lg:pt-0 pt-14">
-        {/* Content */}
-        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 lg:pt-0 pt-16 relative z-10">
+        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 py-8">
         
         {/* Licenças */}
         {activeTab === "licencas" && (
-          <motion.div {...fadeIn} className="max-w-4xl mx-auto space-y-6">
-            <div>
-              <h1 className="text-xl font-display font-bold text-foreground">Minhas Licenças</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Gerencie suas licenças ativas</p>
+          <motion.div {...fadeIn} className="max-w-5xl mx-auto space-y-8">
+            {/* Header */}
+            <div className="section-header">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-primary flex items-center justify-center glow-sm">
+                <Key className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="section-title">Minhas Licenças</h1>
+                <p className="section-subtitle">Gerencie suas licenças ativas</p>
+              </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: "Status", value: "Ativa", icon: CheckCircle, color: "text-success" },
+                { label: "Plano", value: userLicense.plan, icon: Zap, color: "text-primary" },
+                { label: "Dias Restantes", value: userLicense.daysLeft, icon: Clock, color: "text-warning" },
+                { label: "Ativada em", value: userLicense.activatedAt, icon: Activity, color: "text-muted-foreground" },
+              ].map((stat, i) => (
+                <div key={i} className="stat-card group">
+                  <div className="flex items-center gap-2 mb-3">
+                    <stat.icon className={cn("w-4 h-4", stat.color)} />
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">{stat.label}</span>
+                  </div>
+                  <p className="text-xl font-display font-bold text-foreground">{stat.value}</p>
+                </div>
+              ))}
             </div>
 
             {/* Main License Card */}
-            <div className="bg-card border border-border rounded-2xl p-5 space-y-5">
+            <div className="glass rounded-3xl p-6 space-y-6">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 bg-gradient-primary rounded-xl flex items-center justify-center">
-                    <Key className="w-5 h-5 text-primary-foreground" />
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-gradient-primary rounded-2xl flex items-center justify-center glow-md">
+                    <Key className="w-7 h-7 text-primary-foreground" />
                   </div>
                   <div>
-                    <h3 className="font-display font-bold text-foreground">Plano {userLicense.plan}</h3>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <CheckCircle className="w-3.5 h-3.5 text-success" />
-                      <span className="text-xs text-success font-medium">Ativa</span>
+                    <h3 className="text-lg font-display font-bold text-foreground">Plano {userLicense.plan}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                      <span className="text-sm text-success font-medium">Licença Ativa</span>
                     </div>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground">
-                  <Copy className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline text-xs">Copiar</span>
+                <Button variant="outline" size="sm" className="h-10 gap-2 rounded-xl border-border/50 hover:bg-secondary/60">
+                  <Copy className="w-4 h-4" />
+                  <span className="hidden sm:inline">Copiar Chave</span>
                 </Button>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-secondary/40 rounded-lg p-3">
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Chave</p>
-                  <p className="text-xs font-mono text-foreground mt-1 truncate">{userLicense.key}</p>
-                </div>
-                <div className="bg-secondary/40 rounded-lg p-3">
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Ativada</p>
-                  <p className="text-xs text-foreground mt-1">{userLicense.activatedAt}</p>
-                </div>
-                <div className="bg-secondary/40 rounded-lg p-3">
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Expira</p>
-                  <p className="text-xs text-foreground mt-1">{userLicense.expiresAt}</p>
-                </div>
+              <div className="bg-secondary/30 rounded-2xl p-4 font-mono text-sm text-foreground/80 tracking-wider">
+                {userLicense.key}
               </div>
 
               <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-muted-foreground">Tempo restante</span>
-                  <span className="text-foreground font-medium">{userLicense.daysLeft} dias</span>
+                <div className="flex justify-between text-sm mb-3">
+                  <span className="text-muted-foreground">Progresso do plano</span>
+                  <span className="text-foreground font-medium">{userLicense.daysLeft} dias restantes</span>
                 </div>
-                <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                <div className="h-3 bg-secondary/50 rounded-full overflow-hidden">
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${(userLicense.daysLeft / 30) * 100}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    transition={{ duration: 1, ease: "easeOut" }}
                     className="h-full bg-gradient-primary rounded-full"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-1">
-                <Button size="sm" className="flex-1 h-9 bg-gradient-primary hover:opacity-90 gap-1.5">
-                  <Zap className="w-3.5 h-3.5" />
-                  Renovar
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <Button className="flex-1 h-12 bg-gradient-primary hover:opacity-90 gap-2 rounded-xl glow-sm text-base font-semibold">
+                  <Zap className="w-5 h-5" />
+                  Renovar Licença
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1 h-9 gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
+                <Button variant="outline" className="flex-1 h-12 gap-2 rounded-xl border-warning/30 text-warning hover:bg-warning/10 hover:text-warning">
+                  <Sparkles className="w-5 h-5" />
                   Upgrade Vitalício
                 </Button>
               </div>
             </div>
 
-            <div className="bg-warning/5 border border-warning/20 rounded-xl p-4 flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="w-4 h-4 text-warning" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Licença expira em breve</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Renove agora e ganhe 10% de desconto.</p>
+            {/* Warning Banner */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-warning/10 via-warning/5 to-transparent border border-warning/20 p-5">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-warning/10 rounded-full blur-2xl" />
+              <div className="relative flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-warning/15 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-warning" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-foreground">Sua licença expira em breve</p>
+                  <p className="text-sm text-muted-foreground mt-1">Renove agora e ganhe 10% de desconto exclusivo.</p>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -266,72 +287,87 @@ const Dashboard = () => {
 
         {/* Números */}
         {activeTab === "numeros" && (
-          <motion.div {...fadeIn} className="max-w-4xl mx-auto space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-display font-bold text-foreground">Números</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">Gerencie seus números</p>
+          <motion.div {...fadeIn} className="max-w-5xl mx-auto space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="section-header mb-0">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-success to-success/70 flex items-center justify-center">
+                  <Phone className="w-6 h-6 text-success-foreground" />
+                </div>
+                <div>
+                  <h1 className="section-title">Meus Números</h1>
+                  <p className="section-subtitle">Gerencie seus números ativos</p>
+                </div>
               </div>
-              <Button size="sm" className="h-8 gap-1.5 bg-gradient-primary hover:opacity-90">
-                <Plus className="w-3.5 h-3.5" />
-                Adicionar
+              <Button className="h-11 gap-2 bg-gradient-primary hover:opacity-90 rounded-xl glow-sm">
+                <Plus className="w-4 h-4" />
+                Adicionar Número
               </Button>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               {sessions.map((session) => (
-                <div 
+                <motion.div 
                   key={session.id}
-                  className="bg-card border border-border rounded-xl p-4 flex items-center justify-between hover:border-border/80 transition-colors"
+                  whileHover={{ scale: 1.01 }}
+                  className="glass rounded-2xl p-5 flex items-center justify-between cursor-pointer group"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-success/10 rounded-lg flex items-center justify-center">
-                      <Phone className="w-4 h-4 text-success" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-success/15 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Phone className="w-5 h-5 text-success" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground">{session.number}</p>
-                      <p className="text-xs text-muted-foreground">{session.addedAt}</p>
+                      <p className="text-base font-semibold text-foreground">{session.number}</p>
+                      <p className="text-sm text-muted-foreground">Adicionado em {session.addedAt}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 bg-success/10 text-success rounded text-[10px] font-medium uppercase">
-                      Ativo
+                  <div className="flex items-center gap-3">
+                    <span className="px-3 py-1 bg-success/15 text-success rounded-lg text-xs font-semibold uppercase tracking-wider">
+                      Conectado
                     </span>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all" />
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
 
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-foreground">Precisa de mais números?</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Adicione com desconto especial</p>
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 p-6">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
+              <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <p className="text-base font-semibold text-foreground">Precisa de mais números?</p>
+                  <p className="text-sm text-muted-foreground mt-1">Adicione com desconto especial de até 30%</p>
+                </div>
+                <Button variant="outline" className="h-11 rounded-xl border-primary/30 hover:bg-primary/10" onClick={() => setActiveTab("comprar")}>
+                  Ver Pacotes
+                </Button>
               </div>
-              <Button size="sm" variant="outline" className="h-8" onClick={() => setActiveTab("comprar")}>
-                Ver pacotes
-              </Button>
             </div>
           </motion.div>
         )}
 
         {/* Comprar */}
         {activeTab === "comprar" && (
-          <motion.div {...fadeIn} className="max-w-4xl mx-auto space-y-6">
-            <div>
-              <h1 className="text-xl font-display font-bold text-foreground">Loja</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Expanda seus recursos</p>
+          <motion.div {...fadeIn} className="max-w-5xl mx-auto space-y-8">
+            <div className="section-header">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-primary flex items-center justify-center glow-sm">
+                <CreditCard className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="section-title">Loja</h1>
+                <p className="section-subtitle">Expanda seus recursos e capacidades</p>
+              </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Phone className="w-5 h-5 text-primary" />
+            <div className="grid sm:grid-cols-2 gap-6">
+              {/* Pacote Números */}
+              <div className="glass rounded-3xl p-6 space-y-5 card-hover">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-primary/15 rounded-2xl flex items-center justify-center">
+                    <Phone className="w-7 h-7 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-display font-bold text-foreground text-sm">Pacote de Números</h3>
-                    <p className="text-xs text-muted-foreground">Adicione mais números</p>
+                    <h3 className="text-lg font-display font-bold text-foreground">Pacote de Números</h3>
+                    <p className="text-sm text-muted-foreground">Adicione mais números à sua conta</p>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -342,33 +378,35 @@ const Dashboard = () => {
                   ].map((item, i) => (
                     <div 
                       key={i}
-                      className={`flex items-center justify-between p-2.5 rounded-lg text-sm cursor-pointer transition-colors ${
+                      className={cn(
+                        "flex items-center justify-between p-4 rounded-xl text-sm cursor-pointer transition-all",
                         item.popular 
-                          ? "bg-primary/10 border border-primary/20" 
-                          : "bg-secondary/30 hover:bg-secondary/50"
-                      }`}
+                          ? "bg-primary/15 border border-primary/30 hover:bg-primary/20" 
+                          : "bg-secondary/40 hover:bg-secondary/60"
+                      )}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-foreground text-xs">{item.qty}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-foreground font-medium">{item.qty}</span>
                         {item.popular && (
-                          <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded font-medium">TOP</span>
+                          <span className="text-[10px] bg-primary/30 text-primary px-2 py-1 rounded-md font-bold uppercase">Mais Popular</span>
                         )}
                       </div>
-                      <span className="font-bold text-primary text-xs">{item.price}</span>
+                      <span className="font-bold text-primary text-base">{item.price}</span>
                     </div>
                   ))}
                 </div>
-                <Button size="sm" className="w-full h-8 bg-gradient-primary hover:opacity-90">Comprar</Button>
+                <Button className="w-full h-12 bg-gradient-primary hover:opacity-90 rounded-xl text-base font-semibold">Comprar</Button>
               </div>
 
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-accent" />
+              {/* Pacote Sessions */}
+              <div className="glass rounded-3xl p-6 space-y-5 card-hover">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-accent/15 rounded-2xl flex items-center justify-center">
+                    <Zap className="w-7 h-7 text-accent" />
                   </div>
                   <div>
-                    <h3 className="font-display font-bold text-foreground text-sm">Pacote de Sessions</h3>
-                    <p className="text-xs text-muted-foreground">Mais sessões simultâneas</p>
+                    <h3 className="text-lg font-display font-bold text-foreground">Pacote de Sessions</h3>
+                    <p className="text-sm text-muted-foreground">Mais sessões simultâneas</p>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -379,45 +417,49 @@ const Dashboard = () => {
                   ].map((item, i) => (
                     <div 
                       key={i}
-                      className={`flex items-center justify-between p-2.5 rounded-lg text-sm cursor-pointer transition-colors ${
+                      className={cn(
+                        "flex items-center justify-between p-4 rounded-xl text-sm cursor-pointer transition-all",
                         item.popular 
-                          ? "bg-primary/10 border border-primary/20" 
-                          : "bg-secondary/30 hover:bg-secondary/50"
-                      }`}
+                          ? "bg-primary/15 border border-primary/30 hover:bg-primary/20" 
+                          : "bg-secondary/40 hover:bg-secondary/60"
+                      )}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-foreground text-xs">{item.qty}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-foreground font-medium">{item.qty}</span>
                         {item.popular && (
-                          <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded font-medium">MELHOR</span>
+                          <span className="text-[10px] bg-primary/30 text-primary px-2 py-1 rounded-md font-bold uppercase">Melhor Valor</span>
                         )}
                       </div>
-                      <span className="font-bold text-primary text-xs">{item.price}</span>
+                      <span className="font-bold text-primary text-base">{item.price}</span>
                     </div>
                   ))}
                 </div>
-                <Button size="sm" className="w-full h-8 bg-gradient-primary hover:opacity-90">Comprar</Button>
+                <Button className="w-full h-12 bg-gradient-primary hover:opacity-90 rounded-xl text-base font-semibold">Comprar</Button>
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-warning/10 to-transparent border border-warning/20 rounded-xl p-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-warning" />
+            {/* Upgrade Vitalício */}
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-warning/15 via-warning/10 to-transparent border border-warning/30 p-8">
+              <div className="absolute top-0 right-0 w-60 h-60 bg-warning/15 rounded-full blur-3xl" />
+              <div className="absolute bottom-0 left-1/2 w-40 h-40 bg-warning/10 rounded-full blur-2xl" />
+              <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div className="flex items-center gap-5">
+                  <div className="w-16 h-16 bg-warning/20 rounded-2xl flex items-center justify-center">
+                    <Shield className="w-8 h-8 text-warning" />
                   </div>
                   <div>
-                    <h3 className="font-display font-bold text-foreground text-sm">Upgrade Vitalício</h3>
-                    <p className="text-xs text-muted-foreground">Pague uma vez, use para sempre</p>
+                    <h3 className="text-xl font-display font-bold text-foreground">Upgrade Vitalício</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Pague uma vez, use para sempre. Sem mensalidades.</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-6">
                   <div className="text-right">
-                    <p className="text-lg font-display font-bold text-warning">R$ 1.997</p>
-                    <p className="text-[10px] text-muted-foreground">pagamento único</p>
+                    <p className="text-3xl font-display font-bold text-warning">R$ 1.997</p>
+                    <p className="text-xs text-muted-foreground">pagamento único</p>
                   </div>
                   <Link to="/comprar">
-                    <Button size="sm" className="h-8 bg-warning hover:bg-warning/90 text-warning-foreground gap-1">
-                      Ver <ArrowUpRight className="w-3 h-3" />
+                    <Button className="h-12 px-6 bg-warning hover:bg-warning/90 text-warning-foreground gap-2 rounded-xl font-semibold">
+                      Ver Detalhes <ArrowUpRight className="w-4 h-4" />
                     </Button>
                   </Link>
                 </div>
