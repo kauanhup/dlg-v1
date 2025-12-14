@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { SidebarWithSubmenu } from "@/components/ui/sidebar-with-submenu";
+import { UserProfileSidebar } from "@/components/ui/menu";
 import { MenuBar } from "@/components/ui/glow-menu";
 import { cn } from "@/lib/utils";
 import { 
@@ -44,8 +44,8 @@ import {
   Sun,
   Menu,
   X,
-  LayoutDashboard,
-  Receipt
+  Star,
+  Heart
 } from "lucide-react";
 
 const fadeIn = {
@@ -92,39 +92,33 @@ const Dashboard = () => {
     plan: "Plano Pro"
   };
 
-  const navigation = [
-    { name: "Licenças", icon: <Key className="h-full w-full" />, onClick: () => setActiveTab("licencas"), isActive: activeTab === "licencas" },
-    { name: "Números", icon: <Phone className="h-full w-full" />, onClick: () => setActiveTab("numeros"), isActive: activeTab === "numeros" },
-    { name: "Loja", icon: <CreditCard className="h-full w-full" />, onClick: () => setActiveTab("comprar"), isActive: activeTab === "comprar" },
+  const profileNavItems = [
+    { label: "Meu Perfil", icon: <User className="h-full w-full" />, onClick: () => setActiveTab("perfil") },
+    { label: "Minhas Compras", icon: <CreditCard className="h-full w-full" />, onClick: () => setActiveTab("comprar") },
+    { label: "Favoritos", icon: <Heart className="h-full w-full" />, onClick: () => {} },
+    { label: "Avaliações", icon: <Star className="h-full w-full" />, onClick: () => {} },
+    { label: "Configurações", icon: <Settings className="h-full w-full" />, onClick: () => setActiveTab("configuracoes"), isSeparator: true },
   ];
 
-  const footerNavigation = [
-    { name: "Ajuda", icon: <HelpCircle className="h-full w-full" />, onClick: () => setActiveTab("ajuda"), isActive: activeTab === "ajuda" },
-    { name: "Configurações", icon: <Settings className="h-full w-full" />, onClick: () => setActiveTab("configuracoes"), isActive: activeTab === "configuracoes" },
-  ];
-
-  const nestedNavItems = [
-    {
-      label: "Conta",
-      icon: <User className="h-full w-full" />,
-      items: [
-        { name: "Perfil", onClick: () => setActiveTab("perfil"), isActive: activeTab === "perfil" },
-        { name: "Segurança", onClick: () => setActiveTab("configuracoes"), isActive: false },
-        { name: "Notificações", onClick: () => setActiveTab("configuracoes"), isActive: false },
-      ]
-    }
-  ];
+  const logoutItem = {
+    label: "Sair",
+    icon: <LogOut className="h-full w-full" />,
+    onClick: () => navigate("/"),
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Sidebar Desktop */}
-      <aside className="hidden lg:flex flex-col w-[280px] sticky top-0 h-screen">
-        <SidebarWithSubmenu 
-          user={user}
-          navigation={navigation}
-          footerNavigation={footerNavigation}
-          nestedNavItems={nestedNavItems}
-          onLogout={() => navigate("/")}
+      {/* Sidebar Desktop - Profile Only */}
+      <aside className="hidden lg:flex flex-col w-[280px] sticky top-0 h-screen p-4">
+        <UserProfileSidebar 
+          user={{
+            name: user.name,
+            email: user.email,
+            initials: user.initials,
+            avatarUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=60"
+          }}
+          navItems={profileNavItems}
+          logoutItem={logoutItem}
           className="h-full"
         />
       </aside>
@@ -155,22 +149,22 @@ const Dashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             className="absolute top-14 left-0 right-0 bg-background border-b border-border p-3 space-y-1"
           >
-            {[...navigation, ...footerNavigation].map((item, index) => (
+            {[
+              { label: "Licenças", icon: <Key className="h-full w-full" />, onClick: () => setActiveTab("licencas") },
+              { label: "Números", icon: <Phone className="h-full w-full" />, onClick: () => setActiveTab("numeros") },
+              { label: "Loja", icon: <CreditCard className="h-full w-full" />, onClick: () => setActiveTab("comprar") },
+              { label: "Configurações", icon: <Settings className="h-full w-full" />, onClick: () => setActiveTab("configuracoes") },
+            ].map((item, index) => (
               <button
                 key={index}
                 onClick={() => {
                   item.onClick?.();
                   setMobileMenuOpen(false);
                 }}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
-                  item.isActive 
-                    ? "bg-primary text-primary-foreground" 
-                    : "text-muted-foreground hover:bg-secondary/50"
-                )}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-muted-foreground hover:bg-secondary/50"
               >
                 <span className="w-5 h-5">{item.icon}</span>
-                <span>{item.name}</span>
+                <span>{item.label}</span>
               </button>
             ))}
           </motion.div>
