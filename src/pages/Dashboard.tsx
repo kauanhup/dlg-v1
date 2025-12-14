@@ -418,7 +418,7 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="flex-1 pt-14 lg:pt-0 min-w-0">
         {/* Desktop Header */}
-        <header className="hidden lg:flex items-center justify-between h-14 px-6 border-b border-border bg-card sticky top-0 z-40">
+        <header className="hidden lg:flex items-center justify-center h-14 px-6 border-b border-border bg-card sticky top-0 z-40">
           <nav className="flex items-center gap-1 relative">
               {[
                 { label: "Sessions", tab: "numeros", icon: Globe },
