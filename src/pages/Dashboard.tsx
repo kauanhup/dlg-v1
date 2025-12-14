@@ -236,7 +236,7 @@ const LojaSection = () => {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("numeros");
+  const [activeTab, setActiveTab] = useState("licencas");
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('theme');
@@ -381,8 +381,9 @@ const Dashboard = () => {
           <nav className="flex-1 flex justify-center absolute left-1/2 -translate-x-1/2">
             <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md relative">
               {[
+                { label: "Licenças", tab: "licencas", icon: Key },
                 { label: "Sessions", tab: "numeros", icon: Globe },
-                { label: "Assinaturas", tab: "assinaturas", icon: CreditCard },
+                { label: "Loja", tab: "comprar", icon: CreditCard },
               ].map((item) => (
                 <motion.button
                   key={item.tab}
@@ -418,11 +419,12 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="flex-1 pt-14 lg:pt-0 min-w-0">
         {/* Desktop Header */}
-        <header className="hidden lg:flex items-center justify-center h-14 px-6 border-b border-border bg-card sticky top-0 z-40">
+        <header className="hidden lg:flex items-center justify-between h-14 px-6 border-b border-border bg-card sticky top-0 z-40">
           <nav className="flex items-center gap-1 relative">
               {[
+                { label: "Licenças", tab: "licencas", icon: Key },
                 { label: "Sessions", tab: "numeros", icon: Globe },
-                { label: "Assinaturas", tab: "assinaturas", icon: CreditCard },
+                { label: "Loja", tab: "comprar", icon: CreditCard },
               ].map((item) => (
                 <motion.button
                   key={item.tab}
@@ -645,118 +647,6 @@ const Dashboard = () => {
         {/* Comprar */}
         {activeTab === "comprar" && (
           <LojaSection />
-        )}
-
-        {/* Assinaturas */}
-        {activeTab === "assinaturas" && (
-          <motion.div {...fadeIn} className="space-y-6">
-            <div>
-              <h1 className="text-lg font-semibold text-foreground">Minhas Assinaturas</h1>
-              <p className="text-sm text-muted-foreground">Gerencie seus planos e pagamentos</p>
-            </div>
-
-            {/* Plano Atual */}
-            <div className="bg-card border border-border rounded-md p-5 space-y-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
-                    <CreditCard className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-foreground">Plano Pro</h3>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
-                      <span className="text-xs text-success font-medium">Ativo</span>
-                    </div>
-                  </div>
-                </div>
-                <span className="text-lg font-bold text-primary">R$ 49,90<span className="text-xs text-muted-foreground font-normal">/mês</span></span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-muted/50 rounded-md p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Início</p>
-                  <p className="text-sm text-foreground">16 Dez 2024</p>
-                </div>
-                <div className="bg-muted/50 rounded-md p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Próxima cobrança</p>
-                  <p className="text-sm text-foreground">16 Jan 2025</p>
-                </div>
-                <div className="bg-muted/50 rounded-md p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Método</p>
-                  <p className="text-sm text-foreground">•••• 4532</p>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                <Button size="sm" className="h-9 text-xs sm:text-sm">
-                  <Sparkles className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-                  <span>Upgrade</span>
-                </Button>
-                <Button variant="outline" size="sm" className="h-9 text-xs sm:text-sm text-destructive border-destructive/30 hover:bg-destructive/10">
-                  Cancelar assinatura
-                </Button>
-              </div>
-            </div>
-
-            {/* Planos Disponíveis */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-foreground">Outros planos</h3>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="bg-card border border-border rounded-md p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-foreground text-sm">Plano Basic</h4>
-                    <span className="text-lg font-bold text-primary">R$ 29,90<span className="text-xs text-muted-foreground font-normal">/mês</span></span>
-                  </div>
-                  <ul className="space-y-1.5 text-sm text-muted-foreground">
-                    <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-success" /> 50 sessions/mês</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-success" /> Suporte básico</li>
-                  </ul>
-                  <Button variant="outline" size="sm" className="w-full h-8">Selecionar</Button>
-                </div>
-
-                <div className="bg-card border border-primary/30 rounded-md p-5 space-y-3 relative">
-                  <span className="absolute -top-2.5 right-3 text-[10px] bg-primary text-primary-foreground px-2 py-0.5 rounded font-medium">ATUAL</span>
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-foreground text-sm">Plano Pro</h4>
-                    <span className="text-lg font-bold text-primary">R$ 49,90<span className="text-xs text-muted-foreground font-normal">/mês</span></span>
-                  </div>
-                  <ul className="space-y-1.5 text-sm text-muted-foreground">
-                    <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-success" /> 200 sessions/mês</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-success" /> Suporte prioritário</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-success" /> API access</li>
-                  </ul>
-                  <Button size="sm" className="w-full h-8" disabled>Plano atual</Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Histórico de Pagamentos */}
-            <div className="bg-card border border-border rounded-md p-5 space-y-4">
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <History className="w-4 h-4 text-primary" />
-                Histórico de Pagamentos
-              </h3>
-              <div className="space-y-2">
-                {[
-                  { date: "16 Dez 2024", valor: "R$ 49,90", status: "Pago" },
-                  { date: "16 Nov 2024", valor: "R$ 49,90", status: "Pago" },
-                  { date: "16 Out 2024", valor: "R$ 49,90", status: "Pago" },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
-                    <div>
-                      <p className="text-sm text-foreground">{item.date}</p>
-                      <p className="text-xs text-muted-foreground">Plano Pro</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-foreground">{item.valor}</p>
-                      <span className="text-xs text-success">{item.status}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
         )}
 
         {/* Preferências */}
