@@ -605,7 +605,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-lg font-semibold text-foreground">Minhas Sessions</h1>
-                <p className="text-sm text-muted-foreground">Pacotes de sessions adquiridos</p>
+                <p className="text-sm text-muted-foreground">Sessions disponíveis para download</p>
               </div>
               <Button size="sm" className="h-9" onClick={() => setActiveTab("comprar")}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -613,57 +613,70 @@ const Dashboard = () => {
               </Button>
             </div>
 
-            <div className="space-y-3">
-              {[
-                { id: 1, type: "Brasileiras", qty: 25, remaining: 18, purchasedAt: "10 Dez 2024" },
-                { id: 2, type: "Estrangeiras", qty: 10, remaining: 10, purchasedAt: "12 Dez 2024" },
-              ].map((pack) => (
-                <div 
-                  key={pack.id}
-                  className="bg-card border border-border rounded-md p-4 space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "w-10 h-10 rounded-md flex items-center justify-center",
-                        pack.type === "Brasileiras" ? "bg-success/10" : "bg-primary/10"
-                      )}>
-                        <Globe className={cn(
-                          "w-5 h-5",
-                          pack.type === "Brasileiras" ? "text-success" : "text-primary"
-                        )} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">Sessions {pack.type}</p>
-                        <p className="text-xs text-muted-foreground">Comprado em {pack.purchasedAt}</p>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="outline" className="h-8 gap-1.5">
-                      <Download className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline text-xs">Baixar</span>
-                    </Button>
+            {/* Compra 1 - Brasileiras */}
+            <div className="bg-card border border-border rounded-md overflow-hidden">
+              <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-success/10 rounded-md flex items-center justify-center">
+                    <Globe className="w-4 h-4 text-success" />
                   </div>
-                  
-                  {/* Progress */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Disponíveis</span>
-                      <span className="text-foreground font-medium">{pack.remaining} de {pack.qty}</span>
-                    </div>
-                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${(pack.remaining / pack.qty) * 100}%` }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
-                        className={cn(
-                          "h-full rounded-full",
-                          pack.type === "Brasileiras" ? "bg-success" : "bg-primary"
-                        )}
-                      />
-                    </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Sessions Brasileiras</p>
+                    <p className="text-xs text-muted-foreground">Comprado em 10 Dez 2024 • 5 sessions</p>
                   </div>
                 </div>
-              ))}
+              </div>
+              <div className="divide-y divide-border">
+                {[1, 2, 3, 4, 5].map((num) => (
+                  <div key={num} className="p-3 flex items-center justify-between hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 bg-success/10 rounded flex items-center justify-center">
+                        <span className="text-xs font-semibold text-success">{num}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm text-foreground">Session BR #{num}</p>
+                        <p className="text-xs text-muted-foreground">+55 11 9xxxx-xxx{num}</p>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                      <Download className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Compra 2 - Estrangeiras */}
+            <div className="bg-card border border-border rounded-md overflow-hidden">
+              <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-primary/10 rounded-md flex items-center justify-center">
+                    <Globe className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Sessions Estrangeiras</p>
+                    <p className="text-xs text-muted-foreground">Comprado em 12 Dez 2024 • 3 sessions</p>
+                  </div>
+                </div>
+              </div>
+              <div className="divide-y divide-border">
+                {[1, 2, 3].map((num) => (
+                  <div key={num} className="p-3 flex items-center justify-between hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 bg-primary/10 rounded flex items-center justify-center">
+                        <span className="text-xs font-semibold text-primary">{num}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm text-foreground">Session INT #{num}</p>
+                        <p className="text-xs text-muted-foreground">+1 555 xxxx-xxx{num}</p>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                      <Download className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="bg-muted/30 border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
