@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { SidebarWithSubmenu } from "@/components/ui/sidebar-with-submenu";
+import { MenuBar } from "@/components/ui/glow-menu";
 import { cn } from "@/lib/utils";
 import { 
   Key, 
@@ -178,6 +179,49 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="flex-1 lg:pt-0 pt-14">
+        {/* Glow Menu Header */}
+        <div className="hidden lg:flex justify-center py-4 px-4 border-b border-border/50 bg-background/50 backdrop-blur-sm sticky top-0 z-40">
+          <MenuBar
+            items={[
+              {
+                icon: Key,
+                label: "Licenças",
+                href: "#",
+                gradient: "radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.06) 50%, rgba(29,78,216,0) 100%)",
+                iconColor: "text-blue-500",
+              },
+              {
+                icon: Phone,
+                label: "Números",
+                href: "#",
+                gradient: "radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(22,163,74,0.06) 50%, rgba(21,128,61,0) 100%)",
+                iconColor: "text-green-500",
+              },
+              {
+                icon: CreditCard,
+                label: "Loja",
+                href: "#",
+                gradient: "radial-gradient(circle, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.06) 50%, rgba(194,65,12,0) 100%)",
+                iconColor: "text-orange-500",
+              },
+              {
+                icon: Settings,
+                label: "Configurações",
+                href: "#",
+                gradient: "radial-gradient(circle, rgba(139,92,246,0.15) 0%, rgba(124,58,237,0.06) 50%, rgba(109,40,217,0) 100%)",
+                iconColor: "text-violet-500",
+              },
+            ]}
+            activeItem={activeTab === "licencas" ? "Licenças" : activeTab === "numeros" ? "Números" : activeTab === "comprar" ? "Loja" : activeTab === "configuracoes" ? "Configurações" : "Licenças"}
+            onItemClick={(label) => {
+              if (label === "Licenças") setActiveTab("licencas");
+              else if (label === "Números") setActiveTab("numeros");
+              else if (label === "Loja") setActiveTab("comprar");
+              else if (label === "Configurações") setActiveTab("configuracoes");
+            }}
+          />
+        </div>
+        
         {/* Content */}
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
