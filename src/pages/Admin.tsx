@@ -654,8 +654,14 @@ const Admin = () => {
 
       {/* Mobile/Tablet Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
-        <div className="flex items-center h-14 px-4">
-          {/* Profile dropdown */}
+        <div className="flex items-center justify-between h-14 px-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
+              <LayoutDashboard className="w-4 h-4 text-primary-foreground" />
+            </div>
+            <span className="text-sm font-semibold text-foreground">Admin</span>
+          </div>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="w-9 h-9 rounded-md overflow-hidden bg-muted border border-border flex items-center justify-center hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50">
@@ -668,7 +674,7 @@ const Admin = () => {
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 bg-card border border-border">
+            <DropdownMenuContent align="end" className="w-56 bg-card border border-border">
               <DropdownMenuLabel className="font-normal px-3 py-2">
                 <p className="text-sm font-medium text-foreground">{adminUser.name}</p>
                 <p className="text-xs text-muted-foreground">{adminUser.email}</p>
@@ -702,90 +708,11 @@ const Admin = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {/* Center: Navigation */}
-          <nav className="flex-1 flex justify-center absolute left-1/2 -translate-x-1/2">
-            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md relative">
-              {[
-                { label: "Dashboard", tab: "dashboard", icon: LayoutDashboard },
-                { label: "Usuários", tab: "users", icon: Users },
-                { label: "Pedidos", tab: "orders", icon: ShoppingCart },
-                { label: "Sessions", tab: "sessions", icon: Globe },
-              ].map((item) => (
-                <motion.button
-                  key={item.tab}
-                  onClick={() => setActiveTab(item.tab)}
-                  className={cn(
-                    "relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors",
-                    activeTab === item.tab
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {activeTab === item.tab && (
-                    <motion.div
-                      layoutId="admin-mobile-tab-bg"
-                      className="absolute inset-0 bg-card rounded shadow-sm"
-                      initial={false}
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  <item.icon className="w-3.5 h-3.5 relative z-10" />
-                  <span className="hidden sm:inline relative z-10">{item.label}</span>
-                </motion.button>
-              ))}
-            </div>
-          </nav>
-
-          {/* Spacer to balance the layout */}
-          <div className="w-9 h-9" />
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-1 pt-14 lg:pt-0 min-w-0">
-        {/* Desktop Header */}
-        <header className="hidden lg:flex items-center justify-between h-14 px-6 border-b border-border bg-card sticky top-0 z-40">
-          <nav className="flex items-center gap-1 relative">
-            {[
-              { label: "Dashboard", tab: "dashboard", icon: LayoutDashboard },
-              { label: "Usuários", tab: "users", icon: Users },
-              { label: "Pedidos", tab: "orders", icon: ShoppingCart },
-              { label: "Sessions", tab: "sessions", icon: Globe },
-            ].map((item) => (
-              <motion.button
-                key={item.tab}
-                onClick={() => setActiveTab(item.tab)}
-                className={cn(
-                  "relative flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors",
-                  activeTab === item.tab
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                whileTap={{ scale: 0.97 }}
-              >
-                {activeTab === item.tab && (
-                  <motion.div
-                    layoutId="admin-desktop-tab-bg"
-                    className="absolute inset-0 bg-muted rounded"
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <item.icon className="w-4 h-4 relative z-10" />
-                <span className="relative z-10">{item.label}</span>
-              </motion.button>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs bg-destructive/10 text-destructive px-2 py-1 rounded-md font-medium">
-              Admin
-            </span>
-          </div>
-        </header>
-
         {/* Page Content */}
         <div className="p-4 sm:p-6">
           {renderContent()}
