@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { UserProfileSidebar } from "@/components/ui/menu";
+import { avatars } from "@/components/ui/avatar-picker";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -11,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
+import {
   LayoutDashboard,
   Users,
   ShoppingCart,
@@ -580,18 +582,39 @@ const SettingsSection = () => {
 const Admin = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [selectedAvatarId] = useState<number>(1);
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
   }, []);
 
-  const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "users", label: "Usuários", icon: Users },
-    { id: "orders", label: "Pedidos", icon: ShoppingCart },
-    { id: "sessions", label: "Sessions", icon: Globe },
-    { id: "settings", label: "Configurações", icon: Settings },
+  const adminUser = {
+    name: "Administrador",
+    email: "admin@swextractor.com",
+    initials: "AD",
+  };
+
+  const sidebarTabs = ["dashboard", "users", "orders", "sessions", "settings"];
+
+  const profileNavItems = [
+    { label: "Dashboard", icon: <LayoutDashboard className="h-full w-full" />, onClick: () => setActiveTab("dashboard") },
+    { label: "Usuários", icon: <Users className="h-full w-full" />, onClick: () => setActiveTab("users") },
+    { label: "Pedidos", icon: <ShoppingCart className="h-full w-full" />, onClick: () => setActiveTab("orders") },
+    { label: "Sessions", icon: <Globe className="h-full w-full" />, onClick: () => setActiveTab("sessions") },
+    { label: "Configurações", icon: <Settings className="h-full w-full" />, onClick: () => setActiveTab("settings"), isSeparator: true },
   ];
+
+  const sidebarActiveIndex = sidebarTabs.indexOf(activeTab);
+
+  const handleSidebarChange = (index: number) => {
+    setActiveTab(sidebarTabs[index]);
+  };
+
+  const logoutItem = {
+    label: "Sair",
+    icon: <LogOut className="h-full w-full" />,
+    onClick: () => navigate("/login"),
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -611,96 +634,177 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
-      <aside className="hidden lg:flex flex-col w-[240px] sticky top-0 h-screen border-r border-border bg-card">
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Shield className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Admin Panel</p>
-              <p className="text-xs text-muted-foreground">SWEXTRACTOR</p>
-            </div>
-          </div>
-        </div>
-
-        <nav className="flex-1 p-3 space-y-1">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                activeTab === item.id
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <item.icon className="w-4 h-4" />
-              {item.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="p-3 border-t border-border">
-          <button
-            onClick={() => navigate("/login")}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            Sair
-          </button>
-        </div>
+    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
+      {/* Sidebar Desktop */}
+      <aside className="hidden lg:flex flex-col w-[256px] sticky top-0 h-screen flex-shrink-0 border-r border-border">
+        <UserProfileSidebar 
+          user={{
+            name: adminUser.name,
+            email: adminUser.email,
+            initials: adminUser.initials,
+            selectedAvatarId: selectedAvatarId
+          }}
+          navItems={profileNavItems}
+          logoutItem={logoutItem}
+          activeIndex={sidebarActiveIndex >= 0 ? sidebarActiveIndex : 0}
+          onActiveChange={handleSidebarChange}
+          className="h-full border-r-0"
+        />
       </aside>
 
-      {/* Mobile Header */}
+      {/* Mobile/Tablet Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
-        <div className="flex items-center justify-between h-14 px-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Shield className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="text-sm font-semibold text-foreground">Admin</span>
-          </div>
-
+        <div className="flex items-center h-14 px-4">
+          {/* Profile dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                {navItems.find(i => i.id === activeTab)?.label}
-                <ChevronDown className="w-4 h-4" />
-              </Button>
+              <button className="w-9 h-9 rounded-md overflow-hidden bg-muted border border-border flex items-center justify-center hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50">
+                {selectedAvatarId ? (
+                  <div className="w-9 h-9 flex items-center justify-center [&>svg]:w-9 [&>svg]:h-9">
+                    {avatars.find(a => a.id === selectedAvatarId)?.svg}
+                  </div>
+                ) : (
+                  <span className="text-xs font-semibold text-primary-foreground bg-primary w-full h-full flex items-center justify-center">{adminUser.initials}</span>
+                )}
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-card border border-border">
-              {navItems.map((item) => (
-                <DropdownMenuItem
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className="cursor-pointer"
-                >
-                  <item.icon className="w-4 h-4 mr-2" />
-                  {item.label}
-                </DropdownMenuItem>
-              ))}
+            <DropdownMenuContent align="start" className="w-56 bg-card border border-border">
+              <DropdownMenuLabel className="font-normal px-3 py-2">
+                <p className="text-sm font-medium text-foreground">{adminUser.name}</p>
+                <p className="text-xs text-muted-foreground">{adminUser.email}</p>
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => navigate("/login")}
-                className="cursor-pointer text-destructive focus:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
+              <DropdownMenuItem onClick={() => setActiveTab("dashboard")} className="px-3 py-2 cursor-pointer">
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setActiveTab("users")} className="px-3 py-2 cursor-pointer">
+                <Users className="mr-2 h-4 w-4" />
+                Usuários
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setActiveTab("orders")} className="px-3 py-2 cursor-pointer">
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Pedidos
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setActiveTab("sessions")} className="px-3 py-2 cursor-pointer">
+                <Globe className="mr-2 h-4 w-4" />
+                Sessions
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setActiveTab("settings")} className="px-3 py-2 cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                Configurações
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/login")} className="px-3 py-2 cursor-pointer text-destructive focus:text-destructive">
+                <LogOut className="mr-2 h-4 w-4" />
                 Sair
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Center: Navigation */}
+          <nav className="flex-1 flex justify-center absolute left-1/2 -translate-x-1/2">
+            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md relative">
+              {[
+                { label: "Dashboard", tab: "dashboard", icon: LayoutDashboard },
+                { label: "Usuários", tab: "users", icon: Users },
+                { label: "Pedidos", tab: "orders", icon: ShoppingCart },
+                { label: "Sessions", tab: "sessions", icon: Globe },
+              ].map((item) => (
+                <motion.button
+                  key={item.tab}
+                  onClick={() => setActiveTab(item.tab)}
+                  className={cn(
+                    "relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors",
+                    activeTab === item.tab
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {activeTab === item.tab && (
+                    <motion.div
+                      layoutId="admin-mobile-tab-bg"
+                      className="absolute inset-0 bg-card rounded shadow-sm"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <item.icon className="w-3.5 h-3.5 relative z-10" />
+                  <span className="hidden sm:inline relative z-10">{item.label}</span>
+                </motion.button>
+              ))}
+            </div>
+          </nav>
+
+          {/* Spacer to balance the layout */}
+          <div className="w-9 h-9" />
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 pt-14 lg:pt-0">
-        <div className="p-4 lg:p-6 max-w-7xl">
+      <main className="flex-1 pt-14 lg:pt-0 min-w-0">
+        {/* Desktop Header */}
+        <header className="hidden lg:flex items-center justify-between h-14 px-6 border-b border-border bg-card sticky top-0 z-40">
+          <nav className="flex items-center gap-1 relative">
+            {[
+              { label: "Dashboard", tab: "dashboard", icon: LayoutDashboard },
+              { label: "Usuários", tab: "users", icon: Users },
+              { label: "Pedidos", tab: "orders", icon: ShoppingCart },
+              { label: "Sessions", tab: "sessions", icon: Globe },
+            ].map((item) => (
+              <motion.button
+                key={item.tab}
+                onClick={() => setActiveTab(item.tab)}
+                className={cn(
+                  "relative flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors",
+                  activeTab === item.tab
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                whileTap={{ scale: 0.97 }}
+              >
+                {activeTab === item.tab && (
+                  <motion.div
+                    layoutId="admin-desktop-tab-bg"
+                    className="absolute inset-0 bg-muted rounded"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <item.icon className="w-4 h-4 relative z-10" />
+                <span className="relative z-10">{item.label}</span>
+              </motion.button>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs bg-destructive/10 text-destructive px-2 py-1 rounded-md font-medium">
+              Admin
+            </span>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <div className="p-4 sm:p-6">
           {renderContent()}
         </div>
+
+        {/* Footer */}
+        <footer className="border-t border-border py-4 px-6">
+          <p className="text-center text-xs text-muted-foreground">
+            © 2025 SWEXTRACTOR. Desenvolvido por{" "}
+            <a 
+              href="https://wa.me/5565996498222" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Kauan Hup
+            </a>
+          </p>
+        </footer>
       </main>
     </div>
   );
