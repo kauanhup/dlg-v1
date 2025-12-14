@@ -145,9 +145,169 @@ const SalesChart = ({ data }: { data: typeof salesData }) => {
   );
 };
 
+// Plan Form Modal Component
+const PlanFormModal = ({ 
+  isOpen, 
+  onClose, 
+  plan, 
+  onSave 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  plan: { id: number; name: string; price: string; period: string; sessions: number; features: string[]; status: string } | null;
+  onSave: (planData: { name: string; price: string; period: string; sessions: number; features: string[]; status: string }) => void;
+}) => {
+  const [name, setName] = useState(plan?.name || "");
+  const [price, setPrice] = useState(plan?.price?.replace("R$ ", "") || "");
+  const [period, setPeriod] = useState(plan?.period || "mês");
+  const [sessions, setSessions] = useState(plan?.sessions?.toString() || "0");
+  const [features, setFeatures] = useState(plan?.features?.join("\n") || "");
+  const [status, setStatus] = useState(plan?.status || "active");
+
+  useEffect(() => {
+    if (plan) {
+      setName(plan.name);
+      setPrice(plan.price.replace("R$ ", ""));
+      setPeriod(plan.period);
+      setSessions(plan.sessions.toString());
+      setFeatures(plan.features.join("\n"));
+      setStatus(plan.status);
+    } else {
+      setName("");
+      setPrice("");
+      setPeriod("mês");
+      setSessions("0");
+      setFeatures("");
+      setStatus("active");
+    }
+  }, [plan, isOpen]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      name,
+      price: `R$ ${price}`,
+      period,
+      sessions: parseInt(sessions) || 0,
+      features: features.split("\n").filter(f => f.trim()),
+      status
+    });
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="relative bg-card border border-border rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold text-foreground">
+            {plan ? "Editar Plano" : "Criar Plano"}
+          </h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-sm text-muted-foreground mb-2 block">Nome do Plano</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ex: Pro Mensal"
+              className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">Preço (R$)</label>
+              <input
+                type="text"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="49,90"
+                className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">Período</label>
+              <select
+                value={period}
+                onChange={(e) => setPeriod(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+              >
+                <option value="—">Único</option>
+                <option value="mês">Mensal</option>
+                <option value="ano">Anual</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm text-muted-foreground mb-2 block">Sessions Incluídas</label>
+            <input
+              type="number"
+              value={sessions}
+              onChange={(e) => setSessions(e.target.value)}
+              placeholder="50"
+              className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+            <p className="text-xs text-muted-foreground mt-1">Use -1 para ilimitado</p>
+          </div>
+
+          <div>
+            <label className="text-sm text-muted-foreground mb-2 block">Recursos (um por linha)</label>
+            <textarea
+              value={features}
+              onChange={(e) => setFeatures(e.target.value)}
+              placeholder="50 sessions/mês&#10;Suporte prioritário&#10;API access"
+              rows={4}
+              className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm text-muted-foreground mb-2 block">Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              <option value="active">Ativo</option>
+              <option value="inactive">Inativo</option>
+            </select>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+              Cancelar
+            </Button>
+            <Button type="submit" className="flex-1">
+              {plan ? "Salvar" : "Criar Plano"}
+            </Button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
 // Subscriptions Tab Content (used in Dashboard)
 const SubscriptionsTabContent = () => {
   const [activeSubTab, setActiveSubTab] = useState<"subscribers" | "plans" | "payments">("subscribers");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<typeof plans[0] | null>(null);
 
   const subscribers = [
     { id: 1, name: "João Silva", email: "joao@email.com", plan: "Pro Mensal", status: "active", startDate: "01 Nov 2024", nextBilling: "01 Jan 2025", amount: "R$ 49,90" },
@@ -157,12 +317,12 @@ const SubscriptionsTabContent = () => {
     { id: 5, name: "Carlos Souza", email: "carlos@email.com", plan: "Pro Mensal", status: "overdue", startDate: "05 Out 2024", nextBilling: "05 Dez 2024", amount: "R$ 49,90" },
   ];
 
-  const plans = [
+  const [plans, setPlans] = useState([
     { id: 1, name: "Grátis", price: "R$ 0", period: "—", sessions: 0, features: ["Acesso básico", "Suporte por email"], subscribers: 423, status: "active" },
     { id: 2, name: "Pro Mensal", price: "R$ 49,90", period: "mês", sessions: 50, features: ["50 sessions/mês", "Suporte prioritário", "API access"], subscribers: 156, status: "active" },
     { id: 3, name: "Pro Anual", price: "R$ 399,90", period: "ano", sessions: 600, features: ["600 sessions/ano", "Suporte 24/7", "API access", "2 meses grátis"], subscribers: 78, status: "active" },
     { id: 4, name: "Enterprise", price: "R$ 999,90", period: "ano", sessions: -1, features: ["Sessions ilimitadas", "Suporte dedicado", "SLA 99.9%", "Whitelabel"], subscribers: 12, status: "active" },
-  ];
+  ]);
 
   const payments = [
     { id: "#PAY-001", user: "João Silva", plan: "Pro Mensal", amount: "R$ 49,90", method: "PIX", status: "paid", date: "01 Dez 2024" },
@@ -176,6 +336,25 @@ const SubscriptionsTabContent = () => {
   const pendingSubscribers = subscribers.filter(s => s.status === "overdue").length;
   const mrr = 156 * 49.90 + (78 * 399.90 / 12) + (12 * 999.90 / 12);
   const churnRate = (subscribers.filter(s => s.status === "cancelled").length / subscribers.length * 100).toFixed(1);
+
+  const handleSavePlan = (planData: { name: string; price: string; period: string; sessions: number; features: string[]; status: string }) => {
+    if (editingPlan) {
+      setPlans(plans.map(p => p.id === editingPlan.id ? { ...p, ...planData } : p));
+    } else {
+      setPlans([...plans, { id: Date.now(), ...planData, subscribers: 0 }]);
+    }
+    setEditingPlan(null);
+  };
+
+  const handleEditPlan = (plan: typeof plans[0]) => {
+    setEditingPlan(plan);
+    setIsModalOpen(true);
+  };
+
+  const handleCreatePlan = () => {
+    setEditingPlan(null);
+    setIsModalOpen(true);
+  };
 
   const statusStyles = {
     active: "bg-success/10 text-success",
@@ -343,57 +522,75 @@ const SubscriptionsTabContent = () => {
 
       {/* Plans Tab */}
       {activeSubTab === "plans" && (
-        <div className="grid gap-4 md:grid-cols-2">
-          {plans.map((plan) => (
-            <div key={plan.id} className="bg-card border border-border rounded-lg p-5">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="font-semibold text-foreground">{plan.name}</h3>
-                  <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-2xl font-bold text-foreground">{plan.price}</span>
-                    {plan.period !== "—" && <span className="text-sm text-muted-foreground">/{plan.period}</span>}
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button size="sm" onClick={handleCreatePlan}>
+              <Plus className="w-4 h-4 mr-2" /> Criar Plano
+            </Button>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {plans.map((plan) => (
+              <div key={plan.id} className="bg-card border border-border rounded-lg p-5">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="font-semibold text-foreground">{plan.name}</h3>
+                    <div className="flex items-baseline gap-1 mt-1">
+                      <span className="text-2xl font-bold text-foreground">{plan.price}</span>
+                      {plan.period !== "—" && <span className="text-sm text-muted-foreground">/{plan.period}</span>}
+                    </div>
                   </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-card border border-border">
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleEditPlan(plan)}>
+                        <Edit className="w-4 h-4 mr-2" /> Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
+                        <Trash2 className="w-4 h-4 mr-2" /> Desativar
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-card border border-border">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Edit className="w-4 h-4 mr-2" /> Editar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
-                      <Trash2 className="w-4 h-4 mr-2" /> Desativar
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="space-y-2 mb-4">
-                {plan.features.map((feature, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle className="w-4 h-4 text-success" />
-                    {feature}
+                <div className="space-y-2 mb-4">
+                  {plan.features.map((feature, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CheckCircle className="w-4 h-4 text-success" />
+                      {feature}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between pt-4 border-t border-border">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">{plan.subscribers} assinantes</span>
                   </div>
-                ))}
-              </div>
-              <div className="flex items-center justify-between pt-4 border-t border-border">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">{plan.subscribers} assinantes</span>
+                  <span className={cn(
+                    "text-xs px-2 py-1 rounded-md",
+                    plan.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                  )}>
+                    {plan.status === "active" ? "Ativo" : "Inativo"}
+                  </span>
                 </div>
-                <span className={cn(
-                  "text-xs px-2 py-1 rounded-md",
-                  plan.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
-                )}>
-                  {plan.status === "active" ? "Ativo" : "Inativo"}
-                </span>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
+
+      {/* Plan Form Modal */}
+      <PlanFormModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingPlan(null);
+        }}
+        plan={editingPlan}
+        onSave={handleSavePlan}
+      />
 
       {/* Payments Tab */}
       {activeSubTab === "payments" && (
