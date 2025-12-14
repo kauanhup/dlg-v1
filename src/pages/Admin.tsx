@@ -1002,117 +1002,136 @@ const OrdersSection = () => {
 
 // Sessions Management
 const SessionsSection = () => {
-  const sessions = [
-    { id: 1, number: "+55 11 91234-5678", type: "BR", status: "available", owner: null, createdAt: "10 Dez 2024" },
-    { id: 2, number: "+55 21 98765-4321", type: "BR", status: "sold", owner: "João Silva", createdAt: "08 Dez 2024" },
-    { id: 3, number: "+1 555 123-4567", type: "INTL", status: "available", owner: null, createdAt: "05 Dez 2024" },
-    { id: 4, number: "+44 20 7946 0958", type: "INTL", status: "sold", owner: "Maria Santos", createdAt: "01 Dez 2024" },
-    { id: 5, number: "+55 31 99876-5432", type: "BR", status: "expired", owner: "Pedro Costa", createdAt: "28 Nov 2024" },
-  ];
+  const [precos, setPrecos] = useState({
+    brasileiras: "9.98",
+    estrangeiras: "5.98"
+  });
 
-  const statusStyles = {
-    available: "bg-success/10 text-success",
-    sold: "bg-primary/10 text-primary",
-    expired: "bg-destructive/10 text-destructive"
-  };
-
-  const statusLabels = {
-    available: "Disponível",
-    sold: "Vendida",
-    expired: "Expirada"
+  const sessionsStats = {
+    total: 231,
+    disponiveis: 142,
+    vendidas: 76,
+    expiradas: 13,
+    brasileiras: { total: 130, disponiveis: 85, vendidas: 40 },
+    estrangeiras: { total: 101, disponiveis: 57, vendidas: 36 }
   };
 
   return (
     <motion.div {...fadeIn} className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Sessions</h1>
-          <p className="text-sm text-muted-foreground">Gerenciar estoque de sessions</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <RefreshCw className="w-4 h-4 mr-2" /> Sincronizar
-          </Button>
-          <Button size="sm">Adicionar Sessions</Button>
-        </div>
+      <div>
+        <h1 className="text-xl font-semibold text-foreground">Sessions</h1>
+        <p className="text-sm text-muted-foreground">Gerenciar estoque de sessions importadas (.session)</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-xs text-muted-foreground mb-1">Total Sessions</p>
-          <p className="text-2xl font-bold text-foreground">231</p>
+          <p className="text-2xl font-bold text-foreground">{sessionsStats.total}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-xs text-muted-foreground mb-1">Disponíveis</p>
-          <p className="text-2xl font-bold text-success">142</p>
+          <p className="text-2xl font-bold text-success">{sessionsStats.disponiveis}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-xs text-muted-foreground mb-1">Vendidas</p>
-          <p className="text-2xl font-bold text-primary">76</p>
+          <p className="text-2xl font-bold text-primary">{sessionsStats.vendidas}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-xs text-muted-foreground mb-1">Expiradas</p>
-          <p className="text-2xl font-bold text-destructive">13</p>
+          <p className="text-2xl font-bold text-destructive">{sessionsStats.expiradas}</p>
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Número</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Tipo</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Proprietário</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Criado em</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sessions.map((session) => (
-                <tr key={session.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
-                  <td className="p-4 text-sm font-mono text-foreground">{session.number}</td>
-                  <td className="p-4">
-                    <span className={cn(
-                      "text-xs px-2 py-1 rounded-md font-medium",
-                      session.type === "BR" ? "bg-success/10 text-success" : "bg-primary/10 text-primary"
-                    )}>
-                      {session.type}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[session.status as keyof typeof statusStyles])}>
-                      {statusLabels[session.status as keyof typeof statusLabels]}
-                    </span>
-                  </td>
-                  <td className="p-4 text-sm text-muted-foreground">{session.owner || "—"}</td>
-                  <td className="p-4 text-sm text-muted-foreground">{session.createdAt}</td>
-                  <td className="p-4">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-card border border-border">
-                        <DropdownMenuItem className="cursor-pointer">
-                          <Eye className="w-4 h-4 mr-2" /> Ver detalhes
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer">
-                          <Edit className="w-4 h-4 mr-2" /> Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
-                          <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Pricing Section */}
+      <div className="bg-card border border-border rounded-lg p-5">
+        <h3 className="font-semibold text-foreground mb-4">Preços das Sessions</h3>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm text-muted-foreground mb-2 block">Preço Session Brasileira (R$)</label>
+            <input
+              type="text"
+              value={precos.brasileiras}
+              onChange={(e) => setPrecos({ ...precos, brasileiras: e.target.value })}
+              className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-muted-foreground mb-2 block">Preço Session Estrangeira (R$)</label>
+            <input
+              type="text"
+              value={precos.estrangeiras}
+              onChange={(e) => setPrecos({ ...precos, estrangeiras: e.target.value })}
+              className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Sessions by Type */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="bg-card border border-border rounded-lg p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
+              <Globe className="w-5 h-5 text-success" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Sessions Brasileiras</h3>
+              <p className="text-xs text-muted-foreground">R$ {precos.brasileiras} por unidade</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Total</span>
+              <span className="font-medium text-foreground">{sessionsStats.brasileiras.total}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Disponíveis</span>
+              <span className="font-medium text-success">{sessionsStats.brasileiras.disponiveis}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Vendidas</span>
+              <span className="font-medium text-primary">{sessionsStats.brasileiras.vendidas}</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2 mt-2">
+              <div 
+                className="bg-success h-2 rounded-full" 
+                style={{ width: `${(sessionsStats.brasileiras.disponiveis / sessionsStats.brasileiras.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-lg p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+              <Globe className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Sessions Estrangeiras</h3>
+              <p className="text-xs text-muted-foreground">R$ {precos.estrangeiras} por unidade</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Total</span>
+              <span className="font-medium text-foreground">{sessionsStats.estrangeiras.total}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Disponíveis</span>
+              <span className="font-medium text-success">{sessionsStats.estrangeiras.disponiveis}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Vendidas</span>
+              <span className="font-medium text-primary">{sessionsStats.estrangeiras.vendidas}</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2 mt-2">
+              <div 
+                className="bg-primary h-2 rounded-full" 
+                style={{ width: `${(sessionsStats.estrangeiras.disponiveis / sessionsStats.estrangeiras.total) * 100}%` }}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </motion.div>
