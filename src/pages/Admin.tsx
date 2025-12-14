@@ -166,14 +166,14 @@ const SubscriptionsTabContent = () => {
 
   const payments = [
     { id: "#PAY-001", user: "João Silva", plan: "Pro Mensal", amount: "R$ 49,90", method: "PIX", status: "paid", date: "01 Dez 2024" },
-    { id: "#PAY-002", user: "Maria Santos", plan: "Pro Anual", amount: "R$ 399,90", method: "Cartão", status: "paid", date: "15 Nov 2024" },
+    { id: "#PAY-002", user: "Maria Santos", plan: "Pro Anual", amount: "R$ 399,90", method: "PIX", status: "paid", date: "15 Nov 2024" },
     { id: "#PAY-003", user: "Carlos Souza", plan: "Pro Mensal", amount: "R$ 49,90", method: "PIX", status: "failed", date: "05 Dez 2024" },
-    { id: "#PAY-004", user: "Ana Lima", plan: "Enterprise", amount: "R$ 999,90", method: "Boleto", status: "pending", date: "01 Dez 2024" },
-    { id: "#PAY-005", user: "Pedro Costa", plan: "Pro Mensal", amount: "R$ 49,90", method: "Cartão", status: "refunded", date: "10 Nov 2024" },
+    { id: "#PAY-004", user: "Ana Lima", plan: "Enterprise", amount: "R$ 999,90", method: "PIX", status: "pending", date: "01 Dez 2024" },
+    { id: "#PAY-005", user: "Pedro Costa", plan: "Pro Mensal", amount: "R$ 49,90", method: "PIX", status: "refunded", date: "10 Nov 2024" },
   ];
 
   const activeSubscribers = subscribers.filter(s => s.status === "active").length;
-  const overdueSubscribers = subscribers.filter(s => s.status === "overdue").length;
+  const pendingSubscribers = subscribers.filter(s => s.status === "overdue").length;
   const mrr = 156 * 49.90 + (78 * 399.90 / 12) + (12 * 999.90 / 12);
   const churnRate = (subscribers.filter(s => s.status === "cancelled").length / subscribers.length * 100).toFixed(1);
 
@@ -229,8 +229,8 @@ const SubscriptionsTabContent = () => {
               <AlertCircle className="w-5 h-5 text-warning" />
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground">{overdueSubscribers}</p>
-              <p className="text-xs text-muted-foreground">Pagamentos Atrasados</p>
+              <p className="text-lg font-bold text-foreground">{pendingSubscribers}</p>
+              <p className="text-xs text-muted-foreground">Pendente</p>
             </div>
           </div>
         </div>
