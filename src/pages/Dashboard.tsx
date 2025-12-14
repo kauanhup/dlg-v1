@@ -714,7 +714,14 @@ const Dashboard = () => {
                           <p className="text-xs text-muted-foreground">{login.location}</p>
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">{login.date}</p>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">{login.date}</p>
+                        <span className={`text-xs font-medium ${
+                          login.status === 'success' ? 'text-success' : 'text-destructive'
+                        }`}>
+                          {login.status === 'success' ? 'Sucesso' : login.reason}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -906,61 +913,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Sessões Ativas - Bot */}
-              <div className="bg-card border border-border rounded-md p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Monitor className="w-4 h-4 text-primary" />
-                    Sessões Ativas (Bot)
-                  </h3>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive">
-                    Encerrar todas
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {activeSessions.map((session, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${session.current ? 'bg-success' : 'bg-muted-foreground'}`} />
-                        <div className="min-w-0">
-                          <p className="text-sm text-foreground truncate">{session.device}</p>
-                          <p className="text-xs text-muted-foreground">{session.location} • {session.lastActive}</p>
-                        </div>
-                      </div>
-                      {session.current ? (
-                        <span className="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-medium flex-shrink-0">Atual</span>
-                      ) : (
-                        <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground flex-shrink-0">
-                          Encerrar
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Histórico de Login */}
-              <div className="bg-card border border-border rounded-md p-5 space-y-4">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <History className="w-4 h-4 text-primary" />
-                  Histórico de Login
-                </h3>
-                <div className="space-y-2">
-                  {loginHistory.map((login, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-foreground truncate">{login.device}</p>
-                        <p className="text-xs text-muted-foreground truncate">{login.date} • {login.location}</p>
-                      </div>
-                      <span className={`text-xs px-2 py-0.5 rounded font-medium flex-shrink-0 ${
-                        login.status === 'success' ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'
-                      }`}>
-                        {login.status === 'success' ? 'Sucesso' : login.reason}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           </motion.div>
         )}
