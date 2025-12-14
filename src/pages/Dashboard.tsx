@@ -6,6 +6,11 @@ import { UserProfileSidebar } from "@/components/ui/menu";
 import { MenuBar } from "@/components/ui/glow-menu";
 import { AvatarPicker, avatars } from "@/components/ui/avatar-picker";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -137,48 +142,73 @@ const Dashboard = () => {
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
         <div className="flex items-center justify-between h-14 px-4">
           {/* Profile dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="w-8 h-8 rounded-md overflow-hidden bg-muted flex items-center justify-center hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="w-9 h-9 rounded-md overflow-hidden bg-muted border border-border flex items-center justify-center hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50">
                 {selectedAvatarId ? (
-                  <div className="scale-[0.9]">
+                  <div className="w-9 h-9 flex items-center justify-center [&>svg]:w-9 [&>svg]:h-9">
                     {avatars.find(a => a.id === selectedAvatarId)?.svg}
                   </div>
                 ) : (
                   <span className="text-xs font-semibold text-primary-foreground bg-primary w-full h-full flex items-center justify-center">{user.initials}</span>
                 )}
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 bg-card border border-border">
-              <DropdownMenuLabel className="font-normal px-3 py-2">
-                <p className="text-sm font-medium text-foreground">{user.name}</p>
-                <p className="text-xs text-muted-foreground">{user.email}</p>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setActiveTab("perfil")} className="px-3 py-2 cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
-                Minha Conta
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveTab("preferencias")} className="px-3 py-2 cursor-pointer">
-                <Settings className="mr-2 h-4 w-4" />
-                Preferências
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveTab("historico")} className="px-3 py-2 cursor-pointer">
-                <History className="mr-2 h-4 w-4" />
-                Histórico
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setActiveTab("ajuda")} className="px-3 py-2 cursor-pointer">
-                <HelpCircle className="mr-2 h-4 w-4" />
-                Ajuda
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/")} className="px-3 py-2 cursor-pointer text-destructive focus:text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sair
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-64 p-0 bg-card border border-border" sideOffset={8}>
+              {/* Avatar Selection */}
+              <div className="p-3 border-b border-border">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Escolha seu avatar</p>
+                <div className="flex flex-wrap gap-2">
+                  {avatars.map((avatar) => (
+                    <motion.button
+                      key={avatar.id}
+                      onClick={() => setSelectedAvatarId(avatar.id)}
+                      className={cn(
+                        "relative w-10 h-10 rounded-md overflow-hidden border-2 transition-colors",
+                        selectedAvatarId === avatar.id 
+                          ? "border-primary bg-primary/10" 
+                          : "border-border hover:border-muted-foreground hover:bg-muted/50"
+                      )}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <div className="w-full h-full flex items-center justify-center">
+                        {avatar.svg}
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+              {/* User info and menu */}
+              <div className="p-2">
+                <div className="px-2 py-2 mb-1">
+                  <p className="text-sm font-medium text-foreground">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                </div>
+                <button onClick={() => setActiveTab("perfil")} className="w-full flex items-center gap-2 px-2 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors">
+                  <User className="h-4 w-4" />
+                  Minha Conta
+                </button>
+                <button onClick={() => setActiveTab("preferencias")} className="w-full flex items-center gap-2 px-2 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors">
+                  <Settings className="h-4 w-4" />
+                  Preferências
+                </button>
+                <button onClick={() => setActiveTab("historico")} className="w-full flex items-center gap-2 px-2 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors">
+                  <History className="h-4 w-4" />
+                  Histórico
+                </button>
+                <button onClick={() => setActiveTab("ajuda")} className="w-full flex items-center gap-2 px-2 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors">
+                  <HelpCircle className="h-4 w-4" />
+                  Ajuda
+                </button>
+                <div className="my-1 border-t border-border" />
+                <button onClick={() => navigate("/")} className="w-full flex items-center gap-2 px-2 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-md transition-colors">
+                  <LogOut className="h-4 w-4" />
+                  Sair
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* Center: Navigation */}
           <nav className="flex-1 flex justify-center">
