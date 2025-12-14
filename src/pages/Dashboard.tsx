@@ -835,11 +835,7 @@ const Dashboard = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-base font-semibold text-foreground">{user.name}</h2>
-                  <p className="text-sm text-muted-foreground">{user.email}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-medium">{user.plan}</span>
-                    <span className="text-xs text-muted-foreground">Membro desde Dez 2024</span>
-                  </div>
+                  <p className="text-sm text-muted-foreground">Bem-vindo de volta! 👋</p>
                 </div>
               </div>
             </div>
@@ -893,7 +889,7 @@ const Dashboard = () => {
                     <div className="relative">
                       <input 
                         type={showApiKey ? "text" : "password"}
-                        placeholder="••••••••"
+                        defaultValue="senha123"
                         className="w-full h-9 px-3 pr-10 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                       <button 
