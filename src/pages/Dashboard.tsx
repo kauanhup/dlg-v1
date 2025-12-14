@@ -39,38 +39,22 @@ import {
   CreditCard,
   Settings,
   HelpCircle,
-  Phone,
-  ChevronRight,
   Copy,
   Shield,
   Zap,
-  ExternalLink,
   MessageCircle,
   Sparkles,
-  ArrowUpRight,
   Lock,
-  Smartphone,
   History,
   Moon,
   Bell,
   Globe,
-  Clock,
-  KeyRound,
-  Activity,
   Download,
-  Pause,
-  Trash2,
-  Wifi,
-  Gauge,
-  Eye,
-  EyeOff,
-  Mail,
   Sun,
-  Menu,
-  X,
-  Star,
-  Heart,
-  Monitor
+  Monitor,
+  Clock,
+  Eye,
+  EyeOff
 } from "lucide-react";
 
 const fadeIn = {
@@ -261,7 +245,6 @@ const Dashboard = () => {
     return true;
   });
   const [showApiKey, setShowApiKey] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState<number>(1);
 
   // Apply theme to document
@@ -428,56 +411,9 @@ const Dashboard = () => {
             </div>
           </nav>
 
-          {/* Menu toggle - right side */}
-          <div className="ml-auto">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 w-8 p-0 md:hidden"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-            </Button>
-            {/* Invisible spacer for md+ screens to balance */}
-            <div className="hidden md:block w-8 h-8" />
-          </div>
+          {/* Spacer to balance the layout */}
+          <div className="w-9 h-9" />
         </div>
-
-        {/* Mobile dropdown menu */}
-        {mobileMenuOpen && (
-          <div className="absolute top-14 left-0 right-0 bg-card border-b border-border p-2 md:hidden">
-            {[
-              { label: "Minha Conta", icon: User, tab: "perfil" },
-              { label: "Preferências", icon: Settings, tab: "preferencias" },
-              { label: "Histórico", icon: History, tab: "historico" },
-              { label: "Ajuda", icon: HelpCircle, tab: "ajuda" },
-            ].map((item) => (
-              <button
-                key={item.tab}
-                onClick={() => {
-                  setActiveTab(item.tab);
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md transition-colors"
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </button>
-            ))}
-            <div className="mt-2 pt-2 border-t border-border">
-              <button
-                onClick={() => {
-                  navigate("/");
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-[13px] font-medium text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Sair
-              </button>
-            </div>
-          </div>
-        )}
       </header>
 
       {/* Main Content */}
