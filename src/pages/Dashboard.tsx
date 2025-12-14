@@ -109,7 +109,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col lg:flex-row">
       {/* Sidebar Desktop - Profile Only */}
-      <aside className="hidden xl:flex flex-col w-[280px] sticky top-0 h-screen p-4 flex-shrink-0">
+      <aside className="hidden lg:flex flex-col w-[280px] sticky top-0 h-screen p-4 flex-shrink-0">
         <UserProfileSidebar 
           user={{
             name: user.name,
@@ -124,7 +124,7 @@ const Dashboard = () => {
       </aside>
 
       {/* Mobile/Tablet Header */}
-      <div className="xl:hidden fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="flex items-center justify-between h-14 px-4">
           <Link to="/" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
@@ -158,7 +158,7 @@ const Dashboard = () => {
           </div>
 
           {/* User avatar for tablet */}
-          <div className="hidden md:flex xl:hidden items-center gap-2">
+          <div className="hidden md:flex lg:hidden items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
               <span className="text-xs font-bold text-primary-foreground">{user.initials}</span>
             </div>
@@ -220,9 +220,9 @@ const Dashboard = () => {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 pt-14 xl:pt-0 min-w-0">
-        {/* Glow Menu Header - Desktop only (xl+) */}
-        <div className="hidden xl:flex justify-center py-4 px-4 border-b border-border/50 bg-background/50 backdrop-blur-sm sticky top-0 z-40">
+      <main className="flex-1 pt-14 lg:pt-0 min-w-0">
+        {/* Glow Menu Header - Desktop only (lg+) */}
+        <div className="hidden lg:flex justify-center py-4 px-4 border-b border-border/50 bg-background/50 backdrop-blur-sm sticky top-0 z-40">
           <MenuBar
             items={[
               {
