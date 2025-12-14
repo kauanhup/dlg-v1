@@ -519,14 +519,14 @@ const Dashboard = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button size="sm" className="flex-1 h-9">
-                  <Zap className="w-4 h-4 mr-2" />
-                  Renovar Licença
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <Button size="sm" className="h-9 text-xs sm:text-sm">
+                  <Zap className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                  <span>Renovar Licença</span>
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1 h-9">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Upgrade
+                <Button variant="outline" size="sm" className="h-9 text-xs sm:text-sm">
+                  <Sparkles className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                  <span>Upgrade</span>
                 </Button>
               </div>
             </div>
