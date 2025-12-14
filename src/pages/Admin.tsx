@@ -1499,30 +1499,6 @@ const SettingsSection = () => {
       </div>
 
       <div className="grid gap-4">
-        {/* Pricing Settings */}
-        <div className="bg-card border border-border rounded-lg p-5">
-          <h3 className="font-semibold text-foreground mb-4">Preços das Sessions</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Preço por Session BR (R$)</label>
-              <input
-                type="number"
-                defaultValue="9.98"
-                step="0.01"
-                className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Preço por Session INTL (R$)</label>
-              <input
-                type="number"
-                defaultValue="5.98"
-                step="0.01"
-                className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-            </div>
-          </div>
-        </div>
 
         {/* System Settings */}
         <div className="bg-card border border-border rounded-lg p-5">
