@@ -38,7 +38,13 @@ import {
   Ban,
   RefreshCw,
   Menu,
-  X
+  X,
+  CreditCard,
+  Calendar,
+  AlertCircle,
+  UserCheck,
+  Repeat,
+  Plus
 } from "lucide-react";
 
 const fadeIn = {
@@ -668,6 +674,312 @@ const SessionsSection = () => {
   );
 };
 
+// Subscriptions Section
+const SubscriptionsSection = () => {
+  const [activeSubTab, setActiveSubTab] = useState<"subscribers" | "plans" | "payments">("subscribers");
+
+  // Subscribers data
+  const subscribers = [
+    { id: 1, name: "João Silva", email: "joao@email.com", plan: "Pro Mensal", status: "active", startDate: "01 Nov 2024", nextBilling: "01 Jan 2025", amount: "R$ 49,90" },
+    { id: 2, name: "Maria Santos", email: "maria@email.com", plan: "Pro Anual", status: "active", startDate: "15 Jun 2024", nextBilling: "15 Jun 2025", amount: "R$ 399,90" },
+    { id: 3, name: "Pedro Costa", email: "pedro@email.com", plan: "Pro Mensal", status: "cancelled", startDate: "10 Set 2024", nextBilling: "—", amount: "R$ 49,90" },
+    { id: 4, name: "Ana Lima", email: "ana@email.com", plan: "Enterprise", status: "active", startDate: "01 Dez 2024", nextBilling: "01 Dez 2025", amount: "R$ 999,90" },
+    { id: 5, name: "Carlos Souza", email: "carlos@email.com", plan: "Pro Mensal", status: "overdue", startDate: "05 Out 2024", nextBilling: "05 Dez 2024", amount: "R$ 49,90" },
+  ];
+
+  // Plans data
+  const plans = [
+    { id: 1, name: "Grátis", price: "R$ 0", period: "—", sessions: 0, features: ["Acesso básico", "Suporte por email"], subscribers: 423, status: "active" },
+    { id: 2, name: "Pro Mensal", price: "R$ 49,90", period: "mês", sessions: 50, features: ["50 sessions/mês", "Suporte prioritário", "API access"], subscribers: 156, status: "active" },
+    { id: 3, name: "Pro Anual", price: "R$ 399,90", period: "ano", sessions: 600, features: ["600 sessions/ano", "Suporte 24/7", "API access", "2 meses grátis"], subscribers: 78, status: "active" },
+    { id: 4, name: "Enterprise", price: "R$ 999,90", period: "ano", sessions: -1, features: ["Sessions ilimitadas", "Suporte dedicado", "SLA 99.9%", "Whitelabel"], subscribers: 12, status: "active" },
+  ];
+
+  // Payments history
+  const payments = [
+    { id: "#PAY-001", user: "João Silva", plan: "Pro Mensal", amount: "R$ 49,90", method: "PIX", status: "paid", date: "01 Dez 2024" },
+    { id: "#PAY-002", user: "Maria Santos", plan: "Pro Anual", amount: "R$ 399,90", method: "Cartão", status: "paid", date: "15 Nov 2024" },
+    { id: "#PAY-003", user: "Carlos Souza", plan: "Pro Mensal", amount: "R$ 49,90", method: "PIX", status: "failed", date: "05 Dez 2024" },
+    { id: "#PAY-004", user: "Ana Lima", plan: "Enterprise", amount: "R$ 999,90", method: "Boleto", status: "pending", date: "01 Dez 2024" },
+    { id: "#PAY-005", user: "Pedro Costa", plan: "Pro Mensal", amount: "R$ 49,90", method: "Cartão", status: "refunded", date: "10 Nov 2024" },
+  ];
+
+  // Metrics calculations
+  const activeSubscribers = subscribers.filter(s => s.status === "active").length;
+  const cancelledSubscribers = subscribers.filter(s => s.status === "cancelled").length;
+  const overdueSubscribers = subscribers.filter(s => s.status === "overdue").length;
+  const mrr = 156 * 49.90 + (78 * 399.90 / 12) + (12 * 999.90 / 12); // Monthly Recurring Revenue
+  const churnRate = (cancelledSubscribers / subscribers.length * 100).toFixed(1);
+
+  const statusStyles = {
+    active: "bg-success/10 text-success",
+    cancelled: "bg-muted text-muted-foreground",
+    overdue: "bg-destructive/10 text-destructive",
+    paid: "bg-success/10 text-success",
+    pending: "bg-warning/10 text-warning",
+    failed: "bg-destructive/10 text-destructive",
+    refunded: "bg-muted text-muted-foreground"
+  };
+
+  const statusLabels = {
+    active: "Ativo",
+    cancelled: "Cancelado",
+    overdue: "Atrasado",
+    paid: "Pago",
+    pending: "Pendente",
+    failed: "Falhou",
+    refunded: "Reembolsado"
+  };
+
+  return (
+    <motion.div {...fadeIn} className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-xl font-semibold text-foreground">Assinaturas</h1>
+          <p className="text-sm text-muted-foreground">Gerenciar planos e assinantes</p>
+        </div>
+        <Button size="sm">
+          <Plus className="w-4 h-4 mr-2" /> Novo Plano
+        </Button>
+      </div>
+
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
+              <UserCheck className="w-5 h-5 text-success" />
+            </div>
+            <div>
+              <p className="text-lg font-bold text-foreground">{activeSubscribers}</p>
+              <p className="text-xs text-muted-foreground">Assinantes Ativos</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-lg font-bold text-foreground">R$ {mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              <p className="text-xs text-muted-foreground">MRR (Receita Mensal)</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 text-warning" />
+            </div>
+            <div>
+              <p className="text-lg font-bold text-foreground">{overdueSubscribers}</p>
+              <p className="text-xs text-muted-foreground">Pagamentos Atrasados</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-destructive/10 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-destructive" />
+            </div>
+            <div>
+              <p className="text-lg font-bold text-foreground">{churnRate}%</p>
+              <p className="text-xs text-muted-foreground">Taxa de Churn</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sub Navigation */}
+      <div className="flex gap-1 bg-muted/50 p-1 rounded-lg w-fit">
+        <button
+          onClick={() => setActiveSubTab("subscribers")}
+          className={cn(
+            "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+            activeSubTab === "subscribers" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Assinantes
+        </button>
+        <button
+          onClick={() => setActiveSubTab("plans")}
+          className={cn(
+            "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+            activeSubTab === "plans" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Planos
+        </button>
+        <button
+          onClick={() => setActiveSubTab("payments")}
+          className={cn(
+            "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+            activeSubTab === "payments" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Pagamentos
+        </button>
+      </div>
+
+      {/* Subscribers Tab */}
+      {activeSubTab === "subscribers" && (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Plano</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Início</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Próx. Cobrança</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {subscribers.map((sub) => (
+                  <tr key={sub.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
+                    <td className="p-4">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{sub.name}</p>
+                        <p className="text-xs text-muted-foreground">{sub.email}</p>
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm text-foreground">{sub.plan}</td>
+                    <td className="p-4">
+                      <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[sub.status as keyof typeof statusStyles])}>
+                        {statusLabels[sub.status as keyof typeof statusLabels]}
+                      </span>
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground">{sub.startDate}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{sub.nextBilling}</td>
+                    <td className="p-4 text-sm font-medium text-foreground">{sub.amount}</td>
+                    <td className="p-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-card border border-border">
+                          <DropdownMenuItem className="cursor-pointer">
+                            <Eye className="w-4 h-4 mr-2" /> Ver detalhes
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="cursor-pointer">
+                            <Repeat className="w-4 h-4 mr-2" /> Renovar
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
+                            <XCircle className="w-4 h-4 mr-2" /> Cancelar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Plans Tab */}
+      {activeSubTab === "plans" && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {plans.map((plan) => (
+            <div key={plan.id} className="bg-card border border-border rounded-lg p-5">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="font-semibold text-foreground">{plan.name}</h3>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-2xl font-bold text-foreground">{plan.price}</span>
+                    {plan.period !== "—" && <span className="text-sm text-muted-foreground">/{plan.period}</span>}
+                  </div>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-card border border-border">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Edit className="w-4 h-4 mr-2" /> Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
+                      <Trash2 className="w-4 h-4 mr-2" /> Desativar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="space-y-2 mb-4">
+                {plan.features.map((feature, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CheckCircle className="w-4 h-4 text-success" />
+                    {feature}
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between pt-4 border-t border-border">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">{plan.subscribers} assinantes</span>
+                </div>
+                <span className={cn(
+                  "text-xs px-2 py-1 rounded-md",
+                  plan.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                )}>
+                  {plan.status === "active" ? "Ativo" : "Inativo"}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Payments Tab */}
+      {activeSubTab === "payments" && (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">ID</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Plano</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Método</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((payment) => (
+                  <tr key={payment.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
+                    <td className="p-4 text-sm font-mono text-foreground">{payment.id}</td>
+                    <td className="p-4 text-sm text-foreground">{payment.user}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{payment.plan}</td>
+                    <td className="p-4 text-sm font-medium text-foreground">{payment.amount}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{payment.method}</td>
+                    <td className="p-4">
+                      <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[payment.status as keyof typeof statusStyles])}>
+                        {statusLabels[payment.status as keyof typeof statusLabels]}
+                      </span>
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground">{payment.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
 // Settings Section
 const SettingsSection = () => {
   return (
@@ -756,11 +1068,12 @@ const Admin = () => {
     initials: "AD",
   };
 
-  const sidebarTabs = ["dashboard", "users", "orders", "sessions", "settings"];
+  const sidebarTabs = ["dashboard", "users", "subscriptions", "orders", "sessions", "settings"];
 
   const profileNavItems = [
     { label: "Dashboard", icon: <LayoutDashboard className="h-full w-full" />, onClick: () => setActiveTab("dashboard") },
     { label: "Usuários", icon: <Users className="h-full w-full" />, onClick: () => setActiveTab("users") },
+    { label: "Assinaturas", icon: <CreditCard className="h-full w-full" />, onClick: () => setActiveTab("subscriptions") },
     { label: "Pedidos", icon: <ShoppingCart className="h-full w-full" />, onClick: () => setActiveTab("orders") },
     { label: "Sessions", icon: <Globe className="h-full w-full" />, onClick: () => setActiveTab("sessions") },
     { label: "Configurações", icon: <Settings className="h-full w-full" />, onClick: () => setActiveTab("settings"), isSeparator: true },
@@ -784,6 +1097,8 @@ const Admin = () => {
         return <DashboardSection />;
       case "users":
         return <UsersSection />;
+      case "subscriptions":
+        return <SubscriptionsSection />;
       case "orders":
         return <OrdersSection />;
       case "sessions":
