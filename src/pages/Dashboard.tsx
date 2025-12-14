@@ -394,7 +394,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md relative">
               {[
                 { label: "Licenças", tab: "licencas", icon: Key },
-                { label: "Números", tab: "numeros", icon: Phone },
+                { label: "Sessions", tab: "numeros", icon: Globe },
                 { label: "Loja", tab: "comprar", icon: CreditCard },
               ].map((item) => (
                 <motion.button
@@ -476,14 +476,14 @@ const Dashboard = () => {
         {/* Desktop Header */}
         <header className="hidden lg:flex items-center justify-between h-14 px-6 border-b border-border bg-card sticky top-0 z-40">
           <nav className="flex items-center gap-1 relative">
-            {[
-              { label: "Licenças", tab: "licencas", icon: Key },
-              { label: "Números", tab: "numeros", icon: Phone },
-              { label: "Loja", tab: "comprar", icon: CreditCard },
-            ].map((item) => (
-              <motion.button
-                key={item.tab}
-                onClick={() => setActiveTab(item.tab)}
+              {[
+                { label: "Licenças", tab: "licencas", icon: Key },
+                { label: "Sessions", tab: "numeros", icon: Globe },
+                { label: "Loja", tab: "comprar", icon: CreditCard },
+              ].map((item) => (
+                <motion.button
+                  key={item.tab}
+                  onClick={() => setActiveTab(item.tab)}
                 className={cn(
                   "relative flex items-center gap-2 px-4 py-2 text-[13px] font-medium rounded-md transition-colors",
                   activeTab === item.tab
@@ -599,40 +599,68 @@ const Dashboard = () => {
           </motion.div>
         )}
 
-        {/* Números */}
+        {/* Sessions */}
         {activeTab === "numeros" && (
           <motion.div {...fadeIn} className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-lg font-semibold text-foreground">Números</h1>
-                <p className="text-sm text-muted-foreground">Gerencie seus números</p>
+                <h1 className="text-lg font-semibold text-foreground">Minhas Sessions</h1>
+                <p className="text-sm text-muted-foreground">Pacotes de sessions adquiridos</p>
               </div>
-              <Button size="sm" className="h-9">
+              <Button size="sm" className="h-9" onClick={() => setActiveTab("comprar")}>
                 <Plus className="w-4 h-4 mr-2" />
-                Adicionar
+                Comprar mais
               </Button>
             </div>
 
-            <div className="space-y-2">
-              {sessions.map((session) => (
+            <div className="space-y-3">
+              {[
+                { id: 1, type: "Brasileiras", qty: 25, remaining: 18, purchasedAt: "10 Dez 2024" },
+                { id: 2, type: "Estrangeiras", qty: 10, remaining: 10, purchasedAt: "12 Dez 2024" },
+              ].map((pack) => (
                 <div 
-                  key={session.id}
-                  className="bg-card border border-border rounded-md p-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
+                  key={pack.id}
+                  className="bg-card border border-border rounded-md p-4 space-y-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-success/10 rounded-md flex items-center justify-center">
-                      <Phone className="w-4 h-4 text-success" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-10 h-10 rounded-md flex items-center justify-center",
+                        pack.type === "Brasileiras" ? "bg-success/10" : "bg-primary/10"
+                      )}>
+                        <Globe className={cn(
+                          "w-5 h-5",
+                          pack.type === "Brasileiras" ? "text-success" : "text-primary"
+                        )} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">Sessions {pack.type}</p>
+                        <p className="text-xs text-muted-foreground">Comprado em {pack.purchasedAt}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{session.number}</p>
-                      <p className="text-xs text-muted-foreground">{session.addedAt}</p>
-                    </div>
+                    <Button size="sm" variant="outline" className="h-8 gap-1.5">
+                      <Download className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline text-xs">Baixar</span>
+                    </Button>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="px-2 py-1 bg-success/10 text-success rounded-md text-xs font-medium">
-                      Ativo
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  
+                  {/* Progress */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Disponíveis</span>
+                      <span className="text-foreground font-medium">{pack.remaining} de {pack.qty}</span>
+                    </div>
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(pack.remaining / pack.qty) * 100}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className={cn(
+                          "h-full rounded-full",
+                          pack.type === "Brasileiras" ? "bg-success" : "bg-primary"
+                        )}
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -640,8 +668,8 @@ const Dashboard = () => {
 
             <div className="bg-muted/30 border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-foreground">Precisa de mais números?</p>
-                <p className="text-sm text-muted-foreground">Adicione com desconto especial</p>
+                <p className="text-sm font-medium text-foreground">Precisa de mais sessions?</p>
+                <p className="text-sm text-muted-foreground">Compre com desconto especial</p>
               </div>
               <Button size="sm" variant="outline" className="h-9" onClick={() => setActiveTab("comprar")}>
                 Ver pacotes
