@@ -661,30 +661,121 @@ const Dashboard = () => {
               <div className="space-y-6">
                 {/* API Keys */}
                 <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                  <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
-                    <KeyRound className="w-4 h-4 text-primary" />
-                    Chaves de API
-                  </h3>
-                  <div className="bg-secondary/40 rounded-lg p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-medium text-foreground">API Key Principal</p>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-6 w-6 p-0"
-                        onClick={() => setShowApiKey(!showApiKey)}
-                      >
-                        {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </Button>
-                    </div>
-                    <p className="text-[10px] font-mono text-muted-foreground break-all">
-                      {showApiKey ? "sk_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx" : "sk_live_••••••••••••••••••••••••••••"}
-                    </p>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
+                      <KeyRound className="w-4 h-4 text-primary" />
+                      Chaves de API
+                    </h3>
+                    <span className="text-[10px] bg-success/20 text-success px-2 py-0.5 rounded font-medium">2 Ativas</span>
                   </div>
-                  <Button variant="outline" size="sm" className="w-full h-8 gap-1.5">
-                    <Plus className="w-3.5 h-3.5" />
-                    Nova Chave
-                  </Button>
+
+                  {/* API Key Principal */}
+                  <div className="bg-secondary/40 rounded-xl p-4 space-y-3 border border-border/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                        <p className="text-xs font-medium text-foreground">Production Key</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                          onClick={() => setShowApiKey(!showApiKey)}
+                        >
+                          {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="bg-background/50 rounded-lg px-3 py-2 border border-border/30">
+                      <p className="text-[11px] font-mono text-muted-foreground break-all">
+                        {showApiKey ? "sk_live_7x8k9m2n3p4q5r6s7t8u9v0wxyz123456" : "sk_live_••••••••••••••••••••••••••••••••"}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span>Criada em 01 Dez 2024</span>
+                      <span>Último uso: 2 min atrás</span>
+                    </div>
+                  </div>
+
+                  {/* API Key Teste */}
+                  <div className="bg-secondary/40 rounded-xl p-4 space-y-3 border border-border/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-warning" />
+                        <p className="text-xs font-medium text-foreground">Test Key</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="bg-background/50 rounded-lg px-3 py-2 border border-border/30">
+                      <p className="text-[11px] font-mono text-muted-foreground break-all">
+                        sk_test_••••••••••••••••••••••••••••••••
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span>Criada em 05 Dez 2024</span>
+                      <span>Último uso: 3 dias atrás</span>
+                    </div>
+                  </div>
+
+                  {/* Estatísticas */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-secondary/30 rounded-lg p-2.5 text-center">
+                      <p className="text-sm font-bold text-foreground">1.2k</p>
+                      <p className="text-[9px] text-muted-foreground uppercase">Requisições/dia</p>
+                    </div>
+                    <div className="bg-secondary/30 rounded-lg p-2.5 text-center">
+                      <p className="text-sm font-bold text-success">99.9%</p>
+                      <p className="text-[9px] text-muted-foreground uppercase">Uptime</p>
+                    </div>
+                    <div className="bg-secondary/30 rounded-lg p-2.5 text-center">
+                      <p className="text-sm font-bold text-foreground">45ms</p>
+                      <p className="text-[9px] text-muted-foreground uppercase">Latência</p>
+                    </div>
+                  </div>
+
+                  {/* Ações */}
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 h-8 gap-1.5 text-xs">
+                      <Activity className="w-3.5 h-3.5" />
+                      Ver Logs
+                    </Button>
+                    <Button size="sm" className="flex-1 h-8 gap-1.5 bg-gradient-primary hover:opacity-90 text-xs">
+                      <Plus className="w-3.5 h-3.5" />
+                      Nova Chave
+                    </Button>
+                  </div>
+
+                  {/* Aviso de segurança */}
+                  <div className="bg-warning/5 border border-warning/20 rounded-lg p-3 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[10px] text-foreground font-medium">Mantenha suas chaves seguras</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Nunca compartilhe ou exponha suas API keys em código público.</p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Config da Ferramenta */}
