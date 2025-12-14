@@ -1,6 +1,12 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { avatars, type Avatar } from "@/components/ui/avatar-picker";
 
 interface NavItem {
   icon: React.ReactNode;
@@ -15,6 +21,7 @@ interface UserProfile {
   email: string;
   avatarUrl?: string;
   initials?: string;
+  selectedAvatarId?: number;
 }
 
 interface UserProfileSidebarProps {
@@ -26,12 +33,21 @@ interface UserProfileSidebarProps {
     onClick: () => void;
   };
   className?: string;
+  onAvatarChange?: (avatar: Avatar) => void;
 }
 
 export const UserProfileSidebar = React.forwardRef<HTMLDivElement, UserProfileSidebarProps>(
-  ({ user, navItems, logoutItem, className }, ref) => {
+  ({ user, navItems, logoutItem, className, onAvatarChange }, ref) => {
     const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
     const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
+    const [avatarOpen, setAvatarOpen] = React.useState(false);
+
+    const selectedAvatar = avatars.find(a => a.id === user.selectedAvatarId) || null;
+
+    const handleAvatarSelect = (avatar: Avatar) => {
+      onAvatarChange?.(avatar);
+      setAvatarOpen(false);
+    };
 
     return (
       <aside
@@ -41,22 +57,58 @@ export const UserProfileSidebar = React.forwardRef<HTMLDivElement, UserProfileSi
           className
         )}
       >
-        {/* User Header */}
+        {/* User Header with Avatar Picker */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-3">
-            {user.avatarUrl ? (
-              <img
-                src={user.avatarUrl}
-                alt={user.name}
-                className="h-10 w-10 rounded-md object-cover"
-              />
-            ) : (
-              <div className="h-10 w-10 rounded-md bg-primary flex items-center justify-center">
-                <span className="text-sm font-semibold text-primary-foreground">
-                  {user.initials || user.name.charAt(0)}
-                </span>
-              </div>
-            )}
+            <Popover open={avatarOpen} onOpenChange={setAvatarOpen}>
+              <PopoverTrigger asChild>
+                <button className="relative group focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-md">
+                  {selectedAvatar ? (
+                    <div className="h-10 w-10 rounded-md overflow-hidden border border-border bg-muted flex items-center justify-center transition-transform group-hover:scale-105">
+                      <div className="scale-[1.1]">{selectedAvatar.svg}</div>
+                    </div>
+                  ) : user.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt={user.name}
+                      className="h-10 w-10 rounded-md object-cover transition-transform group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-md bg-primary flex items-center justify-center transition-transform group-hover:scale-105">
+                      <span className="text-sm font-semibold text-primary-foreground">
+                        {user.initials || user.name.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 rounded-md bg-black/0 group-hover:bg-black/10 transition-colors" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-auto p-3" sideOffset={8}>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Escolha seu avatar</p>
+                  <div className="flex flex-wrap gap-2">
+                    {avatars.map((avatar) => (
+                      <motion.button
+                        key={avatar.id}
+                        onClick={() => handleAvatarSelect(avatar)}
+                        className={cn(
+                          "relative w-11 h-11 rounded-md overflow-hidden border-2 transition-colors",
+                          selectedAvatar?.id === avatar.id 
+                            ? "border-primary bg-primary/10" 
+                            : "border-border hover:border-muted-foreground hover:bg-muted/50"
+                        )}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <div className="w-full h-full flex items-center justify-center">
+                          {avatar.svg}
+                        </div>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm text-foreground truncate">{user.name}</p>
               <p className="text-xs text-muted-foreground truncate">{user.email}</p>

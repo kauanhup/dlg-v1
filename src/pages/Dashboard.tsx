@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { UserProfileSidebar } from "@/components/ui/menu";
 import { MenuBar } from "@/components/ui/glow-menu";
-import { AvatarPicker } from "@/components/ui/avatar-picker";
+import { AvatarPicker, avatars } from "@/components/ui/avatar-picker";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,6 +69,7 @@ const Dashboard = () => {
   const [isDarkTheme, setIsDarkTheme] = useState(true);
   const [showApiKey, setShowApiKey] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [selectedAvatarId, setSelectedAvatarId] = useState<number>(1);
   
   const userLicense = {
     key: "SWEX-XXXX-XXXX-XXXX",
@@ -123,10 +124,11 @@ const Dashboard = () => {
             name: user.name,
             email: user.email,
             initials: user.initials,
-            avatarUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=60"
+            selectedAvatarId: selectedAvatarId
           }}
           navItems={profileNavItems}
           logoutItem={logoutItem}
+          onAvatarChange={(avatar) => setSelectedAvatarId(avatar.id)}
           className="h-full border-r-0"
         />
       </aside>
@@ -137,8 +139,14 @@ const Dashboard = () => {
           {/* Profile dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-8 h-8 rounded-md bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50">
-                <span className="text-xs font-semibold text-primary-foreground">{user.initials}</span>
+              <button className="w-8 h-8 rounded-md overflow-hidden bg-muted flex items-center justify-center hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50">
+                {selectedAvatarId ? (
+                  <div className="scale-[0.9]">
+                    {avatars.find(a => a.id === selectedAvatarId)?.svg}
+                  </div>
+                ) : (
+                  <span className="text-xs font-semibold text-primary-foreground bg-primary w-full h-full flex items-center justify-center">{user.initials}</span>
+                )}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56 bg-card border border-border">
@@ -529,14 +537,6 @@ const Dashboard = () => {
             </div>
 
             <div className="space-y-4">
-              {/* Avatar */}
-              <div className="bg-card border border-border rounded-md p-5 space-y-4">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <User className="w-4 h-4 text-primary" />
-                  Avatar
-                </h3>
-                <AvatarPicker />
-              </div>
 
               {/* Tema */}
               <div className="bg-card border border-border rounded-md p-5 space-y-4">
