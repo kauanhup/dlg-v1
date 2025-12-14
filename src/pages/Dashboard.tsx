@@ -490,25 +490,26 @@ const Dashboard = () => {
           <motion.div {...fadeIn} className="space-y-6">
             <div>
               <h1 className="text-lg font-semibold text-foreground">Loja</h1>
-              <p className="text-sm text-muted-foreground">Expanda seus recursos</p>
+              <p className="text-sm text-muted-foreground">Adquira pacotes de sessions</p>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
+              {/* Sessions Brasileiras */}
               <div className="bg-card border border-border rounded-md p-5 space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
-                    <Phone className="w-5 h-5 text-primary" />
+                  <div className="w-10 h-10 bg-success/10 rounded-md flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-success" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground text-sm">Pacote de Números</h3>
-                    <p className="text-xs text-muted-foreground">Adicione mais números</p>
+                    <h3 className="font-semibold text-foreground text-sm">Sessions Brasileiras</h3>
+                    <p className="text-xs text-muted-foreground">Números do Brasil</p>
                   </div>
                 </div>
                 <div className="space-y-2">
                   {[
-                    { qty: "+5 números", price: "R$ 29,90" },
-                    { qty: "+10 números", price: "R$ 49,90" },
-                    { qty: "+25 números", price: "R$ 99,90", popular: true },
+                    { qty: "+5 sessions", price: "R$ 49,90" },
+                    { qty: "+10 sessions", price: "R$ 89,90" },
+                    { qty: "+25 sessions", price: "R$ 199,90", popular: true },
                   ].map((item, i) => (
                     <div 
                       key={i}
@@ -532,21 +533,22 @@ const Dashboard = () => {
                 <Button size="sm" className="w-full h-9">Comprar</Button>
               </div>
 
+              {/* Sessions Estrangeiras */}
               <div className="bg-card border border-border rounded-md p-5 space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent/10 rounded-md flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-accent" />
+                  <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground text-sm">Pacote de Sessions</h3>
-                    <p className="text-xs text-muted-foreground">Mais sessões simultâneas</p>
+                    <h3 className="font-semibold text-foreground text-sm">Sessions Estrangeiras</h3>
+                    <p className="text-xs text-muted-foreground">Números internacionais</p>
                   </div>
                 </div>
                 <div className="space-y-2">
                   {[
-                    { qty: "+3 sessions", price: "R$ 39,90" },
-                    { qty: "+5 sessions", price: "R$ 59,90" },
-                    { qty: "+10 sessions", price: "R$ 99,90", popular: true },
+                    { qty: "+5 sessions", price: "R$ 29,90" },
+                    { qty: "+10 sessions", price: "R$ 49,90" },
+                    { qty: "+25 sessions", price: "R$ 99,90", popular: true },
                   ].map((item, i) => (
                     <div 
                       key={i}
@@ -571,28 +573,22 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="bg-warning/10 border border-warning/20 rounded-md p-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-warning/10 rounded-md flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-warning" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground text-sm">Upgrade Vitalício</h3>
-                    <p className="text-sm text-muted-foreground">Pague uma vez, use para sempre</p>
-                  </div>
+            {/* Upgrade */}
+            <div className="bg-muted/30 border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Shield className="w-5 h-5 text-warning" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">Upgrade Vitalício</p>
+                  <p className="text-xs text-muted-foreground">Pague uma vez, use para sempre</p>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-xl font-bold text-warning">R$ 1.997</p>
-                    <p className="text-xs text-muted-foreground">pagamento único</p>
-                  </div>
-                  <Link to="/comprar">
-                    <Button size="sm" className="h-9 bg-warning hover:bg-warning/90 text-warning-foreground">
-                      Ver <ArrowUpRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  </Link>
-                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <p className="text-lg font-bold text-warning">R$ 1.997</p>
+                <Link to="/comprar">
+                  <Button size="sm" variant="outline" className="h-8">
+                    Ver
+                  </Button>
+                </Link>
               </div>
             </div>
           </motion.div>
