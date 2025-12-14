@@ -782,25 +782,19 @@ const Dashboard = () => {
                     Encerrar todas
                   </Button>
                 </div>
-                <div className="space-y-2 sm:grid sm:grid-cols-3 sm:gap-2 sm:space-y-0">
+                <div className="space-y-2">
                   {activeSessions.map((session, i) => (
-                    <div key={i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${session.current ? 'bg-success' : 'bg-muted-foreground'}`} />
-                        <div className="min-w-0 flex-1">
+                        <div className="min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">{session.device}</p>
-                          <p className="text-xs text-muted-foreground truncate">{session.location} • {session.lastActive}</p>
+                          <p className="text-xs text-muted-foreground">{session.location} • {session.lastActive}</p>
                         </div>
                       </div>
-                      <div className="flex justify-end mt-2 sm:mt-0">
-                        {session.current ? (
-                          <span className="text-[9px] bg-success/20 text-success px-1.5 py-0.5 rounded font-medium">ATUAL</span>
-                        ) : (
-                          <Button variant="ghost" size="sm" className="h-6 text-[10px] text-muted-foreground px-2">
-                            Encerrar
-                          </Button>
-                        )}
-                      </div>
+                      <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive flex-shrink-0">
+                        Encerrar
+                      </Button>
                     </div>
                   ))}
                 </div>
