@@ -625,6 +625,10 @@ const Dashboard = () => {
                     <p className="text-xs text-muted-foreground">Comprado em 10 Dez 2024 • 5 sessions</p>
                   </div>
                 </div>
+                <Button size="sm" variant="outline" className="h-8 gap-1.5">
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="text-xs">Baixar todas</span>
+                </Button>
               </div>
               <div className="divide-y divide-border">
                 {[1, 2, 3, 4, 5].map((num) => (
@@ -658,6 +662,10 @@ const Dashboard = () => {
                     <p className="text-xs text-muted-foreground">Comprado em 12 Dez 2024 • 3 sessions</p>
                   </div>
                 </div>
+                <Button size="sm" variant="outline" className="h-8 gap-1.5">
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="text-xs">Baixar todas</span>
+                </Button>
               </div>
               <div className="divide-y divide-border">
                 {[1, 2, 3].map((num) => (
