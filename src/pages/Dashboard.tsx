@@ -782,23 +782,25 @@ const Dashboard = () => {
                     Encerrar todas
                   </Button>
                 </div>
-                <div className="grid gap-2 sm:grid-cols-3">
+                <div className="space-y-2 sm:grid sm:grid-cols-3 sm:gap-2 sm:space-y-0">
                   {activeSessions.map((session, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
-                      <div className="flex items-center gap-3">
+                    <div key={i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${session.current ? 'bg-success' : 'bg-muted-foreground'}`} />
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-foreground truncate">{session.device}</p>
-                          <p className="text-xs text-muted-foreground">{session.location} • {session.lastActive}</p>
+                          <p className="text-xs text-muted-foreground truncate">{session.location} • {session.lastActive}</p>
                         </div>
                       </div>
-                      {session.current ? (
-                        <span className="text-[9px] bg-success/20 text-success px-1.5 py-0.5 rounded font-medium flex-shrink-0">ATUAL</span>
-                      ) : (
-                        <Button variant="ghost" size="sm" className="h-6 text-[10px] text-muted-foreground flex-shrink-0 px-2">
-                          Encerrar
-                        </Button>
-                      )}
+                      <div className="flex justify-end mt-2 sm:mt-0">
+                        {session.current ? (
+                          <span className="text-[9px] bg-success/20 text-success px-1.5 py-0.5 rounded font-medium">ATUAL</span>
+                        ) : (
+                          <Button variant="ghost" size="sm" className="h-6 text-[10px] text-muted-foreground px-2">
+                            Encerrar
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -809,45 +811,70 @@ const Dashboard = () => {
 
         {/* Ajuda */}
         {activeTab === "ajuda" && (
-          <motion.div {...fadeIn} className="max-w-4xl mx-auto space-y-6">
-            <div>
-              <h1 className="text-xl font-display font-bold text-foreground">Ajuda</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Tire suas dúvidas</p>
+          <motion.div {...fadeIn} className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-lg font-semibold text-foreground">Ajuda</h1>
+                <p className="text-sm text-muted-foreground">Precisa de suporte?</p>
+              </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-3">
-              {[
-                { title: "Documentação", desc: "Guias completos", icon: ExternalLink },
-                { title: "FAQ", desc: "Perguntas frequentes", icon: HelpCircle },
-                { title: "Suporte", desc: "Fale conosco", icon: MessageCircle },
-                { title: "Comunidade", desc: "Grupo Telegram", icon: Phone },
-              ].map((item, i) => (
-                <div 
-                  key={i}
-                  className="bg-card border border-border rounded-xl p-4 hover:border-primary/30 cursor-pointer transition-colors"
+            {/* WhatsApp Card */}
+            <motion.div 
+              className="bg-card border border-border rounded-md p-6 sm:p-8"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-16 h-16 bg-[#25D366]/10 rounded-full flex items-center justify-center">
+                  <MessageCircle className="w-8 h-8 text-[#25D366]" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-lg font-semibold text-foreground">Fale com a gente</h2>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    Nosso time de suporte está pronto para te ajudar. Respondemos rapidamente pelo WhatsApp!
+                  </p>
+                </div>
+                <Button 
+                  size="lg" 
+                  className="mt-4 gap-2 bg-[#25D366] hover:bg-[#25D366]/90 text-white shadow-lg shadow-[#25D366]/20"
+                  onClick={() => window.open("https://wa.me/5511999999999", "_blank")}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <item.icon className="w-4 h-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{item.title}</p>
-                      <p className="text-xs text-muted-foreground">{item.desc}</p>
-                    </div>
+                  <MessageCircle className="w-5 h-5" />
+                  Chamar no WhatsApp
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Atendimento de Seg a Sex, 9h às 18h
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Info Cards */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="bg-card border border-border rounded-md p-4 transition-all hover:bg-muted/50">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Clock className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Tempo de resposta</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Respondemos em até 2 horas durante o horário comercial</p>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-foreground">Ajuda urgente?</p>
-                <p className="text-xs text-muted-foreground">Respondemos em até 2h</p>
               </div>
-              <Button size="sm" className="h-8 gap-1.5 bg-gradient-primary hover:opacity-90">
-                <MessageCircle className="w-3.5 h-3.5" />
-                Chamado
-              </Button>
+              <div className="bg-card border border-border rounded-md p-4 transition-all hover:bg-muted/50">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Shield className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Suporte especializado</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Time pronto para resolver qualquer problema</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
