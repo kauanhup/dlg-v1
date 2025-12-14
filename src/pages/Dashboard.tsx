@@ -81,7 +81,6 @@ const Dashboard = () => {
   const [showApiKey, setShowApiKey] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState<number>(1);
-  const [selectedLanguage, setSelectedLanguage] = useState("pt-BR");
 
   // Apply theme to document
   useEffect(() => {
@@ -92,11 +91,6 @@ const Dashboard = () => {
     }
     localStorage.setItem('theme', isDarkTheme ? 'dark' : 'light');
   }, [isDarkTheme]);
-
-  const languages = [
-    { code: "pt-BR", label: "Português (BR)", flag: "🇧🇷" },
-    { code: "en-US", label: "English (US)", flag: "🇺🇸" },
-  ];
   
   const userLicense = {
     key: "SWEX-XXXX-XXXX-XXXX",
@@ -644,40 +638,6 @@ const Dashboard = () => {
                       </div>
                     </div>
                   ))}
-                </div>
-              </div>
-
-              {/* Idioma e Região */}
-              <div className="bg-card border border-border rounded-md p-5 space-y-4">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-primary" />
-                  Idioma e Região
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Idioma</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {languages.map((lang) => (
-                        <button
-                          key={lang.code}
-                          onClick={() => setSelectedLanguage(lang.code)}
-                          className={cn(
-                            "flex items-center gap-2 p-3 rounded-md border transition-colors text-left",
-                            selectedLanguage === lang.code 
-                              ? "border-primary bg-primary/10" 
-                              : "border-border hover:bg-muted/50"
-                          )}
-                        >
-                          <span className="text-lg">{lang.flag}</span>
-                          <span className="text-sm font-medium truncate">{lang.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="bg-muted/50 rounded-md p-3">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Fuso horário</p>
-                    <p className="text-sm text-foreground mt-1">Brasília (GMT-3)</p>
-                  </div>
                 </div>
               </div>
             </div>
