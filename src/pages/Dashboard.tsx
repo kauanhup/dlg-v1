@@ -115,8 +115,8 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col lg:flex-row">
-      {/* Sidebar Desktop - Profile Only */}
-      <aside className="hidden lg:flex flex-col w-[280px] sticky top-0 h-screen p-4 flex-shrink-0">
+      {/* Sidebar Desktop */}
+      <aside className="hidden lg:flex flex-col w-[256px] sticky top-0 h-screen flex-shrink-0 border-r border-border">
         <UserProfileSidebar 
           user={{
             name: user.name,
@@ -126,262 +126,230 @@ const Dashboard = () => {
           }}
           navItems={profileNavItems}
           logoutItem={logoutItem}
-          className="h-full"
+          className="h-full border-r-0"
         />
       </aside>
 
       {/* Mobile/Tablet Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
-        <div className="flex items-center justify-between h-14 px-3">
-          {/* Left side: Profile icon */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
+        <div className="flex items-center justify-between h-14 px-4">
+          {/* Profile dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background flex-shrink-0">
-                <span className="text-xs font-bold text-primary-foreground">{user.initials}</span>
+              <button className="w-8 h-8 rounded-md bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50">
+                <span className="text-xs font-semibold text-primary-foreground">{user.initials}</span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 bg-popover border border-border z-50">
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium text-foreground">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
-                </div>
+            <DropdownMenuContent align="start" className="w-56 bg-card border border-border">
+              <DropdownMenuLabel className="font-normal px-3 py-2">
+                <p className="text-sm font-medium text-foreground">{user.name}</p>
+                <p className="text-xs text-muted-foreground">{user.email}</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setActiveTab("perfil")} className="cursor-pointer">
+              <DropdownMenuItem onClick={() => setActiveTab("perfil")} className="px-3 py-2 cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
-                <span>Minha Conta</span>
+                Minha Conta
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveTab("preferencias")} className="cursor-pointer">
+              <DropdownMenuItem onClick={() => setActiveTab("preferencias")} className="px-3 py-2 cursor-pointer">
                 <Settings className="mr-2 h-4 w-4" />
-                <span>Preferências</span>
+                Preferências
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveTab("historico")} className="cursor-pointer">
+              <DropdownMenuItem onClick={() => setActiveTab("historico")} className="px-3 py-2 cursor-pointer">
                 <History className="mr-2 h-4 w-4" />
-                <span>Histórico</span>
+                Histórico
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setActiveTab("ajuda")} className="cursor-pointer">
+              <DropdownMenuItem onClick={() => setActiveTab("ajuda")} className="px-3 py-2 cursor-pointer">
                 <HelpCircle className="mr-2 h-4 w-4" />
-                <span>Ajuda</span>
+                Ajuda
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/")} className="cursor-pointer text-destructive focus:text-destructive">
+              <DropdownMenuItem onClick={() => navigate("/")} className="px-3 py-2 cursor-pointer text-destructive focus:text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Sair</span>
+                Sair
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Center: GlowMenu */}
-          <div className="flex-1 flex justify-center px-2 overflow-x-auto scrollbar-hide">
-            <MenuBar
-              items={[
-                {
-                  icon: Key,
-                  label: "Licenças",
-                  href: "#",
-                  gradient: "radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.06) 50%, rgba(29,78,216,0) 100%)",
-                  iconColor: "text-blue-500",
-                },
-                {
-                  icon: Phone,
-                  label: "Números",
-                  href: "#",
-                  gradient: "radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(22,163,74,0.06) 50%, rgba(21,128,61,0) 100%)",
-                  iconColor: "text-green-500",
-                },
-                {
-                  icon: CreditCard,
-                  label: "Loja",
-                  href: "#",
-                  gradient: "radial-gradient(circle, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.06) 50%, rgba(194,65,12,0) 100%)",
-                  iconColor: "text-orange-500",
-                },
-              ]}
-              activeItem={activeTab === "licencas" ? "Licenças" : activeTab === "numeros" ? "Números" : activeTab === "comprar" ? "Loja" : ""}
-              onItemClick={(label) => {
-                if (label === "Licenças") setActiveTab("licencas");
-                else if (label === "Números") setActiveTab("numeros");
-                else if (label === "Loja") setActiveTab("comprar");
-              }}
-              className="scale-[0.85] origin-center"
-            />
-          </div>
+          {/* Center: Navigation */}
+          <nav className="flex-1 flex justify-center">
+            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md">
+              {[
+                { label: "Licenças", tab: "licencas", icon: Key },
+                { label: "Números", tab: "numeros", icon: Phone },
+                { label: "Loja", tab: "comprar", icon: CreditCard },
+              ].map((item) => (
+                <button
+                  key={item.tab}
+                  onClick={() => setActiveTab(item.tab)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors",
+                    activeTab === item.tab
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <item.icon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </nav>
 
-          {/* Right side: Burger menu (mobile only) */}
+          {/* Menu toggle */}
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-9 w-9 p-0 flex-shrink-0 md:hidden"
+            className="h-8 w-8 p-0 md:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </Button>
         </div>
 
-        {/* Mobile Menu Dropdown */}
+        {/* Mobile dropdown menu */}
         {mobileMenuOpen && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="absolute top-14 left-0 right-0 bg-background border-b border-border p-3 space-y-1 md:hidden"
-          >
+          <div className="absolute top-14 left-0 right-0 bg-card border-b border-border p-2 md:hidden">
             {[
-              { label: "Minha Conta", icon: <User className="h-full w-full" />, onClick: () => setActiveTab("perfil") },
-              { label: "Preferências", icon: <Settings className="h-full w-full" />, onClick: () => setActiveTab("preferencias") },
-              { label: "Histórico", icon: <History className="h-full w-full" />, onClick: () => setActiveTab("historico") },
-              { label: "Ajuda", icon: <HelpCircle className="h-full w-full" />, onClick: () => setActiveTab("ajuda") },
-            ].map((item, index) => (
+              { label: "Minha Conta", icon: User, tab: "perfil" },
+              { label: "Preferências", icon: Settings, tab: "preferencias" },
+              { label: "Histórico", icon: History, tab: "historico" },
+              { label: "Ajuda", icon: HelpCircle, tab: "ajuda" },
+            ].map((item) => (
               <button
-                key={index}
+                key={item.tab}
                 onClick={() => {
-                  item.onClick?.();
+                  setActiveTab(item.tab);
                   setMobileMenuOpen(false);
                 }}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
-                  "text-muted-foreground hover:bg-secondary/50"
-                )}
+                className="w-full flex items-center gap-3 px-3 py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md transition-colors"
               >
-                <span className="w-5 h-5">{item.icon}</span>
-                <span>{item.label}</span>
+                <item.icon className="w-4 h-4" />
+                {item.label}
               </button>
             ))}
-            <div className="pt-2 mt-2 border-t border-border">
+            <div className="mt-2 pt-2 border-t border-border">
               <button
                 onClick={() => {
                   navigate("/");
                   setMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10"
+                className="w-full flex items-center gap-3 px-3 py-2 text-[13px] font-medium text-destructive hover:bg-destructive/10 rounded-md transition-colors"
               >
-                <LogOut className="w-5 h-5" />
-                <span>Sair</span>
+                <LogOut className="w-4 h-4" />
+                Sair
               </button>
             </div>
-          </motion.div>
+          </div>
         )}
-      </div>
+      </header>
 
       {/* Main Content */}
       <main className="flex-1 pt-14 lg:pt-0 min-w-0">
-        {/* Glow Menu Header - Desktop only (lg+) */}
-        <div className="hidden lg:flex justify-center py-4 px-4 border-b border-border/50 bg-background/50 backdrop-blur-sm sticky top-0 z-40">
-          <MenuBar
-            items={[
-              {
-                icon: Key,
-                label: "Licenças",
-                href: "#",
-                gradient: "radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.06) 50%, rgba(29,78,216,0) 100%)",
-                iconColor: "text-blue-500",
-              },
-              {
-                icon: Phone,
-                label: "Números",
-                href: "#",
-                gradient: "radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(22,163,74,0.06) 50%, rgba(21,128,61,0) 100%)",
-                iconColor: "text-green-500",
-              },
-              {
-                icon: CreditCard,
-                label: "Loja",
-                href: "#",
-                gradient: "radial-gradient(circle, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.06) 50%, rgba(194,65,12,0) 100%)",
-                iconColor: "text-orange-500",
-              },
-            ]}
-            activeItem={activeTab === "licencas" ? "Licenças" : activeTab === "numeros" ? "Números" : activeTab === "comprar" ? "Loja" : ""}
-            onItemClick={(label) => {
-              if (label === "Licenças") setActiveTab("licencas");
-              else if (label === "Números") setActiveTab("numeros");
-              else if (label === "Loja") setActiveTab("comprar");
-            }}
-          />
-        </div>
+        {/* Desktop Header */}
+        <header className="hidden lg:flex items-center justify-between h-14 px-6 border-b border-border bg-card sticky top-0 z-40">
+          <nav className="flex items-center gap-1">
+            {[
+              { label: "Licenças", tab: "licencas", icon: Key },
+              { label: "Números", tab: "numeros", icon: Phone },
+              { label: "Loja", tab: "comprar", icon: CreditCard },
+            ].map((item) => (
+              <button
+                key={item.tab}
+                onClick={() => setActiveTab(item.tab)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 text-[13px] font-medium rounded-md transition-colors",
+                  activeTab === item.tab
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                <item.icon className="w-4 h-4" />
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        </header>
         
         {/* Content */}
-        <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         
         {/* Licenças */}
         {activeTab === "licencas" && (
-          <motion.div {...fadeIn} className="max-w-4xl mx-auto space-y-6">
+          <motion.div {...fadeIn} className="space-y-6">
             <div>
-              <h1 className="text-xl font-display font-bold text-foreground">Minhas Licenças</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Gerencie suas licenças ativas</p>
+              <h1 className="text-lg font-semibold text-foreground">Minhas Licenças</h1>
+              <p className="text-sm text-muted-foreground">Gerencie suas licenças ativas</p>
             </div>
 
             {/* Main License Card */}
-            <div className="bg-card border border-border rounded-2xl p-5 space-y-5">
+            <div className="bg-card border border-border rounded-md p-5 space-y-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 bg-gradient-primary rounded-xl flex items-center justify-center">
+                  <div className="w-10 h-10 bg-primary rounded-md flex items-center justify-center">
                     <Key className="w-5 h-5 text-primary-foreground" />
                   </div>
                   <div>
-                    <h3 className="font-display font-bold text-foreground">Plano {userLicense.plan}</h3>
+                    <h3 className="font-semibold text-foreground">Plano {userLicense.plan}</h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <CheckCircle className="w-3.5 h-3.5 text-success" />
                       <span className="text-xs text-success font-medium">Ativa</span>
                     </div>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground">
-                  <Copy className="w-3.5 h-3.5" />
+                <Button variant="ghost" size="sm" className="h-8 text-muted-foreground">
+                  <Copy className="w-4 h-4 mr-1.5" />
                   <span className="hidden sm:inline text-xs">Copiar</span>
                 </Button>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-secondary/40 rounded-lg p-3">
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Chave</p>
-                  <p className="text-xs font-mono text-foreground mt-1 truncate">{userLicense.key}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="bg-muted/50 rounded-md p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Chave</p>
+                  <p className="text-sm font-mono text-foreground mt-1 truncate">{userLicense.key}</p>
                 </div>
-                <div className="bg-secondary/40 rounded-lg p-3">
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Ativada</p>
-                  <p className="text-xs text-foreground mt-1">{userLicense.activatedAt}</p>
+                <div className="bg-muted/50 rounded-md p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Ativada</p>
+                  <p className="text-sm text-foreground mt-1">{userLicense.activatedAt}</p>
                 </div>
-                <div className="bg-secondary/40 rounded-lg p-3">
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Expira</p>
-                  <p className="text-xs text-foreground mt-1">{userLicense.expiresAt}</p>
+                <div className="bg-muted/50 rounded-md p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Expira</p>
+                  <p className="text-sm text-foreground mt-1">{userLicense.expiresAt}</p>
                 </div>
               </div>
 
               <div>
-                <div className="flex justify-between text-xs mb-1.5">
+                <div className="flex justify-between text-sm mb-2">
                   <span className="text-muted-foreground">Tempo restante</span>
                   <span className="text-foreground font-medium">{userLicense.daysLeft} dias</span>
                 </div>
-                <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                <div className="h-2 bg-muted rounded overflow-hidden">
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${(userLicense.daysLeft / 30) * 100}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="h-full bg-gradient-primary rounded-full"
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className="h-full bg-primary rounded"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-1">
-                <Button size="sm" className="flex-1 h-9 bg-gradient-primary hover:opacity-90 gap-1.5">
-                  <Zap className="w-3.5 h-3.5" />
+              <div className="flex gap-3 pt-2">
+                <Button size="sm" className="flex-1 h-9">
+                  <Zap className="w-4 h-4 mr-2" />
                   Renovar
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1 h-9 gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
+                <Button variant="outline" size="sm" className="flex-1 h-9">
+                  <Sparkles className="w-4 h-4 mr-2" />
                   Upgrade Vitalício
                 </Button>
               </div>
             </div>
 
-            <div className="bg-warning/5 border border-warning/20 rounded-xl p-4 flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="w-4 h-4 text-warning" />
-              </div>
+            <div className="bg-warning/10 border border-warning/20 rounded-md p-4 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-foreground">Licença expira em breve</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Renove agora e ganhe 10% de desconto.</p>
+                <p className="text-sm text-muted-foreground">Renove agora e ganhe 10% de desconto.</p>
               </div>
             </div>
           </motion.div>
@@ -389,14 +357,14 @@ const Dashboard = () => {
 
         {/* Números */}
         {activeTab === "numeros" && (
-          <motion.div {...fadeIn} className="max-w-4xl mx-auto space-y-6">
+          <motion.div {...fadeIn} className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl font-display font-bold text-foreground">Números</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">Gerencie seus números</p>
+                <h1 className="text-lg font-semibold text-foreground">Números</h1>
+                <p className="text-sm text-muted-foreground">Gerencie seus números</p>
               </div>
-              <Button size="sm" className="h-8 gap-1.5 bg-gradient-primary hover:opacity-90">
-                <Plus className="w-3.5 h-3.5" />
+              <Button size="sm" className="h-9">
+                <Plus className="w-4 h-4 mr-2" />
                 Adicionar
               </Button>
             </div>
@@ -405,10 +373,10 @@ const Dashboard = () => {
               {sessions.map((session) => (
                 <div 
                   key={session.id}
-                  className="bg-card border border-border rounded-xl p-4 flex items-center justify-between hover:border-border/80 transition-colors"
+                  className="bg-card border border-border rounded-md p-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-success/10 rounded-lg flex items-center justify-center">
+                    <div className="w-9 h-9 bg-success/10 rounded-md flex items-center justify-center">
                       <Phone className="w-4 h-4 text-success" />
                     </div>
                     <div>
@@ -416,8 +384,8 @@ const Dashboard = () => {
                       <p className="text-xs text-muted-foreground">{session.addedAt}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 bg-success/10 text-success rounded text-[10px] font-medium uppercase">
+                  <div className="flex items-center gap-3">
+                    <span className="px-2 py-1 bg-success/10 text-success rounded-md text-xs font-medium">
                       Ativo
                     </span>
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -426,12 +394,12 @@ const Dashboard = () => {
               ))}
             </div>
 
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-center justify-between">
+            <div className="bg-muted/30 border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-foreground">Precisa de mais números?</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Adicione com desconto especial</p>
+                <p className="text-sm text-muted-foreground">Adicione com desconto especial</p>
               </div>
-              <Button size="sm" variant="outline" className="h-8" onClick={() => setActiveTab("comprar")}>
+              <Button size="sm" variant="outline" className="h-9" onClick={() => setActiveTab("comprar")}>
                 Ver pacotes
               </Button>
             </div>
@@ -440,20 +408,20 @@ const Dashboard = () => {
 
         {/* Comprar */}
         {activeTab === "comprar" && (
-          <motion.div {...fadeIn} className="max-w-4xl mx-auto space-y-6">
+          <motion.div {...fadeIn} className="space-y-6">
             <div>
-              <h1 className="text-xl font-display font-bold text-foreground">Loja</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Expanda seus recursos</p>
+              <h1 className="text-lg font-semibold text-foreground">Loja</h1>
+              <p className="text-sm text-muted-foreground">Expanda seus recursos</p>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+              <div className="bg-card border border-border rounded-md p-5 space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
                     <Phone className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-display font-bold text-foreground text-sm">Pacote de Números</h3>
+                    <h3 className="font-semibold text-foreground text-sm">Pacote de Números</h3>
                     <p className="text-xs text-muted-foreground">Adicione mais números</p>
                   </div>
                 </div>
@@ -465,32 +433,33 @@ const Dashboard = () => {
                   ].map((item, i) => (
                     <div 
                       key={i}
-                      className={`flex items-center justify-between p-2.5 rounded-lg text-sm cursor-pointer transition-colors ${
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-colors",
                         item.popular 
                           ? "bg-primary/10 border border-primary/20" 
-                          : "bg-secondary/30 hover:bg-secondary/50"
-                      }`}
+                          : "bg-muted/50 hover:bg-muted"
+                      )}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-foreground text-xs">{item.qty}</span>
+                        <span className="text-foreground text-sm">{item.qty}</span>
                         {item.popular && (
-                          <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded font-medium">TOP</span>
+                          <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">TOP</span>
                         )}
                       </div>
-                      <span className="font-bold text-primary text-xs">{item.price}</span>
+                      <span className="font-semibold text-primary text-sm">{item.price}</span>
                     </div>
                   ))}
                 </div>
-                <Button size="sm" className="w-full h-8 bg-gradient-primary hover:opacity-90">Comprar</Button>
+                <Button size="sm" className="w-full h-9">Comprar</Button>
               </div>
 
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+              <div className="bg-card border border-border rounded-md p-5 space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-accent/10 rounded-md flex items-center justify-center">
                     <Zap className="w-5 h-5 text-accent" />
                   </div>
                   <div>
-                    <h3 className="font-display font-bold text-foreground text-sm">Pacote de Sessions</h3>
+                    <h3 className="font-semibold text-foreground text-sm">Pacote de Sessions</h3>
                     <p className="text-xs text-muted-foreground">Mais sessões simultâneas</p>
                   </div>
                 </div>
@@ -502,45 +471,46 @@ const Dashboard = () => {
                   ].map((item, i) => (
                     <div 
                       key={i}
-                      className={`flex items-center justify-between p-2.5 rounded-lg text-sm cursor-pointer transition-colors ${
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-colors",
                         item.popular 
                           ? "bg-primary/10 border border-primary/20" 
-                          : "bg-secondary/30 hover:bg-secondary/50"
-                      }`}
+                          : "bg-muted/50 hover:bg-muted"
+                      )}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-foreground text-xs">{item.qty}</span>
+                        <span className="text-foreground text-sm">{item.qty}</span>
                         {item.popular && (
-                          <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded font-medium">MELHOR</span>
+                          <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">MELHOR</span>
                         )}
                       </div>
-                      <span className="font-bold text-primary text-xs">{item.price}</span>
+                      <span className="font-semibold text-primary text-sm">{item.price}</span>
                     </div>
                   ))}
                 </div>
-                <Button size="sm" className="w-full h-8 bg-gradient-primary hover:opacity-90">Comprar</Button>
+                <Button size="sm" className="w-full h-9">Comprar</Button>
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-warning/10 to-transparent border border-warning/20 rounded-xl p-5">
+            <div className="bg-warning/10 border border-warning/20 rounded-md p-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-warning/10 rounded-md flex items-center justify-center">
                     <Shield className="w-5 h-5 text-warning" />
                   </div>
                   <div>
-                    <h3 className="font-display font-bold text-foreground text-sm">Upgrade Vitalício</h3>
-                    <p className="text-xs text-muted-foreground">Pague uma vez, use para sempre</p>
+                    <h3 className="font-semibold text-foreground text-sm">Upgrade Vitalício</h3>
+                    <p className="text-sm text-muted-foreground">Pague uma vez, use para sempre</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-lg font-display font-bold text-warning">R$ 1.997</p>
-                    <p className="text-[10px] text-muted-foreground">pagamento único</p>
+                    <p className="text-xl font-bold text-warning">R$ 1.997</p>
+                    <p className="text-xs text-muted-foreground">pagamento único</p>
                   </div>
                   <Link to="/comprar">
-                    <Button size="sm" className="h-8 bg-warning hover:bg-warning/90 text-warning-foreground gap-1">
-                      Ver <ArrowUpRight className="w-3 h-3" />
+                    <Button size="sm" className="h-9 bg-warning hover:bg-warning/90 text-warning-foreground">
+                      Ver <ArrowUpRight className="w-4 h-4 ml-1" />
                     </Button>
                   </Link>
                 </div>
@@ -551,16 +521,16 @@ const Dashboard = () => {
 
         {/* Preferências */}
         {activeTab === "preferencias" && (
-          <motion.div {...fadeIn} className="max-w-4xl mx-auto space-y-6">
+          <motion.div {...fadeIn} className="space-y-6">
             <div>
-              <h1 className="text-xl font-display font-bold text-foreground">Preferências</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Personalize sua experiência</p>
+              <h1 className="text-lg font-semibold text-foreground">Preferências</h1>
+              <p className="text-sm text-muted-foreground">Personalize sua experiência</p>
             </div>
 
             <div className="space-y-4">
               {/* Tema */}
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
+              <div className="bg-card border border-border rounded-md p-5 space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Moon className="w-4 h-4 text-primary" />
                   Aparência
                 </h3>
@@ -568,8 +538,8 @@ const Dashboard = () => {
                   <button
                     onClick={() => setIsDarkTheme(true)}
                     className={cn(
-                      "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                      isDarkTheme ? "border-primary bg-primary/10" : "border-border hover:border-border/80"
+                      "flex items-center gap-3 p-3 rounded-md border transition-colors",
+                      isDarkTheme ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"
                     )}
                   >
                     <Moon className="w-4 h-4" />
@@ -578,8 +548,8 @@ const Dashboard = () => {
                   <button
                     onClick={() => setIsDarkTheme(false)}
                     className={cn(
-                      "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                      !isDarkTheme ? "border-primary bg-primary/10" : "border-border hover:border-border/80"
+                      "flex items-center gap-3 p-3 rounded-md border transition-colors",
+                      !isDarkTheme ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"
                     )}
                   >
                     <Sun className="w-4 h-4" />
@@ -589,24 +559,24 @@ const Dashboard = () => {
               </div>
 
               {/* Notificações */}
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
+              <div className="bg-card border border-border rounded-md p-5 space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Bell className="w-4 h-4 text-primary" />
                   Notificações
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {[
                     { label: "Notificações por email", desc: "Receba atualizações por email" },
                     { label: "Alertas de licença", desc: "Aviso quando expirar" },
                     { label: "Novidades e promoções", desc: "Ofertas exclusivas" },
                   ].map((item, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
+                    <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
                       <div>
                         <p className="text-sm font-medium text-foreground">{item.label}</p>
                         <p className="text-xs text-muted-foreground">{item.desc}</p>
                       </div>
-                      <div className="w-10 h-5 bg-primary/20 rounded-full relative cursor-pointer">
-                        <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-primary rounded-full" />
+                      <div className="w-10 h-5 bg-primary rounded-full relative cursor-pointer">
+                        <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full" />
                       </div>
                     </div>
                   ))}
@@ -614,18 +584,18 @@ const Dashboard = () => {
               </div>
 
               {/* Idioma e Região */}
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
+              <div className="bg-card border border-border rounded-md p-5 space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Globe className="w-4 h-4 text-primary" />
                   Idioma e Região
                 </h3>
                 <div className="grid sm:grid-cols-2 gap-3">
-                  <div className="bg-secondary/30 rounded-lg p-3">
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Idioma</p>
+                  <div className="bg-muted/50 rounded-md p-3">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Idioma</p>
                     <p className="text-sm text-foreground mt-1">Português (BR)</p>
                   </div>
-                  <div className="bg-secondary/30 rounded-lg p-3">
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Fuso horário</p>
+                  <div className="bg-muted/50 rounded-md p-3">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Fuso horário</p>
                     <p className="text-sm text-foreground mt-1">Brasília (GMT-3)</p>
                   </div>
                 </div>
