@@ -66,25 +66,25 @@ export const UserProfileSidebar = React.forwardRef<HTMLDivElement, UserProfileSi
           <div className="flex items-center gap-3">
             <Popover open={avatarOpen} onOpenChange={setAvatarOpen}>
               <PopoverTrigger asChild>
-                <button className="relative group focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-md">
+                <button className="relative group focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-full">
                   {selectedAvatar ? (
-                    <div className="h-10 w-10 rounded-md overflow-hidden border border-border bg-muted flex items-center justify-center transition-transform group-hover:scale-105">
-                      <div className="w-10 h-10 flex items-center justify-center [&>svg]:w-10 [&>svg]:h-10">{selectedAvatar.svg}</div>
+                    <div className="h-11 w-11 rounded-full overflow-hidden border border-border bg-muted flex items-center justify-center transition-transform group-hover:scale-105">
+                      <div className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full">{selectedAvatar.svg}</div>
                     </div>
                   ) : user.avatarUrl ? (
                     <img
                       src={user.avatarUrl}
                       alt={user.name}
-                      className="h-10 w-10 rounded-md object-cover transition-transform group-hover:scale-105"
+                      className="h-11 w-11 rounded-full object-cover transition-transform group-hover:scale-105"
                     />
                   ) : (
-                    <div className="h-10 w-10 rounded-md bg-primary flex items-center justify-center transition-transform group-hover:scale-105">
+                    <div className="h-11 w-11 rounded-full bg-primary flex items-center justify-center transition-transform group-hover:scale-105">
                       <span className="text-sm font-semibold text-primary-foreground">
                         {user.initials || user.name.charAt(0)}
                       </span>
                     </div>
                   )}
-                  <div className="absolute inset-0 rounded-md bg-black/0 group-hover:bg-black/10 transition-colors" />
+                  <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/10 transition-colors" />
                 </button>
               </PopoverTrigger>
               <PopoverContent align="start" className="w-auto p-3" sideOffset={8}>
