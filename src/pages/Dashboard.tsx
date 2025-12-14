@@ -113,9 +113,10 @@ const Dashboard = () => {
   ];
 
   const loginHistory = [
-    { date: "14 Dez 2024, 10:32", device: "Google Chrome", location: "São Paulo, BR", status: "success" },
-    { date: "13 Dez 2024, 18:45", device: "Google Chrome", location: "São Paulo, BR", status: "success" },
-    { date: "12 Dez 2024, 09:15", device: "IP Desconhecido", location: "Rio de Janeiro, BR", status: "failed" },
+    { date: "14 Dez 2024, 10:32", device: "Google Chrome", location: "São Paulo, BR", status: "success", reason: "" },
+    { date: "13 Dez 2024, 18:45", device: "Google Chrome", location: "São Paulo, BR", status: "success", reason: "" },
+    { date: "12 Dez 2024, 09:15", device: "Google Chrome", location: "Rio de Janeiro, BR", status: "failed", reason: "Senha incorreta" },
+    { date: "11 Dez 2024, 22:30", device: "IP Desconhecido", location: "Desconhecido", status: "failed", reason: "IP bloqueado" },
   ];
 
   const user = {
@@ -719,18 +720,18 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Sessões Ativas */}
+              {/* Sessões Ativas - Bot */}
               <div className="bg-card border border-border rounded-xl p-5 space-y-4">
                 <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
-                  <Smartphone className="w-4 h-4 text-primary" />
-                  Sessões Ativas
+                  <Monitor className="w-4 h-4 text-primary" />
+                  Sessões Ativas (Bot)
                 </h3>
                 <div className="space-y-2">
                   {activeSessions.map((session, i) => (
                     <div key={i} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                          <Smartphone className="w-4 h-4 text-primary" />
+                          <Monitor className="w-4 h-4 text-primary" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
@@ -852,31 +853,56 @@ const Dashboard = () => {
                     </div>
                     <Button variant="ghost" size="sm" className="h-8 text-xs">Editar</Button>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                  <div className="p-3 bg-muted/50 rounded-md">
                     <div>
                       <p className="text-xs text-muted-foreground">Email</p>
                       <p className="text-sm text-foreground mt-0.5">{user.email}</p>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-8 text-xs">Editar</Button>
                   </div>
                 </div>
               </div>
 
-              {/* Segurança */}
+              {/* Segurança - Alterar Senha */}
               <div className="bg-card border border-border rounded-md p-5 space-y-4">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Shield className="w-4 h-4 text-primary" />
-                  Segurança
+                  Alterar Senha
                 </h3>
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
-                  <div className="flex items-center gap-3">
-                    <Lock className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-foreground">Senha</p>
-                      <p className="text-xs text-muted-foreground">Última alteração: 30 dias</p>
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-muted-foreground">Senha atual</label>
+                    <div className="relative">
+                      <input 
+                        type={showApiKey ? "text" : "password"}
+                        placeholder="••••••••"
+                        className="w-full h-9 px-3 pr-10 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" className="h-8 text-xs">Alterar</Button>
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-muted-foreground">Nova senha</label>
+                    <input 
+                      type="password"
+                      placeholder="••••••••"
+                      className="w-full h-9 px-3 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-muted-foreground">Confirmar nova senha</label>
+                    <input 
+                      type="password"
+                      placeholder="••••••••"
+                      className="w-full h-9 px-3 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  <Button size="sm" className="w-full h-8 mt-2">Salvar nova senha</Button>
                 </div>
               </div>
 
@@ -929,7 +955,7 @@ const Dashboard = () => {
                       <span className={`text-xs px-2 py-0.5 rounded font-medium flex-shrink-0 ${
                         login.status === 'success' ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'
                       }`}>
-                        {login.status === 'success' ? 'Sucesso' : 'Falhou'}
+                        {login.status === 'success' ? 'Sucesso' : login.reason}
                       </span>
                     </div>
                   ))}
