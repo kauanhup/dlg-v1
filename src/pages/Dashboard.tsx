@@ -134,7 +134,86 @@ const Dashboard = () => {
       {/* Mobile/Tablet Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="flex items-center justify-between h-14 px-4">
+          {/* Left side: Profile icon + Navigation */}
+          <div className="flex items-center gap-3">
+            {/* User avatar with dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background">
+                  <span className="text-xs font-bold text-primary-foreground">{user.initials}</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56 bg-popover border border-border z-50">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium text-foreground">{user.name}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setActiveTab("perfil")} className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Meu Perfil</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("comprar")} className="cursor-pointer">
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  <span>Minhas Compras</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
+                  <Heart className="mr-2 h-4 w-4" />
+                  <span>Favoritos</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
+                  <Star className="mr-2 h-4 w-4" />
+                  <span>Avaliações</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setActiveTab("configuracoes")} className="cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Configurações</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/")} className="cursor-pointer text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sair</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Tablet: Show navigation inline */}
+            <div className="hidden md:flex items-center gap-1">
+              {[
+                { label: "Licenças", tab: "licencas", icon: Key },
+                { label: "Números", tab: "numeros", icon: Phone },
+                { label: "Loja", tab: "comprar", icon: CreditCard },
+                { label: "Config", tab: "configuracoes", icon: Settings },
+              ].map((item) => (
+                <button
+                  key={item.tab}
+                  onClick={() => setActiveTab(item.tab)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                    activeTab === item.tab
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-secondary/50"
+                  )}
+                >
+                  <item.icon className="w-3.5 h-3.5" />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Right side: Logo + Burger menu */}
           <div className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+                <Zap className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <span className="font-display font-bold text-foreground hidden sm:inline">SWEX</span>
+            </Link>
+            
             {/* Mobile: Burger menu */}
             <Button 
               variant="ghost" 
@@ -144,82 +223,7 @@ const Dashboard = () => {
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
-            
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <Zap className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <span className="font-display font-bold text-foreground">SWEX</span>
-            </Link>
           </div>
-          
-          {/* Tablet: Show navigation inline */}
-          <div className="hidden md:flex items-center gap-1">
-            {[
-              { label: "Licenças", tab: "licencas", icon: Key },
-              { label: "Números", tab: "numeros", icon: Phone },
-              { label: "Loja", tab: "comprar", icon: CreditCard },
-              { label: "Config", tab: "configuracoes", icon: Settings },
-            ].map((item) => (
-              <button
-                key={item.tab}
-                onClick={() => setActiveTab(item.tab)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                  activeTab === item.tab
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-secondary/50"
-                )}
-              >
-                <item.icon className="w-3.5 h-3.5" />
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* User avatar with dropdown - tablet and mobile */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background">
-                <span className="text-xs font-bold text-primary-foreground">{user.initials}</span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-popover border border-border z-50">
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium text-foreground">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setActiveTab("perfil")} className="cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
-                <span>Meu Perfil</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveTab("comprar")} className="cursor-pointer">
-                <CreditCard className="mr-2 h-4 w-4" />
-                <span>Minhas Compras</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
-                <Heart className="mr-2 h-4 w-4" />
-                <span>Favoritos</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
-                <Star className="mr-2 h-4 w-4" />
-                <span>Avaliações</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setActiveTab("configuracoes")} className="cursor-pointer">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Configurações</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/")} className="cursor-pointer text-destructive focus:text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sair</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
 
         {/* Mobile Menu Dropdown */}
