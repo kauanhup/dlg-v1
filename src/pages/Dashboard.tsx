@@ -96,10 +96,6 @@ const Dashboard = () => {
   const languages = [
     { code: "pt-BR", label: "Português (BR)", flag: "🇧🇷" },
     { code: "en-US", label: "English (US)", flag: "🇺🇸" },
-    { code: "es-ES", label: "Español", flag: "🇪🇸" },
-    { code: "fr-FR", label: "Français", flag: "🇫🇷" },
-    { code: "de-DE", label: "Deutsch", flag: "🇩🇪" },
-    { code: "it-IT", label: "Italiano", flag: "🇮🇹" },
   ];
   
   const userLicense = {
