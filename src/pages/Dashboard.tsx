@@ -133,11 +133,11 @@ const Dashboard = () => {
 
       {/* Mobile/Tablet Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
-        <div className="flex items-center justify-between h-14 px-4">
+        <div className="flex items-center justify-between h-14 px-3">
           {/* Left side: Profile icon */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background">
+              <button className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background flex-shrink-0">
                 <span className="text-xs font-bold text-primary-foreground">{user.initials}</span>
               </button>
             </DropdownMenuTrigger>
@@ -178,11 +178,55 @@ const Dashboard = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Right side: Burger menu */}
+          {/* Center: GlowMenu */}
+          <div className="flex-1 flex justify-center px-2 overflow-x-auto scrollbar-hide">
+            <MenuBar
+              items={[
+                {
+                  icon: Key,
+                  label: "Licenças",
+                  href: "#",
+                  gradient: "radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.06) 50%, rgba(29,78,216,0) 100%)",
+                  iconColor: "text-blue-500",
+                },
+                {
+                  icon: Phone,
+                  label: "Números",
+                  href: "#",
+                  gradient: "radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(22,163,74,0.06) 50%, rgba(21,128,61,0) 100%)",
+                  iconColor: "text-green-500",
+                },
+                {
+                  icon: CreditCard,
+                  label: "Loja",
+                  href: "#",
+                  gradient: "radial-gradient(circle, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.06) 50%, rgba(194,65,12,0) 100%)",
+                  iconColor: "text-orange-500",
+                },
+                {
+                  icon: Settings,
+                  label: "Config",
+                  href: "#",
+                  gradient: "radial-gradient(circle, rgba(139,92,246,0.15) 0%, rgba(124,58,237,0.06) 50%, rgba(109,40,217,0) 100%)",
+                  iconColor: "text-violet-500",
+                },
+              ]}
+              activeItem={activeTab === "licencas" ? "Licenças" : activeTab === "numeros" ? "Números" : activeTab === "comprar" ? "Loja" : activeTab === "configuracoes" ? "Config" : "Licenças"}
+              onItemClick={(label) => {
+                if (label === "Licenças") setActiveTab("licencas");
+                else if (label === "Números") setActiveTab("numeros");
+                else if (label === "Loja") setActiveTab("comprar");
+                else if (label === "Config") setActiveTab("configuracoes");
+              }}
+              className="scale-[0.85] origin-center"
+            />
+          </div>
+
+          {/* Right side: Burger menu (mobile only) */}
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-9 w-9 p-0"
+            className="h-9 w-9 p-0 flex-shrink-0 md:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
