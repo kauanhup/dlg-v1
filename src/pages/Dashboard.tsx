@@ -866,6 +866,18 @@ const Dashboard = () => {
                       <p className="text-sm text-foreground mt-0.5">{user.email}</p>
                     </div>
                   </div>
+                  <div className="p-3 bg-muted/50 rounded-md">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Plano</p>
+                      <p className="text-sm text-foreground mt-0.5">{user.plan}</p>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-muted/50 rounded-md">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Membro desde</p>
+                      <p className="text-sm text-foreground mt-0.5">Dezembro 2024</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
