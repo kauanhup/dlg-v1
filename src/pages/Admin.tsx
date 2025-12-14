@@ -657,22 +657,13 @@ const Admin = () => {
 
       {/* Mobile/Tablet Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-card border-b border-border">
-        <div className="flex items-center justify-between h-14 px-4">
+        <div className="flex items-center h-14 px-4">
           <button
             onClick={() => setIsMobileSidebarOpen(true)}
             className="w-9 h-9 rounded-md flex items-center justify-center hover:bg-muted transition-colors"
           >
             <Menu className="w-5 h-5 text-foreground" />
           </button>
-          
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-              <LayoutDashboard className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="text-sm font-semibold text-foreground">Admin</span>
-          </div>
-
-          <div className="w-9 h-9" /> {/* Spacer for centering */}
         </div>
       </header>
 
