@@ -8,8 +8,10 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [whatsappError, setWhatsappError] = useState("");
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -34,6 +36,10 @@ const Login = () => {
     return value.length >= 8;
   };
 
+  const validateWhatsapp = (value: string) => {
+    return /^\+?[0-9]{10,15}$/.test(value.replace(/\s/g, ''));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     let valid = true;
@@ -50,6 +56,13 @@ const Login = () => {
       valid = false;
     } else {
       setPasswordError("");
+    }
+
+    if (!isLogin && !validateWhatsapp(whatsapp)) {
+      setWhatsappError("Por favor, insira um número válido.");
+      valid = false;
+    } else {
+      setWhatsappError("");
     }
 
     if (!valid) {
@@ -189,6 +202,30 @@ const Login = () => {
               )}
             </div>
 
+            {!isLogin && (
+              <div className="space-y-2">
+                <label htmlFor="whatsapp" className="text-sm font-medium text-foreground">
+                  WhatsApp
+                </label>
+                <input
+                  id="whatsapp"
+                  type="tel"
+                  placeholder="+55 11 99999-9999"
+                  className={`text-sm w-full py-3 px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
+                    whatsappError ? "border-destructive" : "border-border/50"
+                  }`}
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  aria-invalid={!!whatsappError}
+                  aria-describedby="whatsapp-error"
+                />
+                {whatsappError && (
+                  <p id="whatsapp-error" className="text-xs text-destructive">
+                    {whatsappError}
+                  </p>
+                )}
+              </div>
+            )}
 
             <button
               type="submit"
