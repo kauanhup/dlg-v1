@@ -117,73 +117,16 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Sidebar Desktop com GlowMenu */}
-      <aside className="hidden lg:flex flex-col w-[280px] sticky top-0 h-screen border-r border-border bg-card/50 backdrop-blur-xl">
-        {/* User Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-border/50">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center flex-shrink-0">
-            <span className="text-sm font-bold text-primary-foreground">{user.initials}</span>
-          </div>
-          <div className="flex flex-col truncate min-w-0">
-            <span className="font-semibold text-sm text-foreground truncate">{user.name}</span>
-            <span className="text-xs text-muted-foreground truncate">{user.email}</span>
-          </div>
-        </div>
-
-        {/* GlowMenu Navigation */}
-        <div className="flex-1 p-3 space-y-2 overflow-y-auto">
-          <MenuBar
-            items={[
-              {
-                icon: Key,
-                label: "Licenças",
-                href: "#",
-                gradient: "radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.06) 50%, rgba(29,78,216,0) 100%)",
-                iconColor: "text-blue-500",
-              },
-              {
-                icon: Phone,
-                label: "Números",
-                href: "#",
-                gradient: "radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(22,163,74,0.06) 50%, rgba(21,128,61,0) 100%)",
-                iconColor: "text-green-500",
-              },
-              {
-                icon: CreditCard,
-                label: "Loja",
-                href: "#",
-                gradient: "radial-gradient(circle, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.06) 50%, rgba(194,65,12,0) 100%)",
-                iconColor: "text-orange-500",
-              },
-              {
-                icon: Settings,
-                label: "Config",
-                href: "#",
-                gradient: "radial-gradient(circle, rgba(139,92,246,0.15) 0%, rgba(124,58,237,0.06) 50%, rgba(109,40,217,0) 100%)",
-                iconColor: "text-violet-500",
-              },
-            ]}
-            activeItem={activeTab === "licencas" ? "Licenças" : activeTab === "numeros" ? "Números" : activeTab === "comprar" ? "Loja" : activeTab === "configuracoes" ? "Config" : "Licenças"}
-            onItemClick={(label) => {
-              if (label === "Licenças") setActiveTab("licencas");
-              else if (label === "Números") setActiveTab("numeros");
-              else if (label === "Loja") setActiveTab("comprar");
-              else if (label === "Config") setActiveTab("configuracoes");
-            }}
-            className="flex-col items-stretch"
-          />
-        </div>
-
-        {/* Logout Footer */}
-        <div className="p-3 border-t border-border/50">
-          <button
-            onClick={() => navigate("/")}
-            className="group flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
-          >
-            <LogOut className="h-5 w-5 mr-3" />
-            <span>Sair</span>
-          </button>
-        </div>
+      {/* Sidebar Desktop */}
+      <aside className="hidden lg:flex flex-col w-[280px] sticky top-0 h-screen">
+        <SidebarWithSubmenu 
+          user={user}
+          navigation={navigation}
+          footerNavigation={footerNavigation}
+          nestedNavItems={nestedNavItems}
+          onLogout={() => navigate("/")}
+          className="h-full"
+        />
       </aside>
 
       {/* Mobile Header */}
@@ -236,6 +179,48 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="flex-1 lg:pt-0 pt-14">
+        {/* Glow Menu Header */}
+        <div className="hidden lg:flex justify-center py-4 px-4 border-b border-border/50 bg-background/50 backdrop-blur-sm sticky top-0 z-40">
+          <MenuBar
+            items={[
+              {
+                icon: Key,
+                label: "Licenças",
+                href: "#",
+                gradient: "radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.06) 50%, rgba(29,78,216,0) 100%)",
+                iconColor: "text-blue-500",
+              },
+              {
+                icon: Phone,
+                label: "Números",
+                href: "#",
+                gradient: "radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(22,163,74,0.06) 50%, rgba(21,128,61,0) 100%)",
+                iconColor: "text-green-500",
+              },
+              {
+                icon: CreditCard,
+                label: "Loja",
+                href: "#",
+                gradient: "radial-gradient(circle, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.06) 50%, rgba(194,65,12,0) 100%)",
+                iconColor: "text-orange-500",
+              },
+              {
+                icon: Settings,
+                label: "Configurações",
+                href: "#",
+                gradient: "radial-gradient(circle, rgba(139,92,246,0.15) 0%, rgba(124,58,237,0.06) 50%, rgba(109,40,217,0) 100%)",
+                iconColor: "text-violet-500",
+              },
+            ]}
+            activeItem={activeTab === "licencas" ? "Licenças" : activeTab === "numeros" ? "Números" : activeTab === "comprar" ? "Loja" : activeTab === "configuracoes" ? "Configurações" : "Licenças"}
+            onItemClick={(label) => {
+              if (label === "Licenças") setActiveTab("licencas");
+              else if (label === "Números") setActiveTab("numeros");
+              else if (label === "Loja") setActiveTab("comprar");
+              else if (label === "Configurações") setActiveTab("configuracoes");
+            }}
+          />
+        </div>
         
         {/* Content */}
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -75,7 +75,7 @@ export const MenuBar = React.forwardRef<HTMLDivElement, MenuBarProps>(
           className="absolute -inset-2 bg-gradient-radial from-transparent via-primary/20 to-transparent rounded-3xl z-0 pointer-events-none"
           variants={navGlowVariants}
         />
-        <ul className={cn("flex items-center gap-2 relative z-10", className?.includes("flex-col") && "flex-col w-full")}>
+        <ul className="flex items-center gap-2 relative z-10">
           {items.map((item) => {
             const Icon = item.icon
             const isActive = item.label === activeItem
