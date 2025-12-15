@@ -1251,12 +1251,25 @@ const OrdersSection = () => {
 
 // Sessions Management
 const SessionsSection = () => {
-  const [precos, setPrecos] = useState({
-    brasileiras: "9.98",
-    estrangeiras: "5.98"
+  const [custoPago, setCustoPago] = useState({
+    brasileiras: "5.00",
+    estrangeiras: "2.50"
+  });
+  const [combos, setCombos] = useState({
+    brasileiras: [
+      { quantidade: 5, preco: "39.90" },
+      { quantidade: 10, preco: "69.90" },
+      { quantidade: 25, preco: "149.90" },
+      { quantidade: 50, preco: "249.90" }
+    ],
+    estrangeiras: [
+      { quantidade: 5, preco: "24.90" },
+      { quantidade: 10, preco: "44.90" },
+      { quantidade: 25, preco: "99.90" },
+      { quantidade: 50, preco: "179.90" }
+    ]
   });
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
-  const fileInputRef = useState<HTMLInputElement | null>(null);
 
   const sessionsStats = {
     total: 231,
@@ -1272,9 +1285,31 @@ const SessionsSection = () => {
     if (files) {
       const fileNames = Array.from(files).map(f => f.name);
       setUploadedFiles(prev => [...prev, ...fileNames]);
-      // Reset input
       e.target.value = '';
     }
+  };
+
+  const updateCombo = (type: 'brasileiras' | 'estrangeiras', index: number, field: 'quantidade' | 'preco', value: string) => {
+    setCombos(prev => ({
+      ...prev,
+      [type]: prev[type].map((combo, i) => 
+        i === index ? { ...combo, [field]: field === 'quantidade' ? parseInt(value) || 0 : value } : combo
+      )
+    }));
+  };
+
+  const addCombo = (type: 'brasileiras' | 'estrangeiras') => {
+    setCombos(prev => ({
+      ...prev,
+      [type]: [...prev[type], { quantidade: 0, preco: "0.00" }]
+    }));
+  };
+
+  const removeCombo = (type: 'brasileiras' | 'estrangeiras', index: number) => {
+    setCombos(prev => ({
+      ...prev,
+      [type]: prev[type].filter((_, i) => i !== index)
+    }));
   };
 
   return (
@@ -1337,29 +1372,138 @@ const SessionsSection = () => {
         </div>
       </div>
 
-      {/* Pricing Section */}
+      {/* Custo Pago por Session */}
       <div className="bg-card border border-border rounded-lg p-5">
-        <h3 className="font-semibold text-foreground mb-4">Preços das Sessions</h3>
+        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+          <DollarSign className="w-4 h-4 text-primary" />
+          Custo Pago por Session
+        </h3>
+        <p className="text-xs text-muted-foreground mb-4">Valor que você paga ao adquirir cada session</p>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">Preço Session Brasileira (R$)</label>
+            <label className="text-sm text-muted-foreground mb-2 block">Custo Session Brasileira (R$)</label>
             <input
               type="text"
-              value={precos.brasileiras}
-              onChange={(e) => setPrecos({ ...precos, brasileiras: e.target.value })}
+              value={custoPago.brasileiras}
+              onChange={(e) => setCustoPago({ ...custoPago, brasileiras: e.target.value })}
               className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+              placeholder="5.00"
             />
           </div>
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">Preço Session Estrangeira (R$)</label>
+            <label className="text-sm text-muted-foreground mb-2 block">Custo Session Estrangeira (R$)</label>
             <input
               type="text"
-              value={precos.estrangeiras}
-              onChange={(e) => setPrecos({ ...precos, estrangeiras: e.target.value })}
+              value={custoPago.estrangeiras}
+              onChange={(e) => setCustoPago({ ...custoPago, estrangeiras: e.target.value })}
               className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+              placeholder="2.50"
             />
           </div>
         </div>
+      </div>
+
+      {/* Combos Brasileiras */}
+      <div className="bg-card border border-border rounded-lg p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-foreground flex items-center gap-2">
+            <Package className="w-4 h-4 text-primary" />
+            Combos Sessions Brasileiras
+          </h3>
+          <Button size="sm" variant="outline" onClick={() => addCombo('brasileiras')}>
+            <Plus className="w-4 h-4 mr-1" /> Adicionar
+          </Button>
+        </div>
+        <div className="space-y-3">
+          {combos.brasileiras.map((combo, index) => (
+            <div key={index} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+              <div className="flex-1 grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Quantidade</label>
+                  <input
+                    type="number"
+                    value={combo.quantidade}
+                    onChange={(e) => updateCombo('brasileiras', index, 'quantidade', e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    min="1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Preço Venda (R$)</label>
+                  <input
+                    type="text"
+                    value={combo.preco}
+                    onChange={(e) => updateCombo('brasileiras', index, 'preco', e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+              </div>
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => removeCombo('brasileiras', index)}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Combos Estrangeiras */}
+      <div className="bg-card border border-border rounded-lg p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-foreground flex items-center gap-2">
+            <Globe className="w-4 h-4 text-primary" />
+            Combos Sessions Estrangeiras
+          </h3>
+          <Button size="sm" variant="outline" onClick={() => addCombo('estrangeiras')}>
+            <Plus className="w-4 h-4 mr-1" /> Adicionar
+          </Button>
+        </div>
+        <div className="space-y-3">
+          {combos.estrangeiras.map((combo, index) => (
+            <div key={index} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+              <div className="flex-1 grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Quantidade</label>
+                  <input
+                    type="number"
+                    value={combo.quantidade}
+                    onChange={(e) => updateCombo('estrangeiras', index, 'quantidade', e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    min="1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Preço Venda (R$)</label>
+                  <input
+                    type="text"
+                    value={combo.preco}
+                    onChange={(e) => updateCombo('estrangeiras', index, 'preco', e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+              </div>
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => removeCombo('estrangeiras', index)}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Save Button */}
+      <div className="flex justify-end">
+        <Button size="sm">
+          Salvar Configurações
+        </Button>
       </div>
 
     </motion.div>
