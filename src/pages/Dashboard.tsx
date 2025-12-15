@@ -469,16 +469,7 @@ const Dashboard = () => {
   
   const userLicense = getLicenseInfo();
 
-  const sessions = [
-    { id: 1, number: "+55 11 9xxxx-xxxx", addedAt: "10 Dez 2024" },
-    { id: 2, number: "+55 21 9xxxx-xxxx", addedAt: "12 Dez 2024" },
-  ];
-
-  const activeSessions = [
-    { device: "Windows 11 Pro - PC Principal", location: "São Paulo, BR", current: true, lastActive: "Agora" },
-    { device: "Windows 10 - Notebook Dell", location: "São Paulo, BR", current: false, lastActive: "2h atrás" },
-    { device: "Windows 11 - PC Escritório", location: "Campinas, BR", current: false, lastActive: "1 dia atrás" },
-  ];
+  // Mock data removed - sessions now come from useUserDashboard hook
 
   // loginHistory is now fetched from useUserDashboard hook
 
@@ -1302,7 +1293,7 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Sessões Ativas - Bot */}
+              {/* Sessões Ativas - Bot (Funcionalidade futura) */}
               <motion.div 
                 className="bg-card border border-border rounded-md p-5 space-y-4 sm:col-span-2"
                 initial={{ opacity: 0, y: 10 }}
@@ -1314,25 +1305,10 @@ const Dashboard = () => {
                     <Monitor className="w-4 h-4 text-primary" />
                     Sessões Ativas (Bot)
                   </h3>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive">
-                    Encerrar todas
-                  </Button>
                 </div>
-                <div className="space-y-2">
-                  {activeSessions.map((session, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${session.current ? 'bg-success' : 'bg-muted-foreground'}`} />
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{session.device}</p>
-                          <p className="text-xs text-muted-foreground">{session.location} • {session.lastActive}</p>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive flex-shrink-0">
-                        Encerrar
-                      </Button>
-                    </div>
-                  ))}
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">Nenhuma sessão ativa no momento</p>
+                  <p className="text-xs text-muted-foreground mt-1">As sessões do bot aparecerão aqui quando conectadas</p>
                 </div>
               </motion.div>
             </div>

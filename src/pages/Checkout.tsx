@@ -6,39 +6,7 @@ import { motion } from "framer-motion";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { useAlertToast } from "@/hooks/use-alert-toast";
-
-const plans: Record<string, { name: string; price: string; period: string; features: string[] }> = {
-  "7dias": {
-    name: "7 Dias",
-    price: "47",
-    period: "por 7 dias",
-    features: ["Até 3 contas Telegram", "500 adições/dia", "Dashboard básico", "Suporte por email"],
-  },
-  "15dias": {
-    name: "15 Dias",
-    price: "77",
-    period: "por 15 dias",
-    features: ["Até 5 contas Telegram", "1.000 adições/dia", "Dashboard completo", "Suporte prioritário"],
-  },
-  "30dias": {
-    name: "30 Dias",
-    price: "127",
-    period: "por 30 dias",
-    features: ["Até 10 contas Telegram", "2.500 adições/dia", "Dashboard completo", "Rotação automática", "Suporte 24/7"],
-  },
-  "1ano": {
-    name: "1 Ano",
-    price: "997",
-    period: "por 1 ano",
-    features: ["Até 25 contas Telegram", "5.000 adições/dia", "Todos os recursos", "Suporte VIP"],
-  },
-  "vitalicio": {
-    name: "Vitalício",
-    price: "1.997",
-    period: "pagamento único",
-    features: ["Contas ilimitadas", "Adições ilimitadas", "Todos os recursos", "Atualizações vitalícias", "Suporte VIP prioritário"],
-  },
-};
+import { supabase } from "@/integrations/supabase/client";
 
 const Checkout = () => {
   const [searchParams] = useSearchParams();
@@ -46,35 +14,85 @@ const Checkout = () => {
   const toast = useAlertToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
-  const planId = searchParams.get("plano") || "30dias";
-  const plan = plans[planId] || plans["30dias"];
+  // Get parameters - supports both sessions and plans
+  const type = searchParams.get("type"); // brasileiras, estrangeiras
+  const qty = searchParams.get("qty");
+  const price = searchParams.get("price");
+  const planId = searchParams.get("plano");
 
-  // Simular verificação de login (substituir por auth real depois)
-  const [isLoggedIn] = useState(() => {
-    return localStorage.getItem("isLoggedIn") === "true";
-  });
+  // Determine if it's a session purchase or plan purchase
+  const isSessionPurchase = type && qty && price;
+
+  const sessionInfo = isSessionPurchase ? {
+    type: type === 'brasileiras' ? 'Sessions Brasileiras' : 'Sessions Estrangeiras',
+    quantity: parseInt(qty || '0'),
+    price: parseFloat(price || '0'),
+  } : null;
 
   useEffect(() => {
-    // Se não estiver logado, redireciona pro login com o plano como parâmetro
-    if (!isLoggedIn) {
-      navigate(`/login?redirect=/checkout?plano=${planId}`);
-      return;
-    }
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // Build redirect URL with all current params
+        const currentUrl = window.location.pathname + window.location.search;
+        navigate(`/login?redirect=${encodeURIComponent(currentUrl)}`);
+        return;
+      }
 
-    const timer = setTimeout(() => {
+      setUser(session.user);
       setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [isLoggedIn, navigate, planId]);
+    };
 
-  const handlePayment = () => {
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        navigate('/login');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handlePayment = async () => {
+    if (!user) return;
+
     setIsProcessing(true);
-    // Simular processamento de pagamento
-    setTimeout(() => {
-      toast.success("Pagamento iniciado!", "Você será redirecionado para o pagamento via PIX.");
+    
+    try {
+      if (isSessionPurchase && sessionInfo) {
+        // Create order for session purchase
+        const { error } = await supabase.from('orders').insert({
+          user_id: user.id,
+          product_name: sessionInfo.type,
+          product_type: type || 'sessions',
+          quantity: sessionInfo.quantity,
+          amount: sessionInfo.price,
+          status: 'pending',
+          payment_method: 'pix',
+        });
+
+        if (error) throw error;
+
+        toast.success("Pedido criado!", "Você será redirecionado para o pagamento via PIX.");
+        
+        // Redirect back to dashboard after order creation
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
+      } else {
+        // Handle plan purchase (subscription)
+        toast.success("Pagamento iniciado!", "Você será redirecionado para o pagamento via PIX.");
+      }
+    } catch (error) {
+      console.error('Error creating order:', error);
+      toast.error("Erro", "Não foi possível criar o pedido. Tente novamente.");
+    } finally {
       setIsProcessing(false);
-    }, 2000);
+    }
   };
 
   if (isLoading) {
@@ -89,6 +107,10 @@ const Checkout = () => {
       </div>
     );
   }
+
+  const formatPrice = (value: number) => {
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  };
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -106,15 +128,15 @@ const Checkout = () => {
           >
             {/* Back button */}
             <Link 
-              to="/comprar" 
+              to="/dashboard" 
               className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
             >
               <ArrowLeft className="w-4 h-4" />
-              Voltar aos planos
+              Voltar ao dashboard
             </Link>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
-              {/* Plan Summary */}
+              {/* Order Summary */}
               <div className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-6 sm:p-8">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -122,37 +144,53 @@ const Checkout = () => {
                   </div>
                   <div>
                     <h2 className="font-display font-bold text-lg">Resumo do Pedido</h2>
-                    <p className="text-sm text-muted-foreground">Plano selecionado</p>
+                    <p className="text-sm text-muted-foreground">Confira os detalhes</p>
                   </div>
                 </div>
 
                 <div className="border-t border-border/50 pt-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="font-display font-bold text-xl">{plan.name}</h3>
-                      <p className="text-sm text-muted-foreground">{plan.period}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-2xl font-display font-bold">R$ {plan.price}</span>
-                    </div>
-                  </div>
+                  {isSessionPurchase && sessionInfo ? (
+                    <>
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="font-display font-bold text-xl">{sessionInfo.type}</h3>
+                          <p className="text-sm text-muted-foreground">{sessionInfo.quantity} sessions</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-2xl font-display font-bold">{formatPrice(sessionInfo.price)}</span>
+                        </div>
+                      </div>
 
-                  <ul className="space-y-2 mt-6">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
+                      <ul className="space-y-2 mt-6">
+                        <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                          {sessionInfo.quantity} sessions incluídas
+                        </li>
+                        <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                          Download imediato após confirmação
+                        </li>
+                        <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                          Suporte incluído
+                        </li>
+                      </ul>
+                    </>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">Nenhum produto selecionado</p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="border-t border-border/50 mt-6 pt-6">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">Total</span>
-                    <span className="text-2xl font-display font-bold text-primary">R$ {plan.price}</span>
+                {isSessionPurchase && sessionInfo && (
+                  <div className="border-t border-border/50 mt-6 pt-6">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Total</span>
+                      <span className="text-2xl font-display font-bold text-primary">{formatPrice(sessionInfo.price)}</span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Payment Section */}
@@ -168,13 +206,13 @@ const Checkout = () => {
                       <span className="font-medium">Pagamento via PIX</span>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Pagamento instantâneo. Sua licença será liberada automaticamente após a confirmação.
+                      Pagamento instantâneo. Suas sessions serão liberadas automaticamente após a confirmação.
                     </p>
                   </div>
 
                   <Button 
                     onClick={handlePayment}
-                    disabled={isProcessing}
+                    disabled={isProcessing || !isSessionPurchase}
                     className="w-full h-12 sm:h-14 text-base bg-primary hover:bg-primary/90"
                   >
                     {isProcessing ? (
