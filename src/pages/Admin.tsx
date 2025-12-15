@@ -1586,10 +1586,6 @@ const SessionsSection = () => {
           <p className="text-xs text-muted-foreground mb-1">Vendidas</p>
           <p className="text-2xl font-bold text-primary">{sessionsStats.vendidas}</p>
         </div>
-        <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-xs text-muted-foreground mb-1">Expiradas</p>
-          <p className="text-2xl font-bold text-destructive">{sessionsStats.expiradas}</p>
-        </div>
       </div>
 
       {/* Custo Pago por Session */}
