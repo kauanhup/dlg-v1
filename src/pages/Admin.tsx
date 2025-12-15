@@ -637,132 +637,15 @@ const SubscriptionsTabContent = () => {
 
 // Dashboard Overview
 const DashboardSection = () => {
-  const [dashboardTab, setDashboardTab] = useState<'sessions' | 'subscriptions'>('sessions');
-
-  // Sessions stats
-  const sessionsStats = {
-    brasileiras: { total: 1250, vendidas: 930, disponíveis: 320 },
-    estrangeiras: { total: 890, vendidas: 745, disponíveis: 145 }
-  };
-
-  // Subscriptions stats for dashboard
-  const subscriptionsStats = {
-    totalAssinantes: 234,
-    assinantesAtivos: 198,
-    cancelados: 36,
-    mrrTotal: 15680,
-    churnRate: 2.5,
-    novasHoje: 8,
-    novasMes: 67,
-  };
-
-  const dashboardTabs = [
-    { id: 'sessions', label: 'Sessions', icon: Package },
-    { id: 'subscriptions', label: 'Assinaturas', icon: CreditCard },
-  ] as const;
-
   return (
     <motion.div {...fadeIn} className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Visão geral do sistema</p>
+        <h1 className="text-xl font-semibold text-foreground">Planos</h1>
+        <p className="text-sm text-muted-foreground">Gerenciamento de assinaturas e planos</p>
       </div>
 
-      {/* Central Menu Tabs */}
-      <div className="flex justify-center">
-        <div className="bg-card border border-border rounded-lg p-1 flex gap-1">
-          {dashboardTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setDashboardTab(tab.id)}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
-                dashboardTab === tab.id
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              )}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Sessions Tab Content */}
-      {dashboardTab === 'sessions' && (
-        <div className="space-y-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <StatCard title="Vendidas (Total)" value={(sessionsStats.brasileiras.vendidas + sessionsStats.estrangeiras.vendidas).toLocaleString('pt-BR')} change="+18%" icon={ShoppingCart} />
-            <StatCard title="Disponíveis" value={(sessionsStats.brasileiras.disponíveis + sessionsStats.estrangeiras.disponíveis).toLocaleString('pt-BR')} change="" icon={Package} />
-          </div>
-
-          {/* Sessions Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-card border border-border rounded-lg p-5">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Globe className="w-5 h-5 text-primary" />
-                </div>
-                <h3 className="font-semibold text-foreground">Sessions Brasileiras</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total</span>
-                  <span className="font-medium text-foreground">{sessionsStats.brasileiras.total}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Vendidas</span>
-                  <span className="font-medium text-foreground">{sessionsStats.brasileiras.vendidas}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Disponíveis</span>
-                  <span className="font-medium text-success">{sessionsStats.brasileiras.disponíveis}</span>
-                </div>
-                <div className="w-full bg-muted rounded-full h-2 mt-2">
-                  <div 
-                    className="bg-primary h-2 rounded-full" 
-                    style={{ width: `${(sessionsStats.brasileiras.disponíveis / sessionsStats.brasileiras.total) * 100}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-card border border-border rounded-lg p-5">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Globe className="w-5 h-5 text-primary" />
-                </div>
-                <h3 className="font-semibold text-foreground">Sessions Estrangeiras</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total</span>
-                  <span className="font-medium text-foreground">{sessionsStats.estrangeiras.total}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Vendidas</span>
-                  <span className="font-medium text-foreground">{sessionsStats.estrangeiras.vendidas}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Disponíveis</span>
-                  <span className="font-medium text-success">{sessionsStats.estrangeiras.disponíveis}</span>
-                </div>
-                <div className="w-full bg-muted rounded-full h-2 mt-2">
-                  <div 
-                    className="bg-primary h-2 rounded-full" 
-                    style={{ width: `${(sessionsStats.estrangeiras.disponíveis / sessionsStats.estrangeiras.total) * 100}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Subscriptions Tab Content - Full Management */}
-      {dashboardTab === 'subscriptions' && <SubscriptionsTabContent />}
+      {/* Subscriptions Content - Full Management */}
+      <SubscriptionsTabContent />
     </motion.div>
   );
 };
