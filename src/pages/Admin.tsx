@@ -12,7 +12,6 @@ import { useAdminSessions } from "@/hooks/useAdminSessions";
 import { useAdminSubscriptions } from "@/hooks/useAdminSubscriptions";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { MorphingSquare } from "@/components/ui/morphing-square";
-import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,12 +25,10 @@ import {
   Users,
   ShoppingCart,
   Globe,
-  Settings,
   LogOut,
   TrendingUp,
   DollarSign,
   Package,
-  Activity,
   Search,
   MoreHorizontal,
   Eye,
@@ -41,7 +38,6 @@ import {
   XCircle,
   Clock,
   Download,
-  ChevronDown,
   Shield,
   Ban,
   RefreshCw,
@@ -53,7 +49,6 @@ import {
   UserCheck,
   Repeat,
   Plus,
-  BarChart3,
   Wrench,
   UserPlus
 } from "lucide-react";
