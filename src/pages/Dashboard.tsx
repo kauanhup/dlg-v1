@@ -66,26 +66,40 @@ const fadeIn = {
 const LojaSection = () => {
   const [brCustomQty, setBrCustomQty] = useState<number>(5);
   const [intlCustomQty, setIntlCustomQty] = useState<number>(5);
-  const [brUsingCustom, setBrUsingCustom] = useState(false);
-  const [intlUsingCustom, setIntlUsingCustom] = useState(false);
+  const [brSelectedIndex, setBrSelectedIndex] = useState<number | 'custom'>(2); // default to popular
+  const [intlSelectedIndex, setIntlSelectedIndex] = useState<number | 'custom'>(2); // default to popular
 
   const brPricePerSession = 9.98;
   const intlPricePerSession = 5.98;
 
   const brPackages = [
-    { qty: 5, price: "R$ 49,90" },
-    { qty: 10, price: "R$ 89,90" },
-    { qty: 25, price: "R$ 199,90", popular: true },
+    { qty: 5, price: "R$ 49,90", value: 49.90 },
+    { qty: 10, price: "R$ 89,90", value: 89.90 },
+    { qty: 25, price: "R$ 199,90", value: 199.90, popular: true },
   ];
 
   const intlPackages = [
-    { qty: 5, price: "R$ 29,90" },
-    { qty: 10, price: "R$ 49,90" },
-    { qty: 25, price: "R$ 99,90", popular: true },
+    { qty: 5, price: "R$ 29,90", value: 29.90 },
+    { qty: 10, price: "R$ 49,90", value: 49.90 },
+    { qty: 25, price: "R$ 99,90", value: 99.90, popular: true },
   ];
 
   const formatPrice = (value: number) => {
     return `R$ ${value.toFixed(2).replace('.', ',')}`;
+  };
+
+  const getBrTotal = () => {
+    if (brSelectedIndex === 'custom') {
+      return formatPrice(brCustomQty * brPricePerSession);
+    }
+    return brPackages[brSelectedIndex]?.price || '';
+  };
+
+  const getIntlTotal = () => {
+    if (intlSelectedIndex === 'custom') {
+      return formatPrice(intlCustomQty * intlPricePerSession);
+    }
+    return intlPackages[intlSelectedIndex]?.price || '';
   };
 
   return (
@@ -114,15 +128,21 @@ const LojaSection = () => {
             {brPackages.map((item, i) => (
               <div 
                 key={i}
-                onClick={() => setBrUsingCustom(false)}
+                onClick={() => setBrSelectedIndex(i)}
                 className={cn(
                   "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-colors",
-                  !brUsingCustom && item.popular 
+                  brSelectedIndex === i
                     ? "bg-primary/10 border border-primary/20" 
                     : "bg-muted/50 hover:bg-muted"
                 )}
               >
                 <div className="flex items-center gap-2">
+                  <div className={cn(
+                    "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                    brSelectedIndex === i ? "border-primary" : "border-muted-foreground"
+                  )}>
+                    {brSelectedIndex === i && <div className="w-2 h-2 rounded-full bg-primary" />}
+                  </div>
                   <span className="text-foreground text-sm">+{item.qty} sessions</span>
                   {item.popular && (
                     <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">TOP</span>
@@ -133,20 +153,26 @@ const LojaSection = () => {
             ))}
             {/* Custom Quantity */}
             <div 
-              onClick={() => setBrUsingCustom(true)}
+              onClick={() => setBrSelectedIndex('custom')}
               className={cn(
                 "p-3 rounded-md text-sm cursor-pointer transition-colors",
-                brUsingCustom 
+                brSelectedIndex === 'custom'
                   ? "bg-primary/10 border border-primary/20" 
                   : "bg-muted/50 hover:bg-muted"
               )}
             >
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 mb-2">
+                <div className={cn(
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                  brSelectedIndex === 'custom' ? "border-primary" : "border-muted-foreground"
+                )}>
+                  {brSelectedIndex === 'custom' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                </div>
                 <span className="text-foreground text-sm">Quantidade personalizada</span>
-                <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">5+</span>
+                <span className="ml-auto text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">5+</span>
               </div>
-              {brUsingCustom && (
-                <div className="flex items-center gap-3 mt-3">
+              {brSelectedIndex === 'custom' && (
+                <div className="flex items-center gap-3 mt-3 pl-6">
                   <input
                     type="number"
                     min={5}
@@ -160,7 +186,9 @@ const LojaSection = () => {
               )}
             </div>
           </div>
-          <Button size="sm" className="w-full h-9">Comprar</Button>
+          <Button size="sm" className="w-full h-9">
+            Comprar {getBrTotal()}
+          </Button>
         </div>
 
         {/* Sessions Estrangeiras */}
@@ -181,15 +209,21 @@ const LojaSection = () => {
             {intlPackages.map((item, i) => (
               <div 
                 key={i}
-                onClick={() => setIntlUsingCustom(false)}
+                onClick={() => setIntlSelectedIndex(i)}
                 className={cn(
                   "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-colors",
-                  !intlUsingCustom && item.popular 
+                  intlSelectedIndex === i
                     ? "bg-primary/10 border border-primary/20" 
                     : "bg-muted/50 hover:bg-muted"
                 )}
               >
                 <div className="flex items-center gap-2">
+                  <div className={cn(
+                    "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                    intlSelectedIndex === i ? "border-primary" : "border-muted-foreground"
+                  )}>
+                    {intlSelectedIndex === i && <div className="w-2 h-2 rounded-full bg-primary" />}
+                  </div>
                   <span className="text-foreground text-sm">+{item.qty} sessions</span>
                   {item.popular && (
                     <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">MELHOR</span>
@@ -200,20 +234,26 @@ const LojaSection = () => {
             ))}
             {/* Custom Quantity */}
             <div 
-              onClick={() => setIntlUsingCustom(true)}
+              onClick={() => setIntlSelectedIndex('custom')}
               className={cn(
                 "p-3 rounded-md text-sm cursor-pointer transition-colors",
-                intlUsingCustom 
+                intlSelectedIndex === 'custom'
                   ? "bg-primary/10 border border-primary/20" 
                   : "bg-muted/50 hover:bg-muted"
               )}
             >
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 mb-2">
+                <div className={cn(
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                  intlSelectedIndex === 'custom' ? "border-primary" : "border-muted-foreground"
+                )}>
+                  {intlSelectedIndex === 'custom' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                </div>
                 <span className="text-foreground text-sm">Quantidade personalizada</span>
-                <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">5+</span>
+                <span className="ml-auto text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">5+</span>
               </div>
-              {intlUsingCustom && (
-                <div className="flex items-center gap-3 mt-3">
+              {intlSelectedIndex === 'custom' && (
+                <div className="flex items-center gap-3 mt-3 pl-6">
                   <input
                     type="number"
                     min={5}
@@ -227,7 +267,9 @@ const LojaSection = () => {
               )}
             </div>
           </div>
-          <Button size="sm" className="w-full h-9">Comprar</Button>
+          <Button size="sm" className="w-full h-9">
+            Comprar {getIntlTotal()}
+          </Button>
         </div>
       </div>
     </motion.div>
@@ -520,14 +562,93 @@ const Dashboard = () => {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                <Button size="sm" className="h-9 text-xs sm:text-sm">
-                  <Zap className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-                  <span>Renovar Licença</span>
-                </Button>
-                <Button variant="outline" size="sm" className="h-9 text-xs sm:text-sm">
-                  <Sparkles className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-                  <span>Upgrade</span>
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" className="h-9 text-xs sm:text-sm">
+                      <Zap className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                      <span>Renovar Licença</span>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="bg-card border-border">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Renovar Licença</AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-3">
+                        <p>Renove sua licença para continuar usando todos os recursos.</p>
+                        <div className="bg-muted/50 rounded-md p-3 space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Plano atual</span>
+                            <span className="text-foreground font-medium">{userLicense.plan}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Renovação</span>
+                            <span className="text-foreground font-medium">+30 dias</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Valor</span>
+                            <span className="text-primary font-semibold">R$ 29,90</span>
+                          </div>
+                        </div>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction>Continuar para pagamento</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-9 text-xs sm:text-sm">
+                      <Sparkles className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                      <span>Upgrade</span>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="bg-card border-border">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Fazer Upgrade</AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-3">
+                        <p>Escolha um plano superior para obter mais benefícios.</p>
+                        <div className="space-y-2">
+                          <div className="bg-muted/50 rounded-md p-3 border border-border hover:border-primary/50 cursor-pointer transition-colors">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-sm font-medium text-foreground">Plano 60 Dias</p>
+                                <p className="text-xs text-muted-foreground">Economize 15%</p>
+                              </div>
+                              <span className="text-primary font-semibold">R$ 49,90</span>
+                            </div>
+                          </div>
+                          <div className="bg-primary/10 rounded-md p-3 border border-primary/30 cursor-pointer">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-medium text-foreground">Plano 90 Dias</p>
+                                  <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">POPULAR</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground">Economize 25%</p>
+                              </div>
+                              <span className="text-primary font-semibold">R$ 69,90</span>
+                            </div>
+                          </div>
+                          <div className="bg-muted/50 rounded-md p-3 border border-border hover:border-primary/50 cursor-pointer transition-colors">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-sm font-medium text-foreground">Plano Anual</p>
+                                <p className="text-xs text-muted-foreground">Economize 40%</p>
+                              </div>
+                              <span className="text-primary font-semibold">R$ 199,90</span>
+                            </div>
+                          </div>
+                        </div>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction>Continuar para pagamento</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
 
