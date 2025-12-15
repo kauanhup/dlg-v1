@@ -168,7 +168,7 @@ const PlanFormModal = ({
 }) => {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
-  const [period, setPeriod] = useState("mês");
+  const [period, setPeriod] = useState("month");
   const [features, setFeatures] = useState("");
   const [status, setStatus] = useState("active");
 
@@ -182,7 +182,7 @@ const PlanFormModal = ({
     } else if (isOpen && !plan) {
       setName("");
       setPrice("");
-      setPeriod("mês");
+      setPeriod("month");
       setFeatures("");
       setStatus("active");
     }
@@ -252,13 +252,13 @@ const PlanFormModal = ({
                 onChange={(e) => setPeriod(e.target.value)}
                 className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
               >
-                <option value="—">Único</option>
-                <option value="semana">Semanal</option>
-                <option value="quinzena">Quinzenal</option>
-                <option value="mês">Mensal</option>
-                <option value="trimestre">Trimestral</option>
-                <option value="semestre">Semestral</option>
-                <option value="ano">Anual</option>
+                <option value="lifetime">Único (Lifetime)</option>
+                <option value="week">Semanal</option>
+                <option value="biweekly">Quinzenal</option>
+                <option value="month">Mensal</option>
+                <option value="quarter">Trimestral</option>
+                <option value="semester">Semestral</option>
+                <option value="year">Anual</option>
               </select>
             </div>
           </div>
