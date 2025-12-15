@@ -181,7 +181,7 @@ const PlanFormModal = ({
 }) => {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
-  const [period, setPeriod] = useState("month");
+  const [period, setPeriod] = useState("day");
   const [features, setFeatures] = useState("");
   const [status, setStatus] = useState("active");
 
@@ -195,7 +195,7 @@ const PlanFormModal = ({
     } else if (isOpen && !plan) {
       setName("");
       setPrice("");
-      setPeriod("month");
+      setPeriod("day");
       setFeatures("");
       setStatus("active");
     }
