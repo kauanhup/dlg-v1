@@ -32,10 +32,20 @@ export interface SessionFile {
   user_id: string | null;
 }
 
+export interface SoldSession {
+  id: string;
+  file_name: string;
+  type: string;
+  sold_at: string;
+  buyer_name: string;
+  buyer_email: string;
+}
+
 export const useAdminSessions = () => {
   const [inventory, setInventory] = useState<SessionInventory[]>([]);
   const [combos, setCombos] = useState<SessionCombo[]>([]);
   const [sessionFiles, setSessionFiles] = useState<SessionFile[]>([]);
+  const [soldSessions, setSoldSessions] = useState<SoldSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +80,46 @@ export const useAdminSessions = () => {
 
       if (filesError) throw filesError;
       setSessionFiles((filesData || []) as SessionFile[]);
+
+      // Fetch sold sessions with buyer info
+      const { data: soldData, error: soldError } = await supabase
+        .from('session_files')
+        .select(`
+          id,
+          file_name,
+          type,
+          sold_at,
+          user_id
+        `)
+        .eq('status', 'sold')
+        .not('sold_at', 'is', null)
+        .order('sold_at', { ascending: false });
+
+      if (soldError) throw soldError;
+
+      // Fetch buyer profiles for sold sessions
+      if (soldData && soldData.length > 0) {
+        const userIds = [...new Set(soldData.filter(s => s.user_id).map(s => s.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, name, email')
+          .in('user_id', userIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+        const soldWithBuyers: SoldSession[] = soldData.map(s => ({
+          id: s.id,
+          file_name: s.file_name,
+          type: s.type,
+          sold_at: s.sold_at || '',
+          buyer_name: profileMap.get(s.user_id)?.name || 'Desconhecido',
+          buyer_email: profileMap.get(s.user_id)?.email || '',
+        }));
+
+        setSoldSessions(soldWithBuyers);
+      } else {
+        setSoldSessions([]);
+      }
     } catch (err) {
       console.error('Error fetching sessions data:', err);
       setError('Erro ao carregar dados de sessions');
@@ -296,6 +346,7 @@ export const useAdminSessions = () => {
     inventory,
     combos,
     sessionFiles,
+    soldSessions,
     isLoading,
     isUploading,
     error,
