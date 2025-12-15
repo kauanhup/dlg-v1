@@ -1901,8 +1901,24 @@ const Admin = () => {
     }
   }, [isLoading, role, navigate]);
 
-  // Show loading while checking auth OR if not admin (during redirect)
-  if (isLoading || role === null) {
+  // SECURITY: Block ALL rendering until role is confirmed as admin
+  // This prevents any admin UI from flashing before authorization is verified
+  if (isLoading || !isAdmin) {
+    // Still checking auth or not admin
+    if (!isLoading && !isAdmin) {
+      // Confirmed non-admin - show access denied (redirect happening via useEffect)
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <Shield className="w-16 h-16 text-destructive mx-auto mb-4" />
+            <h1 className="text-xl font-bold text-foreground mb-2">Acesso Negado</h1>
+            <p className="text-muted-foreground mb-2">Você não tem permissão para acessar esta página.</p>
+            <p className="text-sm text-muted-foreground">Redirecionando...</p>
+          </div>
+        </div>
+      );
+    }
+    // Still loading - show loading spinner (no admin UI exposed)
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <MorphingSquare />
@@ -1910,19 +1926,7 @@ const Admin = () => {
     );
   }
 
-  // Not admin - show access denied while redirecting
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Shield className="w-16 h-16 text-destructive mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-foreground mb-2">Acesso Negado</h1>
-          <p className="text-muted-foreground mb-2">Você não tem permissão para acessar esta página.</p>
-          <p className="text-sm text-muted-foreground">Redirecionando...</p>
-        </div>
-      </div>
-    );
-  }
+  // From here, user is CONFIRMED as admin - safe to render admin UI
   
   const adminUser = {
     name: user?.user_metadata?.name || "Administrador",
