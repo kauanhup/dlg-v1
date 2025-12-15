@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { UserProfileSidebar } from "@/components/ui/menu";
 import { AvatarPicker, avatars } from "@/components/ui/avatar-picker";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserDashboard } from "@/hooks/useUserDashboard";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import {
@@ -91,56 +92,61 @@ const slideInLeft = {
   transition: { duration: 0.3 }
 };
 
-const LojaSection = ({ onCheckout }: { onCheckout: (type: string, qty: number, price: string) => void }) => {
+const LojaSection = ({ 
+  onCheckout, 
+  combos, 
+  inventory 
+}: { 
+  onCheckout: (type: string, qty: number, price: string) => void;
+  combos: { id: string; type: string; quantity: number; price: number; is_popular: boolean }[];
+  inventory: { type: string; quantity: number }[];
+}) => {
   const navigate = useNavigate();
-  const [brCustomQty, setBrCustomQty] = useState<number>(5);
-  const [intlCustomQty, setIntlCustomQty] = useState<number>(5);
-  const [brSelectedIndex, setBrSelectedIndex] = useState<number | 'custom'>(2);
-  const [intlSelectedIndex, setIntlSelectedIndex] = useState<number | 'custom'>(2);
+  const [brSelectedComboId, setBrSelectedComboId] = useState<string | null>(null);
+  const [intlSelectedComboId, setIntlSelectedComboId] = useState<string | null>(null);
   const [showBrConfirm, setShowBrConfirm] = useState(false);
   const [showIntlConfirm, setShowIntlConfirm] = useState(false);
 
-  const brPricePerSession = 9.98;
-  const intlPricePerSession = 5.98;
+  const brCombos = combos.filter(c => c.type === 'brasileiras');
+  const intlCombos = combos.filter(c => c.type === 'estrangeiras');
+  const brInventory = inventory.find(i => i.type === 'brasileiras');
+  const intlInventory = inventory.find(i => i.type === 'estrangeiras');
 
-  const brPackages = [
-    { qty: 5, price: "R$ 49,90", value: 49.90 },
-    { qty: 10, price: "R$ 89,90", value: 89.90 },
-    { qty: 25, price: "R$ 199,90", value: 199.90, popular: true },
-  ];
-
-  const intlPackages = [
-    { qty: 5, price: "R$ 29,90", value: 29.90 },
-    { qty: 10, price: "R$ 49,90", value: 49.90 },
-    { qty: 25, price: "R$ 99,90", value: 99.90, popular: true },
-  ];
+  // Set default selections
+  useEffect(() => {
+    if (brCombos.length > 0 && !brSelectedComboId) {
+      setBrSelectedComboId(brCombos[0].id);
+    }
+    if (intlCombos.length > 0 && !intlSelectedComboId) {
+      setIntlSelectedComboId(intlCombos[0].id);
+    }
+  }, [brCombos, intlCombos]);
 
   const formatPrice = (value: number) => {
-    return `R$ ${value.toFixed(2).replace('.', ',')}`;
+    return `R$ ${Number(value).toFixed(2).replace('.', ',')}`;
   };
 
+  const getSelectedBrCombo = () => brCombos.find(c => c.id === brSelectedComboId);
+  const getSelectedIntlCombo = () => intlCombos.find(c => c.id === intlSelectedComboId);
+
   const getBrTotal = () => {
-    if (brSelectedIndex === 'custom') {
-      return formatPrice(brCustomQty * brPricePerSession);
-    }
-    return brPackages[brSelectedIndex]?.price || '';
+    const combo = getSelectedBrCombo();
+    return combo ? formatPrice(combo.price) : '';
   };
 
   const getBrQty = () => {
-    if (brSelectedIndex === 'custom') return brCustomQty;
-    return brPackages[brSelectedIndex]?.qty || 0;
+    const combo = getSelectedBrCombo();
+    return combo?.quantity || 0;
   };
 
   const getIntlTotal = () => {
-    if (intlSelectedIndex === 'custom') {
-      return formatPrice(intlCustomQty * intlPricePerSession);
-    }
-    return intlPackages[intlSelectedIndex]?.price || '';
+    const combo = getSelectedIntlCombo();
+    return combo ? formatPrice(combo.price) : '';
   };
 
   const getIntlQty = () => {
-    if (intlSelectedIndex === 'custom') return intlCustomQty;
-    return intlPackages[intlSelectedIndex]?.qty || 0;
+    const combo = getSelectedIntlCombo();
+    return combo?.quantity || 0;
   };
 
   const handleBrCheckout = () => {
@@ -188,16 +194,16 @@ const LojaSection = ({ onCheckout }: { onCheckout: (type: string, qty: number, p
                 <p className="text-xs text-muted-foreground">Números do Brasil</p>
               </div>
             </div>
-            <span className="text-xs bg-success/10 text-success px-2 py-1 rounded-md font-medium">142 disponíveis</span>
+            <span className="text-xs bg-success/10 text-success px-2 py-1 rounded-md font-medium">{brInventory?.quantity || 0} disponíveis</span>
           </div>
           <div className="space-y-2">
-            {brPackages.map((item, i) => (
+            {brCombos.map((combo) => (
               <div 
-                key={i}
-                onClick={() => setBrSelectedIndex(i)}
+                key={combo.id}
+                onClick={() => setBrSelectedComboId(combo.id)}
                 className={cn(
                   "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-all duration-150",
-                  brSelectedIndex === i
+                  brSelectedComboId === combo.id
                     ? "bg-primary/10 border border-primary/20" 
                     : "bg-muted/50 hover:bg-muted"
                 )}
@@ -205,55 +211,22 @@ const LojaSection = ({ onCheckout }: { onCheckout: (type: string, qty: number, p
                 <div className="flex items-center gap-2">
                   <div className={cn(
                     "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
-                    brSelectedIndex === i ? "border-primary" : "border-muted-foreground"
+                    brSelectedComboId === combo.id ? "border-primary" : "border-muted-foreground"
                   )}>
-                    {brSelectedIndex === i && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    {brSelectedComboId === combo.id && <div className="w-2 h-2 rounded-full bg-primary" />}
                   </div>
-                  <span className="text-foreground text-sm">+{item.qty} sessions</span>
-                  {item.popular && (
+                  <span className="text-foreground text-sm">+{combo.quantity} sessions</span>
+                  {combo.is_popular && (
                     <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">TOP</span>
                   )}
                 </div>
-                <span className="font-semibold text-primary text-sm">{item.price}</span>
+                <span className="font-semibold text-primary text-sm">{formatPrice(combo.price)}</span>
               </div>
             ))}
-            <div 
-              onClick={() => setBrSelectedIndex('custom')}
-              className={cn(
-                "p-3 rounded-md text-sm cursor-pointer transition-all duration-150",
-                brSelectedIndex === 'custom'
-                  ? "bg-primary/10 border border-primary/20" 
-                  : "bg-muted/50 hover:bg-muted"
-              )}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className={cn(
-                  "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
-                  brSelectedIndex === 'custom' ? "border-primary" : "border-muted-foreground"
-                )}>
-                  {brSelectedIndex === 'custom' && <div className="w-2 h-2 rounded-full bg-primary" />}
-                </div>
-                <span className="text-foreground text-sm">Quantidade personalizada</span>
-                <span className="ml-auto text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">5+</span>
-              </div>
-              {brSelectedIndex === 'custom' && (
-                <div className="flex items-center gap-3 mt-3 pl-6 animate-fade-in">
-                  <input
-                    type="number"
-                    min={5}
-                    value={brCustomQty}
-                    onChange={(e) => setBrCustomQty(Math.max(5, parseInt(e.target.value) || 5))}
-                    className="w-20 h-8 px-2 text-sm bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
-                  <span className="text-muted-foreground text-xs">sessions</span>
-                  <span className="ml-auto font-semibold text-primary text-sm">{formatPrice(brCustomQty * brPricePerSession)}</span>
-                </div>
-              )}
-            </div>
           </div>
           <AlertDialog open={showBrConfirm} onOpenChange={setShowBrConfirm}>
             <AlertDialogTrigger asChild>
-              <Button size="sm" className="w-full h-9 active:scale-[0.99] transition-transform">
+              <Button size="sm" className="w-full h-9 active:scale-[0.99] transition-transform" disabled={brCombos.length === 0}>
                 Comprar {getBrTotal()}
               </Button>
             </AlertDialogTrigger>
@@ -303,16 +276,16 @@ const LojaSection = ({ onCheckout }: { onCheckout: (type: string, qty: number, p
                 <p className="text-xs text-muted-foreground">Números internacionais</p>
               </div>
             </div>
-            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-md font-medium">89 disponíveis</span>
+            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-md font-medium">{intlInventory?.quantity || 0} disponíveis</span>
           </div>
           <div className="space-y-2">
-            {intlPackages.map((item, i) => (
+            {intlCombos.map((combo) => (
               <div 
-                key={i}
-                onClick={() => setIntlSelectedIndex(i)}
+                key={combo.id}
+                onClick={() => setIntlSelectedComboId(combo.id)}
                 className={cn(
                   "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-all duration-150",
-                  intlSelectedIndex === i
+                  intlSelectedComboId === combo.id
                     ? "bg-primary/10 border border-primary/20" 
                     : "bg-muted/50 hover:bg-muted"
                 )}
@@ -320,55 +293,22 @@ const LojaSection = ({ onCheckout }: { onCheckout: (type: string, qty: number, p
                 <div className="flex items-center gap-2">
                   <div className={cn(
                     "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
-                    intlSelectedIndex === i ? "border-primary" : "border-muted-foreground"
+                    intlSelectedComboId === combo.id ? "border-primary" : "border-muted-foreground"
                   )}>
-                    {intlSelectedIndex === i && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    {intlSelectedComboId === combo.id && <div className="w-2 h-2 rounded-full bg-primary" />}
                   </div>
-                  <span className="text-foreground text-sm">+{item.qty} sessions</span>
-                  {item.popular && (
+                  <span className="text-foreground text-sm">+{combo.quantity} sessions</span>
+                  {combo.is_popular && (
                     <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">MELHOR</span>
                   )}
                 </div>
-                <span className="font-semibold text-primary text-sm">{item.price}</span>
+                <span className="font-semibold text-primary text-sm">{formatPrice(combo.price)}</span>
               </div>
             ))}
-            <div 
-              onClick={() => setIntlSelectedIndex('custom')}
-              className={cn(
-                "p-3 rounded-md text-sm cursor-pointer transition-all duration-150",
-                intlSelectedIndex === 'custom'
-                  ? "bg-primary/10 border border-primary/20" 
-                  : "bg-muted/50 hover:bg-muted"
-              )}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className={cn(
-                  "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
-                  intlSelectedIndex === 'custom' ? "border-primary" : "border-muted-foreground"
-                )}>
-                  {intlSelectedIndex === 'custom' && <div className="w-2 h-2 rounded-full bg-primary" />}
-                </div>
-                <span className="text-foreground text-sm">Quantidade personalizada</span>
-                <span className="ml-auto text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">5+</span>
-              </div>
-              {intlSelectedIndex === 'custom' && (
-                <div className="flex items-center gap-3 mt-3 pl-6 animate-fade-in">
-                  <input
-                    type="number"
-                    min={5}
-                    value={intlCustomQty}
-                    onChange={(e) => setIntlCustomQty(Math.max(5, parseInt(e.target.value) || 5))}
-                    className="w-20 h-8 px-2 text-sm bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
-                  <span className="text-muted-foreground text-xs">sessions</span>
-                  <span className="ml-auto font-semibold text-primary text-sm">{formatPrice(intlCustomQty * intlPricePerSession)}</span>
-                </div>
-              )}
-            </div>
           </div>
           <AlertDialog open={showIntlConfirm} onOpenChange={setShowIntlConfirm}>
             <AlertDialogTrigger asChild>
-              <Button size="sm" className="w-full h-9 active:scale-[0.99] transition-transform">
+              <Button size="sm" className="w-full h-9 active:scale-[0.99] transition-transform" disabled={intlCombos.length === 0}>
                 Comprar {getIntlTotal()}
               </Button>
             </AlertDialogTrigger>
@@ -408,6 +348,7 @@ const LojaSection = ({ onCheckout }: { onCheckout: (type: string, qty: number, p
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading, signOut, updateProfile } = useAuth();
+  const { license, sessions: userSessions, orders, combos, inventory, isLoading: dashboardLoading } = useUserDashboard(user?.id);
   const [activeTab, setActiveTab] = useState("licencas");
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -1001,7 +942,7 @@ const Dashboard = () => {
 
         {/* Comprar */}
         {activeTab === "comprar" && (
-          <LojaSection onCheckout={() => {}} />
+          <LojaSection onCheckout={() => {}} combos={combos} inventory={inventory} />
         )}
 
         {/* Preferências */}
