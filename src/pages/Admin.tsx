@@ -333,6 +333,8 @@ const SubscriptionsTabContent = () => {
   const [activeSubTab, setActiveSubTab] = useState<"subscribers" | "plans" | "payments">("subscribers");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<any>(null);
+  const [planToDelete, setPlanToDelete] = useState<any>(null);
+  const [showDeletePlanModal, setShowDeletePlanModal] = useState(false);
   
   // Subscriber modals state
   const [selectedSubscriber, setSelectedSubscriber] = useState<any>(null);
@@ -666,9 +668,8 @@ const SubscriptionsTabContent = () => {
                       <DropdownMenuItem 
                         className="cursor-pointer text-destructive focus:text-destructive"
                         onClick={() => {
-                          if (window.confirm(`Excluir plano "${plan.name}"? Esta ação é irreversível.`)) {
-                            deletePlan(plan.id);
-                          }
+                          setPlanToDelete(plan);
+                          setShowDeletePlanModal(true);
                         }}
                       >
                         <Trash2 className="w-4 h-4 mr-2" /> Excluir
@@ -712,6 +713,62 @@ const SubscriptionsTabContent = () => {
         plan={editingPlan}
         onSave={handleSavePlan}
       />
+
+      {/* Delete Plan Confirmation Modal */}
+      {showDeletePlanModal && planToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowDeletePlanModal(false)}
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="relative bg-card border border-border rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl"
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                <Trash2 className="w-8 h-8 text-destructive" />
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Excluir Plano</h3>
+              <p className="text-muted-foreground mb-2">
+                Você está prestes a excluir o plano:
+              </p>
+              <div className="bg-muted/50 rounded-lg px-4 py-3 mb-4 w-full">
+                <p className="font-semibold text-foreground">{planToDelete.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {formatPrice(planToDelete.price)} / {planToDelete.period}
+                </p>
+              </div>
+              <p className="text-sm text-destructive mb-6">
+                ⚠️ Esta ação é irreversível e não pode ser desfeita.
+              </p>
+              <div className="flex gap-3 w-full">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => setShowDeletePlanModal(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  className="flex-1"
+                  onClick={async () => {
+                    await deletePlan(planToDelete.id);
+                    setShowDeletePlanModal(false);
+                    setPlanToDelete(null);
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir Plano
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Payments Tab */}
       {activeSubTab === "payments" && (
