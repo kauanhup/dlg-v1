@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { MorphingSquare } from "@/components/ui/morphing-square";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -12,8 +13,10 @@ const Login = () => {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [whatsappError, setWhatsappError] = useState("");
+  const [nameError, setNameError] = useState("");
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -22,11 +25,56 @@ const Login = () => {
   const redirectUrl = searchParams.get("redirect") || "/dashboard";
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    // Check if user is already logged in
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // User is logged in, check their role and redirect
+        const role = await getUserRole(session.user.id);
+        if (role === 'admin') {
+          navigate("/admin");
+        } else {
+          navigate(redirectUrl);
+        }
+      }
+      
       setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    };
+
+    checkSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          const role = await getUserRole(session.user.id);
+          if (role === 'admin') {
+            navigate("/admin");
+          } else {
+            navigate(redirectUrl);
+          }
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [navigate, redirectUrl]);
+
+  const getUserRole = async (userId: string): Promise<string> => {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    if (error || !data) {
+      console.error('Error fetching user role:', error);
+      return 'user';
+    }
+    
+    return data.role;
+  };
 
   const validateEmail = (value: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -40,29 +88,40 @@ const Login = () => {
     return /^\+?[0-9]{10,15}$/.test(value.replace(/\s/g, ''));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateName = (value: string) => {
+    return value.trim().length >= 2;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     let valid = true;
+
+    // Reset errors
+    setEmailError("");
+    setPasswordError("");
+    setWhatsappError("");
+    setNameError("");
 
     if (!validateEmail(email)) {
       setEmailError("Por favor, insira um email válido.");
       valid = false;
-    } else {
-      setEmailError("");
     }
 
     if (!validatePassword(password)) {
       setPasswordError("A senha deve ter pelo menos 8 caracteres.");
       valid = false;
-    } else {
-      setPasswordError("");
     }
 
-    if (!isLogin && !validateWhatsapp(whatsapp)) {
-      setWhatsappError("Por favor, insira um número válido.");
-      valid = false;
-    } else {
-      setWhatsappError("");
+    if (!isLogin) {
+      if (!validateName(name)) {
+        setNameError("Por favor, insira seu nome.");
+        valid = false;
+      }
+      
+      if (!validateWhatsapp(whatsapp)) {
+        setWhatsappError("Por favor, insira um número válido.");
+        valid = false;
+      }
     }
 
     if (!valid) {
@@ -70,26 +129,63 @@ const Login = () => {
       return;
     }
 
-    // Simular login (depois substituir por auth real)
-    localStorage.setItem("isLoggedIn", "true");
-    
-    // Check if admin credentials
-    const isAdmin = email.toLowerCase() === "admin@swextractor.com" && password === "admin123";
-    
-    if (isLogin) {
-      toast.success("Login realizado!", isAdmin ? "Bem-vindo, Administrador." : "Bem-vindo de volta.");
-    } else {
-      toast.success("Conta criada!", "Sua conta foi criada com sucesso.");
-    }
+    setIsSubmitting(true);
 
-    // Navigate to admin or user dashboard
-    setTimeout(() => {
-      if (isAdmin) {
-        navigate("/admin");
+    try {
+      if (isLogin) {
+        // Login
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            toast.error("Erro no login", "Email ou senha incorretos.");
+          } else if (error.message.includes('Email not confirmed')) {
+            toast.error("Erro no login", "Confirme seu email antes de entrar.");
+          } else {
+            toast.error("Erro no login", error.message);
+          }
+          setIsSubmitting(false);
+          return;
+        }
+
+        toast.success("Login realizado!", "Bem-vindo de volta.");
+        
+        // Redirect is handled by onAuthStateChange
       } else {
-        navigate(redirectUrl);
+        // Signup
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+            data: {
+              name: name.trim(),
+              whatsapp: whatsapp.replace(/\s/g, ''),
+            },
+          },
+        });
+
+        if (error) {
+          if (error.message.includes('User already registered')) {
+            toast.error("Erro no cadastro", "Este email já está cadastrado.");
+          } else {
+            toast.error("Erro no cadastro", error.message);
+          }
+          setIsSubmitting(false);
+          return;
+        }
+
+        toast.success("Conta criada!", "Sua conta foi criada com sucesso.");
+        
+        // Redirect is handled by onAuthStateChange
       }
-    }, 1000);
+    } catch (error: any) {
+      toast.error("Erro", error.message || "Ocorreu um erro inesperado.");
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading || isTransitioning) {
@@ -109,6 +205,8 @@ const Login = () => {
     setIsTransitioning(true);
     setEmailError("");
     setPasswordError("");
+    setWhatsappError("");
+    setNameError("");
     setTimeout(() => {
       setIsLogin(!isLogin);
       setIsTransitioning(false);
@@ -156,10 +254,16 @@ const Login = () => {
                   id="name"
                   type="text"
                   placeholder="Seu nome"
-                  className="text-sm w-full py-3 px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 border-border/50 transition-all"
+                  className={`text-sm w-full py-3 px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
+                    nameError ? "border-destructive" : "border-border/50"
+                  }`}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  disabled={isSubmitting}
                 />
+                {nameError && (
+                  <p className="text-xs text-destructive">{nameError}</p>
+                )}
               </div>
             )}
 
@@ -178,6 +282,7 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 aria-invalid={!!emailError}
                 aria-describedby="email-error"
+                disabled={isSubmitting}
               />
               {emailError && (
                 <p id="email-error" className="text-xs text-destructive">
@@ -201,6 +306,7 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 aria-invalid={!!passwordError}
                 aria-describedby="password-error"
+                disabled={isSubmitting}
               />
               {passwordError && (
                 <p id="password-error" className="text-xs text-destructive">
@@ -225,6 +331,7 @@ const Login = () => {
                   onChange={(e) => setWhatsapp(e.target.value)}
                   aria-invalid={!!whatsappError}
                   aria-describedby="whatsapp-error"
+                  disabled={isSubmitting}
                 />
                 {whatsappError && (
                   <p id="whatsapp-error" className="text-xs text-destructive">
@@ -236,9 +343,10 @@ const Login = () => {
 
             <button
               type="submit"
-              className="w-full py-3 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30"
+              disabled={isSubmitting}
+              className="w-full py-3 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLogin ? "Entrar" : "Criar conta"}
+              {isSubmitting ? "Aguarde..." : isLogin ? "Entrar" : "Criar conta"}
             </button>
 
             <p className="text-center text-sm text-muted-foreground">
@@ -246,7 +354,8 @@ const Login = () => {
               <button
                 type="button"
                 onClick={handleToggleMode}
-                className="text-primary hover:underline font-medium"
+                disabled={isSubmitting}
+                className="text-primary hover:underline font-medium disabled:opacity-50"
               >
                 {isLogin ? "Cadastre-se" : "Entrar"}
               </button>
