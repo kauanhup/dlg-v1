@@ -182,6 +182,24 @@ export const useAdminSubscriptions = () => {
     }
   };
 
+  const deletePlan = async (planId: string) => {
+    try {
+      const { error } = await supabase
+        .from('subscription_plans')
+        .delete()
+        .eq('id', planId);
+
+      if (error) throw error;
+
+      setPlans(prev => prev.filter(plan => plan.id !== planId));
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error deleting plan:', err);
+      return { success: false, error: 'Erro ao excluir plano' };
+    }
+  };
+
   const updateSubscription = async (subId: string, data: Partial<UserSubscription>) => {
     try {
       const { error } = await supabase
@@ -247,6 +265,7 @@ export const useAdminSubscriptions = () => {
     refetch: fetchData,
     updatePlan,
     createPlan,
+    deletePlan,
     updateSubscription,
     updatePayment,
     stats,

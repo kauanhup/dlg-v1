@@ -266,6 +266,7 @@ const PlanFormModal = ({
                 className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
               >
                 <option value="lifetime">Único (Lifetime)</option>
+                <option value="day">Diário</option>
                 <option value="week">Semanal</option>
                 <option value="biweek">Quinzenal</option>
                 <option value="month">Mensal</option>
@@ -324,6 +325,7 @@ const SubscriptionsTabContent = () => {
     stats,
     updatePlan,
     createPlan,
+    deletePlan,
     updateSubscription,
     updatePayment 
   } = useAdminSubscriptions();
@@ -656,10 +658,20 @@ const SubscriptionsTabContent = () => {
                         <Edit className="w-4 h-4 mr-2" /> Editar
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        className="cursor-pointer text-destructive focus:text-destructive"
+                        className="cursor-pointer"
                         onClick={() => updatePlan(plan.id, { is_active: !plan.is_active })}
                       >
-                        <Trash2 className="w-4 h-4 mr-2" /> {plan.is_active ? "Desativar" : "Ativar"}
+                        <XCircle className="w-4 h-4 mr-2" /> {plan.is_active ? "Desativar" : "Ativar"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="cursor-pointer text-destructive focus:text-destructive"
+                        onClick={() => {
+                          if (window.confirm(`Excluir plano "${plan.name}"? Esta ação é irreversível.`)) {
+                            deletePlan(plan.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" /> Excluir
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
