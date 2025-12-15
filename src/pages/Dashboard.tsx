@@ -170,118 +170,71 @@ const LojaSection = ({ onCheckout }: { onCheckout: (type: string, qty: number, p
       <div className="grid sm:grid-cols-2 gap-4">
         {/* Sessions Brasileiras */}
         <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="bg-card border border-border rounded-md p-5 space-y-4 hover:shadow-lg hover:shadow-success/5 transition-shadow duration-300"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="bg-card border border-border rounded-md p-5 space-y-4 hover:shadow-md hover:shadow-success/5 transition-shadow duration-200"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <motion.div 
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-                className="w-10 h-10 bg-success/10 rounded-md flex items-center justify-center"
-              >
+              <div className="w-10 h-10 bg-success/10 rounded-md flex items-center justify-center">
                 <Globe className="w-5 h-5 text-success" />
-              </motion.div>
+              </div>
               <div>
                 <h3 className="font-semibold text-foreground text-sm">Sessions Brasileiras</h3>
                 <p className="text-xs text-muted-foreground">Números do Brasil</p>
               </div>
             </div>
-            <motion.span 
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: 0.3 }}
-              className="text-xs bg-success/10 text-success px-2 py-1 rounded-md font-medium"
-            >
-              142 disponíveis
-            </motion.span>
+            <span className="text-xs bg-success/10 text-success px-2 py-1 rounded-md font-medium">142 disponíveis</span>
           </div>
           <div className="space-y-2">
             {brPackages.map((item, i) => (
-              <motion.div 
+              <div 
                 key={i}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.25, delay: 0.2 + i * 0.08 }}
                 onClick={() => setBrSelectedIndex(i)}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
                 className={cn(
-                  "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-colors",
+                  "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-all duration-150",
                   brSelectedIndex === i
                     ? "bg-primary/10 border border-primary/20" 
                     : "bg-muted/50 hover:bg-muted"
                 )}
               >
                 <div className="flex items-center gap-2">
-                  <motion.div 
-                    className={cn(
-                      "w-4 h-4 rounded-full border-2 flex items-center justify-center",
-                      brSelectedIndex === i ? "border-primary" : "border-muted-foreground"
-                    )}
-                    animate={brSelectedIndex === i ? { scale: [1, 1.2, 1] } : {}}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {brSelectedIndex === i && (
-                      <motion.div 
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="w-2 h-2 rounded-full bg-primary" 
-                      />
-                    )}
-                  </motion.div>
+                  <div className={cn(
+                    "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
+                    brSelectedIndex === i ? "border-primary" : "border-muted-foreground"
+                  )}>
+                    {brSelectedIndex === i && <div className="w-2 h-2 rounded-full bg-primary" />}
+                  </div>
                   <span className="text-foreground text-sm">+{item.qty} sessions</span>
                   {item.popular && (
                     <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">TOP</span>
                   )}
                 </div>
                 <span className="font-semibold text-primary text-sm">{item.price}</span>
-              </motion.div>
+              </div>
             ))}
-            <motion.div 
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.25, delay: 0.44 }}
+            <div 
               onClick={() => setBrSelectedIndex('custom')}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
               className={cn(
-                "p-3 rounded-md text-sm cursor-pointer transition-colors",
+                "p-3 rounded-md text-sm cursor-pointer transition-all duration-150",
                 brSelectedIndex === 'custom'
                   ? "bg-primary/10 border border-primary/20" 
                   : "bg-muted/50 hover:bg-muted"
               )}
             >
               <div className="flex items-center gap-2 mb-2">
-                <motion.div 
-                  className={cn(
-                    "w-4 h-4 rounded-full border-2 flex items-center justify-center",
-                    brSelectedIndex === 'custom' ? "border-primary" : "border-muted-foreground"
-                  )}
-                  animate={brSelectedIndex === 'custom' ? { scale: [1, 1.2, 1] } : {}}
-                  transition={{ duration: 0.2 }}
-                >
-                  {brSelectedIndex === 'custom' && (
-                    <motion.div 
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="w-2 h-2 rounded-full bg-primary" 
-                    />
-                  )}
-                </motion.div>
+                <div className={cn(
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
+                  brSelectedIndex === 'custom' ? "border-primary" : "border-muted-foreground"
+                )}>
+                  {brSelectedIndex === 'custom' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                </div>
                 <span className="text-foreground text-sm">Quantidade personalizada</span>
                 <span className="ml-auto text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">5+</span>
               </div>
               {brSelectedIndex === 'custom' && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  transition={{ duration: 0.2 }}
-                  className="flex items-center gap-3 mt-3 pl-6"
-                >
+                <div className="flex items-center gap-3 mt-3 pl-6 animate-fade-in">
                   <input
                     type="number"
                     min={5}
@@ -291,17 +244,15 @@ const LojaSection = ({ onCheckout }: { onCheckout: (type: string, qty: number, p
                   />
                   <span className="text-muted-foreground text-xs">sessions</span>
                   <span className="ml-auto font-semibold text-primary text-sm">{formatPrice(brCustomQty * brPricePerSession)}</span>
-                </motion.div>
+                </div>
               )}
-            </motion.div>
+            </div>
           </div>
           <AlertDialog open={showBrConfirm} onOpenChange={setShowBrConfirm}>
             <AlertDialogTrigger asChild>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button size="sm" className="w-full h-9">
-                  Comprar {getBrTotal()}
-                </Button>
-              </motion.div>
+              <Button size="sm" className="w-full h-9 active:scale-[0.99] transition-transform">
+                Comprar {getBrTotal()}
+              </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-card border-border">
               <AlertDialogHeader>
@@ -334,118 +285,71 @@ const LojaSection = ({ onCheckout }: { onCheckout: (type: string, qty: number, p
 
         {/* Sessions Estrangeiras */}
         <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="bg-card border border-border rounded-md p-5 space-y-4 hover:shadow-lg hover:shadow-primary/5 transition-shadow duration-300"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="bg-card border border-border rounded-md p-5 space-y-4 hover:shadow-md hover:shadow-primary/5 transition-shadow duration-200"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <motion.div 
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.3 }}
-                className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center"
-              >
+              <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
                 <Globe className="w-5 h-5 text-primary" />
-              </motion.div>
+              </div>
               <div>
                 <h3 className="font-semibold text-foreground text-sm">Sessions Estrangeiras</h3>
                 <p className="text-xs text-muted-foreground">Números internacionais</p>
               </div>
             </div>
-            <motion.span 
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: 0.4 }}
-              className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-md font-medium"
-            >
-              89 disponíveis
-            </motion.span>
+            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-md font-medium">89 disponíveis</span>
           </div>
           <div className="space-y-2">
             {intlPackages.map((item, i) => (
-              <motion.div 
+              <div 
                 key={i}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.25, delay: 0.3 + i * 0.08 }}
                 onClick={() => setIntlSelectedIndex(i)}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
                 className={cn(
-                  "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-colors",
+                  "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-all duration-150",
                   intlSelectedIndex === i
                     ? "bg-primary/10 border border-primary/20" 
                     : "bg-muted/50 hover:bg-muted"
                 )}
               >
                 <div className="flex items-center gap-2">
-                  <motion.div 
-                    className={cn(
-                      "w-4 h-4 rounded-full border-2 flex items-center justify-center",
-                      intlSelectedIndex === i ? "border-primary" : "border-muted-foreground"
-                    )}
-                    animate={intlSelectedIndex === i ? { scale: [1, 1.2, 1] } : {}}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {intlSelectedIndex === i && (
-                      <motion.div 
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="w-2 h-2 rounded-full bg-primary" 
-                      />
-                    )}
-                  </motion.div>
+                  <div className={cn(
+                    "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
+                    intlSelectedIndex === i ? "border-primary" : "border-muted-foreground"
+                  )}>
+                    {intlSelectedIndex === i && <div className="w-2 h-2 rounded-full bg-primary" />}
+                  </div>
                   <span className="text-foreground text-sm">+{item.qty} sessions</span>
                   {item.popular && (
                     <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">MELHOR</span>
                   )}
                 </div>
                 <span className="font-semibold text-primary text-sm">{item.price}</span>
-              </motion.div>
+              </div>
             ))}
-            <motion.div 
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.25, delay: 0.54 }}
+            <div 
               onClick={() => setIntlSelectedIndex('custom')}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
               className={cn(
-                "p-3 rounded-md text-sm cursor-pointer transition-colors",
+                "p-3 rounded-md text-sm cursor-pointer transition-all duration-150",
                 intlSelectedIndex === 'custom'
                   ? "bg-primary/10 border border-primary/20" 
                   : "bg-muted/50 hover:bg-muted"
               )}
             >
               <div className="flex items-center gap-2 mb-2">
-                <motion.div 
-                  className={cn(
-                    "w-4 h-4 rounded-full border-2 flex items-center justify-center",
-                    intlSelectedIndex === 'custom' ? "border-primary" : "border-muted-foreground"
-                  )}
-                  animate={intlSelectedIndex === 'custom' ? { scale: [1, 1.2, 1] } : {}}
-                  transition={{ duration: 0.2 }}
-                >
-                  {intlSelectedIndex === 'custom' && (
-                    <motion.div 
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="w-2 h-2 rounded-full bg-primary" 
-                    />
-                  )}
-                </motion.div>
+                <div className={cn(
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
+                  intlSelectedIndex === 'custom' ? "border-primary" : "border-muted-foreground"
+                )}>
+                  {intlSelectedIndex === 'custom' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                </div>
                 <span className="text-foreground text-sm">Quantidade personalizada</span>
                 <span className="ml-auto text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">5+</span>
               </div>
               {intlSelectedIndex === 'custom' && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  transition={{ duration: 0.2 }}
-                  className="flex items-center gap-3 mt-3 pl-6"
-                >
+                <div className="flex items-center gap-3 mt-3 pl-6 animate-fade-in">
                   <input
                     type="number"
                     min={5}
@@ -455,17 +359,15 @@ const LojaSection = ({ onCheckout }: { onCheckout: (type: string, qty: number, p
                   />
                   <span className="text-muted-foreground text-xs">sessions</span>
                   <span className="ml-auto font-semibold text-primary text-sm">{formatPrice(intlCustomQty * intlPricePerSession)}</span>
-                </motion.div>
+                </div>
               )}
-            </motion.div>
+            </div>
           </div>
           <AlertDialog open={showIntlConfirm} onOpenChange={setShowIntlConfirm}>
             <AlertDialogTrigger asChild>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button size="sm" className="w-full h-9">
-                  Comprar {getIntlTotal()}
-                </Button>
-              </motion.div>
+              <Button size="sm" className="w-full h-9 active:scale-[0.99] transition-transform">
+                Comprar {getIntlTotal()}
+              </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-card border-border">
               <AlertDialogHeader>
