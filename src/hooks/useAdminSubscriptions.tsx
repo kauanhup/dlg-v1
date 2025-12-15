@@ -5,7 +5,7 @@ export interface SubscriptionPlan {
   id: string;
   name: string;
   price: number;
-  period: string;
+  period: number;
   features: string[];
   is_active: boolean;
   created_at: string;
@@ -162,7 +162,7 @@ export const useAdminSubscriptions = () => {
     }
   };
 
-  const createPlan = async (data: { name: string; price: number; period: string; features: string[] }) => {
+  const createPlan = async (data: { name: string; price: number; period: number; features: string[] }) => {
     try {
       const { data: newPlan, error } = await supabase
         .from('subscription_plans')
