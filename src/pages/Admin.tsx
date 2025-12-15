@@ -307,101 +307,116 @@ const PlanFormModal = ({
 
 // Subscriptions Tab Content (used in Dashboard)
 const SubscriptionsTabContent = () => {
+  const { 
+    plans: dbPlans, 
+    subscriptions, 
+    payments: dbPayments, 
+    isLoading, 
+    stats,
+    updatePlan,
+    createPlan,
+    updateSubscription,
+    updatePayment 
+  } = useAdminSubscriptions();
+  
   const [activeSubTab, setActiveSubTab] = useState<"subscribers" | "plans" | "payments">("subscribers");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPlan, setEditingPlan] = useState<typeof plans[0] | null>(null);
+  const [editingPlan, setEditingPlan] = useState<any>(null);
   
   // Subscriber modals state
-  const [selectedSubscriber, setSelectedSubscriber] = useState<typeof subscribers[0] | null>(null);
+  const [selectedSubscriber, setSelectedSubscriber] = useState<any>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
-  const [subscribers, setSubscribers] = useState([
-    { id: 1, name: "João Silva", email: "joao@email.com", plan: "Pro Mensal", status: "active", startDate: "01 Nov 2024", nextBilling: "01 Jan 2025", amount: "R$ 49,90", whatsapp: "+55 11 99999-1234", sessions: 45 },
-    { id: 2, name: "Maria Santos", email: "maria@email.com", plan: "Pro Anual", status: "active", startDate: "15 Jun 2024", nextBilling: "15 Jun 2025", amount: "R$ 399,90", whatsapp: "+55 21 98888-5678", sessions: 320 },
-    { id: 3, name: "Pedro Costa", email: "pedro@email.com", plan: "Pro Mensal", status: "cancelled", startDate: "10 Set 2024", nextBilling: "—", amount: "R$ 49,90", whatsapp: "+55 31 97777-9012", sessions: 0 },
-    { id: 4, name: "Ana Lima", email: "ana@email.com", plan: "Enterprise", status: "active", startDate: "01 Dez 2024", nextBilling: "01 Dez 2025", amount: "R$ 999,90", whatsapp: "+55 41 96666-3456", sessions: 890 },
-    { id: 5, name: "Carlos Souza", email: "carlos@email.com", plan: "Pro Mensal", status: "overdue", startDate: "05 Out 2024", nextBilling: "05 Dez 2024", amount: "R$ 49,90", whatsapp: "+55 51 95555-7890", sessions: 12 },
-  ]);
-
-  const [plans, setPlans] = useState([
-    { id: 1, name: "Grátis", price: "R$ 0", period: "—", sessions: 0, features: ["Acesso básico", "Suporte por email"], subscribers: 423, status: "active" },
-    { id: 2, name: "Pro Mensal", price: "R$ 49,90", period: "mês", sessions: 50, features: ["50 sessions/mês", "Suporte prioritário", "API access"], subscribers: 156, status: "active" },
-    { id: 3, name: "Pro Anual", price: "R$ 399,90", period: "ano", sessions: 600, features: ["600 sessions/ano", "Suporte 24/7", "API access", "2 meses grátis"], subscribers: 78, status: "active" },
-    { id: 4, name: "Enterprise", price: "R$ 999,90", period: "ano", sessions: -1, features: ["Sessions ilimitadas", "Suporte dedicado", "SLA 99.9%", "Whitelabel"], subscribers: 12, status: "active" },
-  ]);
-
-  const [payments, setPayments] = useState([
-    { id: "#PAY-001", user: "João Silva", plan: "Pro Mensal", amount: "R$ 49,90", method: "PIX", status: "paid", date: "01 Dez 2024" },
-    { id: "#PAY-002", user: "Maria Santos", plan: "Pro Anual", amount: "R$ 399,90", method: "PIX", status: "paid", date: "15 Nov 2024" },
-    { id: "#PAY-003", user: "Carlos Souza", plan: "Pro Mensal", amount: "R$ 49,90", method: "PIX", status: "failed", date: "05 Dez 2024" },
-    { id: "#PAY-004", user: "Ana Lima", plan: "Enterprise", amount: "R$ 999,90", method: "PIX", status: "pending", date: "01 Dez 2024" },
-    { id: "#PAY-005", user: "Pedro Costa", plan: "Pro Mensal", amount: "R$ 49,90", method: "PIX", status: "refunded", date: "10 Nov 2024" },
-  ]);
-
   // Payment modals state
-  const [selectedPayment, setSelectedPayment] = useState<typeof payments[0] | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [showEditStatusModal, setShowEditStatusModal] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [newPaymentStatus, setNewPaymentStatus] = useState("");
 
-  const activeSubscribers = subscribers.filter(s => s.status === "active").length;
-  const pendingSubscribers = subscribers.filter(s => s.status === "overdue").length;
-  const mrr = 156 * 49.90 + (78 * 399.90 / 12) + (12 * 999.90 / 12);
-  const churnRate = (subscribers.filter(s => s.status === "cancelled").length / subscribers.length * 100).toFixed(1);
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "—";
+    return new Date(dateString).toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric' 
+    });
+  };
+
+  const formatPrice = (amount: number) => {
+    return `R$ ${Number(amount).toFixed(2).replace('.', ',')}`;
+  };
 
   // Subscriber action handlers
-  const handleViewDetails = (sub: typeof subscribers[0]) => {
+  const handleViewDetails = (sub: any) => {
     setSelectedSubscriber(sub);
     setShowDetailsModal(true);
   };
 
-  const handleRenewClick = (sub: typeof subscribers[0]) => {
+  const handleRenewClick = (sub: any) => {
     setSelectedSubscriber(sub);
     setShowRenewModal(true);
   };
 
-  const handleCancelClick = (sub: typeof subscribers[0]) => {
+  const handleCancelClick = (sub: any) => {
     setSelectedSubscriber(sub);
     setShowCancelModal(true);
   };
 
-  const handleConfirmRenew = () => {
+  const handleConfirmRenew = async () => {
     if (selectedSubscriber) {
-      setSubscribers(subscribers.map(s => 
-        s.id === selectedSubscriber.id 
-          ? { ...s, status: "active", nextBilling: "01 Jan 2026" }
-          : s
-      ));
+      const nextBilling = new Date();
+      nextBilling.setMonth(nextBilling.getMonth() + 1);
+      await updateSubscription(selectedSubscriber.id, { 
+        status: 'active', 
+        next_billing_date: nextBilling.toISOString() 
+      });
     }
     setShowRenewModal(false);
     setSelectedSubscriber(null);
   };
 
-  const handleConfirmCancel = () => {
+  const handleConfirmCancel = async () => {
     if (selectedSubscriber) {
-      setSubscribers(subscribers.map(s => 
-        s.id === selectedSubscriber.id 
-          ? { ...s, status: "cancelled", nextBilling: "—" }
-          : s
-      ));
+      await updateSubscription(selectedSubscriber.id, { 
+        status: 'cancelled', 
+        next_billing_date: null 
+      });
     }
     setShowCancelModal(false);
     setSelectedSubscriber(null);
   };
 
-  const handleSavePlan = (planData: { name: string; price: string; period: string; sessions: number; features: string[]; status: string }) => {
+  const handleSavePlan = async (planData: { name: string; price: string; period: string; sessions: number; features: string[]; status: string }) => {
+    const priceValue = parseFloat(planData.price.replace('R$ ', '').replace(',', '.')) || 0;
+    
     if (editingPlan) {
-      setPlans(plans.map(p => p.id === editingPlan.id ? { ...p, ...planData } : p));
+      await updatePlan(editingPlan.id, { 
+        name: planData.name,
+        price: priceValue,
+        period: planData.period,
+        features: planData.features,
+        is_active: planData.status === 'active'
+      });
     } else {
-      setPlans([...plans, { id: Date.now(), ...planData, subscribers: 0 }]);
+      await createPlan({
+        name: planData.name,
+        price: priceValue,
+        period: planData.period,
+        features: planData.features
+      });
     }
     setEditingPlan(null);
+    setIsModalOpen(false);
   };
 
-  const handleEditPlan = (plan: typeof plans[0]) => {
-    setEditingPlan(plan);
+  const handleEditPlan = (plan: any) => {
+    setEditingPlan({
+      ...plan,
+      price: formatPrice(plan.price),
+      status: plan.is_active ? 'active' : 'inactive'
+    });
     setIsModalOpen(true);
   };
 
@@ -411,42 +426,34 @@ const SubscriptionsTabContent = () => {
   };
 
   // Payment action handlers
-  const handleEditPaymentStatus = (payment: typeof payments[0]) => {
+  const handleEditPaymentStatus = (payment: any) => {
     setSelectedPayment(payment);
     setNewPaymentStatus(payment.status);
     setShowEditStatusModal(true);
   };
 
-  const handleRefundClick = (payment: typeof payments[0]) => {
+  const handleRefundClick = (payment: any) => {
     setSelectedPayment(payment);
     setShowRefundModal(true);
   };
 
-  const handleConfirmStatusChange = () => {
+  const handleConfirmStatusChange = async () => {
     if (selectedPayment && newPaymentStatus) {
-      setPayments(payments.map(p => 
-        p.id === selectedPayment.id 
-          ? { ...p, status: newPaymentStatus }
-          : p
-      ));
+      await updatePayment(selectedPayment.id, { status: newPaymentStatus });
     }
     setShowEditStatusModal(false);
     setSelectedPayment(null);
   };
 
-  const handleConfirmRefund = () => {
+  const handleConfirmRefund = async () => {
     if (selectedPayment) {
-      setPayments(payments.map(p => 
-        p.id === selectedPayment.id 
-          ? { ...p, status: "refunded" }
-          : p
-      ));
+      await updatePayment(selectedPayment.id, { status: 'refunded' });
     }
     setShowRefundModal(false);
     setSelectedPayment(null);
   };
 
-  const statusStyles = {
+  const statusStyles: Record<string, string> = {
     active: "bg-success/10 text-success",
     cancelled: "bg-muted text-muted-foreground",
     overdue: "bg-destructive/10 text-destructive",
@@ -456,7 +463,7 @@ const SubscriptionsTabContent = () => {
     refunded: "bg-muted text-muted-foreground"
   };
 
-  const statusLabels = {
+  const statusLabels: Record<string, string> = {
     active: "Ativo",
     cancelled: "Cancelado",
     overdue: "Atrasado",
@@ -476,7 +483,7 @@ const SubscriptionsTabContent = () => {
               <UserCheck className="w-5 h-5 text-success" />
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground">{activeSubscribers}</p>
+              <p className="text-lg font-bold text-foreground">{stats.activeSubscribers}</p>
               <p className="text-xs text-muted-foreground">Assinantes Ativos</p>
             </div>
           </div>
@@ -487,7 +494,7 @@ const SubscriptionsTabContent = () => {
               <DollarSign className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground">R$ {mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              <p className="text-lg font-bold text-foreground">R$ {stats.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               <p className="text-xs text-muted-foreground">Receita Mensal</p>
             </div>
           </div>
@@ -498,7 +505,7 @@ const SubscriptionsTabContent = () => {
               <AlertCircle className="w-5 h-5 text-warning" />
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground">{pendingSubscribers}</p>
+              <p className="text-lg font-bold text-foreground">{stats.overdueSubscribers}</p>
               <p className="text-xs text-muted-foreground">Pendente</p>
             </div>
           </div>
@@ -509,7 +516,7 @@ const SubscriptionsTabContent = () => {
               <TrendingUp className="w-5 h-5 text-destructive" />
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground">{churnRate}%</p>
+              <p className="text-lg font-bold text-foreground">{stats.churnRate}%</p>
               <p className="text-xs text-muted-foreground">Taxa de Cancelamento</p>
             </div>
           </div>
@@ -564,23 +571,23 @@ const SubscriptionsTabContent = () => {
                 </tr>
               </thead>
               <tbody>
-                {subscribers.map((sub) => (
+                {subscriptions.map((sub) => (
                   <tr key={sub.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
                     <td className="p-4">
                       <div>
-                        <p className="text-sm font-medium text-foreground">{sub.name}</p>
-                        <p className="text-xs text-muted-foreground">{sub.email}</p>
+                        <p className="text-sm font-medium text-foreground">{sub.user_name}</p>
+                        <p className="text-xs text-muted-foreground">{sub.user_email}</p>
                       </div>
                     </td>
-                    <td className="p-4 text-sm text-foreground">{sub.plan}</td>
+                    <td className="p-4 text-sm text-foreground">{sub.plan_name}</td>
                     <td className="p-4">
-                      <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[sub.status as keyof typeof statusStyles])}>
-                        {statusLabels[sub.status as keyof typeof statusLabels]}
+                      <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[sub.status] || statusStyles.pending)}>
+                        {statusLabels[sub.status] || sub.status}
                       </span>
                     </td>
-                    <td className="p-4 text-sm text-muted-foreground">{sub.startDate}</td>
-                    <td className="p-4 text-sm text-muted-foreground">{sub.nextBilling}</td>
-                    <td className="p-4 text-sm font-medium text-foreground">{sub.amount}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{formatDate(sub.start_date)}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{formatDate(sub.next_billing_date)}</td>
+                    <td className="p-4 text-sm font-medium text-foreground">{formatPrice(sub.plan_price || 0)}</td>
                     <td className="p-4">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -619,13 +626,13 @@ const SubscriptionsTabContent = () => {
             </Button>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            {plans.map((plan) => (
+            {dbPlans.map((plan) => (
               <div key={plan.id} className="bg-card border border-border rounded-lg p-5">
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="font-semibold text-foreground">{plan.name}</h3>
                     <div className="flex items-baseline gap-1 mt-1">
-                      <span className="text-2xl font-bold text-foreground">{plan.price}</span>
+                      <span className="text-2xl font-bold text-foreground">{formatPrice(plan.price)}</span>
                       {plan.period !== "—" && <span className="text-sm text-muted-foreground">/{plan.period}</span>}
                     </div>
                   </div>
@@ -646,7 +653,7 @@ const SubscriptionsTabContent = () => {
                   </DropdownMenu>
                 </div>
                 <div className="space-y-2 mb-4">
-                  {plan.features.map((feature, idx) => (
+                  {(plan.features || []).map((feature, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
                       <CheckCircle className="w-4 h-4 text-success" />
                       {feature}
@@ -656,13 +663,13 @@ const SubscriptionsTabContent = () => {
                 <div className="flex items-center justify-between pt-4 border-t border-border">
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">{plan.subscribers} assinantes</span>
+                    <span className="text-sm text-muted-foreground">{plan.subscribers_count || 0} assinantes</span>
                   </div>
                   <span className={cn(
                     "text-xs px-2 py-1 rounded-md",
-                    plan.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                    plan.is_active ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
                   )}>
-                    {plan.status === "active" ? "Ativo" : "Inativo"}
+                    {plan.is_active ? "Ativo" : "Inativo"}
                   </span>
                 </div>
               </div>
@@ -700,19 +707,19 @@ const SubscriptionsTabContent = () => {
                 </tr>
               </thead>
               <tbody>
-                {payments.map((payment) => (
+                {dbPayments.map((payment) => (
                   <tr key={payment.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="p-4 text-sm font-mono text-foreground">{payment.id}</td>
-                    <td className="p-4 text-sm text-foreground">{payment.user}</td>
-                    <td className="p-4 text-sm text-muted-foreground">{payment.plan}</td>
-                    <td className="p-4 text-sm font-medium text-foreground">{payment.amount}</td>
-                    <td className="p-4 text-sm text-muted-foreground">{payment.method}</td>
+                    <td className="p-4 text-sm font-mono text-foreground">#{payment.id.slice(0, 8)}</td>
+                    <td className="p-4 text-sm text-foreground">{payment.user_name}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{payment.plan_name}</td>
+                    <td className="p-4 text-sm font-medium text-foreground">{formatPrice(payment.amount)}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{payment.payment_method}</td>
                     <td className="p-4">
-                      <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[payment.status as keyof typeof statusStyles])}>
-                        {statusLabels[payment.status as keyof typeof statusLabels]}
+                      <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[payment.status] || statusStyles.pending)}>
+                        {statusLabels[payment.status] || payment.status}
                       </span>
                     </td>
-                    <td className="p-4 text-sm text-muted-foreground">{payment.date}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{formatDate(payment.created_at)}</td>
                     <td className="p-4">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -1554,34 +1561,25 @@ const OrdersSection = () => {
 
 // Sessions Management
 const SessionsSection = () => {
-  const [custoPago, setCustoPago] = useState({
-    brasileiras: "5.00",
-    estrangeiras: "2.50"
-  });
-  const [combos, setCombos] = useState({
-    brasileiras: [
-      { quantidade: 5, preco: "39.90" },
-      { quantidade: 10, preco: "69.90" },
-      { quantidade: 25, preco: "149.90" },
-      { quantidade: 50, preco: "249.90" }
-    ],
-    estrangeiras: [
-      { quantidade: 5, preco: "24.90" },
-      { quantidade: 10, preco: "44.90" },
-      { quantidade: 25, preco: "99.90" },
-      { quantidade: 50, preco: "179.90" }
-    ]
-  });
+  const { 
+    inventory, 
+    combos: dbCombos, 
+    isLoading, 
+    updateInventory, 
+    updateCombo: updateDbCombo, 
+    addCombo: addDbCombo, 
+    deleteCombo,
+    getCombosByType,
+    stats 
+  } = useAdminSessions();
+  
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const sessionsStats = {
-    total: 231,
-    disponiveis: 142,
-    vendidas: 76,
-    expiradas: 13,
-    brasileiras: { total: 130, disponiveis: 85, vendidas: 40 },
-    estrangeiras: { total: 101, disponiveis: 57, vendidas: 36 }
-  };
+  const brasileirasInv = stats.brasileiras;
+  const estrangeirasInv = stats.estrangeiras;
+  const brasileirasCombos = getCombosByType('brasileiras');
+  const estrangeirasCombos = getCombosByType('estrangeiras');
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -1592,27 +1590,26 @@ const SessionsSection = () => {
     }
   };
 
-  const updateCombo = (type: 'brasileiras' | 'estrangeiras', index: number, field: 'quantidade' | 'preco', value: string) => {
-    setCombos(prev => ({
-      ...prev,
-      [type]: prev[type].map((combo, i) => 
-        i === index ? { ...combo, [field]: field === 'quantidade' ? parseInt(value) || 0 : value } : combo
-      )
-    }));
+  const handleUpdateCost = async (type: string, cost: string) => {
+    const costValue = parseFloat(cost.replace(',', '.')) || 0;
+    await updateInventory(type, { cost_per_session: costValue });
   };
 
-  const addCombo = (type: 'brasileiras' | 'estrangeiras') => {
-    setCombos(prev => ({
-      ...prev,
-      [type]: [...prev[type], { quantidade: 0, preco: "0.00" }]
-    }));
+  const handleUpdateComboPrice = async (comboId: string, price: string) => {
+    const priceValue = parseFloat(price.replace(',', '.')) || 0;
+    await updateDbCombo(comboId, { price: priceValue });
   };
 
-  const removeCombo = (type: 'brasileiras' | 'estrangeiras', index: number) => {
-    setCombos(prev => ({
-      ...prev,
-      [type]: prev[type].filter((_, i) => i !== index)
-    }));
+  const handleUpdateComboQty = async (comboId: string, quantity: number) => {
+    await updateDbCombo(comboId, { quantity });
+  };
+
+  const handleAddCombo = async (type: string) => {
+    await addDbCombo(type, 10, 49.90);
+  };
+
+  const handleDeleteCombo = async (comboId: string) => {
+    await deleteCombo(comboId);
   };
 
   return (
@@ -1659,15 +1656,15 @@ const SessionsSection = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-xs text-muted-foreground mb-1">Total Sessions</p>
-          <p className="text-2xl font-bold text-foreground">{sessionsStats.total}</p>
+          <p className="text-2xl font-bold text-foreground">{stats.totalAvailable}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-xs text-muted-foreground mb-1">Disponíveis</p>
-          <p className="text-2xl font-bold text-success">{sessionsStats.disponiveis}</p>
+          <p className="text-xs text-muted-foreground mb-1">Brasileiras</p>
+          <p className="text-2xl font-bold text-success">{brasileirasInv?.quantity || 0}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-xs text-muted-foreground mb-1">Vendidas</p>
-          <p className="text-2xl font-bold text-primary">{sessionsStats.vendidas}</p>
+          <p className="text-xs text-muted-foreground mb-1">Estrangeiras</p>
+          <p className="text-2xl font-bold text-primary">{estrangeirasInv?.quantity || 0}</p>
         </div>
       </div>
 
@@ -1683,8 +1680,8 @@ const SessionsSection = () => {
             <label className="text-sm text-muted-foreground mb-2 block">Custo Session Brasileira (R$)</label>
             <input
               type="text"
-              value={custoPago.brasileiras}
-              onChange={(e) => setCustoPago({ ...custoPago, brasileiras: e.target.value })}
+              defaultValue={brasileirasInv?.cost_per_session?.toFixed(2) || "0.00"}
+              onBlur={(e) => handleUpdateCost('brasileiras', e.target.value)}
               className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
               placeholder="5.00"
             />
@@ -1693,8 +1690,8 @@ const SessionsSection = () => {
             <label className="text-sm text-muted-foreground mb-2 block">Custo Session Estrangeira (R$)</label>
             <input
               type="text"
-              value={custoPago.estrangeiras}
-              onChange={(e) => setCustoPago({ ...custoPago, estrangeiras: e.target.value })}
+              defaultValue={estrangeirasInv?.cost_per_session?.toFixed(2) || "0.00"}
+              onBlur={(e) => handleUpdateCost('estrangeiras', e.target.value)}
               className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
               placeholder="2.50"
             />
@@ -1709,20 +1706,20 @@ const SessionsSection = () => {
             <Package className="w-4 h-4 text-primary" />
             Combos Sessions Brasileiras
           </h3>
-          <Button size="sm" variant="outline" onClick={() => addCombo('brasileiras')}>
+          <Button size="sm" variant="outline" onClick={() => handleAddCombo('brasileiras')}>
             <Plus className="w-4 h-4 mr-1" /> Adicionar
           </Button>
         </div>
         <div className="space-y-3">
-          {combos.brasileiras.map((combo, index) => (
-            <div key={index} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+          {brasileirasCombos.map((combo) => (
+            <div key={combo.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
               <div className="flex-1 grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Quantidade</label>
                   <input
                     type="number"
-                    value={combo.quantidade}
-                    onChange={(e) => updateCombo('brasileiras', index, 'quantidade', e.target.value)}
+                    defaultValue={combo.quantity}
+                    onBlur={(e) => handleUpdateComboQty(combo.id, parseInt(e.target.value) || 0)}
                     className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
                     min="1"
                   />
@@ -1731,8 +1728,8 @@ const SessionsSection = () => {
                   <label className="text-xs text-muted-foreground mb-1 block">Preço Venda (R$)</label>
                   <input
                     type="text"
-                    value={combo.preco}
-                    onChange={(e) => updateCombo('brasileiras', index, 'preco', e.target.value)}
+                    defaultValue={combo.price.toFixed(2)}
+                    onBlur={(e) => handleUpdateComboPrice(combo.id, e.target.value)}
                     className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
@@ -1741,7 +1738,7 @@ const SessionsSection = () => {
                 size="icon" 
                 variant="ghost" 
                 className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={() => removeCombo('brasileiras', index)}
+                onClick={() => handleDeleteCombo(combo.id)}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -1757,20 +1754,20 @@ const SessionsSection = () => {
             <Globe className="w-4 h-4 text-primary" />
             Combos Sessions Estrangeiras
           </h3>
-          <Button size="sm" variant="outline" onClick={() => addCombo('estrangeiras')}>
+          <Button size="sm" variant="outline" onClick={() => handleAddCombo('estrangeiras')}>
             <Plus className="w-4 h-4 mr-1" /> Adicionar
           </Button>
         </div>
         <div className="space-y-3">
-          {combos.estrangeiras.map((combo, index) => (
-            <div key={index} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+          {estrangeirasCombos.map((combo) => (
+            <div key={combo.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
               <div className="flex-1 grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Quantidade</label>
                   <input
                     type="number"
-                    value={combo.quantidade}
-                    onChange={(e) => updateCombo('estrangeiras', index, 'quantidade', e.target.value)}
+                    defaultValue={combo.quantity}
+                    onBlur={(e) => handleUpdateComboQty(combo.id, parseInt(e.target.value) || 0)}
                     className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
                     min="1"
                   />
@@ -1779,8 +1776,8 @@ const SessionsSection = () => {
                   <label className="text-xs text-muted-foreground mb-1 block">Preço Venda (R$)</label>
                   <input
                     type="text"
-                    value={combo.preco}
-                    onChange={(e) => updateCombo('estrangeiras', index, 'preco', e.target.value)}
+                    defaultValue={combo.price.toFixed(2)}
+                    onBlur={(e) => handleUpdateComboPrice(combo.id, e.target.value)}
                     className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
@@ -1789,20 +1786,13 @@ const SessionsSection = () => {
                 size="icon" 
                 variant="ghost" 
                 className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={() => removeCombo('estrangeiras', index)}
+                onClick={() => handleDeleteCombo(combo.id)}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button size="sm">
-          Salvar Configurações
-        </Button>
       </div>
 
     </motion.div>
