@@ -393,13 +393,32 @@ const Dashboard = () => {
     await updateProfile({ avatar: avatar.alt });
   };
   
-  const userLicense = {
-    key: "SWEX-XXXX-XXXX-XXXX",
-    plan: "30 Dias",
-    expiresAt: "15 Jan 2025",
-    daysLeft: 23,
-    activatedAt: "16 Dez 2024"
+  // Calculate license info from real data
+  const getLicenseInfo = () => {
+    if (!license) return null;
+    
+    const startDate = new Date(license.start_date);
+    const endDate = new Date(license.end_date);
+    const now = new Date();
+    const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    const formatDate = (date: Date) => {
+      return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+    
+    return {
+      key: `SWEX-${license.id.slice(0, 4).toUpperCase()}-${license.id.slice(4, 8).toUpperCase()}-${license.id.slice(8, 12).toUpperCase()}`,
+      plan: license.plan_name,
+      expiresAt: formatDate(endDate),
+      daysLeft,
+      totalDays,
+      activatedAt: formatDate(startDate),
+      status: license.status
+    };
   };
+  
+  const userLicense = getLicenseInfo();
 
   const sessions = [
     { id: 1, number: "+55 11 9xxxx-xxxx", addedAt: "10 Dez 2024" },
@@ -607,7 +626,7 @@ const Dashboard = () => {
         <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         
         {/* Licenças */}
-        {activeTab === "licencas" && (
+{activeTab === "licencas" && (
           <motion.div {...fadeIn} className="space-y-6">
             {/* Header */}
             <div>
@@ -615,185 +634,219 @@ const Dashboard = () => {
               <p className="text-sm text-muted-foreground">Gerencie suas licenças ativas</p>
             </div>
 
-            {/* Main License Card */}
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              className="bg-card border border-border rounded-md p-5 space-y-5 hover:shadow-lg hover:shadow-primary/5 transition-shadow duration-300"
-            >
-              {/* License Info Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <motion.div 
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.3, delay: 0.2 }}
-                    className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center"
-                  >
-                    <Key className="w-5 h-5 text-primary" />
-                  </motion.div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-foreground">Plano {userLicense.plan}</h3>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
-                      <span className="text-xs text-success font-medium">Ativa</span>
+            {/* No License State */}
+            {!userLicense ? (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-card border border-border rounded-md p-8 text-center space-y-4"
+              >
+                <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto">
+                  <Key className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">Nenhuma licença ativa</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Adquira uma licença para começar a usar o sistema</p>
+                </div>
+                <Button size="sm" onClick={() => setActiveTab("comprar")}>
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Ver Planos
+                </Button>
+              </motion.div>
+            ) : (
+              /* Main License Card */
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="bg-card border border-border rounded-md p-5 space-y-5 hover:shadow-lg hover:shadow-primary/5 transition-shadow duration-300"
+              >
+                {/* License Info Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <motion.div 
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.3, delay: 0.2 }}
+                      className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center"
+                    >
+                      <Key className="w-5 h-5 text-primary" />
+                    </motion.div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">{userLicense.plan}</h3>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <div className={cn(
+                          "w-1.5 h-1.5 rounded-full animate-pulse",
+                          userLicense.status === 'active' ? "bg-success" : "bg-destructive"
+                        )} />
+                        <span className={cn(
+                          "text-xs font-medium",
+                          userLicense.status === 'active' ? "text-success" : "text-destructive"
+                        )}>
+                          {userLicense.status === 'active' ? 'Ativa' : 'Expirada'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <Button variant="outline" size="sm" className="h-8 gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform">
-                  <Copy className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline text-xs">Copiar</span>
-                </Button>
-              </div>
-
-              {/* License Details Grid */}
-              <motion.div 
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="grid grid-cols-1 sm:grid-cols-3 gap-3"
-              >
-                {[
-                  { label: "Chave", value: userLicense.key, mono: true },
-                  { label: "Ativada em", value: userLicense.activatedAt },
-                  { label: "Expira em", value: userLicense.expiresAt }
-                ].map((item, i) => (
-                  <motion.div 
-                    key={i}
-                    variants={staggerItem}
-                    className="bg-muted/50 rounded-md p-3 hover:bg-muted/70 transition-colors duration-200"
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                    onClick={() => navigator.clipboard.writeText(userLicense.key)}
                   >
-                    <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
-                    <p className={cn("text-sm text-foreground truncate", item.mono && "font-mono")}>{item.value}</p>
-                  </motion.div>
-                ))}
-              </motion.div>
-
-              {/* Progress Bar */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Tempo restante</span>
-                  <span className="text-foreground font-medium">{userLicense.daysLeft} de 30 dias</span>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline text-xs">Copiar</span>
+                  </Button>
                 </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(userLicense.daysLeft / 30) * 100}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="h-full bg-primary rounded-full"
-                  />
-                </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                {userLicense.daysLeft <= 1 ? (
-                  <AlertDialog>
+                {/* License Details Grid */}
+                <motion.div 
+                  variants={staggerContainer}
+                  initial="initial"
+                  animate="animate"
+                  className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+                >
+                  {[
+                    { label: "Chave", value: userLicense.key, mono: true },
+                    { label: "Ativada em", value: userLicense.activatedAt },
+                    { label: "Expira em", value: userLicense.expiresAt }
+                  ].map((item, i) => (
+                    <motion.div 
+                      key={i}
+                      variants={staggerItem}
+                      className="bg-muted/50 rounded-md p-3 hover:bg-muted/70 transition-colors duration-200"
+                    >
+                      <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
+                      <p className={cn("text-sm text-foreground truncate", item.mono && "font-mono")}>{item.value}</p>
+                    </motion.div>
+                  ))}
+                </motion.div>
+
+                {/* Progress Bar */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tempo restante</span>
+                    <span className="text-foreground font-medium">{userLicense.daysLeft} de {userLicense.totalDays} dias</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(userLicense.daysLeft / userLicense.totalDays) * 100}%` }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                      className="h-full bg-primary rounded-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                  {userLicense.daysLeft <= 1 ? (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" className="h-9 text-xs sm:text-sm">
+                          <Zap className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                          <span>Renovar Licença</span>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-card border-border">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Renovar Licença</AlertDialogTitle>
+                          <AlertDialogDescription className="space-y-3">
+                            <p>Renove sua licença para continuar usando todos os recursos.</p>
+                            <div className="bg-muted/50 rounded-md p-3 space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Plano atual</span>
+                                <span className="text-foreground font-medium">{userLicense.plan}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Renovação</span>
+                                <span className="text-foreground font-medium">+{userLicense.totalDays} dias</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Valor</span>
+                                <span className="text-primary font-semibold">R$ 29,90</span>
+                              </div>
+                            </div>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => navigate('/checkout', { state: { type: 'Renovação', plan: userLicense.plan, price: 'R$ 29,90' } })}>
+                            Continuar para pagamento
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  ) : (
+                    <Button size="sm" className="h-9 text-xs sm:text-sm opacity-50 cursor-not-allowed" disabled>
+                      <Zap className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                      <span>Renovar ({userLicense.daysLeft} dias restantes)</span>
+                    </Button>
+                  )}
+
+                  <AlertDialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
                     <AlertDialogTrigger asChild>
-                      <Button size="sm" className="h-9 text-xs sm:text-sm">
-                        <Zap className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-                        <span>Renovar Licença</span>
+                      <Button variant="outline" size="sm" className="h-9 text-xs sm:text-sm">
+                        <Sparkles className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                        <span>Upgrade</span>
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="bg-card border-border">
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Renovar Licença</AlertDialogTitle>
+                        <AlertDialogTitle>Fazer Upgrade</AlertDialogTitle>
                         <AlertDialogDescription className="space-y-3">
-                          <p>Renove sua licença para continuar usando todos os recursos.</p>
-                          <div className="bg-muted/50 rounded-md p-3 space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Plano atual</span>
-                              <span className="text-foreground font-medium">{userLicense.plan}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Renovação</span>
-                              <span className="text-foreground font-medium">+30 dias</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Valor</span>
-                              <span className="text-primary font-semibold">R$ 29,90</span>
-                            </div>
+                          <p>Escolha um plano superior para obter mais benefícios.</p>
+                          <div className="space-y-2">
+                            {upgradePlans.map((plan, i) => (
+                              <div 
+                                key={i}
+                                onClick={() => setSelectedUpgradePlan(i)}
+                                className={cn(
+                                  "rounded-md p-3 border cursor-pointer transition-colors",
+                                  selectedUpgradePlan === i 
+                                    ? "bg-primary/10 border-primary/30" 
+                                    : "bg-muted/50 border-border hover:border-primary/50"
+                                )}
+                              >
+                                <div className="flex justify-between items-center">
+                                  <div className="flex items-center gap-2">
+                                    <div className={cn(
+                                      "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                                      selectedUpgradePlan === i ? "border-primary" : "border-muted-foreground"
+                                    )}>
+                                      {selectedUpgradePlan === i && <div className="w-2 h-2 rounded-full bg-primary" />}
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <p className="text-sm font-medium text-foreground">{plan.name}</p>
+                                        {plan.popular && (
+                                          <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">POPULAR</span>
+                                        )}
+                                      </div>
+                                      <p className="text-xs text-muted-foreground">{plan.discount}</p>
+                                    </div>
+                                  </div>
+                                  <span className="text-primary font-semibold">{plan.price}</span>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => navigate('/checkout', { state: { type: 'Renovação', plan: userLicense.plan, price: 'R$ 29,90' } })}>
+                        <AlertDialogAction onClick={() => {
+                          const plan = upgradePlans[selectedUpgradePlan];
+                          navigate('/checkout', { state: { type: 'Upgrade', plan: plan.name, price: plan.price } });
+                        }}>
                           Continuar para pagamento
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
-                ) : (
-                  <Button size="sm" className="h-9 text-xs sm:text-sm opacity-50 cursor-not-allowed" disabled>
-                    <Zap className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-                    <span>Renovar ({userLicense.daysLeft} dias restantes)</span>
-                  </Button>
-                )}
-
-                <AlertDialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-9 text-xs sm:text-sm">
-                      <Sparkles className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-                      <span>Upgrade</span>
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="bg-card border-border">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Fazer Upgrade</AlertDialogTitle>
-                      <AlertDialogDescription className="space-y-3">
-                        <p>Escolha um plano superior para obter mais benefícios.</p>
-                        <div className="space-y-2">
-                          {upgradePlans.map((plan, i) => (
-                            <div 
-                              key={i}
-                              onClick={() => setSelectedUpgradePlan(i)}
-                              className={cn(
-                                "rounded-md p-3 border cursor-pointer transition-colors",
-                                selectedUpgradePlan === i 
-                                  ? "bg-primary/10 border-primary/30" 
-                                  : "bg-muted/50 border-border hover:border-primary/50"
-                              )}
-                            >
-                              <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                  <div className={cn(
-                                    "w-4 h-4 rounded-full border-2 flex items-center justify-center",
-                                    selectedUpgradePlan === i ? "border-primary" : "border-muted-foreground"
-                                  )}>
-                                    {selectedUpgradePlan === i && <div className="w-2 h-2 rounded-full bg-primary" />}
-                                  </div>
-                                  <div>
-                                    <div className="flex items-center gap-2">
-                                      <p className="text-sm font-medium text-foreground">{plan.name}</p>
-                                      {plan.popular && (
-                                        <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">POPULAR</span>
-                                      )}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">{plan.discount}</p>
-                                  </div>
-                                </div>
-                                <span className="text-primary font-semibold">{plan.price}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => {
-                        const plan = upgradePlans[selectedUpgradePlan];
-                        navigate('/checkout', { state: { type: 'Upgrade', plan: plan.name, price: plan.price } });
-                      }}>
-                        Continuar para pagamento
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </motion.div>
+                </div>
+              </motion.div>
+            )}
 
             {/* Warning Alert */}
             <motion.div 
