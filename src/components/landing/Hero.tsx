@@ -1,8 +1,8 @@
 import { ArrowRight } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import AnimatedShaderBackground from "./ui/animated-shader-background";
-import { AnimatedText } from "./ui/animated-shiny-text";
+import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
+import { AnimatedText } from "@/components/ui/animated-shiny-text";
 import { motion } from "framer-motion";
 
 const Hero = () => {
