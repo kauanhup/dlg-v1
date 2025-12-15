@@ -691,9 +691,7 @@ const DashboardSection = () => {
       {dashboardTab === 'sessions' && (
         <div className="space-y-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard title="Brasileiras (Total)" value={sessionsStats.brasileiras.total.toLocaleString('pt-BR')} change="+8%" icon={Globe} />
-            <StatCard title="Estrangeiras (Total)" value={sessionsStats.estrangeiras.total.toLocaleString('pt-BR')} change="+12%" icon={Globe} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <StatCard title="Vendidas (Total)" value={(sessionsStats.brasileiras.vendidas + sessionsStats.estrangeiras.vendidas).toLocaleString('pt-BR')} change="+18%" icon={ShoppingCart} />
             <StatCard title="Disponíveis" value={(sessionsStats.brasileiras.disponíveis + sessionsStats.estrangeiras.disponíveis).toLocaleString('pt-BR')} change="" icon={Package} />
           </div>
