@@ -7,6 +7,8 @@ import { AvatarPicker, avatars } from "@/components/ui/avatar-picker";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserDashboard } from "@/hooks/useUserDashboard";
 import { MorphingSquare } from "@/components/ui/morphing-square";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import {
   Popover,
@@ -361,6 +363,41 @@ const Dashboard = () => {
   const [selectedAvatarId, setSelectedAvatarId] = useState<number>(1);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [selectedUpgradePlan, setSelectedUpgradePlan] = useState(1);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  const handlePasswordChange = async () => {
+    if (newPassword.length < 8) {
+      toast.error("A senha deve ter no mínimo 8 caracteres");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      
+      if (error) {
+        toast.error("Erro ao alterar senha: " + error.message);
+        return;
+      }
+
+      toast.success("Senha alterada com sucesso!");
+      setNewPassword("");
+      setConfirmPassword("");
+      
+      // Sign out user for security
+      await signOut();
+    } catch (error) {
+      toast.error("Erro ao alterar senha");
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   const upgradePlans = [
     { name: "Plano 60 Dias", price: "R$ 49,90", discount: "Economize 15%" },
@@ -1399,6 +1436,8 @@ const Dashboard = () => {
                       <input 
                         type={showApiKey ? "text" : "password"}
                         placeholder="Mínimo 8 caracteres"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
                         className="w-full h-10 px-3 pr-10 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                       />
                       <button 
@@ -1415,6 +1454,8 @@ const Dashboard = () => {
                     <input 
                       type="password"
                       placeholder="Repita a nova senha"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                       className="w-full h-10 px-3 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                     />
                   </div>
@@ -1424,9 +1465,10 @@ const Dashboard = () => {
                         <Button 
                           size="sm" 
                           className="w-full h-9 bg-gradient-primary hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                          disabled={!newPassword || !confirmPassword || isChangingPassword}
                         >
                           <Lock className="w-3.5 h-3.5 mr-2" />
-                          Alterar senha
+                          {isChangingPassword ? "Alterando..." : "Alterar senha"}
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent className="max-w-md">
@@ -1442,13 +1484,11 @@ const Dashboard = () => {
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
                           <AlertDialogAction 
-                            onClick={() => {
-                              localStorage.removeItem("isLoggedIn");
-                              navigate("/login");
-                            }}
+                            onClick={handlePasswordChange}
+                            disabled={isChangingPassword}
                             className="bg-primary hover:bg-primary/90"
                           >
-                            Sim, alterar senha
+                            {isChangingPassword ? "Alterando..." : "Sim, alterar senha"}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
