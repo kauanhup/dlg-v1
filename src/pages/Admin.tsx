@@ -660,8 +660,11 @@ const SubscriptionsTabContent = () => {
                       <DropdownMenuItem className="cursor-pointer" onClick={() => handleEditPlan(plan)}>
                         <Edit className="w-4 h-4 mr-2" /> Editar
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
-                        <Trash2 className="w-4 h-4 mr-2" /> Desativar
+                      <DropdownMenuItem 
+                        className="cursor-pointer text-destructive focus:text-destructive"
+                        onClick={() => updatePlan(plan.id, { is_active: !plan.is_active })}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" /> {plan.is_active ? "Desativar" : "Ativar"}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -782,9 +785,9 @@ const SubscriptionsTabContent = () => {
             </div>
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">
-                <p>Pagamento: <strong className="text-foreground">{selectedPayment.id}</strong></p>
-                <p>Usuário: {selectedPayment.user}</p>
-                <p>Valor: {selectedPayment.amount}</p>
+                <p>Pagamento: <strong className="text-foreground">#{selectedPayment.id.slice(0, 8)}</strong></p>
+                <p>Usuário: {selectedPayment.user_name}</p>
+                <p>Valor: {formatPrice(selectedPayment.amount)}</p>
               </div>
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">Novo Status</label>
@@ -834,9 +837,9 @@ const SubscriptionsTabContent = () => {
                 <p className="text-sm text-foreground">Reembolsar pagamento <strong>{selectedPayment.id}</strong>?</p>
               </div>
               <div className="text-sm text-muted-foreground">
-                <p>Usuário: {selectedPayment.user}</p>
-                <p>Valor: {selectedPayment.amount}</p>
-                <p>Data: {selectedPayment.date}</p>
+                <p>Usuário: {selectedPayment.user_name}</p>
+                <p>Valor: {formatPrice(selectedPayment.amount)}</p>
+                <p>Data: {formatDate(selectedPayment.created_at)}</p>
               </div>
               <p className="text-xs text-muted-foreground">
                 Esta ação irá marcar o pagamento como reembolsado.
@@ -876,14 +879,14 @@ const SubscriptionsTabContent = () => {
                   <Users className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-foreground">{selectedSubscriber.name}</p>
-                  <p className="text-sm text-muted-foreground">{selectedSubscriber.email}</p>
+                  <p className="font-semibold text-foreground">{selectedSubscriber.user_name}</p>
+                  <p className="text-sm text-muted-foreground">{selectedSubscriber.user_email}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
                 <div>
                   <p className="text-xs text-muted-foreground">Plano</p>
-                  <p className="text-sm font-medium text-foreground">{selectedSubscriber.plan}</p>
+                  <p className="text-sm font-medium text-foreground">{selectedSubscriber.plan_name}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Status</p>
@@ -893,23 +896,15 @@ const SubscriptionsTabContent = () => {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Início</p>
-                  <p className="text-sm font-medium text-foreground">{selectedSubscriber.startDate}</p>
+                  <p className="text-sm font-medium text-foreground">{formatDate(selectedSubscriber.start_date)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Próx. Cobrança</p>
-                  <p className="text-sm font-medium text-foreground">{selectedSubscriber.nextBilling}</p>
+                  <p className="text-sm font-medium text-foreground">{formatDate(selectedSubscriber.next_billing_date)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Valor</p>
-                  <p className="text-sm font-medium text-foreground">{selectedSubscriber.amount}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Sessions Compradas</p>
-                  <p className="text-sm font-medium text-foreground">{selectedSubscriber.sessions}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-xs text-muted-foreground">WhatsApp</p>
-                  <p className="text-sm font-medium text-foreground">{selectedSubscriber.whatsapp}</p>
+                  <p className="text-sm font-medium text-foreground">{formatPrice(selectedSubscriber.plan_price || 0)}</p>
                 </div>
               </div>
             </div>
@@ -941,11 +936,11 @@ const SubscriptionsTabContent = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-3 bg-success/10 rounded-lg">
                 <Repeat className="w-5 h-5 text-success" />
-                <p className="text-sm text-foreground">Renovar assinatura de <strong>{selectedSubscriber.name}</strong>?</p>
+                <p className="text-sm text-foreground">Renovar assinatura de <strong>{selectedSubscriber.user_name}</strong>?</p>
               </div>
               <div className="text-sm text-muted-foreground">
-                <p>Plano: {selectedSubscriber.plan}</p>
-                <p>Valor: {selectedSubscriber.amount}</p>
+                <p>Plano: {selectedSubscriber.plan_name}</p>
+                <p>Valor: {formatPrice(selectedSubscriber.plan_price || 0)}</p>
               </div>
             </div>
             <div className="flex gap-3 pt-6">
@@ -979,7 +974,7 @@ const SubscriptionsTabContent = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-3 bg-destructive/10 rounded-lg">
                 <XCircle className="w-5 h-5 text-destructive" />
-                <p className="text-sm text-foreground">Cancelar assinatura de <strong>{selectedSubscriber.name}</strong>?</p>
+                <p className="text-sm text-foreground">Cancelar assinatura de <strong>{selectedSubscriber.user_name}</strong>?</p>
               </div>
               <p className="text-sm text-muted-foreground">
                 Esta ação irá cancelar a assinatura imediatamente. O usuário perderá acesso aos recursos do plano.
@@ -1825,10 +1820,12 @@ const Admin = () => {
     document.documentElement.classList.add('dark');
   }, []);
 
+  const { user } = useAuth();
+  
   const adminUser = {
-    name: "Administrador",
-    email: "admin@swextractor.com",
-    initials: "AD",
+    name: user?.user_metadata?.name || "Administrador",
+    email: user?.email || "admin@swextractor.com",
+    initials: (user?.user_metadata?.name || "AD").slice(0, 2).toUpperCase(),
   };
 
   const sidebarTabs = ["dashboard", "users", "sessions"];
