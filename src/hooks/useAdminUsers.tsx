@@ -9,6 +9,7 @@ export interface AdminUser {
   whatsapp: string;
   avatar: string;
   role: string;
+  banned: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +49,7 @@ export const useAdminUsers = () => {
           whatsapp: profile.whatsapp,
           avatar: profile.avatar || '😀',
           role: userRole?.role || 'user',
+          banned: (profile as any).banned || false,
           created_at: profile.created_at,
           updated_at: profile.updated_at,
         };
@@ -83,16 +85,45 @@ export const useAdminUsers = () => {
     }
   };
 
-  const banUser = async (userId: string) => {
-    // For now, we'll just remove from display - in a real app, you'd have a banned column
+  const banUser = async (userId: string, banned: boolean = true) => {
     try {
-      // This would typically update a 'banned' or 'status' column
-      // For demo, we'll just refetch
-      await fetchUsers();
+      const { error } = await supabase
+        .from('profiles')
+        .update({ banned })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      // Update local state
+      setUsers(prev => prev.map(user => 
+        user.user_id === userId ? { ...user, banned } : user
+      ));
+
       return { success: true };
     } catch (err) {
       console.error('Error banning user:', err);
       return { success: false, error: 'Erro ao banir usuário' };
+    }
+  };
+
+  const updateUserProfile = async (userId: string, data: { name?: string; email?: string; whatsapp?: string }) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(data)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      // Update local state
+      setUsers(prev => prev.map(user => 
+        user.user_id === userId ? { ...user, ...data } : user
+      ));
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      return { success: false, error: 'Erro ao atualizar perfil' };
     }
   };
 
@@ -107,8 +138,10 @@ export const useAdminUsers = () => {
     refetch: fetchUsers,
     updateUserRole,
     banUser,
+    updateUserProfile,
     totalUsers: users.length,
     adminCount: users.filter(u => u.role === 'admin').length,
     userCount: users.filter(u => u.role === 'user').length,
+    bannedCount: users.filter(u => u.banned).length,
   };
 };

@@ -1001,7 +1001,7 @@ const UsersSection = () => {
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", email: "" });
   
-  const { users: dbUsers, isLoading, updateUserRole, refetch } = useAdminUsers();
+  const { users: dbUsers, isLoading, updateUserRole, banUser, updateUserProfile, refetch } = useAdminUsers();
   
   // Transform db users to display format
   const users = dbUsers.map(user => ({
@@ -1011,8 +1011,7 @@ const UsersSection = () => {
     email: user.email,
     role: user.role,
     avatar: user.avatar,
-    status: "active" as const,
-    sessions: 0, // Will be populated when sessions table exists
+    banned: user.banned,
     createdAt: new Date(user.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }),
     lastLogin: new Date(user.updated_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }),
     whatsapp: user.whatsapp || "—",
@@ -1020,13 +1019,11 @@ const UsersSection = () => {
 
   const statusStyles = {
     active: "bg-success/10 text-success",
-    inactive: "bg-muted text-muted-foreground",
     banned: "bg-destructive/10 text-destructive"
   };
 
   const statusLabels = {
     active: "Ativo",
-    inactive: "Inativo",
     banned: "Banido"
   };
 
@@ -1041,25 +1038,17 @@ const UsersSection = () => {
     setShowEditModal(true);
   };
 
-  const handleSaveEdit = () => {
-    // In a real app, this would update the database
-    setShowEditModal(false);
-    setSelectedUser(null);
-    refetch();
-  };
-
-  const handleRoleClick = (user: any) => {
-    setSelectedUser(user);
-    setShowRoleModal(true);
-  };
-
-  const handleConfirmRoleChange = async () => {
+  const handleSaveEdit = async () => {
     if (selectedUser) {
-      const newRole = selectedUser.role === 'admin' ? 'user' : 'admin';
-      await updateUserRole(selectedUser.user_id, newRole);
+      const result = await updateUserProfile(selectedUser.user_id, {
+        name: editForm.name,
+        email: editForm.email,
+      });
+      if (result.success) {
+        setShowEditModal(false);
+        setSelectedUser(null);
+      }
     }
-    setShowRoleModal(false);
-    setSelectedUser(null);
   };
 
   const handleBanClick = (user: any) => {
@@ -1067,10 +1056,15 @@ const UsersSection = () => {
     setShowBanModal(true);
   };
 
-  const handleConfirmBan = () => {
-    // In a real app, this would update a 'banned' column
-    setShowBanModal(false);
-    setSelectedUser(null);
+  const handleConfirmBan = async () => {
+    if (selectedUser) {
+      const newBannedStatus = !selectedUser.banned;
+      const result = await banUser(selectedUser.user_id, newBannedStatus);
+      if (result.success) {
+        setShowBanModal(false);
+        setSelectedUser(null);
+      }
+    }
   };
 
   const filteredUsers = users.filter(user => 
@@ -1110,7 +1104,7 @@ const UsersSection = () => {
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Role</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">WhatsApp</th>
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">Cadastro</th>
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
@@ -1131,9 +1125,9 @@ const UsersSection = () => {
                     <td className="p-4">
                       <span className={cn(
                         "text-xs px-2 py-1 rounded-md font-medium",
-                        user.role === "admin" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                        user.banned ? statusStyles.banned : statusStyles.active
                       )}>
-                        {user.role === "admin" ? "Admin" : "Usuário"}
+                        {user.banned ? statusLabels.banned : statusLabels.active}
                       </span>
                     </td>
                     <td className="p-4 text-sm text-muted-foreground">{user.whatsapp}</td>
@@ -1149,12 +1143,18 @@ const UsersSection = () => {
                           <DropdownMenuItem className="cursor-pointer" onClick={() => handleViewDetails(user)}>
                             <Eye className="w-4 h-4 mr-2" /> Ver detalhes
                           </DropdownMenuItem>
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleEdit(user)}>
+                            <Edit className="w-4 h-4 mr-2" /> Editar
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
-                            className="cursor-pointer text-destructive focus:text-destructive"
+                            className={cn(
+                              "cursor-pointer",
+                              user.banned ? "text-success focus:text-success" : "text-destructive focus:text-destructive"
+                            )}
                             onClick={() => handleBanClick(user)}
                           >
-                            <Ban className="w-4 h-4 mr-2" /> Banir usuário
+                            <Ban className="w-4 h-4 mr-2" /> {user.banned ? "Desbanir" : "Banir"}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -1203,12 +1203,12 @@ const UsersSection = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-muted/30 rounded-lg p-3">
-                      <p className="text-xs text-muted-foreground">Role</p>
+                      <p className="text-xs text-muted-foreground">Status</p>
                       <span className={cn(
                         "text-xs px-2 py-1 rounded-md font-medium",
-                        selectedUser.role === "admin" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                        selectedUser.banned ? statusStyles.banned : statusStyles.active
                       )}>
-                        {selectedUser.role === "admin" ? "Admin" : "Usuário"}
+                        {selectedUser.banned ? statusLabels.banned : statusLabels.active}
                       </span>
                     </div>
                     <div className="bg-muted/30 rounded-lg p-3">
@@ -1304,23 +1304,31 @@ const UsersSection = () => {
             >
               <div className="w-full max-w-sm max-h-[calc(100vh-2rem)] overflow-y-auto bg-card border border-border rounded-lg p-6 shadow-xl">
                 <div className="text-center">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 bg-destructive/10">
-                    <Ban className="w-6 h-6 text-destructive" />
+                  <div className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4",
+                    selectedUser.banned ? "bg-success/10" : "bg-destructive/10"
+                  )}>
+                    <Ban className={cn("w-6 h-6", selectedUser.banned ? "text-success" : "text-destructive")} />
                   </div>
-                  <h2 className="text-lg font-semibold text-foreground mb-2">Banir usuário?</h2>
+                  <h2 className="text-lg font-semibold text-foreground mb-2">
+                    {selectedUser.banned ? "Desbanir usuário?" : "Banir usuário?"}
+                  </h2>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Tem certeza que deseja banir {selectedUser.name}? O usuário não poderá mais acessar o sistema.
+                    {selectedUser.banned 
+                      ? `Tem certeza que deseja desbanir ${selectedUser.name}? O usuário poderá acessar o sistema novamente.`
+                      : `Tem certeza que deseja banir ${selectedUser.name}? O usuário não poderá mais acessar o sistema.`
+                    }
                   </p>
                   <div className="flex gap-3">
                     <Button variant="outline" className="flex-1" onClick={() => setShowBanModal(false)}>
                       Cancelar
                     </Button>
                     <Button 
-                      variant="destructive" 
+                      variant={selectedUser.banned ? "default" : "destructive"} 
                       className="flex-1" 
                       onClick={handleConfirmBan}
                     >
-                      Banir
+                      {selectedUser.banned ? "Desbanir" : "Banir"}
                     </Button>
                   </div>
                 </div>
