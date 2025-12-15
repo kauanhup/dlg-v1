@@ -359,6 +359,13 @@ const Dashboard = () => {
     }
     return true;
   });
+  const [notifications, setNotifications] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('notifications');
+      return saved ? JSON.parse(saved) : { email: true, license: true, promos: true };
+    }
+    return { email: true, license: true, promos: true };
+  });
   const [showApiKey, setShowApiKey] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState<number>(1);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -414,6 +421,11 @@ const Dashboard = () => {
     }
     localStorage.setItem('theme', isDarkTheme ? 'dark' : 'light');
   }, [isDarkTheme]);
+
+  // Save notifications to localStorage
+  useEffect(() => {
+    localStorage.setItem('notifications', JSON.stringify(notifications));
+  }, [notifications]);
 
   // Sync avatar from profile
   useEffect(() => {
@@ -1071,7 +1083,7 @@ const Dashboard = () => {
                   {avatars.map((avatar) => (
                     <motion.button
                       key={avatar.id}
-                      onClick={() => setSelectedAvatarId(avatar.id)}
+                      onClick={() => handleAvatarChange(avatar)}
                       className={cn(
                         "relative w-12 h-12 rounded-md overflow-hidden border-2 transition-colors",
                         selectedAvatarId === avatar.id 
@@ -1127,20 +1139,32 @@ const Dashboard = () => {
                 </h3>
                 <div className="space-y-2">
                   {[
-                    { label: "Notificações por email", desc: "Receba atualizações por email" },
-                    { label: "Alertas de licença", desc: "Aviso quando expirar" },
-                    { label: "Novidades e promoções", desc: "Ofertas exclusivas" },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{item.label}</p>
-                        <p className="text-xs text-muted-foreground">{item.desc}</p>
+                    { key: 'email', label: "Notificações por email", desc: "Receba atualizações por email" },
+                    { key: 'license', label: "Alertas de licença", desc: "Aviso quando expirar" },
+                    { key: 'promos', label: "Novidades e promoções", desc: "Ofertas exclusivas" },
+                  ].map((item) => {
+                    const isEnabled = notifications[item.key as keyof typeof notifications];
+                    return (
+                      <div key={item.key} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{item.label}</p>
+                          <p className="text-xs text-muted-foreground">{item.desc}</p>
+                        </div>
+                        <button
+                          onClick={() => setNotifications(prev => ({ ...prev, [item.key]: !prev[item.key as keyof typeof prev] }))}
+                          className={cn(
+                            "w-10 h-5 rounded-full relative cursor-pointer transition-colors",
+                            isEnabled ? "bg-primary" : "bg-muted-foreground/30"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                            isEnabled ? "right-0.5" : "left-0.5"
+                          )} />
+                        </button>
                       </div>
-                      <div className="w-10 h-5 bg-primary rounded-full relative cursor-pointer">
-                        <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full" />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
