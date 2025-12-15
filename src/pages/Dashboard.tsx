@@ -1346,25 +1346,36 @@ const Dashboard = () => {
                   <div className="p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
                     <div>
                       <p className="text-xs text-muted-foreground">Nome</p>
-                      <p className="text-sm text-foreground mt-0.5">{userData.name}</p>
+                      <p className="text-sm text-foreground mt-0.5">{profile?.name || userData.name}</p>
                     </div>
                   </div>
                   <div className="p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
                     <div>
                       <p className="text-xs text-muted-foreground">Email</p>
-                      <p className="text-sm text-foreground mt-0.5">{userData.email}</p>
+                      <p className="text-sm text-foreground mt-0.5">{profile?.email || userData.email}</p>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
+                    <div>
+                      <p className="text-xs text-muted-foreground">WhatsApp</p>
+                      <p className="text-sm text-foreground mt-0.5">{profile?.whatsapp || 'Não informado'}</p>
                     </div>
                   </div>
                   <div className="p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
                     <div>
                       <p className="text-xs text-muted-foreground">Plano</p>
-                      <p className="text-sm text-foreground mt-0.5">{userData.plan}</p>
+                      <p className="text-sm text-foreground mt-0.5">{userLicense?.plan || 'Sem licença ativa'}</p>
                     </div>
                   </div>
                   <div className="p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
                     <div>
                       <p className="text-xs text-muted-foreground">Membro desde</p>
-                      <p className="text-sm text-foreground mt-0.5">Dezembro 2024</p>
+                      <p className="text-sm text-foreground mt-0.5">
+                        {profile?.created_at 
+                          ? new Date(profile.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+                          : 'Data não disponível'
+                        }
+                      </p>
                     </div>
                   </div>
                 </div>

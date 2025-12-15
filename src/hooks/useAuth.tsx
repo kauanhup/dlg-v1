@@ -13,6 +13,7 @@ interface AuthState {
     email: string;
     whatsapp: string;
     avatar: string;
+    created_at: string;
   } | null;
   isLoading: boolean;
 }
@@ -110,6 +111,7 @@ export const useAuth = (requiredRole?: 'admin' | 'user') => {
           email: profileData.email,
           whatsapp: profileData.whatsapp,
           avatar: profileData.avatar || '😀',
+          created_at: profileData.created_at,
         } : null,
         isLoading: false,
       }));
