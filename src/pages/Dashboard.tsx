@@ -4,6 +4,9 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { UserProfileSidebar } from "@/components/ui/menu";
 import { AvatarPicker, avatars } from "@/components/ui/avatar-picker";
+import { useAuth } from "@/hooks/useAuth";
+import { MorphingSquare } from "@/components/ui/morphing-square";
+import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import {
   Popover,
   PopoverContent,
@@ -404,6 +407,7 @@ const LojaSection = ({ onCheckout }: { onCheckout: (type: string, qty: number, p
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user, profile, isLoading, signOut, updateProfile } = useAuth();
   const [activeTab, setActiveTab] = useState("licencas");
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -415,7 +419,7 @@ const Dashboard = () => {
   const [showApiKey, setShowApiKey] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState<number>(1);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState(1); // default to popular
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState(1);
 
   const upgradePlans = [
     { name: "Plano 60 Dias", price: "R$ 49,90", discount: "Economize 15%" },
@@ -432,6 +436,21 @@ const Dashboard = () => {
     }
     localStorage.setItem('theme', isDarkTheme ? 'dark' : 'light');
   }, [isDarkTheme]);
+
+  // Sync avatar from profile
+  useEffect(() => {
+    if (profile?.avatar) {
+      const avatarIndex = avatars.findIndex(a => a.alt === profile.avatar);
+      if (avatarIndex >= 0) {
+        setSelectedAvatarId(avatars[avatarIndex].id);
+      }
+    }
+  }, [profile]);
+
+  const handleAvatarChange = async (avatar: typeof avatars[0]) => {
+    setSelectedAvatarId(avatar.id);
+    await updateProfile({ avatar: avatar.alt });
+  };
   
   const userLicense = {
     key: "SWEX-XXXX-XXXX-XXXX",
@@ -458,10 +477,11 @@ const Dashboard = () => {
     { date: "12 Dez 2024, 09:15", device: "Google Chrome", location: "Rio de Janeiro, BR", status: "failed", reason: "Senha incorreta" },
   ];
 
-  const user = {
-    name: "João Dev",
-    email: "joao@email.com",
-    initials: "JD",
+  // Use real user data from auth
+  const userData = {
+    name: profile?.name || "Usuário",
+    email: profile?.email || user?.email || "",
+    initials: (profile?.name || "U").split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
     plan: "Plano Pro"
   };
 
@@ -483,8 +503,22 @@ const Dashboard = () => {
   const logoutItem = {
     label: "Sair",
     icon: <LogOut className="h-full w-full" />,
-    onClick: () => navigate("/"),
+    onClick: signOut,
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen w-full relative flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <AnimatedShaderBackground className="w-full h-full" />
+        </div>
+        <div className="relative z-10">
+          <MorphingSquare message="Carregando..." className="bg-primary" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col lg:flex-row">

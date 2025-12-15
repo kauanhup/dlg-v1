@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { UserProfileSidebar } from "@/components/ui/menu";
 import { avatars } from "@/components/ui/avatar-picker";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { MorphingSquare } from "@/components/ui/morphing-square";
+import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import {
   DropdownMenu,
   DropdownMenuContent,
