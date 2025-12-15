@@ -115,6 +115,28 @@ const Login = () => {
     return data.role;
   };
 
+  const logLoginAttempt = async (userId: string, status: 'success' | 'failed', failureReason?: string) => {
+    try {
+      // Get browser/device info
+      const userAgent = navigator.userAgent;
+      let device = 'Navegador desconhecido';
+      if (userAgent.includes('Chrome')) device = 'Google Chrome';
+      else if (userAgent.includes('Firefox')) device = 'Mozilla Firefox';
+      else if (userAgent.includes('Safari')) device = 'Safari';
+      else if (userAgent.includes('Edge')) device = 'Microsoft Edge';
+
+      await supabase.from('login_history').insert({
+        user_id: userId,
+        device,
+        location: 'Brasil',
+        status,
+        failure_reason: failureReason || null,
+      });
+    } catch (error) {
+      console.error('Error logging login attempt:', error);
+    }
+  };
+
   const validateEmail = (value: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   };
@@ -194,11 +216,15 @@ const Login = () => {
         if (data.user) {
           const isBanned = await checkIfBanned(data.user.id);
           if (isBanned) {
+            await logLoginAttempt(data.user.id, 'failed', 'Conta banida');
             await supabase.auth.signOut();
             setShowBannedModal(true);
             setIsSubmitting(false);
             return;
           }
+          
+          // Log successful login
+          await logLoginAttempt(data.user.id, 'success');
         }
 
         toast.success("Login realizado!", "Bem-vindo de volta.");
