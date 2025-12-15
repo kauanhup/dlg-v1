@@ -310,14 +310,20 @@ const SubscriptionsTabContent = () => {
   const [activeSubTab, setActiveSubTab] = useState<"subscribers" | "plans" | "payments">("subscribers");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<typeof plans[0] | null>(null);
+  
+  // Subscriber modals state
+  const [selectedSubscriber, setSelectedSubscriber] = useState<typeof subscribers[0] | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showRenewModal, setShowRenewModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
-  const subscribers = [
-    { id: 1, name: "João Silva", email: "joao@email.com", plan: "Pro Mensal", status: "active", startDate: "01 Nov 2024", nextBilling: "01 Jan 2025", amount: "R$ 49,90" },
-    { id: 2, name: "Maria Santos", email: "maria@email.com", plan: "Pro Anual", status: "active", startDate: "15 Jun 2024", nextBilling: "15 Jun 2025", amount: "R$ 399,90" },
-    { id: 3, name: "Pedro Costa", email: "pedro@email.com", plan: "Pro Mensal", status: "cancelled", startDate: "10 Set 2024", nextBilling: "—", amount: "R$ 49,90" },
-    { id: 4, name: "Ana Lima", email: "ana@email.com", plan: "Enterprise", status: "active", startDate: "01 Dez 2024", nextBilling: "01 Dez 2025", amount: "R$ 999,90" },
-    { id: 5, name: "Carlos Souza", email: "carlos@email.com", plan: "Pro Mensal", status: "overdue", startDate: "05 Out 2024", nextBilling: "05 Dez 2024", amount: "R$ 49,90" },
-  ];
+  const [subscribers, setSubscribers] = useState([
+    { id: 1, name: "João Silva", email: "joao@email.com", plan: "Pro Mensal", status: "active", startDate: "01 Nov 2024", nextBilling: "01 Jan 2025", amount: "R$ 49,90", whatsapp: "+55 11 99999-1234", sessions: 45 },
+    { id: 2, name: "Maria Santos", email: "maria@email.com", plan: "Pro Anual", status: "active", startDate: "15 Jun 2024", nextBilling: "15 Jun 2025", amount: "R$ 399,90", whatsapp: "+55 21 98888-5678", sessions: 320 },
+    { id: 3, name: "Pedro Costa", email: "pedro@email.com", plan: "Pro Mensal", status: "cancelled", startDate: "10 Set 2024", nextBilling: "—", amount: "R$ 49,90", whatsapp: "+55 31 97777-9012", sessions: 0 },
+    { id: 4, name: "Ana Lima", email: "ana@email.com", plan: "Enterprise", status: "active", startDate: "01 Dez 2024", nextBilling: "01 Dez 2025", amount: "R$ 999,90", whatsapp: "+55 41 96666-3456", sessions: 890 },
+    { id: 5, name: "Carlos Souza", email: "carlos@email.com", plan: "Pro Mensal", status: "overdue", startDate: "05 Out 2024", nextBilling: "05 Dez 2024", amount: "R$ 49,90", whatsapp: "+55 51 95555-7890", sessions: 12 },
+  ]);
 
   const [plans, setPlans] = useState([
     { id: 1, name: "Grátis", price: "R$ 0", period: "—", sessions: 0, features: ["Acesso básico", "Suporte por email"], subscribers: 423, status: "active" },
@@ -338,6 +344,46 @@ const SubscriptionsTabContent = () => {
   const pendingSubscribers = subscribers.filter(s => s.status === "overdue").length;
   const mrr = 156 * 49.90 + (78 * 399.90 / 12) + (12 * 999.90 / 12);
   const churnRate = (subscribers.filter(s => s.status === "cancelled").length / subscribers.length * 100).toFixed(1);
+
+  // Subscriber action handlers
+  const handleViewDetails = (sub: typeof subscribers[0]) => {
+    setSelectedSubscriber(sub);
+    setShowDetailsModal(true);
+  };
+
+  const handleRenewClick = (sub: typeof subscribers[0]) => {
+    setSelectedSubscriber(sub);
+    setShowRenewModal(true);
+  };
+
+  const handleCancelClick = (sub: typeof subscribers[0]) => {
+    setSelectedSubscriber(sub);
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmRenew = () => {
+    if (selectedSubscriber) {
+      setSubscribers(subscribers.map(s => 
+        s.id === selectedSubscriber.id 
+          ? { ...s, status: "active", nextBilling: "01 Jan 2026" }
+          : s
+      ));
+    }
+    setShowRenewModal(false);
+    setSelectedSubscriber(null);
+  };
+
+  const handleConfirmCancel = () => {
+    if (selectedSubscriber) {
+      setSubscribers(subscribers.map(s => 
+        s.id === selectedSubscriber.id 
+          ? { ...s, status: "cancelled", nextBilling: "—" }
+          : s
+      ));
+    }
+    setShowCancelModal(false);
+    setSelectedSubscriber(null);
+  };
 
   const handleSavePlan = (planData: { name: string; price: string; period: string; sessions: number; features: string[]; status: string }) => {
     if (editingPlan) {
@@ -501,14 +547,14 @@ const SubscriptionsTabContent = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-card border border-border">
-                          <DropdownMenuItem className="cursor-pointer">
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleViewDetails(sub)}>
                             <Eye className="w-4 h-4 mr-2" /> Ver detalhes
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer">
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleRenewClick(sub)}>
                             <Repeat className="w-4 h-4 mr-2" /> Renovar
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
+                          <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={() => handleCancelClick(sub)}>
                             <XCircle className="w-4 h-4 mr-2" /> Cancelar
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -629,6 +675,149 @@ const SubscriptionsTabContent = () => {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Subscriber Details Modal */}
+      {showDetailsModal && selectedSubscriber && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowDetailsModal(false)} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="relative bg-card border border-border rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-foreground">Detalhes do Assinante</h2>
+              <button onClick={() => setShowDetailsModal(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Users className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">{selectedSubscriber.name}</p>
+                  <p className="text-sm text-muted-foreground">{selectedSubscriber.email}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+                <div>
+                  <p className="text-xs text-muted-foreground">Plano</p>
+                  <p className="text-sm font-medium text-foreground">{selectedSubscriber.plan}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[selectedSubscriber.status as keyof typeof statusStyles])}>
+                    {statusLabels[selectedSubscriber.status as keyof typeof statusLabels]}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Início</p>
+                  <p className="text-sm font-medium text-foreground">{selectedSubscriber.startDate}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Próx. Cobrança</p>
+                  <p className="text-sm font-medium text-foreground">{selectedSubscriber.nextBilling}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Valor</p>
+                  <p className="text-sm font-medium text-foreground">{selectedSubscriber.amount}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Sessions Usadas</p>
+                  <p className="text-sm font-medium text-foreground">{selectedSubscriber.sessions}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-xs text-muted-foreground">WhatsApp</p>
+                  <p className="text-sm font-medium text-foreground">{selectedSubscriber.whatsapp}</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-6">
+              <Button variant="outline" onClick={() => setShowDetailsModal(false)} className="flex-1">
+                Fechar
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Renew Confirmation Modal */}
+      {showRenewModal && selectedSubscriber && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowRenewModal(false)} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="relative bg-card border border-border rounded-lg p-6 w-full max-w-sm"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-foreground">Renovar Assinatura</h2>
+              <button onClick={() => setShowRenewModal(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-success/10 rounded-lg">
+                <Repeat className="w-5 h-5 text-success" />
+                <p className="text-sm text-foreground">Renovar assinatura de <strong>{selectedSubscriber.name}</strong>?</p>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <p>Plano: {selectedSubscriber.plan}</p>
+                <p>Valor: {selectedSubscriber.amount}</p>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-6">
+              <Button variant="outline" onClick={() => setShowRenewModal(false)} className="flex-1">
+                Cancelar
+              </Button>
+              <Button onClick={handleConfirmRenew} className="flex-1 bg-success hover:bg-success/90">
+                Renovar
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelModal && selectedSubscriber && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowCancelModal(false)} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="relative bg-card border border-border rounded-lg p-6 w-full max-w-sm"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-foreground">Cancelar Assinatura</h2>
+              <button onClick={() => setShowCancelModal(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-destructive/10 rounded-lg">
+                <XCircle className="w-5 h-5 text-destructive" />
+                <p className="text-sm text-foreground">Cancelar assinatura de <strong>{selectedSubscriber.name}</strong>?</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Esta ação irá cancelar a assinatura imediatamente. O usuário perderá acesso aos recursos do plano.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-6">
+              <Button variant="outline" onClick={() => setShowCancelModal(false)} className="flex-1">
+                Voltar
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmCancel} className="flex-1">
+                Cancelar Assinatura
+              </Button>
+            </div>
+          </motion.div>
         </div>
       )}
     </div>
