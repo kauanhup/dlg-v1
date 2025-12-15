@@ -45,7 +45,9 @@ import {
   UserCheck,
   Repeat,
   Plus,
-  BarChart3
+  BarChart3,
+  Wrench,
+  UserPlus
 } from "lucide-react";
 
 const fadeIn = {
@@ -1432,27 +1434,6 @@ const SettingsSection = () => {
 
       <div className="grid gap-4">
 
-        {/* System Settings */}
-        <div className="bg-card border border-border rounded-lg p-5">
-          <h3 className="font-semibold text-foreground mb-4">Sistema</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-foreground">Modo de manutenção</p>
-                <p className="text-xs text-muted-foreground">Desativa o acesso ao sistema para usuários</p>
-              </div>
-              <Button variant="outline" size="sm">Desativado</Button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-foreground">Registro de novos usuários</p>
-                <p className="text-xs text-muted-foreground">Permitir criação de novas contas</p>
-              </div>
-              <Button variant="outline" size="sm">Ativado</Button>
-            </div>
-          </div>
-        </div>
-
         {/* Admin Credentials */}
         <div className="bg-card border border-border rounded-lg p-5">
           <h3 className="font-semibold text-foreground mb-4">Credenciais de Administrador</h3>
@@ -1474,6 +1455,8 @@ const Admin = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState<number>(1);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [allowRegistration, setAllowRegistration] = useState(true);
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
@@ -1492,6 +1475,21 @@ const Admin = () => {
     { label: "Usuários", icon: <Users className="h-full w-full" />, onClick: () => setActiveTab("users") },
     { label: "Sessions", icon: <Globe className="h-full w-full" />, onClick: () => setActiveTab("sessions") },
     { label: "Configurações", icon: <Settings className="h-full w-full" />, onClick: () => setActiveTab("settings"), isSeparator: true },
+  ];
+
+  const toggleItems = [
+    { 
+      label: "Manutenção", 
+      icon: <Wrench className="h-full w-full" />, 
+      checked: maintenanceMode, 
+      onCheckedChange: setMaintenanceMode 
+    },
+    { 
+      label: "Novos registros", 
+      icon: <UserPlus className="h-full w-full" />, 
+      checked: allowRegistration, 
+      onCheckedChange: setAllowRegistration 
+    },
   ];
 
   const sidebarActiveIndex = sidebarTabs.indexOf(activeTab);
@@ -1535,6 +1533,7 @@ const Admin = () => {
             selectedAvatarId: selectedAvatarId
           }}
           navItems={profileNavItems}
+          toggleItems={toggleItems}
           logoutItem={logoutItem}
           activeIndex={sidebarActiveIndex >= 0 ? sidebarActiveIndex : 0}
           onActiveChange={handleSidebarChange}
@@ -1590,6 +1589,7 @@ const Admin = () => {
                   selectedAvatarId: selectedAvatarId
                 }}
                 navItems={profileNavItems}
+                toggleItems={toggleItems}
                 logoutItem={logoutItem}
                 activeIndex={sidebarActiveIndex >= 0 ? sidebarActiveIndex : 0}
                 onActiveChange={(index) => {
