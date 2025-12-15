@@ -1573,30 +1573,60 @@ const SessionsSection = () => {
   const { 
     inventory, 
     combos: dbCombos, 
+    sessionFiles,
     isLoading, 
+    isUploading,
+    uploadSessionFiles,
+    deleteSessionFile,
     updateInventory, 
     updateCombo: updateDbCombo, 
     addCombo: addDbCombo, 
     deleteCombo,
     getCombosByType,
+    getFilesByType,
     stats 
   } = useAdminSessions();
   
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadType, setUploadType] = useState<'brasileiras' | 'estrangeiras'>('brasileiras');
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadResult, setUploadResult] = useState<{ success: boolean; totalUploaded: number } | null>(null);
 
   const brasileirasInv = stats.brasileiras;
   const estrangeirasInv = stats.estrangeiras;
   const brasileirasCombos = getCombosByType('brasileiras');
   const estrangeirasCombos = getCombosByType('estrangeiras');
+  const brasileirasFiles = getFilesByType('brasileiras');
+  const estrangeirasFiles = getFilesByType('estrangeiras');
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      const fileNames = Array.from(files).map(f => f.name);
-      setUploadedFiles(prev => [...prev, ...fileNames]);
+      setSelectedFiles(Array.from(files));
+      setShowUploadModal(true);
       e.target.value = '';
     }
+  };
+
+  const handleConfirmUpload = async () => {
+    if (selectedFiles.length === 0) return;
+    
+    const result = await uploadSessionFiles(selectedFiles, uploadType);
+    setUploadResult({ success: result.success, totalUploaded: result.totalUploaded || 0 });
+    
+    if (result.success) {
+      setTimeout(() => {
+        setShowUploadModal(false);
+        setSelectedFiles([]);
+        setUploadResult(null);
+      }, 2000);
+    }
+  };
+
+  const handleCancelUpload = () => {
+    setShowUploadModal(false);
+    setSelectedFiles([]);
+    setUploadResult(null);
   };
 
   const handleUpdateCost = async (type: string, cost: string) => {
@@ -1621,6 +1651,16 @@ const SessionsSection = () => {
     await deleteCombo(comboId);
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
     <motion.div {...fadeIn} className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -1633,12 +1673,12 @@ const SessionsSection = () => {
             type="file"
             accept=".session"
             multiple
-            onChange={handleFileUpload}
+            onChange={handleFileSelect}
             className="hidden"
             id="session-upload"
           />
           <label htmlFor="session-upload">
-            <Button asChild size="sm">
+            <Button asChild size="sm" disabled={isUploading}>
               <span>
                 <Plus className="w-4 h-4 mr-2" /> Importar Sessions
               </span>
@@ -1647,34 +1687,196 @@ const SessionsSection = () => {
         </div>
       </div>
 
-      {/* Uploaded Files Feedback */}
-      {uploadedFiles.length > 0 && (
-        <div className="bg-success/10 border border-success/20 rounded-lg p-4">
-          <p className="text-sm text-success font-medium mb-2">Arquivos importados:</p>
-          <div className="flex flex-wrap gap-2">
-            {uploadedFiles.map((file, idx) => (
-              <span key={idx} className="text-xs bg-success/20 text-success px-2 py-1 rounded-md">
-                {file}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Upload Modal */}
+      <AnimatePresence>
+        {showUploadModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50"
+              onClick={handleCancelUpload}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-md bg-card border border-border rounded-lg p-6 shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-foreground">Upload de Sessions</h2>
+                  <button onClick={handleCancelUpload} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                {uploadResult ? (
+                  <div className={cn(
+                    "p-4 rounded-lg text-center",
+                    uploadResult.success ? "bg-success/10" : "bg-destructive/10"
+                  )}>
+                    {uploadResult.success ? (
+                      <>
+                        <CheckCircle className="w-10 h-10 text-success mx-auto mb-2" />
+                        <p className="text-success font-medium">
+                          {uploadResult.totalUploaded} arquivo(s) importado(s) com sucesso!
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="w-10 h-10 text-destructive mx-auto mb-2" />
+                        <p className="text-destructive font-medium">Erro ao fazer upload</p>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {selectedFiles.length} arquivo(s) selecionado(s)
+                      </p>
+                      <div className="max-h-32 overflow-y-auto space-y-1">
+                        {selectedFiles.map((file, idx) => (
+                          <div key={idx} className="text-xs bg-muted/30 px-2 py-1 rounded">
+                            {file.name}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">Tipo de Session</label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setUploadType('brasileiras')}
+                          className={cn(
+                            "flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                            uploadType === 'brasileiras' 
+                              ? "bg-success text-success-foreground" 
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          )}
+                        >
+                          🇧🇷 Brasileiras
+                        </button>
+                        <button
+                          onClick={() => setUploadType('estrangeiras')}
+                          className={cn(
+                            "flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                            uploadType === 'estrangeiras' 
+                              ? "bg-primary text-primary-foreground" 
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          )}
+                        >
+                          🌍 Estrangeiras
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3 pt-2">
+                      <Button variant="outline" className="flex-1" onClick={handleCancelUpload}>
+                        Cancelar
+                      </Button>
+                      <Button 
+                        className="flex-1" 
+                        onClick={handleConfirmUpload}
+                        disabled={isUploading}
+                      >
+                        {isUploading ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            Enviando...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-4 h-4 mr-2" />
+                            Fazer Upload
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-xs text-muted-foreground mb-1">Total Sessions</p>
+          <p className="text-xs text-muted-foreground mb-1">Total Disponíveis</p>
           <p className="text-2xl font-bold text-foreground">{stats.totalAvailable}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-xs text-muted-foreground mb-1">Brasileiras</p>
-          <p className="text-2xl font-bold text-success">{brasileirasInv?.quantity || 0}</p>
+          <p className="text-2xl font-bold text-success">{stats.totalBrasileiras}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-xs text-muted-foreground mb-1">Estrangeiras</p>
-          <p className="text-2xl font-bold text-primary">{estrangeirasInv?.quantity || 0}</p>
+          <p className="text-2xl font-bold text-primary">{stats.totalEstrangeiras}</p>
         </div>
+        <div className="bg-card border border-border rounded-lg p-4">
+          <p className="text-xs text-muted-foreground mb-1">Total Arquivos</p>
+          <p className="text-2xl font-bold text-foreground">{sessionFiles.length}</p>
+        </div>
+      </div>
+
+      {/* Session Files List */}
+      <div className="bg-card border border-border rounded-lg p-5">
+        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+          <Package className="w-4 h-4 text-primary" />
+          Arquivos de Session ({sessionFiles.length})
+        </h3>
+        
+        {sessionFiles.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Package className="w-10 h-10 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">Nenhum arquivo importado ainda</p>
+            <p className="text-xs">Use o botão "Importar Sessions" para adicionar arquivos</p>
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {sessionFiles.slice(0, 50).map((file) => (
+              <div key={file.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-lg">{file.type === 'brasileiras' ? '🇧🇷' : '🌍'}</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{file.file_name}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(file.uploaded_at)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    "text-xs px-2 py-1 rounded-md",
+                    file.status === 'available' ? "bg-success/10 text-success" :
+                    file.status === 'sold' ? "bg-muted text-muted-foreground" :
+                    "bg-warning/10 text-warning"
+                  )}>
+                    {file.status === 'available' ? 'Disponível' : file.status === 'sold' ? 'Vendido' : 'Reservado'}
+                  </span>
+                  {file.status === 'available' && (
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => deleteSessionFile(file.id, file.file_path)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {sessionFiles.length > 50 && (
+              <p className="text-xs text-center text-muted-foreground pt-2">
+                Mostrando 50 de {sessionFiles.length} arquivos
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Custo Pago por Session */}
