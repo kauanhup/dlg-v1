@@ -526,9 +526,9 @@ const Dashboard = () => {
       <aside className="hidden lg:flex flex-col w-[256px] sticky top-0 h-screen flex-shrink-0 border-r border-border">
         <UserProfileSidebar 
           user={{
-            name: user.name,
-            email: user.email,
-            initials: user.initials,
+            name: userData.name,
+            email: userData.email,
+            initials: userData.initials,
             selectedAvatarId: selectedAvatarId
           }}
           navItems={profileNavItems}
@@ -552,14 +552,14 @@ const Dashboard = () => {
                     {avatars.find(a => a.id === selectedAvatarId)?.svg}
                   </div>
                 ) : (
-                  <span className="text-xs font-semibold text-primary-foreground bg-primary w-full h-full flex items-center justify-center">{user.initials}</span>
+                  <span className="text-xs font-semibold text-primary-foreground bg-primary w-full h-full flex items-center justify-center">{userData.initials}</span>
                 )}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56 bg-card border border-border">
               <DropdownMenuLabel className="font-normal px-3 py-2">
-                <p className="text-sm font-medium text-foreground">{user.name}</p>
-                <p className="text-xs text-muted-foreground">{user.email}</p>
+                <p className="text-sm font-medium text-foreground">{userData.name}</p>
+                <p className="text-xs text-muted-foreground">{userData.email}</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setActiveTab("perfil")} className="px-3 py-2 cursor-pointer">
@@ -1308,12 +1308,12 @@ const Dashboard = () => {
                     </div>
                   ) : (
                     <div className="w-full h-full bg-primary flex items-center justify-center">
-                      <span className="text-xl font-semibold text-primary-foreground">{user.initials}</span>
+                      <span className="text-xl font-semibold text-primary-foreground">{userData.initials}</span>
                     </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-base font-semibold text-foreground">{user.name}</h2>
+                  <h2 className="text-base font-semibold text-foreground">{userData.name}</h2>
                   <p className="text-sm text-muted-foreground">Bem-vindo de volta! 👋</p>
                 </div>
               </div>
@@ -1331,19 +1331,19 @@ const Dashboard = () => {
                   <div className="p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
                     <div>
                       <p className="text-xs text-muted-foreground">Nome</p>
-                      <p className="text-sm text-foreground mt-0.5">{user.name}</p>
+                      <p className="text-sm text-foreground mt-0.5">{userData.name}</p>
                     </div>
                   </div>
                   <div className="p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
                     <div>
                       <p className="text-xs text-muted-foreground">Email</p>
-                      <p className="text-sm text-foreground mt-0.5">{user.email}</p>
+                      <p className="text-sm text-foreground mt-0.5">{userData.email}</p>
                     </div>
                   </div>
                   <div className="p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
                     <div>
                       <p className="text-xs text-muted-foreground">Plano</p>
-                      <p className="text-sm text-foreground mt-0.5">{user.plan}</p>
+                      <p className="text-sm text-foreground mt-0.5">{userData.plan}</p>
                     </div>
                   </div>
                   <div className="p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
