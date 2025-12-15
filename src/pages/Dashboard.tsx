@@ -1394,11 +1394,11 @@ const Dashboard = () => {
                 </h3>
                 <div className="space-y-3">
                   <div className="space-y-1.5">
-                    <label className="text-xs text-muted-foreground">Senha atual</label>
+                    <label className="text-xs text-muted-foreground">Nova senha</label>
                     <div className="relative group">
                       <input 
                         type={showApiKey ? "text" : "password"}
-                        placeholder="Digite sua senha atual"
+                        placeholder="Mínimo 8 caracteres"
                         className="w-full h-10 px-3 pr-10 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                       />
                       <button 
@@ -1409,14 +1409,6 @@ const Dashboard = () => {
                         {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs text-muted-foreground">Nova senha</label>
-                    <input 
-                      type="password"
-                      placeholder="Mínimo 8 caracteres"
-                      className="w-full h-10 px-3 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                    />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs text-muted-foreground">Confirmar nova senha</label>
