@@ -1171,27 +1171,58 @@ const Dashboard = () => {
                   Compras Recentes
                 </h3>
                 <div className="space-y-2">
-                  {[
-                    { item: "Licença 30 Dias", date: "16 Dez 2024", value: "R$ 49,90", status: "Aprovado" },
-                    { item: "Pacote +5 Números", date: "10 Dez 2024", value: "R$ 29,90", status: "Aprovado" },
-                    { item: "Licença 30 Dias", date: "16 Nov 2024", value: "R$ 49,90", status: "Aprovado" },
-                  ].map((purchase, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-success/10 rounded-lg flex items-center justify-center">
-                          <CheckCircle className="w-4 h-4 text-success" />
+                  {orders && orders.length > 0 ? (
+                    orders.slice(0, 5).map((order) => {
+                      const date = new Date(order.created_at);
+                      const formattedDate = date.toLocaleDateString('pt-BR', { 
+                        day: '2-digit', 
+                        month: 'short', 
+                        year: 'numeric' 
+                      });
+                      const statusMap: Record<string, { label: string; color: string }> = {
+                        'completed': { label: 'Aprovado', color: 'text-success' },
+                        'pending': { label: 'Pendente', color: 'text-warning' },
+                        'cancelled': { label: 'Cancelado', color: 'text-destructive' },
+                        'failed': { label: 'Falhou', color: 'text-destructive' },
+                      };
+                      const status = statusMap[order.status] || { label: order.status, color: 'text-muted-foreground' };
+                      
+                      return (
+                        <div key={order.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "w-8 h-8 rounded-lg flex items-center justify-center",
+                              order.status === 'completed' ? "bg-success/10" : 
+                              order.status === 'pending' ? "bg-warning/10" : "bg-destructive/10"
+                            )}>
+                              {order.status === 'completed' 
+                                ? <CheckCircle className="w-4 h-4 text-success" />
+                                : order.status === 'pending'
+                                  ? <Clock className="w-4 h-4 text-warning" />
+                                  : <AlertTriangle className="w-4 h-4 text-destructive" />
+                              }
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-foreground">{order.product_name}</p>
+                              <p className="text-xs text-muted-foreground">{formattedDate}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-foreground">
+                              R$ {Number(order.amount).toFixed(2).replace('.', ',')}
+                            </p>
+                            <p className={`text-xs ${status.color}`}>{status.label}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{purchase.item}</p>
-                          <p className="text-xs text-muted-foreground">{purchase.date}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-foreground">{purchase.value}</p>
-                        <p className="text-xs text-success">{purchase.status}</p>
-                      </div>
+                      );
+                    })
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-6 text-center">
+                      <CreditCard className="w-8 h-8 text-muted-foreground/50 mb-2" />
+                      <p className="text-sm text-muted-foreground">Nenhuma compra realizada</p>
+                      <p className="text-xs text-muted-foreground/70">Suas compras aparecerão aqui</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
 
