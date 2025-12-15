@@ -945,50 +945,52 @@ const UsersSection = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed left-4 right-4 top-1/2 -translate-y-1/2 md:left-1/2 md:right-auto md:-translate-x-1/2 z-50 md:w-full md:max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto bg-card border border-border rounded-lg p-6 shadow-xl"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground">Detalhes do Usuário</h2>
-                <button onClick={() => setShowDetailsModal(false)} className="text-muted-foreground hover:text-foreground">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-xl font-bold text-primary">{selectedUser.name.charAt(0)}</span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-medium text-foreground truncate">{selectedUser.name}</p>
-                    <p className="text-sm text-muted-foreground truncate">{selectedUser.email}</p>
-                  </div>
+              <div className="w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto bg-card border border-border rounded-lg p-6 shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-foreground">Detalhes do Usuário</h2>
+                  <button onClick={() => setShowDetailsModal(false)} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-muted/30 rounded-lg p-3">
-                    <p className="text-xs text-muted-foreground">Plano</p>
-                    <p className="font-medium text-foreground">{selectedUser.plan}</p>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-xl font-bold text-primary">{selectedUser.name.charAt(0)}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground truncate">{selectedUser.name}</p>
+                      <p className="text-sm text-muted-foreground truncate">{selectedUser.email}</p>
+                    </div>
                   </div>
-                  <div className="bg-muted/30 rounded-lg p-3">
-                    <p className="text-xs text-muted-foreground">Status</p>
-                    <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[selectedUser.status as keyof typeof statusStyles])}>
-                      {statusLabels[selectedUser.status as keyof typeof statusLabels]}
-                    </span>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-3">
-                    <p className="text-xs text-muted-foreground">Sessions</p>
-                    <p className="font-medium text-foreground">{selectedUser.sessions}</p>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-3">
-                    <p className="text-xs text-muted-foreground">Cadastro</p>
-                    <p className="font-medium text-foreground">{selectedUser.createdAt}</p>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-3 col-span-2">
-                    <p className="text-xs text-muted-foreground">Último login</p>
-                    <p className="font-medium text-foreground">{selectedUser.lastLogin}</p>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-3 col-span-2">
-                    <p className="text-xs text-muted-foreground">WhatsApp</p>
-                    <p className="font-medium text-foreground">{selectedUser.whatsapp}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-muted/30 rounded-lg p-3">
+                      <p className="text-xs text-muted-foreground">Plano</p>
+                      <p className="font-medium text-foreground">{selectedUser.plan}</p>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-3">
+                      <p className="text-xs text-muted-foreground">Status</p>
+                      <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[selectedUser.status as keyof typeof statusStyles])}>
+                        {statusLabels[selectedUser.status as keyof typeof statusLabels]}
+                      </span>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-3">
+                      <p className="text-xs text-muted-foreground">Sessions</p>
+                      <p className="font-medium text-foreground">{selectedUser.sessions}</p>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-3">
+                      <p className="text-xs text-muted-foreground">Cadastro</p>
+                      <p className="font-medium text-foreground">{selectedUser.createdAt}</p>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-3 col-span-2">
+                      <p className="text-xs text-muted-foreground">Último login</p>
+                      <p className="font-medium text-foreground">{selectedUser.lastLogin}</p>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-3 col-span-2">
+                      <p className="text-xs text-muted-foreground">WhatsApp</p>
+                      <p className="font-medium text-foreground">{selectedUser.whatsapp}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1012,51 +1014,53 @@ const UsersSection = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed left-4 right-4 top-1/2 -translate-y-1/2 md:left-1/2 md:right-auto md:-translate-x-1/2 z-50 md:w-full md:max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto bg-card border border-border rounded-lg p-6 shadow-xl"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground">Editar Usuário</h2>
-                <button onClick={() => setShowEditModal(false)} className="text-muted-foreground hover:text-foreground">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm text-muted-foreground mb-1 block">Nome</label>
-                  <input
-                    type="text"
-                    value={editForm.name}
-                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
+              <div className="w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto bg-card border border-border rounded-lg p-6 shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-foreground">Editar Usuário</h2>
+                  <button onClick={() => setShowEditModal(false)} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
-                <div>
-                  <label className="text-sm text-muted-foreground mb-1 block">Email</label>
-                  <input
-                    type="email"
-                    value={editForm.email}
-                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-muted-foreground mb-1 block">Plano</label>
-                  <select
-                    value={editForm.plan}
-                    onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  >
-                    <option value="Free">Free</option>
-                    <option value="Pro">Pro</option>
-                  </select>
-                </div>
-                <div className="flex gap-3 pt-2">
-                  <Button variant="outline" className="flex-1" onClick={() => setShowEditModal(false)}>
-                    Cancelar
-                  </Button>
-                  <Button className="flex-1" onClick={handleSaveEdit}>
-                    Salvar
-                  </Button>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-1 block">Nome</label>
+                    <input
+                      type="text"
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-1 block">Email</label>
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-1 block">Plano</label>
+                    <select
+                      value={editForm.plan}
+                      onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}
+                      className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    >
+                      <option value="Free">Free</option>
+                      <option value="Pro">Pro</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <Button variant="outline" className="flex-1" onClick={() => setShowEditModal(false)}>
+                      Cancelar
+                    </Button>
+                    <Button className="flex-1" onClick={handleSaveEdit}>
+                      Salvar
+                    </Button>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -1079,38 +1083,40 @@ const UsersSection = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed left-4 right-4 top-1/2 -translate-y-1/2 md:left-1/2 md:right-auto md:-translate-x-1/2 z-50 md:w-full md:max-w-sm max-h-[calc(100vh-2rem)] overflow-y-auto bg-card border border-border rounded-lg p-6 shadow-xl"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
             >
-              <div className="text-center">
-                <div className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4",
-                  selectedUser.status === "banned" ? "bg-success/10" : "bg-destructive/10"
-                )}>
-                  <Ban className={cn(
-                    "w-6 h-6",
-                    selectedUser.status === "banned" ? "text-success" : "text-destructive"
-                  )} />
-                </div>
-                <h2 className="text-lg font-semibold text-foreground mb-2">
-                  {selectedUser.status === "banned" ? "Desbanir usuário?" : "Banir usuário?"}
-                </h2>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {selectedUser.status === "banned" 
-                    ? `Tem certeza que deseja desbanir ${selectedUser.name}? O usuário poderá acessar o sistema novamente.`
-                    : `Tem certeza que deseja banir ${selectedUser.name}? O usuário não poderá mais acessar o sistema.`
-                  }
-                </p>
-                <div className="flex gap-3">
-                  <Button variant="outline" className="flex-1" onClick={() => setShowBanModal(false)}>
-                    Cancelar
-                  </Button>
-                  <Button 
-                    variant={selectedUser.status === "banned" ? "default" : "destructive"} 
-                    className="flex-1" 
-                    onClick={handleConfirmBan}
-                  >
-                    {selectedUser.status === "banned" ? "Desbanir" : "Banir"}
-                  </Button>
+              <div className="w-full max-w-sm max-h-[calc(100vh-2rem)] overflow-y-auto bg-card border border-border rounded-lg p-6 shadow-xl">
+                <div className="text-center">
+                  <div className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4",
+                    selectedUser.status === "banned" ? "bg-success/10" : "bg-destructive/10"
+                  )}>
+                    <Ban className={cn(
+                      "w-6 h-6",
+                      selectedUser.status === "banned" ? "text-success" : "text-destructive"
+                    )} />
+                  </div>
+                  <h2 className="text-lg font-semibold text-foreground mb-2">
+                    {selectedUser.status === "banned" ? "Desbanir usuário?" : "Banir usuário?"}
+                  </h2>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {selectedUser.status === "banned" 
+                      ? `Tem certeza que deseja desbanir ${selectedUser.name}? O usuário poderá acessar o sistema novamente.`
+                      : `Tem certeza que deseja banir ${selectedUser.name}? O usuário não poderá mais acessar o sistema.`
+                    }
+                  </p>
+                  <div className="flex gap-3">
+                    <Button variant="outline" className="flex-1" onClick={() => setShowBanModal(false)}>
+                      Cancelar
+                    </Button>
+                    <Button 
+                      variant={selectedUser.status === "banned" ? "default" : "destructive"} 
+                      className="flex-1" 
+                      onClick={handleConfirmBan}
+                    >
+                      {selectedUser.status === "banned" ? "Desbanir" : "Banir"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </motion.div>
