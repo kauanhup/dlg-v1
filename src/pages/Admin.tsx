@@ -267,7 +267,7 @@ const PlanFormModal = ({
               >
                 <option value="lifetime">Único (Lifetime)</option>
                 <option value="week">Semanal</option>
-                <option value="biweekly">Quinzenal</option>
+                <option value="biweek">Quinzenal</option>
                 <option value="month">Mensal</option>
                 <option value="quarter">Trimestral</option>
                 <option value="semester">Semestral</option>
