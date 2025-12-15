@@ -14,6 +14,135 @@ export type Database = {
   }
   public: {
     Tables: {
+      licenses: {
+        Row: {
+          auto_renew: boolean
+          created_at: string
+          end_date: string
+          id: string
+          plan_name: string
+          start_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_renew?: boolean
+          created_at?: string
+          end_date: string
+          id?: string
+          plan_name?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_renew?: boolean
+          created_at?: string
+          end_date?: string
+          id?: string
+          plan_name?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          payment_method: string | null
+          product_name: string
+          product_type: string
+          quantity: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          payment_method?: string | null
+          product_name: string
+          product_type: string
+          quantity?: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          payment_method?: string | null
+          product_name?: string
+          product_type?: string
+          quantity?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          order_id: string | null
+          paid_at: string | null
+          payment_method: string
+          pix_code: string | null
+          status: string
+          subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          paid_at?: string | null
+          payment_method?: string
+          pix_code?: string | null
+          status?: string
+          subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          paid_at?: string | null
+          payment_method?: string
+          pix_code?: string | null
+          status?: string
+          subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "user_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar: string | null
@@ -50,6 +179,117 @@ export type Database = {
         }
         Relationships: []
       }
+      session_combos: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          is_popular: boolean
+          price: number
+          quantity: number
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_popular?: boolean
+          price: number
+          quantity: number
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_popular?: boolean
+          price?: number
+          quantity?: number
+          type?: string
+        }
+        Relationships: []
+      }
+      sessions_inventory: {
+        Row: {
+          cost_per_session: number
+          id: string
+          quantity: number
+          sale_price_per_session: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          cost_per_session?: number
+          id?: string
+          quantity?: number
+          sale_price_per_session?: number
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          cost_per_session?: number
+          id?: string
+          quantity?: number
+          sale_price_per_session?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          features: string[] | null
+          id: string
+          is_active: boolean
+          name: string
+          period: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          features?: string[] | null
+          id?: string
+          is_active?: boolean
+          name: string
+          period: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          features?: string[] | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          period?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -70,6 +310,85 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          is_downloaded: boolean
+          order_id: string | null
+          session_data: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_downloaded?: boolean
+          order_id?: string | null
+          session_data: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_downloaded?: boolean
+          order_id?: string | null
+          session_data?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_sessions_order"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          next_billing_date: string | null
+          plan_id: string
+          start_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          next_billing_date?: string | null
+          plan_id: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          next_billing_date?: string | null
+          plan_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
