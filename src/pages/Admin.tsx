@@ -325,13 +325,19 @@ const SubscriptionsTabContent = () => {
     { id: 4, name: "Enterprise", price: "R$ 999,90", period: "ano", sessions: -1, features: ["Sessions ilimitadas", "Suporte dedicado", "SLA 99.9%", "Whitelabel"], subscribers: 12, status: "active" },
   ]);
 
-  const payments = [
+  const [payments, setPayments] = useState([
     { id: "#PAY-001", user: "João Silva", plan: "Pro Mensal", amount: "R$ 49,90", method: "PIX", status: "paid", date: "01 Dez 2024" },
     { id: "#PAY-002", user: "Maria Santos", plan: "Pro Anual", amount: "R$ 399,90", method: "PIX", status: "paid", date: "15 Nov 2024" },
     { id: "#PAY-003", user: "Carlos Souza", plan: "Pro Mensal", amount: "R$ 49,90", method: "PIX", status: "failed", date: "05 Dez 2024" },
     { id: "#PAY-004", user: "Ana Lima", plan: "Enterprise", amount: "R$ 999,90", method: "PIX", status: "pending", date: "01 Dez 2024" },
     { id: "#PAY-005", user: "Pedro Costa", plan: "Pro Mensal", amount: "R$ 49,90", method: "PIX", status: "refunded", date: "10 Nov 2024" },
-  ];
+  ]);
+
+  // Payment modals state
+  const [selectedPayment, setSelectedPayment] = useState<typeof payments[0] | null>(null);
+  const [showEditStatusModal, setShowEditStatusModal] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [newPaymentStatus, setNewPaymentStatus] = useState("");
 
   const activeSubscribers = subscribers.filter(s => s.status === "active").length;
   const pendingSubscribers = subscribers.filter(s => s.status === "overdue").length;
@@ -395,6 +401,42 @@ const SubscriptionsTabContent = () => {
   const handleCreatePlan = () => {
     setEditingPlan(null);
     setIsModalOpen(true);
+  };
+
+  // Payment action handlers
+  const handleEditPaymentStatus = (payment: typeof payments[0]) => {
+    setSelectedPayment(payment);
+    setNewPaymentStatus(payment.status);
+    setShowEditStatusModal(true);
+  };
+
+  const handleRefundClick = (payment: typeof payments[0]) => {
+    setSelectedPayment(payment);
+    setShowRefundModal(true);
+  };
+
+  const handleConfirmStatusChange = () => {
+    if (selectedPayment && newPaymentStatus) {
+      setPayments(payments.map(p => 
+        p.id === selectedPayment.id 
+          ? { ...p, status: newPaymentStatus }
+          : p
+      ));
+    }
+    setShowEditStatusModal(false);
+    setSelectedPayment(null);
+  };
+
+  const handleConfirmRefund = () => {
+    if (selectedPayment) {
+      setPayments(payments.map(p => 
+        p.id === selectedPayment.id 
+          ? { ...p, status: "refunded" }
+          : p
+      ));
+    }
+    setShowRefundModal(false);
+    setSelectedPayment(null);
   };
 
   const statusStyles = {
@@ -647,6 +689,7 @@ const SubscriptionsTabContent = () => {
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">Método</th>
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
                   <th className="text-left text-xs font-medium text-muted-foreground p-4">Data</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -663,11 +706,123 @@ const SubscriptionsTabContent = () => {
                       </span>
                     </td>
                     <td className="p-4 text-sm text-muted-foreground">{payment.date}</td>
+                    <td className="p-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-card border border-border">
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleEditPaymentStatus(payment)}>
+                            <Edit className="w-4 h-4 mr-2" /> Editar Status
+                          </DropdownMenuItem>
+                          {payment.status !== "refunded" && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={() => handleRefundClick(payment)}>
+                                <RefreshCw className="w-4 h-4 mr-2" /> Reembolsar
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Edit Payment Status Modal */}
+      {showEditStatusModal && selectedPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowEditStatusModal(false)} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="relative bg-card border border-border rounded-lg p-6 w-full max-w-sm"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-foreground">Editar Status</h2>
+              <button onClick={() => setShowEditStatusModal(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                <p>Pagamento: <strong className="text-foreground">{selectedPayment.id}</strong></p>
+                <p>Usuário: {selectedPayment.user}</p>
+                <p>Valor: {selectedPayment.amount}</p>
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Novo Status</label>
+                <select
+                  value={newPaymentStatus}
+                  onChange={(e) => setNewPaymentStatus(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                  <option value="paid">Pago</option>
+                  <option value="pending">Pendente</option>
+                  <option value="failed">Falhou</option>
+                  <option value="refunded">Reembolsado</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-6">
+              <Button variant="outline" onClick={() => setShowEditStatusModal(false)} className="flex-1">
+                Cancelar
+              </Button>
+              <Button onClick={handleConfirmStatusChange} className="flex-1">
+                Salvar
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Refund Confirmation Modal */}
+      {showRefundModal && selectedPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowRefundModal(false)} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="relative bg-card border border-border rounded-lg p-6 w-full max-w-sm"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-foreground">Confirmar Reembolso</h2>
+              <button onClick={() => setShowRefundModal(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-warning/10 rounded-lg">
+                <RefreshCw className="w-5 h-5 text-warning" />
+                <p className="text-sm text-foreground">Reembolsar pagamento <strong>{selectedPayment.id}</strong>?</p>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <p>Usuário: {selectedPayment.user}</p>
+                <p>Valor: {selectedPayment.amount}</p>
+                <p>Data: {selectedPayment.date}</p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Esta ação irá marcar o pagamento como reembolsado.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-6">
+              <Button variant="outline" onClick={() => setShowRefundModal(false)} className="flex-1">
+                Cancelar
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmRefund} className="flex-1">
+                Reembolsar
+              </Button>
+            </div>
+          </motion.div>
         </div>
       )}
 
