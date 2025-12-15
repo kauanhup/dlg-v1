@@ -7,6 +7,9 @@ import { avatars } from "@/components/ui/avatar-picker";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
+import { useAdminOrders } from "@/hooks/useAdminOrders";
+import { useAdminSessions } from "@/hooks/useAdminSessions";
+import { useAdminSubscriptions } from "@/hooks/useAdminSubscriptions";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import {
@@ -1343,25 +1346,49 @@ const UsersSection = () => {
 
 // Orders Management
 const OrdersSection = () => {
-  const orders = [
-    { id: "#ORD-001", user: "João Silva", email: "joao@email.com", product: "25 Sessions BR", amount: "R$ 199,90", status: "completed", payment: "PIX", date: "14 Dez 2024" },
-    { id: "#ORD-002", user: "Maria Santos", email: "maria@email.com", product: "10 Sessions BR", amount: "R$ 89,90", status: "pending", payment: "Cartão", date: "14 Dez 2024" },
-    { id: "#ORD-003", user: "Pedro Costa", email: "pedro@email.com", product: "5 Sessions INTL", amount: "R$ 29,90", status: "completed", payment: "PIX", date: "13 Dez 2024" },
-    { id: "#ORD-004", user: "Ana Lima", email: "ana@email.com", product: "25 Sessions INTL", amount: "R$ 99,90", status: "refunded", payment: "Cartão", date: "13 Dez 2024" },
-  ];
+  const { orders, isLoading, stats, updateOrderStatus } = useAdminOrders();
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [newStatus, setNewStatus] = useState("");
 
-  const statusStyles = {
+  const statusStyles: Record<string, string> = {
     completed: "bg-success/10 text-success",
     pending: "bg-warning/10 text-warning",
     refunded: "bg-muted text-muted-foreground",
     failed: "bg-destructive/10 text-destructive"
   };
 
-  const statusLabels = {
+  const statusLabels: Record<string, string> = {
     completed: "Concluído",
     pending: "Pendente",
     refunded: "Reembolsado",
     failed: "Falhou"
+  };
+
+  const handleStatusClick = (order: any) => {
+    setSelectedOrder(order);
+    setNewStatus(order.status);
+    setShowStatusModal(true);
+  };
+
+  const handleConfirmStatus = async () => {
+    if (selectedOrder && newStatus) {
+      await updateOrderStatus(selectedOrder.id, newStatus);
+      setShowStatusModal(false);
+      setSelectedOrder(null);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric' 
+    });
+  };
+
+  const formatPrice = (amount: number) => {
+    return `R$ ${Number(amount).toFixed(2).replace('.', ',')}`;
   };
 
   return (
@@ -1385,7 +1412,7 @@ const OrdersSection = () => {
               <CheckCircle className="w-5 h-5 text-success" />
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground">234</p>
+              <p className="text-lg font-bold text-foreground">{stats.completed}</p>
               <p className="text-xs text-muted-foreground">Concluídos</p>
             </div>
           </div>
@@ -1396,7 +1423,7 @@ const OrdersSection = () => {
               <Clock className="w-5 h-5 text-warning" />
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground">12</p>
+              <p className="text-lg font-bold text-foreground">{stats.pending}</p>
               <p className="text-xs text-muted-foreground">Pendentes</p>
             </div>
           </div>
@@ -1407,58 +1434,120 @@ const OrdersSection = () => {
               <XCircle className="w-5 h-5 text-destructive" />
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground">8</p>
+              <p className="text-lg font-bold text-foreground">{stats.refunded}</p>
               <p className="text-xs text-muted-foreground">Reembolsados</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Pedido</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Cliente</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Produto</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Pagamento</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Data</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order) => (
-                <tr key={order.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
-                  <td className="p-4 text-sm font-medium text-foreground">{order.id}</td>
-                  <td className="p-4">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{order.user}</p>
-                      <p className="text-xs text-muted-foreground">{order.email}</p>
-                    </div>
-                  </td>
-                  <td className="p-4 text-sm text-foreground">{order.product}</td>
-                  <td className="p-4 text-sm font-medium text-foreground">{order.amount}</td>
-                  <td className="p-4 text-sm text-muted-foreground">{order.payment}</td>
-                  <td className="p-4">
-                    <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[order.status as keyof typeof statusStyles])}>
-                      {statusLabels[order.status as keyof typeof statusLabels]}
-                    </span>
-                  </td>
-                  <td className="p-4 text-sm text-muted-foreground">{order.date}</td>
-                  <td className="p-4">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {isLoading ? (
+        <div className="bg-card border border-border rounded-lg p-8 text-center">
+          <p className="text-muted-foreground">Carregando pedidos...</p>
         </div>
-      </div>
+      ) : orders.length === 0 ? (
+        <div className="bg-card border border-border rounded-lg p-8 text-center">
+          <p className="text-muted-foreground">Nenhum pedido encontrado</p>
+        </div>
+      ) : (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Pedido</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Cliente</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Produto</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Pagamento</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Data</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((order) => (
+                  <tr key={order.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
+                    <td className="p-4 text-sm font-medium text-foreground">#{order.id.slice(0, 8)}</td>
+                    <td className="p-4">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{order.user_name}</p>
+                        <p className="text-xs text-muted-foreground">{order.user_email}</p>
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm text-foreground">{order.product_name} ({order.quantity}x)</td>
+                    <td className="p-4 text-sm font-medium text-foreground">{formatPrice(order.amount)}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{order.payment_method || 'PIX'}</td>
+                    <td className="p-4">
+                      <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[order.status] || statusStyles.pending)}>
+                        {statusLabels[order.status] || order.status}
+                      </span>
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground">{formatDate(order.created_at)}</td>
+                    <td className="p-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-card border border-border">
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleStatusClick(order)}>
+                            <Edit className="w-4 h-4 mr-2" /> Alterar Status
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Status Edit Modal */}
+      <AnimatePresence>
+        {showStatusModal && selectedOrder && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50"
+              onClick={() => setShowStatusModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-sm bg-card border border-border rounded-lg p-6 shadow-xl">
+                <h2 className="text-lg font-semibold text-foreground mb-4">Alterar Status</h2>
+                <select
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 mb-4"
+                >
+                  <option value="pending">Pendente</option>
+                  <option value="completed">Concluído</option>
+                  <option value="refunded">Reembolsado</option>
+                  <option value="failed">Falhou</option>
+                </select>
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1" onClick={() => setShowStatusModal(false)}>
+                    Cancelar
+                  </Button>
+                  <Button className="flex-1" onClick={handleConfirmStatus}>
+                    Salvar
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
