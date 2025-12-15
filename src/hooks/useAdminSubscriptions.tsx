@@ -152,9 +152,8 @@ export const useAdminSubscriptions = () => {
 
       if (error) throw error;
 
-      setPlans(prev => prev.map(plan => 
-        plan.id === planId ? { ...plan, ...data } : plan
-      ));
+      // Refetch to get updated data
+      await fetchData();
 
       return { success: true };
     } catch (err) {
@@ -173,7 +172,8 @@ export const useAdminSubscriptions = () => {
 
       if (error) throw error;
 
-      setPlans(prev => [...prev, { ...newPlan, subscribers_count: 0 }]);
+      // Refetch to get updated data
+      await fetchData();
 
       return { success: true, data: newPlan };
     } catch (err) {
