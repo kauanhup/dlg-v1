@@ -350,7 +350,7 @@ const LojaSection = ({
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading, signOut, updateProfile } = useAuth();
-  const { license, sessions: userSessions, orders, combos, inventory, isLoading: dashboardLoading } = useUserDashboard(user?.id);
+  const { license, sessions: userSessions, orders, combos, inventory, loginHistory, isLoading: dashboardLoading } = useUserDashboard(user?.id);
   const [activeTab, setActiveTab] = useState("licencas");
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -468,11 +468,7 @@ const Dashboard = () => {
     { device: "Windows 11 - PC Escritório", location: "Campinas, BR", current: false, lastActive: "1 dia atrás" },
   ];
 
-  const loginHistory = [
-    { date: "14 Dez 2024, 10:32", device: "Google Chrome", location: "São Paulo, BR", status: "success", reason: "" },
-    { date: "13 Dez 2024, 18:45", device: "Google Chrome", location: "São Paulo, BR", status: "success", reason: "" },
-    { date: "12 Dez 2024, 09:15", device: "Google Chrome", location: "Rio de Janeiro, BR", status: "failed", reason: "Senha incorreta" },
-  ];
+  // loginHistory is now fetched from useUserDashboard hook
 
   // Use real user data from auth
   const userData = {
@@ -1233,33 +1229,52 @@ const Dashboard = () => {
                   Logins Recentes
                 </h3>
                 <div className="space-y-2">
-                  {loginHistory.map((login, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-8 h-8 rounded-lg flex items-center justify-center",
-                          login.status === "success" ? "bg-success/10" : "bg-destructive/10"
-                        )}>
-                          {login.status === "success" 
-                            ? <CheckCircle className="w-4 h-4 text-success" />
-                            : <AlertTriangle className="w-4 h-4 text-destructive" />
-                          }
+                  {loginHistory && loginHistory.length > 0 ? (
+                    loginHistory.slice(0, 5).map((login) => {
+                      const date = new Date(login.created_at);
+                      const formattedDate = date.toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      });
+                      
+                      return (
+                        <div key={login.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-md transition-all hover:bg-muted/70">
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "w-8 h-8 rounded-lg flex items-center justify-center",
+                              login.status === "success" ? "bg-success/10" : "bg-destructive/10"
+                            )}>
+                              {login.status === "success" 
+                                ? <CheckCircle className="w-4 h-4 text-success" />
+                                : <AlertTriangle className="w-4 h-4 text-destructive" />
+                              }
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-foreground">{login.device || 'Navegador'}</p>
+                              <p className="text-xs text-muted-foreground">{login.location || 'Localização desconhecida'}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground">{formattedDate}</p>
+                            <span className={`text-xs font-medium ${
+                              login.status === 'success' ? 'text-success' : 'text-destructive'
+                            }`}>
+                              {login.status === 'success' ? 'Sucesso' : login.failure_reason || 'Falhou'}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{login.device}</p>
-                          <p className="text-xs text-muted-foreground">{login.location}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">{login.date}</p>
-                        <span className={`text-xs font-medium ${
-                          login.status === 'success' ? 'text-success' : 'text-destructive'
-                        }`}>
-                          {login.status === 'success' ? 'Sucesso' : login.reason}
-                        </span>
-                      </div>
+                      );
+                    })
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-6 text-center">
+                      <Shield className="w-8 h-8 text-muted-foreground/50 mb-2" />
+                      <p className="text-sm text-muted-foreground">Nenhum login registrado</p>
+                      <p className="text-xs text-muted-foreground/70">Seus logins aparecerão aqui</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
 

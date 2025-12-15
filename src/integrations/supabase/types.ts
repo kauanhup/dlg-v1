@@ -50,6 +50,39 @@ export type Database = {
         }
         Relationships: []
       }
+      login_history: {
+        Row: {
+          created_at: string
+          device: string | null
+          failure_reason: string | null
+          id: string
+          ip_address: string | null
+          location: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device?: string | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          location?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device?: string | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          location?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           amount: number

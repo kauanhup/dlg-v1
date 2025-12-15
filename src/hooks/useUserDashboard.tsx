@@ -48,12 +48,24 @@ export interface SessionInventory {
   quantity: number;
 }
 
+export interface LoginHistory {
+  id: string;
+  user_id: string;
+  device: string | null;
+  location: string | null;
+  ip_address: string | null;
+  status: string;
+  failure_reason: string | null;
+  created_at: string;
+}
+
 export const useUserDashboard = (userId: string | undefined) => {
   const [license, setLicense] = useState<License | null>(null);
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [combos, setCombos] = useState<SessionCombo[]>([]);
   const [inventory, setInventory] = useState<SessionInventory[]>([]);
+  const [loginHistory, setLoginHistory] = useState<LoginHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,6 +124,17 @@ export const useUserDashboard = (userId: string | undefined) => {
 
       if (inventoryError) throw inventoryError;
       setInventory(inventoryData || []);
+
+      // Fetch login history
+      const { data: loginHistoryData, error: loginHistoryError } = await supabase
+        .from('login_history')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (loginHistoryError) throw loginHistoryError;
+      setLoginHistory(loginHistoryData || []);
 
     } catch (err) {
       console.error('Error fetching user dashboard data:', err);
@@ -194,6 +217,7 @@ export const useUserDashboard = (userId: string | undefined) => {
     orders,
     combos,
     inventory,
+    loginHistory,
     isLoading,
     error,
     refetch: fetchData,
