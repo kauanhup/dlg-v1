@@ -4,8 +4,13 @@ import AnimatedShaderBackground from "@/components/ui/animated-shader-background
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import { supabase } from "@/integrations/supabase/client";
-import { Ban, MessageCircle, X } from "lucide-react";
+import { Ban, MessageCircle, X, AlertTriangle, Wrench } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+interface SystemSettings {
+  maintenanceMode: boolean;
+  allowRegistration: boolean;
+}
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -21,6 +26,11 @@ const Login = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showBannedModal, setShowBannedModal] = useState(false);
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+  const [systemSettings, setSystemSettings] = useState<SystemSettings>({
+    maintenanceMode: false,
+    allowRegistration: true,
+  });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const toast = useAlertToast();
@@ -28,6 +38,42 @@ const Login = () => {
   const redirectUrl = searchParams.get("redirect") || "/dashboard";
 
   useEffect(() => {
+    // Fetch system settings
+    const fetchSystemSettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('system_settings')
+          .select('key, value');
+
+        if (!error && data) {
+          const settings: SystemSettings = {
+            maintenanceMode: false,
+            allowRegistration: true,
+          };
+
+          data.forEach((setting) => {
+            if (setting.key === 'maintenance_mode') {
+              settings.maintenanceMode = setting.value === 'true';
+            }
+            if (setting.key === 'allow_registrations') {
+              settings.allowRegistration = setting.value === 'true';
+            }
+          });
+
+          setSystemSettings(settings);
+
+          // Show maintenance modal if in maintenance mode
+          if (settings.maintenanceMode) {
+            setShowMaintenanceModal(true);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching system settings:', err);
+      }
+    };
+
+    fetchSystemSettings();
+
     // Check if user is already logged in
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -155,6 +201,19 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Block all access if in maintenance mode
+    if (systemSettings.maintenanceMode) {
+      setShowMaintenanceModal(true);
+      return;
+    }
+
+    // Block signup if registrations are disabled
+    if (!isLogin && !systemSettings.allowRegistration) {
+      toast.error("Cadastro desabilitado", "Novos registros estão temporariamente desabilitados.");
+      return;
+    }
+
     let valid = true;
 
     // Reset errors
@@ -278,6 +337,12 @@ const Login = () => {
   }
 
   const handleToggleMode = () => {
+    // Block switching to signup if registrations are disabled
+    if (isLogin && !systemSettings.allowRegistration) {
+      toast.error("Cadastro desabilitado", "Novos registros estão temporariamente desabilitados.");
+      return;
+    }
+
     setIsTransitioning(true);
     setEmailError("");
     setPasswordError("");
@@ -425,17 +490,37 @@ const Login = () => {
               {isSubmitting ? "Aguarde..." : isLogin ? "Entrar" : "Criar conta"}
             </button>
 
-            <p className="text-center text-sm text-muted-foreground">
-              {isLogin ? "Não tem uma conta?" : "Já tem uma conta?"}{" "}
-              <button
-                type="button"
-                onClick={handleToggleMode}
-                disabled={isSubmitting}
-                className="text-primary hover:underline font-medium disabled:opacity-50"
-              >
-                {isLogin ? "Cadastre-se" : "Entrar"}
-              </button>
-            </p>
+            {isLogin ? (
+              systemSettings.allowRegistration ? (
+                <p className="text-center text-sm text-muted-foreground">
+                  Não tem uma conta?{" "}
+                  <button
+                    type="button"
+                    onClick={handleToggleMode}
+                    disabled={isSubmitting}
+                    className="text-primary hover:underline font-medium disabled:opacity-50"
+                  >
+                    Cadastre-se
+                  </button>
+                </p>
+              ) : (
+                <p className="text-center text-sm text-muted-foreground">
+                  <span className="text-warning">Cadastros temporariamente desabilitados</span>
+                </p>
+              )
+            ) : (
+              <p className="text-center text-sm text-muted-foreground">
+                Já tem uma conta?{" "}
+                <button
+                  type="button"
+                  onClick={handleToggleMode}
+                  disabled={isSubmitting}
+                  className="text-primary hover:underline font-medium disabled:opacity-50"
+                >
+                  Entrar
+                </button>
+              </p>
+            )}
           </form>
         </div>
 
@@ -489,6 +574,56 @@ const Login = () => {
                     </a>
                     <button
                       onClick={() => setShowBannedModal(false)}
+                      className="w-full py-3 px-4 bg-muted text-muted-foreground font-medium rounded-lg hover:bg-muted/80 transition-all"
+                    >
+                      Fechar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Maintenance Mode Modal */}
+      <AnimatePresence>
+        {showMaintenanceModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-sm bg-card border border-border rounded-xl p-6 shadow-2xl">
+                <div className="text-center">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-warning/10">
+                    <Wrench className="w-8 h-8 text-warning" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-foreground mb-2">Sistema em Manutenção</h2>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    O sistema está temporariamente em manutenção. 
+                    Por favor, tente novamente mais tarde.
+                  </p>
+                  <div className="space-y-3">
+                    <a
+                      href="https://wa.me/5565996498222?text=Olá! O sistema está em manutenção, quando volta?"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-[#25D366] text-white font-medium rounded-lg hover:bg-[#25D366]/90 transition-all"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      Falar com Suporte
+                    </a>
+                    <button
+                      onClick={() => setShowMaintenanceModal(false)}
                       className="w-full py-3 px-4 bg-muted text-muted-foreground font-medium rounded-lg hover:bg-muted/80 transition-all"
                     >
                       Fechar
