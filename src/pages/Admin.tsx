@@ -770,14 +770,19 @@ const DashboardSection = () => {
 // Users Management
 const UsersSection = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showBanModal, setShowBanModal] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", email: "", plan: "" });
   
-  const users = [
-    { id: 1, name: "João Silva", email: "joao@email.com", plan: "Pro", status: "active", sessions: 12, createdAt: "10 Dez 2024" },
-    { id: 2, name: "Maria Santos", email: "maria@email.com", plan: "Free", status: "active", sessions: 3, createdAt: "08 Dez 2024" },
-    { id: 3, name: "Pedro Costa", email: "pedro@email.com", plan: "Pro", status: "banned", sessions: 0, createdAt: "05 Dez 2024" },
-    { id: 4, name: "Ana Lima", email: "ana@email.com", plan: "Pro", status: "active", sessions: 25, createdAt: "01 Dez 2024" },
-    { id: 5, name: "Carlos Souza", email: "carlos@email.com", plan: "Free", status: "inactive", sessions: 0, createdAt: "28 Nov 2024" },
-  ];
+  const [users, setUsers] = useState([
+    { id: 1, name: "João Silva", email: "joao@email.com", plan: "Pro", status: "active", sessions: 12, createdAt: "10 Dez 2024", lastLogin: "14 Dez 2024", whatsapp: "+55 11 99999-1234" },
+    { id: 2, name: "Maria Santos", email: "maria@email.com", plan: "Free", status: "active", sessions: 3, createdAt: "08 Dez 2024", lastLogin: "13 Dez 2024", whatsapp: "+55 21 98888-5678" },
+    { id: 3, name: "Pedro Costa", email: "pedro@email.com", plan: "Pro", status: "banned", sessions: 0, createdAt: "05 Dez 2024", lastLogin: "06 Dez 2024", whatsapp: "+55 31 97777-9012" },
+    { id: 4, name: "Ana Lima", email: "ana@email.com", plan: "Pro", status: "active", sessions: 25, createdAt: "01 Dez 2024", lastLogin: "14 Dez 2024", whatsapp: "+55 41 96666-3456" },
+    { id: 5, name: "Carlos Souza", email: "carlos@email.com", plan: "Free", status: "inactive", sessions: 0, createdAt: "28 Nov 2024", lastLogin: "30 Nov 2024", whatsapp: "+55 51 95555-7890" },
+  ]);
 
   const statusStyles = {
     active: "bg-success/10 text-success",
@@ -790,6 +795,47 @@ const UsersSection = () => {
     inactive: "Inativo",
     banned: "Banido"
   };
+
+  const handleViewDetails = (user: any) => {
+    setSelectedUser(user);
+    setShowDetailsModal(true);
+  };
+
+  const handleEdit = (user: any) => {
+    setSelectedUser(user);
+    setEditForm({ name: user.name, email: user.email, plan: user.plan });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = () => {
+    setUsers(users.map(u => 
+      u.id === selectedUser.id 
+        ? { ...u, name: editForm.name, email: editForm.email, plan: editForm.plan }
+        : u
+    ));
+    setShowEditModal(false);
+    setSelectedUser(null);
+  };
+
+  const handleBanClick = (user: any) => {
+    setSelectedUser(user);
+    setShowBanModal(true);
+  };
+
+  const handleConfirmBan = () => {
+    setUsers(users.map(u => 
+      u.id === selectedUser.id 
+        ? { ...u, status: u.status === "banned" ? "active" : "banned" }
+        : u
+    ));
+    setShowBanModal(false);
+    setSelectedUser(null);
+  };
+
+  const filteredUsers = users.filter(user => 
+    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <motion.div {...fadeIn} className="space-y-6">
@@ -824,7 +870,7 @@ const UsersSection = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <tr key={user.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
                   <td className="p-4">
                     <div>
@@ -855,15 +901,24 @@ const UsersSection = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-card border border-border">
-                        <DropdownMenuItem className="cursor-pointer">
+                        <DropdownMenuItem className="cursor-pointer" onClick={() => handleViewDetails(user)}>
                           <Eye className="w-4 h-4 mr-2" /> Ver detalhes
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer">
+                        <DropdownMenuItem className="cursor-pointer" onClick={() => handleEdit(user)}>
                           <Edit className="w-4 h-4 mr-2" /> Editar
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
-                          <Ban className="w-4 h-4 mr-2" /> Banir
+                        <DropdownMenuItem 
+                          className={cn(
+                            "cursor-pointer",
+                            user.status === "banned" 
+                              ? "text-success focus:text-success" 
+                              : "text-destructive focus:text-destructive"
+                          )}
+                          onClick={() => handleBanClick(user)}
+                        >
+                          <Ban className="w-4 h-4 mr-2" /> 
+                          {user.status === "banned" ? "Desbanir" : "Banir"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -874,6 +929,194 @@ const UsersSection = () => {
           </table>
         </div>
       </div>
+
+      {/* View Details Modal */}
+      <AnimatePresence>
+        {showDetailsModal && selectedUser && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50"
+              onClick={() => setShowDetailsModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md bg-card border border-border rounded-lg p-6 shadow-xl"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-foreground">Detalhes do Usuário</h2>
+                <button onClick={() => setShowDetailsModal(false)} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center">
+                    <span className="text-xl font-bold text-primary">{selectedUser.name.charAt(0)}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">{selectedUser.name}</p>
+                    <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-xs text-muted-foreground">Plano</p>
+                    <p className="font-medium text-foreground">{selectedUser.plan}</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-xs text-muted-foreground">Status</p>
+                    <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[selectedUser.status as keyof typeof statusStyles])}>
+                      {statusLabels[selectedUser.status as keyof typeof statusLabels]}
+                    </span>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-xs text-muted-foreground">Sessions</p>
+                    <p className="font-medium text-foreground">{selectedUser.sessions}</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-xs text-muted-foreground">Cadastro</p>
+                    <p className="font-medium text-foreground">{selectedUser.createdAt}</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-3 col-span-2">
+                    <p className="text-xs text-muted-foreground">Último login</p>
+                    <p className="font-medium text-foreground">{selectedUser.lastLogin}</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-3 col-span-2">
+                    <p className="text-xs text-muted-foreground">WhatsApp</p>
+                    <p className="font-medium text-foreground">{selectedUser.whatsapp}</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Modal */}
+      <AnimatePresence>
+        {showEditModal && selectedUser && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50"
+              onClick={() => setShowEditModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md bg-card border border-border rounded-lg p-6 shadow-xl"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-foreground">Editar Usuário</h2>
+                <button onClick={() => setShowEditModal(false)} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Nome</label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Email</label>
+                  <input
+                    type="email"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Plano</label>
+                  <select
+                    value={editForm.plan}
+                    onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}
+                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  >
+                    <option value="Free">Free</option>
+                    <option value="Pro">Pro</option>
+                  </select>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <Button variant="outline" className="flex-1" onClick={() => setShowEditModal(false)}>
+                    Cancelar
+                  </Button>
+                  <Button className="flex-1" onClick={handleSaveEdit}>
+                    Salvar
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Ban Confirmation Modal */}
+      <AnimatePresence>
+        {showBanModal && selectedUser && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50"
+              onClick={() => setShowBanModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-card border border-border rounded-lg p-6 shadow-xl"
+            >
+              <div className="text-center">
+                <div className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4",
+                  selectedUser.status === "banned" ? "bg-success/10" : "bg-destructive/10"
+                )}>
+                  <Ban className={cn(
+                    "w-6 h-6",
+                    selectedUser.status === "banned" ? "text-success" : "text-destructive"
+                  )} />
+                </div>
+                <h2 className="text-lg font-semibold text-foreground mb-2">
+                  {selectedUser.status === "banned" ? "Desbanir usuário?" : "Banir usuário?"}
+                </h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {selectedUser.status === "banned" 
+                    ? `Tem certeza que deseja desbanir ${selectedUser.name}? O usuário poderá acessar o sistema novamente.`
+                    : `Tem certeza que deseja banir ${selectedUser.name}? O usuário não poderá mais acessar o sistema.`
+                  }
+                </p>
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1" onClick={() => setShowBanModal(false)}>
+                    Cancelar
+                  </Button>
+                  <Button 
+                    variant={selectedUser.status === "banned" ? "default" : "destructive"} 
+                    className="flex-1" 
+                    onClick={handleConfirmBan}
+                  >
+                    {selectedUser.status === "banned" ? "Desbanir" : "Banir"}
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
