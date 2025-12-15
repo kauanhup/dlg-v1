@@ -728,7 +728,7 @@ const SubscriptionsTabContent = () => {
                   <p className="text-sm font-medium text-foreground">{selectedSubscriber.amount}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Sessions Usadas</p>
+                  <p className="text-xs text-muted-foreground">Sessions Compradas</p>
                   <p className="text-sm font-medium text-foreground">{selectedSubscriber.sessions}</p>
                 </div>
                 <div className="col-span-2">
