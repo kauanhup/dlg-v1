@@ -594,42 +594,79 @@ const Login = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/70 z-50"
+              className="fixed inset-0 bg-background z-50"
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-6"
             >
-              <div className="w-full max-w-sm bg-card border border-border rounded-xl p-6 shadow-2xl">
-                <div className="text-center">
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-warning/10">
-                    <Wrench className="w-8 h-8 text-warning" />
+              <div className="w-full max-w-md text-center">
+                {/* Decorative elements */}
+                <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10" />
+                <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-warning/5 rounded-full blur-3xl -z-10" />
+                
+                {/* Icon */}
+                <motion.div 
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2, duration: 0.4 }}
+                  className="mb-8"
+                >
+                  <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/20 flex items-center justify-center">
+                    <Wrench className="w-10 h-10 text-warning" />
                   </div>
-                  <h2 className="text-xl font-semibold text-foreground mb-2">Sistema em Manutenção</h2>
-                  <p className="text-sm text-muted-foreground mb-6">
-                    O sistema está temporariamente em manutenção. 
-                    Por favor, tente novamente mais tarde.
+                </motion.div>
+                
+                {/* Content */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.4 }}
+                >
+                  <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
+                    Em Manutenção
+                  </h1>
+                  <p className="text-muted-foreground text-lg max-w-sm mx-auto mb-8 leading-relaxed">
+                    Estamos realizando melhorias no sistema. Voltamos em breve!
                   </p>
-                  <div className="space-y-3">
-                    <a
-                      href="https://wa.me/5565996498222?text=Olá! O sistema está em manutenção, quando volta?"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-[#25D366] text-white font-medium rounded-lg hover:bg-[#25D366]/90 transition-all"
-                    >
-                      <MessageCircle className="w-5 h-5" />
-                      Falar com Suporte
-                    </a>
-                    <button
-                      onClick={() => setShowMaintenanceModal(false)}
-                      className="w-full py-3 px-4 bg-muted text-muted-foreground font-medium rounded-lg hover:bg-muted/80 transition-all"
-                    >
-                      Fechar
-                    </button>
-                  </div>
-                </div>
+                </motion.div>
+                
+                {/* Actions */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.4 }}
+                  className="flex flex-col sm:flex-row gap-3 justify-center"
+                >
+                  <a
+                    href="https://wa.me/5565996498222?text=Olá! O sistema está em manutenção, quando volta?"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-medium rounded-xl hover:bg-primary/90 transition-all glow-sm"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    Falar com Suporte
+                  </a>
+                  <button
+                    onClick={() => setShowMaintenanceModal(false)}
+                    className="inline-flex items-center justify-center px-6 py-3 bg-secondary text-secondary-foreground font-medium rounded-xl hover:bg-secondary/80 transition-all"
+                  >
+                    Tentar Novamente
+                  </button>
+                </motion.div>
+                
+                {/* Footer */}
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6, duration: 0.4 }}
+                  className="text-sm text-muted-foreground mt-12"
+                >
+                  Agradecemos a compreensão
+                </motion.p>
               </div>
             </motion.div>
           </>
