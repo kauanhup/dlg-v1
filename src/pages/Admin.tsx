@@ -1304,34 +1304,23 @@ const UsersSection = () => {
             >
               <div className="w-full max-w-sm max-h-[calc(100vh-2rem)] overflow-y-auto bg-card border border-border rounded-lg p-6 shadow-xl">
                 <div className="text-center">
-                  <div className={cn(
-                    "w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4",
-                    selectedUser.status === "banned" ? "bg-success/10" : "bg-destructive/10"
-                  )}>
-                    <Ban className={cn(
-                      "w-6 h-6",
-                      selectedUser.status === "banned" ? "text-success" : "text-destructive"
-                    )} />
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 bg-destructive/10">
+                    <Ban className="w-6 h-6 text-destructive" />
                   </div>
-                  <h2 className="text-lg font-semibold text-foreground mb-2">
-                    {selectedUser.status === "banned" ? "Desbanir usuário?" : "Banir usuário?"}
-                  </h2>
+                  <h2 className="text-lg font-semibold text-foreground mb-2">Banir usuário?</h2>
                   <p className="text-sm text-muted-foreground mb-4">
-                    {selectedUser.status === "banned" 
-                      ? `Tem certeza que deseja desbanir ${selectedUser.name}? O usuário poderá acessar o sistema novamente.`
-                      : `Tem certeza que deseja banir ${selectedUser.name}? O usuário não poderá mais acessar o sistema.`
-                    }
+                    Tem certeza que deseja banir {selectedUser.name}? O usuário não poderá mais acessar o sistema.
                   </p>
                   <div className="flex gap-3">
                     <Button variant="outline" className="flex-1" onClick={() => setShowBanModal(false)}>
                       Cancelar
                     </Button>
                     <Button 
-                      variant={selectedUser.status === "banned" ? "default" : "destructive"} 
+                      variant="destructive" 
                       className="flex-1" 
                       onClick={handleConfirmBan}
                     >
-                      {selectedUser.status === "banned" ? "Desbanir" : "Banir"}
+                      Banir
                     </Button>
                   </div>
                 </div>
