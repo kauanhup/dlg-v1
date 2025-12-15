@@ -250,7 +250,11 @@ const PlanFormModal = ({
                 className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
               >
                 <option value="—">Único</option>
+                <option value="semana">Semanal</option>
+                <option value="quinzena">Quinzenal</option>
                 <option value="mês">Mensal</option>
+                <option value="trimestre">Trimestral</option>
+                <option value="semestre">Semestral</option>
                 <option value="ano">Anual</option>
               </select>
             </div>
