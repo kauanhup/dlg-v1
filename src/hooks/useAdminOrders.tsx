@@ -81,108 +81,41 @@ export const useAdminOrders = () => {
     }
   };
 
-  // Complete order: approve payment, assign sessions from session_files, create user_sessions
+  // Complete order: uses atomic database function to prevent race conditions
   const completeOrder = async (orderId: string) => {
     try {
       // Get order details
       const order = orders.find(o => o.id === orderId);
       if (!order) throw new Error('Pedido não encontrado');
 
-      // Get available session files for this type
-      const { data: availableFiles, error: filesError } = await supabase
-        .from('session_files')
-        .select('*')
-        .eq('type', order.product_type)
-        .eq('status', 'available')
-        .limit(order.quantity);
-
-      if (filesError) throw filesError;
-
-      if (!availableFiles || availableFiles.length < order.quantity) {
-        return { 
-          success: false, 
-          error: `Estoque insuficiente. Disponível: ${availableFiles?.length || 0}, Necessário: ${order.quantity}` 
-        };
-      }
-
-      // Get file URLs from storage for user_sessions
-      const sessionDataPromises = availableFiles.map(async (file) => {
-        const { data: signedUrl } = await supabase.storage
-          .from('sessions')
-          .createSignedUrl(file.file_path, 86400 * 30); // 30 days
-        return {
-          fileId: file.id,
-          fileName: file.file_name,
-          filePath: file.file_path,
-          signedUrl: signedUrl?.signedUrl || file.file_path
-        };
+      // Call atomic database function that handles locking and prevents race conditions
+      const { data, error: rpcError } = await supabase.rpc('complete_order_atomic', {
+        _order_id: orderId,
+        _user_id: order.user_id,
+        _product_type: order.product_type,
+        _quantity: order.quantity
       });
 
-      const sessionData = await Promise.all(sessionDataPromises);
-
-      // Create user_sessions records
-      const userSessionsInsert = sessionData.map(data => ({
-        user_id: order.user_id,
-        order_id: orderId,
-        type: order.product_type,
-        session_data: data.fileName,
-        is_downloaded: false,
-      }));
-
-      const { error: sessionsError } = await supabase
-        .from('user_sessions')
-        .insert(userSessionsInsert);
-
-      if (sessionsError) throw sessionsError;
-
-      // Update session_files to mark as sold
-      const fileIds = availableFiles.map(f => f.id);
-      const { error: updateFilesError } = await supabase
-        .from('session_files')
-        .update({ 
-          status: 'sold', 
-          user_id: order.user_id, 
-          order_id: orderId,
-          sold_at: new Date().toISOString()
-        })
-        .in('id', fileIds);
-
-      if (updateFilesError) throw updateFilesError;
-
-      // Update sessions_inventory quantity
-      const { data: inventoryData } = await supabase
-        .from('sessions_inventory')
-        .select('quantity')
-        .eq('type', order.product_type)
-        .single();
-
-      if (inventoryData) {
-        await supabase
-          .from('sessions_inventory')
-          .update({ quantity: Math.max(0, inventoryData.quantity - order.quantity) })
-          .eq('type', order.product_type);
+      if (rpcError) {
+        console.error('RPC error:', rpcError);
+        throw new Error(rpcError.message);
       }
 
-      // Update order status to completed
-      const { error: orderError } = await supabase
-        .from('orders')
-        .update({ status: 'completed' })
-        .eq('id', orderId);
+      const result = data as { success: boolean; error?: string; assigned_sessions?: number };
 
-      if (orderError) throw orderError;
-
-      // Update payment status
-      await supabase
-        .from('payments')
-        .update({ status: 'paid', paid_at: new Date().toISOString() })
-        .eq('order_id', orderId);
+      if (!result.success) {
+        return { 
+          success: false, 
+          error: result.error || 'Erro desconhecido ao completar pedido' 
+        };
+      }
 
       // Update local state
       setOrders(prev => prev.map(o => 
         o.id === orderId ? { ...o, status: 'completed' } : o
       ));
 
-      return { success: true, assignedSessions: order.quantity };
+      return { success: true, assignedSessions: result.assigned_sessions || order.quantity };
     } catch (err: any) {
       console.error('Error completing order:', err);
       return { success: false, error: err.message || 'Erro ao completar pedido' };

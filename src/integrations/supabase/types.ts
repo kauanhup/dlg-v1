@@ -472,6 +472,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_order_atomic: {
+        Args: {
+          _order_id: string
+          _product_type: string
+          _quantity: number
+          _user_id: string
+        }
+        Returns: Json
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
