@@ -6,6 +6,7 @@ import { UserProfileSidebar } from "@/components/ui/menu";
 import { avatars } from "@/components/ui/avatar-picker";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import {
@@ -997,15 +998,25 @@ const UsersSection = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showBanModal, setShowBanModal] = useState(false);
-  const [editForm, setEditForm] = useState({ name: "", email: "", plan: "" });
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", email: "" });
   
-  const [users, setUsers] = useState([
-    { id: 1, name: "João Silva", email: "joao@email.com", plan: "Pro", status: "active", sessions: 12, createdAt: "10 Dez 2024", lastLogin: "14 Dez 2024", whatsapp: "+55 11 99999-1234" },
-    { id: 2, name: "Maria Santos", email: "maria@email.com", plan: "Free", status: "active", sessions: 3, createdAt: "08 Dez 2024", lastLogin: "13 Dez 2024", whatsapp: "+55 21 98888-5678" },
-    { id: 3, name: "Pedro Costa", email: "pedro@email.com", plan: "Pro", status: "banned", sessions: 0, createdAt: "05 Dez 2024", lastLogin: "06 Dez 2024", whatsapp: "+55 31 97777-9012" },
-    { id: 4, name: "Ana Lima", email: "ana@email.com", plan: "Pro", status: "active", sessions: 25, createdAt: "01 Dez 2024", lastLogin: "14 Dez 2024", whatsapp: "+55 41 96666-3456" },
-    { id: 5, name: "Carlos Souza", email: "carlos@email.com", plan: "Free", status: "inactive", sessions: 0, createdAt: "28 Nov 2024", lastLogin: "30 Nov 2024", whatsapp: "+55 51 95555-7890" },
-  ]);
+  const { users: dbUsers, isLoading, updateUserRole, refetch } = useAdminUsers();
+  
+  // Transform db users to display format
+  const users = dbUsers.map(user => ({
+    id: user.id,
+    user_id: user.user_id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    avatar: user.avatar,
+    status: "active" as const,
+    sessions: 0, // Will be populated when sessions table exists
+    createdAt: new Date(user.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }),
+    lastLogin: new Date(user.updated_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }),
+    whatsapp: user.whatsapp || "—",
+  }));
 
   const statusStyles = {
     active: "bg-success/10 text-success",
@@ -1026,17 +1037,28 @@ const UsersSection = () => {
 
   const handleEdit = (user: any) => {
     setSelectedUser(user);
-    setEditForm({ name: user.name, email: user.email, plan: user.plan });
+    setEditForm({ name: user.name, email: user.email });
     setShowEditModal(true);
   };
 
   const handleSaveEdit = () => {
-    setUsers(users.map(u => 
-      u.id === selectedUser.id 
-        ? { ...u, name: editForm.name, email: editForm.email, plan: editForm.plan }
-        : u
-    ));
+    // In a real app, this would update the database
     setShowEditModal(false);
+    setSelectedUser(null);
+    refetch();
+  };
+
+  const handleRoleClick = (user: any) => {
+    setSelectedUser(user);
+    setShowRoleModal(true);
+  };
+
+  const handleConfirmRoleChange = async () => {
+    if (selectedUser) {
+      const newRole = selectedUser.role === 'admin' ? 'user' : 'admin';
+      await updateUserRole(selectedUser.user_id, newRole);
+    }
+    setShowRoleModal(false);
     setSelectedUser(null);
   };
 
@@ -1046,11 +1068,7 @@ const UsersSection = () => {
   };
 
   const handleConfirmBan = () => {
-    setUsers(users.map(u => 
-      u.id === selectedUser.id 
-        ? { ...u, status: u.status === "banned" ? "active" : "banned" }
-        : u
-    ));
+    // In a real app, this would update a 'banned' column
     setShowBanModal(false);
     setSelectedUser(null);
   };
@@ -1079,79 +1097,79 @@ const UsersSection = () => {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Plano</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Sessions</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Cadastro</th>
-                <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
-                  <td className="p-4">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{user.name}</p>
-                      <p className="text-xs text-muted-foreground">{user.email}</p>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <span className={cn(
-                      "text-xs px-2 py-1 rounded-md font-medium",
-                      user.plan === "Pro" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                    )}>
-                      {user.plan}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[user.status as keyof typeof statusStyles])}>
-                      {statusLabels[user.status as keyof typeof statusLabels]}
-                    </span>
-                  </td>
-                  <td className="p-4 text-sm text-foreground">{user.sessions}</td>
-                  <td className="p-4 text-sm text-muted-foreground">{user.createdAt}</td>
-                  <td className="p-4">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-card border border-border">
-                        <DropdownMenuItem className="cursor-pointer" onClick={() => handleViewDetails(user)}>
-                          <Eye className="w-4 h-4 mr-2" /> Ver detalhes
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer" onClick={() => handleEdit(user)}>
-                          <Edit className="w-4 h-4 mr-2" /> Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className={cn(
-                            "cursor-pointer",
-                            user.status === "banned" 
-                              ? "text-success focus:text-success" 
-                              : "text-destructive focus:text-destructive"
-                          )}
-                          onClick={() => handleBanClick(user)}
-                        >
-                          <Ban className="w-4 h-4 mr-2" /> 
-                          {user.status === "banned" ? "Desbanir" : "Banir"}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {isLoading ? (
+        <div className="bg-card border border-border rounded-lg p-8 text-center">
+          <p className="text-muted-foreground">Carregando usuários...</p>
         </div>
-      </div>
+      ) : (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Role</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">WhatsApp</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Cadastro</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.map((user) => (
+                  <tr key={user.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{user.avatar}</span>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{user.name}</p>
+                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className={cn(
+                        "text-xs px-2 py-1 rounded-md font-medium",
+                        user.role === "admin" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                      )}>
+                        {user.role === "admin" ? "Admin" : "Usuário"}
+                      </span>
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground">{user.whatsapp}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{user.createdAt}</td>
+                    <td className="p-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-card border border-border">
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleViewDetails(user)}>
+                            <Eye className="w-4 h-4 mr-2" /> Ver detalhes
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className={cn(
+                              "cursor-pointer",
+                              user.role === "admin" 
+                                ? "text-warning focus:text-warning" 
+                                : "text-primary focus:text-primary"
+                            )}
+                            onClick={() => handleRoleClick(user)}
+                          >
+                            <Shield className="w-4 h-4 mr-2" /> 
+                            {user.role === "admin" ? "Remover Admin" : "Tornar Admin"}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* View Details Modal */}
       <AnimatePresence>
@@ -1264,17 +1282,6 @@ const UsersSection = () => {
                       onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
                       className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
-                  </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-1 block">Plano</label>
-                    <select
-                      value={editForm.plan}
-                      onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}
-                      className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    >
-                      <option value="Free">Free</option>
-                      <option value="Pro">Pro</option>
-                    </select>
                   </div>
                   <div className="flex gap-3 pt-2">
                     <Button variant="outline" className="flex-1" onClick={() => setShowEditModal(false)}>
