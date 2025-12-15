@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Check, CreditCard, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -10,25 +10,47 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Checkout = () => {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const toast = useAlertToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [user, setUser] = useState<any>(null);
 
-  // Get parameters - supports both sessions and plans
-  const type = searchParams.get("type"); // brasileiras, estrangeiras
-  const qty = searchParams.get("qty");
-  const price = searchParams.get("price");
+  // Get parameters from location state (from Dashboard) OR searchParams (from Buy page)
+  const locationState = location.state as { type?: string; qty?: number; price?: string } | null;
+  
+  // Priority: location state > search params
+  const type = locationState?.type || searchParams.get("type");
+  const qty = locationState?.qty?.toString() || searchParams.get("qty");
+  const price = locationState?.price || searchParams.get("price");
   const planId = searchParams.get("plano");
+
+  // Parse price from string like "R$ 99,90" or number
+  const parsePrice = (priceValue: string | number | null | undefined): number => {
+    if (!priceValue) return 0;
+    if (typeof priceValue === 'number') return priceValue;
+    // Remove "R$", spaces, and convert comma to dot
+    const cleaned = priceValue.replace(/R\$\s?/g, '').replace(/\./g, '').replace(',', '.');
+    return parseFloat(cleaned) || 0;
+  };
+
+  // Determine session type for database
+  const getSessionType = (typeStr: string | null): string => {
+    if (!typeStr) return '';
+    if (typeStr.toLowerCase().includes('brasileir')) return 'brasileiras';
+    if (typeStr.toLowerCase().includes('estrangeir')) return 'estrangeiras';
+    return typeStr.toLowerCase();
+  };
 
   // Determine if it's a session purchase or plan purchase
   const isSessionPurchase = type && qty && price;
 
   const sessionInfo = isSessionPurchase ? {
-    type: type === 'brasileiras' ? 'Sessions Brasileiras' : 'Sessions Estrangeiras',
+    type: type.includes('Brasileir') ? 'Sessions Brasileiras' : type.includes('Estrangeir') ? 'Sessions Estrangeiras' : type,
+    dbType: getSessionType(type),
     quantity: parseInt(qty || '0'),
-    price: parseFloat(price || '0'),
+    price: parsePrice(price),
   } : null;
 
   useEffect(() => {
@@ -65,27 +87,41 @@ const Checkout = () => {
     try {
       if (isSessionPurchase && sessionInfo) {
         // Create order for session purchase
-        const { error } = await supabase.from('orders').insert({
+        const { data: orderData, error: orderError } = await supabase.from('orders').insert({
           user_id: user.id,
           product_name: sessionInfo.type,
-          product_type: type || 'sessions',
+          product_type: sessionInfo.dbType,
           quantity: sessionInfo.quantity,
           amount: sessionInfo.price,
           status: 'pending',
           payment_method: 'pix',
+        }).select().single();
+
+        if (orderError) throw orderError;
+
+        // Create payment record
+        const { error: paymentError } = await supabase.from('payments').insert({
+          user_id: user.id,
+          order_id: orderData.id,
+          amount: sessionInfo.price,
+          payment_method: 'pix',
+          status: 'pending',
         });
 
-        if (error) throw error;
+        if (paymentError) console.error('Payment record error:', paymentError);
 
-        toast.success("Pedido criado!", "Você será redirecionado para o pagamento via PIX.");
+        toast.success("Pedido criado!", "Aguardando confirmação do pagamento PIX.");
         
         // Redirect back to dashboard after order creation
         setTimeout(() => {
           navigate('/dashboard');
         }, 2000);
-      } else {
-        // Handle plan purchase (subscription)
+      } else if (planId) {
+        // Handle plan purchase (license)
         toast.success("Pagamento iniciado!", "Você será redirecionado para o pagamento via PIX.");
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
       }
     } catch (error) {
       console.error('Error creating order:', error);

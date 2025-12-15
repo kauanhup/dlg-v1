@@ -23,6 +23,18 @@ export interface UserSession {
   created_at: string;
 }
 
+export interface SessionFile {
+  id: string;
+  file_name: string;
+  file_path: string;
+  type: string;
+  status: string;
+  uploaded_at: string;
+  sold_at: string | null;
+  order_id: string | null;
+  user_id: string | null;
+}
+
 export interface Order {
   id: string;
   user_id: string;
@@ -62,6 +74,7 @@ export interface LoginHistory {
 export const useUserDashboard = (userId: string | undefined) => {
   const [license, setLicense] = useState<License | null>(null);
   const [sessions, setSessions] = useState<UserSession[]>([]);
+  const [sessionFiles, setSessionFiles] = useState<SessionFile[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [combos, setCombos] = useState<SessionCombo[]>([]);
   const [inventory, setInventory] = useState<SessionInventory[]>([]);
@@ -96,6 +109,17 @@ export const useUserDashboard = (userId: string | undefined) => {
 
       if (sessionsError) throw sessionsError;
       setSessions(sessionsData || []);
+
+      // Fetch user's purchased session files (from session_files table)
+      const { data: sessionFilesData, error: sessionFilesError } = await supabase
+        .from('session_files')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'sold')
+        .order('sold_at', { ascending: false });
+
+      if (sessionFilesError) throw sessionFilesError;
+      setSessionFiles(sessionFilesData || []);
 
       // Fetch user orders
       const { data: ordersData, error: ordersError } = await supabase
@@ -164,6 +188,32 @@ export const useUserDashboard = (userId: string | undefined) => {
     }
   };
 
+  const downloadSessionFile = async (fileId: string, filePath: string, fileName: string) => {
+    try {
+      // Get signed URL for download
+      const { data, error } = await supabase.storage
+        .from('sessions')
+        .download(filePath);
+
+      if (error) throw error;
+
+      // Create download link
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error downloading session file:', err);
+      return { success: false, error: 'Erro ao baixar arquivo' };
+    }
+  };
+
   const createOrder = async (orderData: {
     product_name: string;
     product_type: string;
@@ -201,19 +251,24 @@ export const useUserDashboard = (userId: string | undefined) => {
 
   const getCombosByType = (type: string) => combos.filter(c => c.type === type);
   const getInventoryByType = (type: string) => inventory.find(i => i.type === type);
+  const getSessionFilesByType = (type: string) => sessionFiles.filter(f => f.type === type);
 
   const stats = {
     totalSessions: sessions.length,
+    totalSessionFiles: sessionFiles.length,
     downloadedSessions: sessions.filter(s => s.is_downloaded).length,
     pendingOrders: orders.filter(o => o.status === 'pending').length,
     completedOrders: orders.filter(o => o.status === 'completed').length,
     brasileirasAvailable: getInventoryByType('brasileiras')?.quantity || 0,
     estrangeirasAvailable: getInventoryByType('estrangeiras')?.quantity || 0,
+    userBrasileiras: getSessionFilesByType('brasileiras').length,
+    userEstrangeiras: getSessionFilesByType('estrangeiras').length,
   };
 
   return {
     license,
     sessions,
+    sessionFiles,
     orders,
     combos,
     inventory,
@@ -222,9 +277,11 @@ export const useUserDashboard = (userId: string | undefined) => {
     error,
     refetch: fetchData,
     markSessionDownloaded,
+    downloadSessionFile,
     createOrder,
     getCombosByType,
     getInventoryByType,
+    getSessionFilesByType,
     stats,
   };
 };

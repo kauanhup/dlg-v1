@@ -1362,10 +1362,14 @@ const UsersSection = () => {
 
 // Orders Management
 const OrdersSection = () => {
-  const { orders, isLoading, stats, updateOrderStatus } = useAdminOrders();
+  const { orders, isLoading, stats, updateOrderStatus, completeOrder, refundOrder, refetch } = useAdminOrders();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
   const [newStatus, setNewStatus] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingResult, setProcessingResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const statusStyles: Record<string, string> = {
     completed: "bg-success/10 text-success",
@@ -1385,6 +1389,50 @@ const OrdersSection = () => {
     setSelectedOrder(order);
     setNewStatus(order.status);
     setShowStatusModal(true);
+  };
+
+  const handleApproveClick = (order: any) => {
+    setSelectedOrder(order);
+    setProcessingResult(null);
+    setShowApproveModal(true);
+  };
+
+  const handleRefundClick = (order: any) => {
+    setSelectedOrder(order);
+    setShowRefundModal(true);
+  };
+
+  const handleConfirmApprove = async () => {
+    if (!selectedOrder) return;
+    setIsProcessing(true);
+    setProcessingResult(null);
+    
+    const result = await completeOrder(selectedOrder.id);
+    
+    setIsProcessing(false);
+    if (result.success) {
+      setProcessingResult({ success: true, message: `Pedido aprovado! ${result.assignedSessions} sessions atribuídas ao usuário.` });
+      setTimeout(() => {
+        setShowApproveModal(false);
+        setSelectedOrder(null);
+        refetch();
+      }, 2000);
+    } else {
+      setProcessingResult({ success: false, message: result.error || 'Erro ao aprovar pedido' });
+    }
+  };
+
+  const handleConfirmRefund = async () => {
+    if (!selectedOrder) return;
+    setIsProcessing(true);
+    
+    const result = await refundOrder(selectedOrder.id);
+    
+    setIsProcessing(false);
+    if (result.success) {
+      setShowRefundModal(false);
+      setSelectedOrder(null);
+    }
   };
 
   const handleConfirmStatus = async () => {
@@ -1508,9 +1556,22 @@ const OrdersSection = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-card border border-border">
+                          {order.status === 'pending' && (
+                            <>
+                              <DropdownMenuItem className="cursor-pointer text-success" onClick={() => handleApproveClick(order)}>
+                                <CheckCircle className="w-4 h-4 mr-2" /> Aprovar e Entregar
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
                           <DropdownMenuItem className="cursor-pointer" onClick={() => handleStatusClick(order)}>
                             <Edit className="w-4 h-4 mr-2" /> Alterar Status
                           </DropdownMenuItem>
+                          {order.status !== 'refunded' && (
+                            <DropdownMenuItem className="cursor-pointer text-destructive" onClick={() => handleRefundClick(order)}>
+                              <XCircle className="w-4 h-4 mr-2" /> Reembolsar
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -1557,6 +1618,137 @@ const OrdersSection = () => {
                   </Button>
                   <Button className="flex-1" onClick={handleConfirmStatus}>
                     Salvar
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Approve Order Modal */}
+      <AnimatePresence>
+        {showApproveModal && selectedOrder && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50"
+              onClick={() => !isProcessing && setShowApproveModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-md bg-card border border-border rounded-lg p-6 shadow-xl">
+                <h2 className="text-lg font-semibold text-foreground mb-2">Aprovar Pedido e Entregar Sessions</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Ao aprovar, {selectedOrder.quantity} session(s) serão automaticamente atribuídas ao usuário.
+                </p>
+                
+                <div className="bg-muted/30 rounded-lg p-4 mb-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Cliente:</span>
+                    <span className="font-medium text-foreground">{selectedOrder.user_name}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Produto:</span>
+                    <span className="font-medium text-foreground">{selectedOrder.product_name}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Quantidade:</span>
+                    <span className="font-medium text-foreground">{selectedOrder.quantity} sessions</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Valor:</span>
+                    <span className="font-medium text-success">{formatPrice(selectedOrder.amount)}</span>
+                  </div>
+                </div>
+
+                {processingResult && (
+                  <div className={cn(
+                    "p-3 rounded-lg mb-4 text-sm",
+                    processingResult.success ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+                  )}>
+                    {processingResult.message}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1" 
+                    onClick={() => setShowApproveModal(false)}
+                    disabled={isProcessing}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    className="flex-1 bg-success hover:bg-success/90" 
+                    onClick={handleConfirmApprove}
+                    disabled={isProcessing || processingResult?.success}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Processando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Aprovar e Entregar
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Refund Modal */}
+      <AnimatePresence>
+        {showRefundModal && selectedOrder && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50"
+              onClick={() => !isProcessing && setShowRefundModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-sm bg-card border border-border rounded-lg p-6 shadow-xl">
+                <h2 className="text-lg font-semibold text-foreground mb-2">Reembolsar Pedido</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Tem certeza que deseja reembolsar este pedido de {formatPrice(selectedOrder.amount)}?
+                </p>
+                
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1" 
+                    onClick={() => setShowRefundModal(false)}
+                    disabled={isProcessing}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    variant="destructive"
+                    className="flex-1" 
+                    onClick={handleConfirmRefund}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? "Processando..." : "Confirmar Reembolso"}
                   </Button>
                 </div>
               </div>
@@ -2030,11 +2222,12 @@ const Admin = () => {
     initials: (user?.user_metadata?.name || "AD").slice(0, 2).toUpperCase(),
   };
 
-  const sidebarTabs = ["dashboard", "users", "sessions"];
+  const sidebarTabs = ["dashboard", "users", "orders", "sessions"];
 
   const profileNavItems = [
     { label: "Dashboard", icon: <LayoutDashboard className="h-full w-full" />, onClick: () => setActiveTab("dashboard") },
     { label: "Usuários", icon: <Users className="h-full w-full" />, onClick: () => setActiveTab("users") },
+    { label: "Pedidos", icon: <ShoppingCart className="h-full w-full" />, onClick: () => setActiveTab("orders") },
     { label: "Sessions", icon: <Globe className="h-full w-full" />, onClick: () => setActiveTab("sessions") },
   ];
 
