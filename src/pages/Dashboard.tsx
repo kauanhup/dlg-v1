@@ -880,101 +880,122 @@ const Dashboard = () => {
               </Button>
             </div>
 
-            {/* Compra 1 - Brasileiras */}
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              className="bg-card border border-border rounded-md overflow-hidden hover:shadow-lg hover:shadow-success/5 transition-shadow duration-300"
-            >
-              <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-success/10 rounded-md flex items-center justify-center">
-                    <Globe className="w-4 h-4 text-success" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Sessions Brasileiras</p>
-                    <p className="text-xs text-muted-foreground">Comprado em 10 Dez 2024 • 5 sessions</p>
-                  </div>
+            {/* No Sessions State */}
+            {userSessions.length === 0 ? (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-card border border-border rounded-md p-8 text-center space-y-4"
+              >
+                <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto">
+                  <Globe className="w-6 h-6 text-muted-foreground" />
                 </div>
-                <Button size="sm" variant="outline" className="h-8 gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform">
-                  <Download className="w-3.5 h-3.5" />
-                  <span className="text-xs">Baixar todas</span>
-                </Button>
-              </div>
-              <div className="divide-y divide-border">
-                {[1, 2, 3, 4, 5].map((num, i) => (
-                  <motion.div 
-                    key={num} 
-                    initial={{ opacity: 0, x: -5 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.25, delay: 0.15 + i * 0.05 }}
-                    className="p-3 flex items-center justify-between hover:bg-muted/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 bg-success/10 rounded flex items-center justify-center">
-                        <span className="text-xs font-semibold text-success">{num}</span>
-                      </div>
-                      <div>
-                        <p className="text-sm text-foreground">Session BR #{num}</p>
-                        <p className="text-xs text-muted-foreground">+55 11 98745-632{num}</p>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 hover:scale-110 active:scale-95 transition-transform">
-                      <Download className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                    </Button>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Compra 2 - Estrangeiras */}
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-              className="bg-card border border-border rounded-md overflow-hidden hover:shadow-lg hover:shadow-primary/5 transition-shadow duration-300"
-            >
-              <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary/10 rounded-md flex items-center justify-center">
-                    <Globe className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Sessions Estrangeiras</p>
-                    <p className="text-xs text-muted-foreground">Comprado em 12 Dez 2024 • 3 sessions</p>
-                  </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">Nenhuma session encontrada</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Compre sessions para começar a usar</p>
                 </div>
-                <Button size="sm" variant="outline" className="h-8 gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform">
-                  <Download className="w-3.5 h-3.5" />
-                  <span className="text-xs">Baixar todas</span>
+                <Button size="sm" onClick={() => setActiveTab("comprar")}>
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Ver Pacotes
                 </Button>
-              </div>
-              <div className="divide-y divide-border">
-                {[1, 2, 3].map((num, i) => (
-                  <motion.div 
-                    key={num} 
-                    initial={{ opacity: 0, x: -5 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.25, delay: 0.25 + i * 0.05 }}
-                    className="p-3 flex items-center justify-between hover:bg-muted/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 bg-primary/10 rounded flex items-center justify-center">
-                        <span className="text-xs font-semibold text-primary">{num}</span>
+              </motion.div>
+            ) : (
+              <>
+                {/* Group sessions by type */}
+                {['brasileiras', 'estrangeiras'].map((type) => {
+                  const typeSessions = userSessions.filter(s => s.type === type);
+                  if (typeSessions.length === 0) return null;
+                  
+                  const isBr = type === 'brasileiras';
+                  const colorClass = isBr ? 'success' : 'primary';
+                  
+                  return (
+                    <motion.div 
+                      key={type}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: isBr ? 0.1 : 0.2 }}
+                      className={cn(
+                        "bg-card border border-border rounded-md overflow-hidden hover:shadow-lg transition-shadow duration-300",
+                        isBr ? "hover:shadow-success/5" : "hover:shadow-primary/5"
+                      )}
+                    >
+                      <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "w-8 h-8 rounded-md flex items-center justify-center",
+                            isBr ? "bg-success/10" : "bg-primary/10"
+                          )}>
+                            <Globe className={cn("w-4 h-4", isBr ? "text-success" : "text-primary")} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">
+                              Sessions {isBr ? 'Brasileiras' : 'Estrangeiras'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {typeSessions.length} session{typeSessions.length !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-foreground">Session INT #{num}</p>
-                        <p className="text-xs text-muted-foreground">+1 555 847-923{num}</p>
+                      <div className="divide-y divide-border">
+                        {typeSessions.map((session, i) => (
+                          <motion.div 
+                            key={session.id} 
+                            initial={{ opacity: 0, x: -5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.25, delay: 0.15 + i * 0.05 }}
+                            className="p-3 flex items-center justify-between hover:bg-muted/30 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={cn(
+                                "w-7 h-7 rounded flex items-center justify-center",
+                                isBr ? "bg-success/10" : "bg-primary/10"
+                              )}>
+                                <span className={cn("text-xs font-semibold", isBr ? "text-success" : "text-primary")}>
+                                  {i + 1}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="text-sm text-foreground font-mono truncate max-w-[200px]">
+                                  {session.session_data}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(session.created_at).toLocaleDateString('pt-BR')}
+                                  {session.is_downloaded && (
+                                    <span className="ml-2 text-success">• Baixado</span>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-7 w-7 p-0 hover:scale-110 active:scale-95 transition-transform"
+                              onClick={() => {
+                                // Download session data
+                                const blob = new Blob([session.session_data], { type: 'text/plain' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `session_${session.id.slice(0, 8)}.session`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                              }}
+                            >
+                              <Download className={cn(
+                                "w-4 h-4",
+                                session.is_downloaded ? "text-success" : "text-muted-foreground hover:text-foreground"
+                              )} />
+                            </Button>
+                          </motion.div>
+                        ))}
                       </div>
-                    </div>
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 hover:scale-110 active:scale-95 transition-transform">
-                      <Download className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                    </Button>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
+                    </motion.div>
+                  );
+                })}
+              </>
+            )}
 
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
