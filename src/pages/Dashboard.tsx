@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { UserProfileSidebar } from "@/components/ui/menu";
-import { AvatarPicker, avatars } from "@/components/ui/avatar-picker";
+import { avatars } from "@/components/ui/avatar-picker";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserDashboard } from "@/hooks/useUserDashboard";
 import { MorphingSquare } from "@/components/ui/morphing-square";
@@ -80,18 +80,6 @@ const staggerContainer = {
 const staggerItem = {
   initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.3 } }
-};
-
-const scaleIn = {
-  initial: { opacity: 0, scale: 0.95 },
-  animate: { opacity: 1, scale: 1 },
-  transition: { duration: 0.25 }
-};
-
-const slideInLeft = {
-  initial: { opacity: 0, x: -12 },
-  animate: { opacity: 1, x: 0 },
-  transition: { duration: 0.3 }
 };
 
 const LojaSection = ({ 
@@ -350,7 +338,7 @@ const LojaSection = ({
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading, signOut, updateProfile } = useAuth();
-  const { license, sessions: userSessions, sessionFiles, orders, combos, inventory, loginHistory, isLoading: dashboardLoading, downloadSessionFile } = useUserDashboard(user?.id);
+  const { license, sessionFiles, orders, combos, inventory, loginHistory, isLoading: dashboardLoading, downloadSessionFile } = useUserDashboard(user?.id);
   const [activeTab, setActiveTab] = useState("licencas");
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -943,7 +931,6 @@ const Dashboard = () => {
                   if (typeFiles.length === 0) return null;
                   
                   const isBr = type === 'brasileiras';
-                  const colorClass = isBr ? 'success' : 'primary';
                   
                   return (
                     <motion.div 
