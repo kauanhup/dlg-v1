@@ -242,6 +242,50 @@ export type Database = {
         }
         Relationships: []
       }
+      session_files: {
+        Row: {
+          file_name: string
+          file_path: string
+          id: string
+          order_id: string | null
+          sold_at: string | null
+          status: string
+          type: string
+          uploaded_at: string
+          user_id: string | null
+        }
+        Insert: {
+          file_name: string
+          file_path: string
+          id?: string
+          order_id?: string | null
+          sold_at?: string | null
+          status?: string
+          type: string
+          uploaded_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          file_name?: string
+          file_path?: string
+          id?: string
+          order_id?: string | null
+          sold_at?: string | null
+          status?: string
+          type?: string
+          uploaded_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_files_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sessions_inventory: {
         Row: {
           cost_per_session: number
