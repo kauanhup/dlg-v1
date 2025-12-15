@@ -7,6 +7,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { avatars, type Avatar } from "@/components/ui/avatar-picker";
+import { Switch } from "@/components/ui/switch";
+
+interface ToggleItem {
+  icon: React.ReactNode;
+  label: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}
 
 interface NavItem {
   icon: React.ReactNode;
@@ -27,6 +35,7 @@ interface UserProfile {
 interface UserProfileSidebarProps {
   user: UserProfile;
   navItems: NavItem[];
+  toggleItems?: ToggleItem[];
   logoutItem: {
     icon: React.ReactNode;
     label: string;
@@ -39,7 +48,7 @@ interface UserProfileSidebarProps {
 }
 
 export const UserProfileSidebar = React.forwardRef<HTMLDivElement, UserProfileSidebarProps>(
-  ({ user, navItems, logoutItem, className, onAvatarChange, activeIndex: controlledActiveIndex, onActiveChange }, ref) => {
+  ({ user, navItems, toggleItems, logoutItem, className, onAvatarChange, activeIndex: controlledActiveIndex, onActiveChange }, ref) => {
     const [internalActiveIndex, setInternalActiveIndex] = React.useState<number | null>(null);
     const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
     const [avatarOpen, setAvatarOpen] = React.useState(false);
@@ -185,6 +194,28 @@ export const UserProfileSidebar = React.forwardRef<HTMLDivElement, UserProfileSi
             </React.Fragment>
           ))}
         </nav>
+
+        {/* Toggle Items */}
+        {toggleItems && toggleItems.length > 0 && (
+          <div className="px-2 pb-2 space-y-1">
+            <div className="mx-2 border-t border-border mb-2" />
+            {toggleItems.map((item, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between px-3 py-2 text-[13px] font-medium text-muted-foreground rounded-md"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-4 h-4 flex-shrink-0 [&>svg]:w-4 [&>svg]:h-4">{item.icon}</span>
+                  <span>{item.label}</span>
+                </div>
+                <Switch
+                  checked={item.checked}
+                  onCheckedChange={item.onCheckedChange}
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Footer */}
         <div className="p-2 border-t border-border">
