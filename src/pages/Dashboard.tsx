@@ -60,6 +60,31 @@ import {
 const fadeIn = {
   initial: { opacity: 0, y: 12 },
   animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.35 }
+};
+
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.08
+    }
+  }
+};
+
+const staggerItem = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+};
+
+const scaleIn = {
+  initial: { opacity: 0, scale: 0.95 },
+  animate: { opacity: 1, scale: 1 },
+  transition: { duration: 0.25 }
+};
+
+const slideInLeft = {
+  initial: { opacity: 0, x: -12 },
+  animate: { opacity: 1, x: 0 },
   transition: { duration: 0.3 }
 };
 
@@ -606,13 +631,23 @@ const Dashboard = () => {
             </div>
 
             {/* Main License Card */}
-            <div className="bg-card border border-border rounded-md p-5 space-y-5">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="bg-card border border-border rounded-md p-5 space-y-5 hover:shadow-lg hover:shadow-primary/5 transition-shadow duration-300"
+            >
               {/* License Info Header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
+                  <motion.div 
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3, delay: 0.2 }}
+                    className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center"
+                  >
                     <Key className="w-5 h-5 text-primary" />
-                  </div>
+                  </motion.div>
                   <div>
                     <h3 className="text-sm font-semibold text-foreground">Plano {userLicense.plan}</h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
@@ -621,27 +656,34 @@ const Dashboard = () => {
                     </div>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="h-8 gap-1.5">
+                <Button variant="outline" size="sm" className="h-8 gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform">
                   <Copy className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline text-xs">Copiar</span>
                 </Button>
               </div>
 
               {/* License Details Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-muted/50 rounded-md p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Chave</p>
-                  <p className="text-sm font-mono text-foreground truncate">{userLicense.key}</p>
-                </div>
-                <div className="bg-muted/50 rounded-md p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Ativada em</p>
-                  <p className="text-sm text-foreground">{userLicense.activatedAt}</p>
-                </div>
-                <div className="bg-muted/50 rounded-md p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Expira em</p>
-                  <p className="text-sm text-foreground">{userLicense.expiresAt}</p>
-                </div>
-              </div>
+              <motion.div 
+                variants={staggerContainer}
+                initial="initial"
+                animate="animate"
+                className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+              >
+                {[
+                  { label: "Chave", value: userLicense.key, mono: true },
+                  { label: "Ativada em", value: userLicense.activatedAt },
+                  { label: "Expira em", value: userLicense.expiresAt }
+                ].map((item, i) => (
+                  <motion.div 
+                    key={i}
+                    variants={staggerItem}
+                    className="bg-muted/50 rounded-md p-3 hover:bg-muted/70 transition-colors duration-200"
+                  >
+                    <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
+                    <p className={cn("text-sm text-foreground truncate", item.mono && "font-mono")}>{item.value}</p>
+                  </motion.div>
+                ))}
+              </motion.div>
 
               {/* Progress Bar */}
               <div className="space-y-2">
@@ -766,18 +808,23 @@ const Dashboard = () => {
                   </AlertDialogContent>
                 </AlertDialog>
               </div>
-            </div>
+            </motion.div>
 
             {/* Warning Alert */}
-            <div className="bg-warning/10 border border-warning/30 rounded-md p-4 flex items-center gap-3">
+            <motion.div 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              className="bg-warning/10 border border-warning/30 rounded-md p-4 flex items-center gap-3"
+            >
               <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0" />
               <div className="flex-1">
                 <p className="text-sm text-foreground">Sua licença expira em breve! <span className="text-warning font-medium">10% de desconto</span> na renovação.</p>
               </div>
-              <Button size="sm" variant="outline" className="hidden sm:flex h-8 border-warning/30 text-warning hover:bg-warning/10 hover:text-warning">
+              <Button size="sm" variant="outline" className="hidden sm:flex h-8 border-warning/30 text-warning hover:bg-warning/10 hover:text-warning hover:scale-[1.02] active:scale-[0.98] transition-all">
                 Renovar
               </Button>
-            </div>
+            </motion.div>
           </motion.div>
         )}
 
@@ -796,7 +843,12 @@ const Dashboard = () => {
             </div>
 
             {/* Compra 1 - Brasileiras */}
-            <div className="bg-card border border-border rounded-md overflow-hidden">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="bg-card border border-border rounded-md overflow-hidden hover:shadow-lg hover:shadow-success/5 transition-shadow duration-300"
+            >
               <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-success/10 rounded-md flex items-center justify-center">
@@ -807,14 +859,20 @@ const Dashboard = () => {
                     <p className="text-xs text-muted-foreground">Comprado em 10 Dez 2024 • 5 sessions</p>
                   </div>
                 </div>
-                <Button size="sm" variant="outline" className="h-8 gap-1.5">
+                <Button size="sm" variant="outline" className="h-8 gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform">
                   <Download className="w-3.5 h-3.5" />
                   <span className="text-xs">Baixar todas</span>
                 </Button>
               </div>
               <div className="divide-y divide-border">
-                {[1, 2, 3, 4, 5].map((num) => (
-                  <div key={num} className="p-3 flex items-center justify-between hover:bg-muted/30 transition-colors">
+                {[1, 2, 3, 4, 5].map((num, i) => (
+                  <motion.div 
+                    key={num} 
+                    initial={{ opacity: 0, x: -5 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.25, delay: 0.15 + i * 0.05 }}
+                    className="p-3 flex items-center justify-between hover:bg-muted/30 transition-colors"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-7 h-7 bg-success/10 rounded flex items-center justify-center">
                         <span className="text-xs font-semibold text-success">{num}</span>
@@ -824,16 +882,21 @@ const Dashboard = () => {
                         <p className="text-xs text-muted-foreground">+55 11 98745-632{num}</p>
                       </div>
                     </div>
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 hover:scale-110 active:scale-95 transition-transform">
                       <Download className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                     </Button>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
             {/* Compra 2 - Estrangeiras */}
-            <div className="bg-card border border-border rounded-md overflow-hidden">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="bg-card border border-border rounded-md overflow-hidden hover:shadow-lg hover:shadow-primary/5 transition-shadow duration-300"
+            >
               <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-primary/10 rounded-md flex items-center justify-center">
@@ -844,14 +907,20 @@ const Dashboard = () => {
                     <p className="text-xs text-muted-foreground">Comprado em 12 Dez 2024 • 3 sessions</p>
                   </div>
                 </div>
-                <Button size="sm" variant="outline" className="h-8 gap-1.5">
+                <Button size="sm" variant="outline" className="h-8 gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform">
                   <Download className="w-3.5 h-3.5" />
                   <span className="text-xs">Baixar todas</span>
                 </Button>
               </div>
               <div className="divide-y divide-border">
-                {[1, 2, 3].map((num) => (
-                  <div key={num} className="p-3 flex items-center justify-between hover:bg-muted/30 transition-colors">
+                {[1, 2, 3].map((num, i) => (
+                  <motion.div 
+                    key={num} 
+                    initial={{ opacity: 0, x: -5 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.25, delay: 0.25 + i * 0.05 }}
+                    className="p-3 flex items-center justify-between hover:bg-muted/30 transition-colors"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-7 h-7 bg-primary/10 rounded flex items-center justify-center">
                         <span className="text-xs font-semibold text-primary">{num}</span>
@@ -861,23 +930,28 @@ const Dashboard = () => {
                         <p className="text-xs text-muted-foreground">+1 555 847-923{num}</p>
                       </div>
                     </div>
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 hover:scale-110 active:scale-95 transition-transform">
                       <Download className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                     </Button>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
-            <div className="bg-muted/30 border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              className="bg-muted/30 border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+            >
               <div>
                 <p className="text-sm font-medium text-foreground">Precisa de mais sessions?</p>
                 <p className="text-sm text-muted-foreground">Compre com desconto especial</p>
               </div>
-              <Button size="sm" variant="outline" className="h-9" onClick={() => setActiveTab("comprar")}>
+              <Button size="sm" variant="outline" className="h-9 hover:scale-[1.02] active:scale-[0.98] transition-transform" onClick={() => setActiveTab("comprar")}>
                 Ver pacotes
               </Button>
-            </div>
+            </motion.div>
           </motion.div>
         )}
 
