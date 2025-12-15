@@ -1198,7 +1198,7 @@ const UsersSection = () => {
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-xl font-bold text-primary">{selectedUser.name.charAt(0)}</span>
+                      <span className="text-2xl">{selectedUser.avatar}</span>
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate">{selectedUser.name}</p>
@@ -1207,26 +1207,17 @@ const UsersSection = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-muted/30 rounded-lg p-3">
-                      <p className="text-xs text-muted-foreground">Plano</p>
-                      <p className="font-medium text-foreground">{selectedUser.plan}</p>
-                    </div>
-                    <div className="bg-muted/30 rounded-lg p-3">
-                      <p className="text-xs text-muted-foreground">Status</p>
-                      <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[selectedUser.status as keyof typeof statusStyles])}>
-                        {statusLabels[selectedUser.status as keyof typeof statusLabels]}
+                      <p className="text-xs text-muted-foreground">Role</p>
+                      <span className={cn(
+                        "text-xs px-2 py-1 rounded-md font-medium",
+                        selectedUser.role === "admin" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                      )}>
+                        {selectedUser.role === "admin" ? "Admin" : "Usuário"}
                       </span>
-                    </div>
-                    <div className="bg-muted/30 rounded-lg p-3">
-                      <p className="text-xs text-muted-foreground">Sessions</p>
-                      <p className="font-medium text-foreground">{selectedUser.sessions}</p>
                     </div>
                     <div className="bg-muted/30 rounded-lg p-3">
                       <p className="text-xs text-muted-foreground">Cadastro</p>
                       <p className="font-medium text-foreground">{selectedUser.createdAt}</p>
-                    </div>
-                    <div className="bg-muted/30 rounded-lg p-3 col-span-2">
-                      <p className="text-xs text-muted-foreground">Último login</p>
-                      <p className="font-medium text-foreground">{selectedUser.lastLogin}</p>
                     </div>
                     <div className="bg-muted/30 rounded-lg p-3 col-span-2">
                       <p className="text-xs text-muted-foreground">WhatsApp</p>
