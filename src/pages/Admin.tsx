@@ -1285,20 +1285,6 @@ const UsersSection = () => {
                   <div className="min-w-0 flex-1">
                     <p className="text-xl font-semibold text-foreground truncate">{selectedUser.name}</p>
                     <p className="text-sm text-muted-foreground truncate">{selectedUser.email}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className={cn(
-                        "text-xs px-2 py-1 rounded-full font-medium",
-                        selectedUser.role === 'admin' ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                      )}>
-                        {selectedUser.role === 'admin' ? '👑 Admin' : '👤 Usuário'}
-                      </span>
-                      <span className={cn(
-                        "text-xs px-2 py-1 rounded-full font-medium",
-                        selectedUser.banned ? statusStyles.banned : statusStyles.active
-                      )}>
-                        {selectedUser.banned ? '🚫 Banido' : '✓ Ativo'}
-                      </span>
-                    </div>
                   </div>
                 </div>
 
