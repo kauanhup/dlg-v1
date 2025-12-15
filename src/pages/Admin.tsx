@@ -50,7 +50,8 @@ import {
   Repeat,
   Plus,
   Wrench,
-  UserPlus
+  UserPlus,
+  Phone
 } from "lucide-react";
 
 const fadeIn = {
@@ -1268,42 +1269,115 @@ const UsersSection = () => {
               exit={{ opacity: 0, scale: 0.95 }}
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
             >
-              <div className="w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto bg-card border border-border rounded-lg p-6 shadow-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-foreground">Detalhes do Usuário</h2>
+              <div className="w-full max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto bg-card border border-border rounded-xl p-6 shadow-xl">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-foreground">Detalhes do Usuário</h2>
                   <button onClick={() => setShowDetailsModal(false)} className="text-muted-foreground hover:text-foreground">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-2xl">{selectedUser.avatar}</span>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-foreground truncate">{selectedUser.name}</p>
-                      <p className="text-sm text-muted-foreground truncate">{selectedUser.email}</p>
-                    </div>
+                
+                {/* Header com Avatar */}
+                <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
+                  <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full flex items-center justify-center flex-shrink-0 ring-4 ring-primary/10">
+                    <span className="text-4xl">{selectedUser.avatar}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-muted/30 rounded-lg p-3">
-                      <p className="text-xs text-muted-foreground">Status</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xl font-semibold text-foreground truncate">{selectedUser.name}</p>
+                    <p className="text-sm text-muted-foreground truncate">{selectedUser.email}</p>
+                    <div className="flex items-center gap-2 mt-2">
                       <span className={cn(
-                        "text-xs px-2 py-1 rounded-md font-medium",
+                        "text-xs px-2 py-1 rounded-full font-medium",
+                        selectedUser.role === 'admin' ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                      )}>
+                        {selectedUser.role === 'admin' ? '👑 Admin' : '👤 Usuário'}
+                      </span>
+                      <span className={cn(
+                        "text-xs px-2 py-1 rounded-full font-medium",
                         selectedUser.banned ? statusStyles.banned : statusStyles.active
                       )}>
-                        {selectedUser.banned ? statusLabels.banned : statusLabels.active}
+                        {selectedUser.banned ? '🚫 Banido' : '✓ Ativo'}
                       </span>
                     </div>
-                    <div className="bg-muted/30 rounded-lg p-3">
-                      <p className="text-xs text-muted-foreground">Cadastro</p>
-                      <p className="font-medium text-foreground">{selectedUser.createdAt}</p>
+                  </div>
+                </div>
+
+                {/* Info Grid */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-muted/30 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">Cadastrado em</p>
                     </div>
-                    <div className="bg-muted/30 rounded-lg p-3 col-span-2">
+                    <p className="font-medium text-foreground">{selectedUser.createdAt}</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">Última atualização</p>
+                    </div>
+                    <p className="font-medium text-foreground">{selectedUser.updatedAt || selectedUser.createdAt}</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-4 col-span-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Phone className="w-4 h-4 text-muted-foreground" />
                       <p className="text-xs text-muted-foreground">WhatsApp</p>
-                      <p className="font-medium text-foreground">{selectedUser.whatsapp}</p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-foreground">{selectedUser.whatsapp || 'Não informado'}</p>
+                      {selectedUser.whatsapp && (
+                        <a 
+                          href={`https://wa.me/${selectedUser.whatsapp.replace(/\D/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs bg-success/10 text-success px-3 py-1 rounded-full hover:bg-success/20 transition-colors"
+                        >
+                          Abrir Chat
+                        </a>
+                      )}
                     </div>
                   </div>
+                </div>
+
+                {/* IDs */}
+                <div className="bg-muted/20 rounded-lg p-4 space-y-2">
+                  <p className="text-xs text-muted-foreground font-medium mb-2">Identificadores</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Profile ID</span>
+                    <code className="text-xs bg-background px-2 py-1 rounded font-mono">{selectedUser.id?.slice(0, 8)}...</code>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">User ID</span>
+                    <code className="text-xs bg-background px-2 py-1 rounded font-mono">{selectedUser.user_id?.slice(0, 8)}...</code>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 mt-6 pt-6 border-t border-border">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => {
+                      setShowDetailsModal(false);
+                      handleEdit(selectedUser);
+                    }}
+                  >
+                    <Edit className="w-4 h-4 mr-2" /> Editar
+                  </Button>
+                  <Button 
+                    variant={selectedUser.banned ? "default" : "destructive"}
+                    className="flex-1"
+                    onClick={() => {
+                      setShowDetailsModal(false);
+                      handleBanClick(selectedUser);
+                    }}
+                  >
+                    {selectedUser.banned ? (
+                      <><UserCheck className="w-4 h-4 mr-2" /> Desbanir</>
+                    ) : (
+                      <><Ban className="w-4 h-4 mr-2" /> Banir</>
+                    )}
+                  </Button>
                 </div>
               </div>
             </motion.div>
