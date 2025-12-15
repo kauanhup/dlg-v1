@@ -1888,14 +1888,21 @@ const Admin = () => {
   const { settings, setMaintenanceMode, setAllowRegistration } = useSystemSettings();
 
   // Use auth hook with admin role requirement
-  const { user, isLoading, isAdmin, signOut } = useAuth('admin');
+  const { user, isLoading, isAdmin, role, signOut } = useAuth('admin');
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
   }, []);
 
-  // Show loading while checking auth
-  if (isLoading) {
+  // Redirect non-admins immediately when role is loaded
+  useEffect(() => {
+    if (!isLoading && role !== null && role !== 'admin') {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isLoading, role, navigate]);
+
+  // Show loading while checking auth OR if not admin (during redirect)
+  if (isLoading || role === null) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <MorphingSquare />
@@ -1903,15 +1910,15 @@ const Admin = () => {
     );
   }
 
-  // Not admin - redirect handled by useAuth, but show loading state
+  // Not admin - show access denied while redirecting
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Shield className="w-16 h-16 text-destructive mx-auto mb-4" />
           <h1 className="text-xl font-bold text-foreground mb-2">Acesso Negado</h1>
-          <p className="text-muted-foreground mb-4">Você não tem permissão para acessar esta página.</p>
-          <Button onClick={() => navigate('/dashboard')}>Voltar ao Dashboard</Button>
+          <p className="text-muted-foreground mb-2">Você não tem permissão para acessar esta página.</p>
+          <p className="text-sm text-muted-foreground">Redirecionando...</p>
         </div>
       </div>
     );
