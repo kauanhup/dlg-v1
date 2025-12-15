@@ -1553,12 +1553,11 @@ const Admin = () => {
     initials: "AD",
   };
 
-  const sidebarTabs = ["dashboard", "users", "orders", "sessions", "settings"];
+  const sidebarTabs = ["dashboard", "users", "sessions", "settings"];
 
   const profileNavItems = [
     { label: "Dashboard", icon: <LayoutDashboard className="h-full w-full" />, onClick: () => setActiveTab("dashboard") },
     { label: "Usuários", icon: <Users className="h-full w-full" />, onClick: () => setActiveTab("users") },
-    { label: "Pedidos", icon: <ShoppingCart className="h-full w-full" />, onClick: () => setActiveTab("orders") },
     { label: "Sessions", icon: <Globe className="h-full w-full" />, onClick: () => setActiveTab("sessions") },
     { label: "Configurações", icon: <Settings className="h-full w-full" />, onClick: () => setActiveTab("settings"), isSeparator: true },
   ];
