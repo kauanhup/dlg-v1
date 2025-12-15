@@ -1887,11 +1887,35 @@ const Admin = () => {
   const [selectedAvatarId, setSelectedAvatarId] = useState<number>(1);
   const { settings, setMaintenanceMode, setAllowRegistration } = useSystemSettings();
 
+  // Use auth hook with admin role requirement
+  const { user, isLoading, isAdmin, signOut } = useAuth('admin');
+
   useEffect(() => {
     document.documentElement.classList.add('dark');
   }, []);
 
-  const { user } = useAuth();
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <MorphingSquare />
+      </div>
+    );
+  }
+
+  // Not admin - redirect handled by useAuth, but show loading state
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="w-16 h-16 text-destructive mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-foreground mb-2">Acesso Negado</h1>
+          <p className="text-muted-foreground mb-4">Você não tem permissão para acessar esta página.</p>
+          <Button onClick={() => navigate('/dashboard')}>Voltar ao Dashboard</Button>
+        </div>
+      </div>
+    );
+  }
   
   const adminUser = {
     name: user?.user_metadata?.name || "Administrador",
@@ -1931,7 +1955,10 @@ const Admin = () => {
   const logoutItem = {
     label: "Sair",
     icon: <LogOut className="h-full w-full" />,
-    onClick: () => navigate("/login"),
+    onClick: async () => {
+      await signOut();
+      navigate("/login");
+    },
   };
 
   const renderContent = () => {
