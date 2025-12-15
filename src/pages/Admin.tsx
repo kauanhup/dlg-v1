@@ -163,29 +163,26 @@ const PlanFormModal = ({
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
-  plan: { id: number; name: string; price: string; period: string; sessions: number; features: string[]; status: string } | null;
-  onSave: (planData: { name: string; price: string; period: string; sessions: number; features: string[]; status: string }) => void;
+  plan: { id: string; name: string; price: string; period: string; features: string[]; status: string } | null;
+  onSave: (planData: { name: string; price: string; period: string; features: string[]; status: string }) => void;
 }) => {
-  const [name, setName] = useState(plan?.name || "");
-  const [price, setPrice] = useState(plan?.price?.replace("R$ ", "") || "");
-  const [period, setPeriod] = useState(plan?.period || "mês");
-  const [sessions, setSessions] = useState(plan?.sessions?.toString() || "0");
-  const [features, setFeatures] = useState(plan?.features?.join("\n") || "");
-  const [status, setStatus] = useState(plan?.status || "active");
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [period, setPeriod] = useState("mês");
+  const [features, setFeatures] = useState("");
+  const [status, setStatus] = useState("active");
 
   useEffect(() => {
-    if (plan) {
+    if (isOpen && plan) {
       setName(plan.name);
-      setPrice(plan.price.replace("R$ ", ""));
+      setPrice(plan.price.replace("R$ ", "").replace(",", "."));
       setPeriod(plan.period);
-      setSessions(plan.sessions.toString());
-      setFeatures(plan.features.join("\n"));
+      setFeatures(plan.features?.join("\n") || "");
       setStatus(plan.status);
-    } else {
+    } else if (isOpen && !plan) {
       setName("");
       setPrice("");
       setPeriod("mês");
-      setSessions("0");
       setFeatures("");
       setStatus("active");
     }
@@ -197,7 +194,6 @@ const PlanFormModal = ({
       name,
       price: `R$ ${price}`,
       period,
-      sessions: parseInt(sessions) || 0,
       features: features.split("\n").filter(f => f.trim()),
       status
     });
@@ -388,7 +384,7 @@ const SubscriptionsTabContent = () => {
     setSelectedSubscriber(null);
   };
 
-  const handleSavePlan = async (planData: { name: string; price: string; period: string; sessions: number; features: string[]; status: string }) => {
+  const handleSavePlan = async (planData: { name: string; price: string; period: string; features: string[]; status: string }) => {
     const priceValue = parseFloat(planData.price.replace('R$ ', '').replace(',', '.')) || 0;
     
     if (editingPlan) {
