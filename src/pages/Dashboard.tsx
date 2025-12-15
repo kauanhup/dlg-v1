@@ -350,7 +350,7 @@ const LojaSection = ({
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading, signOut, updateProfile } = useAuth();
-  const { license, sessions: userSessions, orders, combos, inventory, loginHistory, isLoading: dashboardLoading } = useUserDashboard(user?.id);
+  const { license, sessions: userSessions, sessionFiles, orders, combos, inventory, loginHistory, isLoading: dashboardLoading, downloadSessionFile } = useUserDashboard(user?.id);
   const [activeTab, setActiveTab] = useState("licencas");
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -917,7 +917,7 @@ const Dashboard = () => {
             </div>
 
             {/* No Sessions State */}
-            {userSessions.length === 0 ? (
+            {sessionFiles.length === 0 ? (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -939,8 +939,8 @@ const Dashboard = () => {
               <>
                 {/* Group sessions by type */}
                 {['brasileiras', 'estrangeiras'].map((type) => {
-                  const typeSessions = userSessions.filter(s => s.type === type);
-                  if (typeSessions.length === 0) return null;
+                  const typeFiles = sessionFiles.filter(f => f.type === type);
+                  if (typeFiles.length === 0) return null;
                   
                   const isBr = type === 'brasileiras';
                   const colorClass = isBr ? 'success' : 'primary';
@@ -969,15 +969,15 @@ const Dashboard = () => {
                               Sessions {isBr ? 'Brasileiras' : 'Estrangeiras'}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {typeSessions.length} session{typeSessions.length !== 1 ? 's' : ''}
+                              {typeFiles.length} session{typeFiles.length !== 1 ? 's' : ''}
                             </p>
                           </div>
                         </div>
                       </div>
                       <div className="divide-y divide-border">
-                        {typeSessions.map((session, i) => (
+                        {typeFiles.map((file, i) => (
                           <motion.div 
-                            key={session.id} 
+                            key={file.id} 
                             initial={{ opacity: 0, x: -5 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.25, delay: 0.15 + i * 0.05 }}
@@ -994,13 +994,10 @@ const Dashboard = () => {
                               </div>
                               <div>
                                 <p className="text-sm text-foreground font-mono truncate max-w-[200px]">
-                                  {session.session_data}
+                                  {file.file_name}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  {new Date(session.created_at).toLocaleDateString('pt-BR')}
-                                  {session.is_downloaded && (
-                                    <span className="ml-2 text-success">• Baixado</span>
-                                  )}
+                                  {file.sold_at ? new Date(file.sold_at).toLocaleDateString('pt-BR') : ''}
                                 </p>
                               </div>
                             </div>
@@ -1008,21 +1005,9 @@ const Dashboard = () => {
                               size="sm" 
                               variant="ghost" 
                               className="h-7 w-7 p-0 hover:scale-110 active:scale-95 transition-transform"
-                              onClick={() => {
-                                // Download session data
-                                const blob = new Blob([session.session_data], { type: 'text/plain' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `session_${session.id.slice(0, 8)}.session`;
-                                a.click();
-                                URL.revokeObjectURL(url);
-                              }}
+                              onClick={() => downloadSessionFile(file.id, file.file_path, file.file_name)}
                             >
-                              <Download className={cn(
-                                "w-4 h-4",
-                                session.is_downloaded ? "text-success" : "text-muted-foreground hover:text-foreground"
-                              )} />
+                              <Download className={cn("w-4 h-4", "text-muted-foreground hover:text-foreground")} />
                             </Button>
                           </motion.div>
                         ))}
