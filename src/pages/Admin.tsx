@@ -176,26 +176,26 @@ const PlanFormModal = ({
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
-  plan: { id: string; name: string; price: string; period: string; features: string[]; status: string } | null;
-  onSave: (planData: { name: string; price: string; period: string; features: string[]; status: string }) => void;
+  plan: { id: string; name: string; price: string; period: number; features: string[]; status: string } | null;
+  onSave: (planData: { name: string; price: string; period: number; features: string[]; status: string }) => void;
 }) => {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
-  const [period, setPeriod] = useState("day");
+  const [period, setPeriod] = useState(30);
   const [features, setFeatures] = useState("");
   const [status, setStatus] = useState("active");
 
   useEffect(() => {
     if (isOpen && plan) {
       setName(plan.name);
-      setPrice(plan.price.replace("R$ ", "").replace(",", "."));
-      setPeriod(plan.period);
+      setPrice(String(plan.price).replace("R$ ", "").replace(",", "."));
+      setPeriod(Number(plan.period) || 30);
       setFeatures(plan.features?.join("\n") || "");
       setStatus(plan.status);
     } else if (isOpen && !plan) {
       setName("");
       setPrice("");
-      setPeriod("day");
+      setPeriod(30);
       setFeatures("");
       setStatus("active");
     }
@@ -259,21 +259,20 @@ const PlanFormModal = ({
               />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Período</label>
-              <select
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-              >
-                <option value="lifetime">Único (Lifetime)</option>
-                <option value="day">Diário</option>
-                <option value="week">Semanal</option>
-                <option value="biweek">Quinzenal</option>
-                <option value="month">Mensal</option>
-                <option value="quarter">Trimestral</option>
-                <option value="semester">Semestral</option>
-                <option value="year">Anual</option>
-              </select>
+              <label className="text-sm text-muted-foreground mb-2 block">Dias de Acesso</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  value={period}
+                  onChange={(e) => setPeriod(Number(e.target.value) || 0)}
+                  placeholder="30"
+                  className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  required
+                />
+                <span className="text-sm text-muted-foreground whitespace-nowrap">dias</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">0 = acesso vitalício</p>
             </div>
           </div>
 
@@ -401,7 +400,7 @@ const SubscriptionsTabContent = () => {
     setSelectedSubscriber(null);
   };
 
-  const handleSavePlan = async (planData: { name: string; price: string; period: string; features: string[]; status: string }) => {
+  const handleSavePlan = async (planData: { name: string; price: string; period: number; features: string[]; status: string }) => {
     const priceValue = parseFloat(planData.price.replace('R$ ', '').replace(',', '.')) || 0;
     
     if (editingPlan) {
@@ -646,7 +645,9 @@ const SubscriptionsTabContent = () => {
                     <h3 className="font-semibold text-foreground">{plan.name}</h3>
                     <div className="flex items-baseline gap-1 mt-1">
                       <span className="text-2xl font-bold text-foreground">{formatPrice(plan.price)}</span>
-                      {plan.period !== "—" && <span className="text-sm text-muted-foreground">/{plan.period}</span>}
+                      <span className="text-sm text-muted-foreground">
+                        / {plan.period === 0 ? 'vitalício' : `${plan.period} dias`}
+                      </span>
                     </div>
                   </div>
                   <DropdownMenu>
@@ -738,7 +739,7 @@ const SubscriptionsTabContent = () => {
               <div className="bg-muted/50 rounded-lg px-4 py-3 mb-4 w-full">
                 <p className="font-semibold text-foreground">{planToDelete.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {formatPrice(planToDelete.price)} / {planToDelete.period}
+                  {formatPrice(planToDelete.price)} / {planToDelete.period === 0 ? 'vitalício' : `${planToDelete.period} dias`}
                 </p>
               </div>
               <p className="text-sm text-destructive mb-6">
