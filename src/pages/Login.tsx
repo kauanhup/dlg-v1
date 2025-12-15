@@ -4,6 +4,8 @@ import AnimatedShaderBackground from "@/components/ui/animated-shader-background
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import { supabase } from "@/integrations/supabase/client";
+import { Ban, MessageCircle, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -18,6 +20,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showBannedModal, setShowBannedModal] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const toast = useAlertToast();
@@ -30,6 +33,15 @@ const Login = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
+        // Check if user is banned
+        const isBanned = await checkIfBanned(session.user.id);
+        if (isBanned) {
+          await supabase.auth.signOut();
+          setShowBannedModal(true);
+          setIsLoading(false);
+          return;
+        }
+        
         // User is logged in, check their role and redirect
         const role = await getUserRole(session.user.id);
         if (role === 'admin') {
@@ -51,6 +63,14 @@ const Login = () => {
         if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
           // Defer Supabase calls with setTimeout to avoid deadlock
           setTimeout(async () => {
+            // Check if user is banned
+            const isBanned = await checkIfBanned(session.user.id);
+            if (isBanned) {
+              await supabase.auth.signOut();
+              setShowBannedModal(true);
+              return;
+            }
+            
             const role = await getUserRole(session.user.id);
             if (role === 'admin') {
               navigate("/admin");
@@ -64,6 +84,21 @@ const Login = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate, redirectUrl]);
+
+  const checkIfBanned = async (userId: string): Promise<boolean> => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('banned')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    if (error || !data) {
+      console.error('Error checking banned status:', error);
+      return false;
+    }
+    
+    return (data as any).banned === true;
+  };
 
   const getUserRole = async (userId: string): Promise<string> => {
     const { data, error } = await supabase
@@ -153,6 +188,17 @@ const Login = () => {
           }
           setIsSubmitting(false);
           return;
+        }
+
+        // Check if user is banned after successful login
+        if (data.user) {
+          const isBanned = await checkIfBanned(data.user.id);
+          if (isBanned) {
+            await supabase.auth.signOut();
+            setShowBannedModal(true);
+            setIsSubmitting(false);
+            return;
+          }
         }
 
         toast.success("Login realizado!", "Bem-vindo de volta.");
@@ -377,6 +423,57 @@ const Login = () => {
           </Link>
         </div>
       </div>
+
+      {/* Banned User Modal */}
+      <AnimatePresence>
+        {showBannedModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 z-50"
+              onClick={() => setShowBannedModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-sm bg-card border border-border rounded-xl p-6 shadow-2xl">
+                <div className="text-center">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-destructive/10">
+                    <Ban className="w-8 h-8 text-destructive" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-foreground mb-2">Conta Suspensa</h2>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Sua conta foi suspensa e você não pode acessar o sistema. 
+                    Se você acredita que isso é um erro, entre em contato com o suporte.
+                  </p>
+                  <div className="space-y-3">
+                    <a
+                      href="https://wa.me/5565996498222?text=Olá! Minha conta foi suspensa e gostaria de entender o motivo."
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-[#25D366] text-white font-medium rounded-lg hover:bg-[#25D366]/90 transition-all"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      Falar com Suporte
+                    </a>
+                    <button
+                      onClick={() => setShowBannedModal(false)}
+                      className="w-full py-3 px-4 bg-muted text-muted-foreground font-medium rounded-lg hover:bg-muted/80 transition-all"
+                    >
+                      Fechar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
