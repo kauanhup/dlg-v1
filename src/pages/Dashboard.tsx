@@ -63,11 +63,14 @@ const fadeIn = {
   transition: { duration: 0.3 }
 };
 
-const LojaSection = () => {
+const LojaSection = ({ onCheckout }: { onCheckout: (type: string, qty: number, price: string) => void }) => {
+  const navigate = useNavigate();
   const [brCustomQty, setBrCustomQty] = useState<number>(5);
   const [intlCustomQty, setIntlCustomQty] = useState<number>(5);
-  const [brSelectedIndex, setBrSelectedIndex] = useState<number | 'custom'>(2); // default to popular
-  const [intlSelectedIndex, setIntlSelectedIndex] = useState<number | 'custom'>(2); // default to popular
+  const [brSelectedIndex, setBrSelectedIndex] = useState<number | 'custom'>(2);
+  const [intlSelectedIndex, setIntlSelectedIndex] = useState<number | 'custom'>(2);
+  const [showBrConfirm, setShowBrConfirm] = useState(false);
+  const [showIntlConfirm, setShowIntlConfirm] = useState(false);
 
   const brPricePerSession = 9.98;
   const intlPricePerSession = 5.98;
@@ -95,11 +98,41 @@ const LojaSection = () => {
     return brPackages[brSelectedIndex]?.price || '';
   };
 
+  const getBrQty = () => {
+    if (brSelectedIndex === 'custom') return brCustomQty;
+    return brPackages[brSelectedIndex]?.qty || 0;
+  };
+
   const getIntlTotal = () => {
     if (intlSelectedIndex === 'custom') {
       return formatPrice(intlCustomQty * intlPricePerSession);
     }
     return intlPackages[intlSelectedIndex]?.price || '';
+  };
+
+  const getIntlQty = () => {
+    if (intlSelectedIndex === 'custom') return intlCustomQty;
+    return intlPackages[intlSelectedIndex]?.qty || 0;
+  };
+
+  const handleBrCheckout = () => {
+    navigate('/checkout', { 
+      state: { 
+        type: 'Sessions Brasileiras', 
+        qty: getBrQty(), 
+        price: getBrTotal() 
+      } 
+    });
+  };
+
+  const handleIntlCheckout = () => {
+    navigate('/checkout', { 
+      state: { 
+        type: 'Sessions Estrangeiras', 
+        qty: getIntlQty(), 
+        price: getIntlTotal() 
+      } 
+    });
   };
 
   return (
@@ -151,7 +184,6 @@ const LojaSection = () => {
                 <span className="font-semibold text-primary text-sm">{item.price}</span>
               </div>
             ))}
-            {/* Custom Quantity */}
             <div 
               onClick={() => setBrSelectedIndex('custom')}
               className={cn(
@@ -186,9 +218,39 @@ const LojaSection = () => {
               )}
             </div>
           </div>
-          <Button size="sm" className="w-full h-9">
-            Comprar {getBrTotal()}
-          </Button>
+          <AlertDialog open={showBrConfirm} onOpenChange={setShowBrConfirm}>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" className="w-full h-9">
+                Comprar {getBrTotal()}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-card border-border">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar Compra</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-3">
+                  <p>Você está prestes a comprar sessions brasileiras.</p>
+                  <div className="bg-muted/50 rounded-md p-3 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Produto</span>
+                      <span className="text-foreground font-medium">Sessions Brasileiras</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Quantidade</span>
+                      <span className="text-foreground font-medium">{getBrQty()} sessions</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Total</span>
+                      <span className="text-primary font-semibold">{getBrTotal()}</span>
+                    </div>
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleBrCheckout}>Ir para pagamento</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
         {/* Sessions Estrangeiras */}
@@ -232,7 +294,6 @@ const LojaSection = () => {
                 <span className="font-semibold text-primary text-sm">{item.price}</span>
               </div>
             ))}
-            {/* Custom Quantity */}
             <div 
               onClick={() => setIntlSelectedIndex('custom')}
               className={cn(
@@ -267,9 +328,39 @@ const LojaSection = () => {
               )}
             </div>
           </div>
-          <Button size="sm" className="w-full h-9">
-            Comprar {getIntlTotal()}
-          </Button>
+          <AlertDialog open={showIntlConfirm} onOpenChange={setShowIntlConfirm}>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" className="w-full h-9">
+                Comprar {getIntlTotal()}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-card border-border">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar Compra</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-3">
+                  <p>Você está prestes a comprar sessions estrangeiras.</p>
+                  <div className="bg-muted/50 rounded-md p-3 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Produto</span>
+                      <span className="text-foreground font-medium">Sessions Estrangeiras</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Quantidade</span>
+                      <span className="text-foreground font-medium">{getIntlQty()} sessions</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Total</span>
+                      <span className="text-primary font-semibold">{getIntlTotal()}</span>
+                    </div>
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleIntlCheckout}>Ir para pagamento</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </motion.div>
@@ -288,6 +379,14 @@ const Dashboard = () => {
   });
   const [showApiKey, setShowApiKey] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState<number>(1);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState(1); // default to popular
+
+  const upgradePlans = [
+    { name: "Plano 60 Dias", price: "R$ 49,90", discount: "Economize 15%" },
+    { name: "Plano 90 Dias", price: "R$ 69,90", discount: "Economize 25%", popular: true },
+    { name: "Plano Anual", price: "R$ 199,90", discount: "Economize 40%" },
+  ];
 
   // Apply theme to document
   useEffect(() => {
@@ -562,42 +661,51 @@ const Dashboard = () => {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button size="sm" className="h-9 text-xs sm:text-sm">
-                      <Zap className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-                      <span>Renovar Licença</span>
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="bg-card border-border">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Renovar Licença</AlertDialogTitle>
-                      <AlertDialogDescription className="space-y-3">
-                        <p>Renove sua licença para continuar usando todos os recursos.</p>
-                        <div className="bg-muted/50 rounded-md p-3 space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Plano atual</span>
-                            <span className="text-foreground font-medium">{userLicense.plan}</span>
+                {userLicense.daysLeft <= 1 ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" className="h-9 text-xs sm:text-sm">
+                        <Zap className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                        <span>Renovar Licença</span>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-card border-border">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Renovar Licença</AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-3">
+                          <p>Renove sua licença para continuar usando todos os recursos.</p>
+                          <div className="bg-muted/50 rounded-md p-3 space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Plano atual</span>
+                              <span className="text-foreground font-medium">{userLicense.plan}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Renovação</span>
+                              <span className="text-foreground font-medium">+30 dias</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Valor</span>
+                              <span className="text-primary font-semibold">R$ 29,90</span>
+                            </div>
                           </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Renovação</span>
-                            <span className="text-foreground font-medium">+30 dias</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Valor</span>
-                            <span className="text-primary font-semibold">R$ 29,90</span>
-                          </div>
-                        </div>
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction>Continuar para pagamento</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => navigate('/checkout', { state: { type: 'Renovação', plan: userLicense.plan, price: 'R$ 29,90' } })}>
+                          Continuar para pagamento
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                ) : (
+                  <Button size="sm" className="h-9 text-xs sm:text-sm opacity-50 cursor-not-allowed" disabled>
+                    <Zap className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                    <span>Renovar ({userLicense.daysLeft} dias restantes)</span>
+                  </Button>
+                )}
 
-                <AlertDialog>
+                <AlertDialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline" size="sm" className="h-9 text-xs sm:text-sm">
                       <Sparkles className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
@@ -610,42 +718,50 @@ const Dashboard = () => {
                       <AlertDialogDescription className="space-y-3">
                         <p>Escolha um plano superior para obter mais benefícios.</p>
                         <div className="space-y-2">
-                          <div className="bg-muted/50 rounded-md p-3 border border-border hover:border-primary/50 cursor-pointer transition-colors">
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <p className="text-sm font-medium text-foreground">Plano 60 Dias</p>
-                                <p className="text-xs text-muted-foreground">Economize 15%</p>
-                              </div>
-                              <span className="text-primary font-semibold">R$ 49,90</span>
-                            </div>
-                          </div>
-                          <div className="bg-primary/10 rounded-md p-3 border border-primary/30 cursor-pointer">
-                            <div className="flex justify-between items-center">
-                              <div>
+                          {upgradePlans.map((plan, i) => (
+                            <div 
+                              key={i}
+                              onClick={() => setSelectedUpgradePlan(i)}
+                              className={cn(
+                                "rounded-md p-3 border cursor-pointer transition-colors",
+                                selectedUpgradePlan === i 
+                                  ? "bg-primary/10 border-primary/30" 
+                                  : "bg-muted/50 border-border hover:border-primary/50"
+                              )}
+                            >
+                              <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-2">
-                                  <p className="text-sm font-medium text-foreground">Plano 90 Dias</p>
-                                  <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">POPULAR</span>
+                                  <div className={cn(
+                                    "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                                    selectedUpgradePlan === i ? "border-primary" : "border-muted-foreground"
+                                  )}>
+                                    {selectedUpgradePlan === i && <div className="w-2 h-2 rounded-full bg-primary" />}
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <p className="text-sm font-medium text-foreground">{plan.name}</p>
+                                      {plan.popular && (
+                                        <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">POPULAR</span>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">{plan.discount}</p>
+                                  </div>
                                 </div>
-                                <p className="text-xs text-muted-foreground">Economize 25%</p>
+                                <span className="text-primary font-semibold">{plan.price}</span>
                               </div>
-                              <span className="text-primary font-semibold">R$ 69,90</span>
                             </div>
-                          </div>
-                          <div className="bg-muted/50 rounded-md p-3 border border-border hover:border-primary/50 cursor-pointer transition-colors">
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <p className="text-sm font-medium text-foreground">Plano Anual</p>
-                                <p className="text-xs text-muted-foreground">Economize 40%</p>
-                              </div>
-                              <span className="text-primary font-semibold">R$ 199,90</span>
-                            </div>
-                          </div>
+                          ))}
                         </div>
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction>Continuar para pagamento</AlertDialogAction>
+                      <AlertDialogAction onClick={() => {
+                        const plan = upgradePlans[selectedUpgradePlan];
+                        navigate('/checkout', { state: { type: 'Upgrade', plan: plan.name, price: plan.price } });
+                      }}>
+                        Continuar para pagamento
+                      </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
@@ -767,7 +883,7 @@ const Dashboard = () => {
 
         {/* Comprar */}
         {activeTab === "comprar" && (
-          <LojaSection />
+          <LojaSection onCheckout={() => {}} />
         )}
 
         {/* Preferências */}
