@@ -13,16 +13,6 @@ export interface License {
   updated_at: string;
 }
 
-export interface UserSession {
-  id: string;
-  user_id: string;
-  order_id: string | null;
-  type: string;
-  session_data: string;
-  is_downloaded: boolean;
-  created_at: string;
-}
-
 export interface SessionFile {
   id: string;
   file_name: string;
@@ -73,7 +63,6 @@ export interface LoginHistory {
 
 export const useUserDashboard = (userId: string | undefined) => {
   const [license, setLicense] = useState<License | null>(null);
-  const [sessions, setSessions] = useState<UserSession[]>([]);
   const [sessionFiles, setSessionFiles] = useState<SessionFile[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [combos, setCombos] = useState<SessionCombo[]>([]);
@@ -99,16 +88,6 @@ export const useUserDashboard = (userId: string | undefined) => {
 
       if (licenseError) throw licenseError;
       setLicense(licenseData);
-
-      // Fetch user sessions
-      const { data: sessionsData, error: sessionsError } = await supabase
-        .from('user_sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (sessionsError) throw sessionsError;
-      setSessions(sessionsData || []);
 
       // Fetch user's purchased session files (from session_files table)
       const { data: sessionFilesData, error: sessionFilesError } = await supabase
@@ -168,36 +147,14 @@ export const useUserDashboard = (userId: string | undefined) => {
     }
   };
 
-  const markSessionDownloaded = async (sessionId: string) => {
-    try {
-      const { error } = await supabase
-        .from('user_sessions')
-        .update({ is_downloaded: true })
-        .eq('id', sessionId);
-
-      if (error) throw error;
-
-      setSessions(prev => prev.map(s => 
-        s.id === sessionId ? { ...s, is_downloaded: true } : s
-      ));
-
-      return { success: true };
-    } catch (err) {
-      console.error('Error marking session downloaded:', err);
-      return { success: false, error: 'Erro ao atualizar session' };
-    }
-  };
-
   const downloadSessionFile = async (fileId: string, filePath: string, fileName: string) => {
     try {
-      // Get signed URL for download
       const { data, error } = await supabase.storage
         .from('sessions')
         .download(filePath);
 
       if (error) throw error;
 
-      // Create download link
       const url = URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
@@ -254,9 +211,7 @@ export const useUserDashboard = (userId: string | undefined) => {
   const getSessionFilesByType = (type: string) => sessionFiles.filter(f => f.type === type);
 
   const stats = {
-    totalSessions: sessions.length,
     totalSessionFiles: sessionFiles.length,
-    downloadedSessions: sessions.filter(s => s.is_downloaded).length,
     pendingOrders: orders.filter(o => o.status === 'pending').length,
     completedOrders: orders.filter(o => o.status === 'completed').length,
     brasileirasAvailable: getInventoryByType('brasileiras')?.quantity || 0,
@@ -267,7 +222,6 @@ export const useUserDashboard = (userId: string | undefined) => {
 
   return {
     license,
-    sessions,
     sessionFiles,
     orders,
     combos,
@@ -276,7 +230,6 @@ export const useUserDashboard = (userId: string | undefined) => {
     isLoading,
     error,
     refetch: fetchData,
-    markSessionDownloaded,
     downloadSessionFile,
     createOrder,
     getCombosByType,
