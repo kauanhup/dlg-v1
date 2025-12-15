@@ -1074,8 +1074,10 @@ const UsersSection = () => {
   };
 
   const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    user.role !== 'admin' && (
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    )
   );
 
   return (
@@ -1149,16 +1151,10 @@ const UsersSection = () => {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
-                            className={cn(
-                              "cursor-pointer",
-                              user.role === "admin" 
-                                ? "text-warning focus:text-warning" 
-                                : "text-primary focus:text-primary"
-                            )}
-                            onClick={() => handleRoleClick(user)}
+                            className="cursor-pointer text-destructive focus:text-destructive"
+                            onClick={() => handleBanClick(user)}
                           >
-                            <Shield className="w-4 h-4 mr-2" /> 
-                            {user.role === "admin" ? "Remover Admin" : "Tornar Admin"}
+                            <Ban className="w-4 h-4 mr-2" /> Banir usuário
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
