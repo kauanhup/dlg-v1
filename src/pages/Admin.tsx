@@ -1170,7 +1170,7 @@ const UsersSection = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Buscar usuários..."
+            placeholder="Buscar por email ou nome..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 pr-4 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 w-64"
@@ -1339,18 +1339,6 @@ const UsersSection = () => {
                   </div>
                 </div>
 
-                {/* IDs */}
-                <div className="bg-muted/20 rounded-lg p-4 space-y-2">
-                  <p className="text-xs text-muted-foreground font-medium mb-2">Identificadores</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Profile ID</span>
-                    <code className="text-xs bg-background px-2 py-1 rounded font-mono">{selectedUser.id?.slice(0, 8)}...</code>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">User ID</span>
-                    <code className="text-xs bg-background px-2 py-1 rounded font-mono">{selectedUser.user_id?.slice(0, 8)}...</code>
-                  </div>
-                </div>
 
                 {/* Actions */}
                 <div className="flex gap-3 mt-6 pt-6 border-t border-border">
