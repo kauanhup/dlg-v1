@@ -648,7 +648,7 @@ const Dashboard = () => {
                   <h3 className="text-sm font-semibold text-foreground">Nenhuma licença ativa</h3>
                   <p className="text-xs text-muted-foreground mt-1">Adquira uma licença para começar a usar o sistema</p>
                 </div>
-                <Button size="sm" onClick={() => setActiveTab("comprar")}>
+                <Button size="sm" onClick={() => navigate("/buy")}>
                   <CreditCard className="w-4 h-4 mr-2" />
                   Ver Planos
                 </Button>
