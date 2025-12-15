@@ -1,5 +1,5 @@
 import { Home, Layers, CreditCard, HelpCircle, LogIn, ShoppingCart } from "lucide-react";
-import { AnimeNavBar } from "./ui/anime-navbar";
+import { AnimeNavBar } from "@/components/ui/anime-navbar";
 
 const navItems = [
   { name: "Início", url: "/", icon: Home },
