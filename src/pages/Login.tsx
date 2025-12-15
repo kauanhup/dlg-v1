@@ -46,14 +46,18 @@ const Login = () => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          const role = await getUserRole(session.user.id);
-          if (role === 'admin') {
-            navigate("/admin");
-          } else {
-            navigate(redirectUrl);
-          }
+      (event, session) => {
+        // Only synchronous state updates here
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+          // Defer Supabase calls with setTimeout to avoid deadlock
+          setTimeout(async () => {
+            const role = await getUserRole(session.user.id);
+            if (role === 'admin') {
+              navigate("/admin");
+            } else {
+              navigate(redirectUrl);
+            }
+          }, 0);
         }
       }
     );
