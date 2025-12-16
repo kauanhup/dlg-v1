@@ -15,12 +15,14 @@ interface BotFile {
 
 export const useAdminBot = () => {
   const [botFile, setBotFile] = useState<BotFile | null>(null);
+  const [botHistory, setBotHistory] = useState<BotFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
 
-  const fetchBotFile = async () => {
+  const fetchBotFiles = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch active bot
+      const { data: activeBot, error: activeError } = await supabase
         .from('bot_files')
         .select('*')
         .eq('is_active', true)
@@ -28,17 +30,26 @@ export const useAdminBot = () => {
         .limit(1)
         .maybeSingle();
 
-      if (error) throw error;
-      setBotFile(data);
+      if (activeError) throw activeError;
+      setBotFile(activeBot);
+
+      // Fetch version history (all bots, ordered by date)
+      const { data: history, error: historyError } = await supabase
+        .from('bot_files')
+        .select('*')
+        .order('uploaded_at', { ascending: false });
+
+      if (historyError) throw historyError;
+      setBotHistory(history || []);
     } catch (error) {
-      console.error('Error fetching bot file:', error);
+      console.error('Error fetching bot files:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBotFile();
+    fetchBotFiles();
   }, []);
 
   const uploadBotFile = async (file: File, version: string) => {
@@ -77,7 +88,7 @@ export const useAdminBot = () => {
       if (dbError) throw dbError;
 
       toast.success('Bot enviado com sucesso!');
-      await fetchBotFile();
+      await fetchBotFiles();
     } catch (error: any) {
       console.error('Error uploading bot file:', error);
       toast.error('Erro ao enviar arquivo: ' + error.message);
@@ -102,30 +113,57 @@ export const useAdminBot = () => {
       if (error) throw error;
 
       toast.success('Arquivo removido');
-      await fetchBotFile();
+      await fetchBotFiles();
     } catch (error: any) {
       console.error('Error deleting bot file:', error);
       toast.error('Erro ao remover arquivo: ' + error.message);
     }
   };
 
-  const getDownloadUrl = () => {
-    if (!botFile) return null;
+  const getDownloadUrl = (filePath?: string) => {
+    const path = filePath || botFile?.file_path;
+    if (!path) return null;
     
     const { data } = supabase.storage
       .from('bot-files')
-      .getPublicUrl(botFile.file_path);
+      .getPublicUrl(path);
     
     return data.publicUrl;
   };
 
+  const setActiveVersion = async (id: string) => {
+    try {
+      // Deactivate all
+      await supabase
+        .from('bot_files')
+        .update({ is_active: false })
+        .eq('is_active', true);
+
+      // Activate selected
+      const { error } = await supabase
+        .from('bot_files')
+        .update({ is_active: true })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Versão ativada com sucesso!');
+      await fetchBotFiles();
+    } catch (error: any) {
+      console.error('Error setting active version:', error);
+      toast.error('Erro ao ativar versão: ' + error.message);
+    }
+  };
+
   return {
     botFile,
+    botHistory,
     isLoading,
     isUploading,
     uploadBotFile,
     deleteBotFile,
     getDownloadUrl,
-    refetch: fetchBotFile
+    setActiveVersion,
+    refetch: fetchBotFiles
   };
 };

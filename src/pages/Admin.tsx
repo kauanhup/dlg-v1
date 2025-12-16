@@ -60,7 +60,8 @@ import {
   Info,
   Upload,
   FileDown,
-  HardDrive
+  HardDrive,
+  History
 } from "lucide-react";
 
 
@@ -2197,7 +2198,7 @@ const GatewaySection = () => {
 
 // Bot Management Section
 const BotManagementSection = () => {
-  const { botFile, isLoading, isUploading, uploadBotFile, deleteBotFile, getDownloadUrl } = useAdminBot();
+  const { botFile, botHistory, isLoading, isUploading, uploadBotFile, deleteBotFile, getDownloadUrl, setActiveVersion } = useAdminBot();
   const [version, setVersion] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2242,12 +2243,6 @@ const BotManagementSection = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleDelete = async () => {
-    if (botFile) {
-      await deleteBotFile(botFile.id, botFile.file_path);
-    }
-  };
-
   return (
     <motion.div {...fadeIn} className="space-y-6">
       <div>
@@ -2259,7 +2254,7 @@ const BotManagementSection = () => {
       <div className="bg-card border border-border rounded-lg p-6">
         <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
           <HardDrive className="w-4 h-4 text-primary" />
-          Arquivo Atual
+          Versão Ativa
         </h3>
         
         {isLoading ? (
@@ -2276,7 +2271,7 @@ const BotManagementSection = () => {
                 <div>
                   <p className="font-medium text-foreground">{botFile.file_name}</p>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <span>v{botFile.version}</span>
+                    <span className="text-primary font-medium">v{botFile.version}</span>
                     <span>•</span>
                     <span>{formatBytes(botFile.file_size)}</span>
                     <span>•</span>
@@ -2284,32 +2279,20 @@ const BotManagementSection = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open(getDownloadUrl() || '', '_blank')}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleDelete}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(getDownloadUrl() || '', '_blank')}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download
+              </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              URL de download: <code className="bg-muted px-2 py-1 rounded text-xs">{getDownloadUrl()}</code>
-            </p>
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             <HardDrive className="w-10 h-10 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Nenhum arquivo de bot enviado</p>
+            <p className="text-sm">Nenhum arquivo de bot ativo</p>
           </div>
         )}
       </div>
@@ -2376,6 +2359,83 @@ const BotManagementSection = () => {
             )}
           </Button>
         </div>
+      </div>
+
+      {/* Version History */}
+      <div className="bg-card border border-border rounded-lg p-6">
+        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+          <History className="w-4 h-4 text-primary" />
+          Histórico de Versões
+        </h3>
+        
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : botHistory.length > 0 ? (
+          <div className="space-y-2">
+            {botHistory.map((file) => (
+              <div 
+                key={file.id} 
+                className={`flex items-center justify-between p-3 rounded-lg border ${
+                  file.is_active 
+                    ? 'bg-primary/5 border-primary/30' 
+                    : 'bg-muted/20 border-border'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <FileDown className={`w-5 h-5 ${file.is_active ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-foreground">v{file.version}</span>
+                      {file.is_active && (
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                          Ativo
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{formatBytes(file.file_size)}</span>
+                      <span>•</span>
+                      <span>{formatDate(file.uploaded_at)}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!file.is_active && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActiveVersion(file.id)}
+                    >
+                      Ativar
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(getDownloadUrl(file.file_path) || '', '_blank')}
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => deleteBotFile(file.id, file.file_path)}
+                    disabled={file.is_active}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <History className="w-10 h-10 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">Nenhuma versão no histórico</p>
+          </div>
+        )}
       </div>
     </motion.div>
   );
