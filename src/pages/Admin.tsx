@@ -1890,6 +1890,14 @@ const SessionsSection = () => {
         </div>
       </div>
 
+      {/* Save Button */}
+      <div className="flex justify-end">
+        <Button onClick={handleSaveAll} disabled={isSaving}>
+          {isSaving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+          {isSaving ? "Salvando..." : "Salvar Configurações"}
+        </Button>
+      </div>
+
       {/* Histórico de Vendas */}
       <div className="bg-card border border-border rounded-lg p-5">
         <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -1926,14 +1934,6 @@ const SessionsSection = () => {
             )}
           </div>
         )}
-      </div>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button onClick={handleSaveAll} disabled={isSaving}>
-          {isSaving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-          {isSaving ? "Salvando..." : "Salvar Configurações"}
-        </Button>
       </div>
 
     </motion.div>
