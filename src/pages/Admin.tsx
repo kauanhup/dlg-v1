@@ -1568,10 +1568,6 @@ const SessionsSection = () => {
               </span>
             </Button>
           </label>
-          <Button size="sm" variant="outline" onClick={handleSaveAll} disabled={isSaving}>
-            {isSaving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            {isSaving ? "Salvando..." : "Salvar Config"}
-          </Button>
         </div>
       </div>
 
@@ -1930,6 +1926,14 @@ const SessionsSection = () => {
             )}
           </div>
         )}
+      </div>
+
+      {/* Save Button */}
+      <div className="flex justify-end">
+        <Button onClick={handleSaveAll} disabled={isSaving}>
+          {isSaving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+          {isSaving ? "Salvando..." : "Salvar Configurações"}
+        </Button>
       </div>
 
     </motion.div>
