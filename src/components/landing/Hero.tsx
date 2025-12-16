@@ -1,6 +1,5 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DownloadBotButton } from "@/components/ui/download-bot-button";
 import { Link } from "react-router-dom";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { AnimatedText } from "@/components/ui/animated-shiny-text";
@@ -57,7 +56,6 @@ const Hero = () => {
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
-            <DownloadBotButton />
             <Link to="/login" className="w-full sm:w-auto">
               <Button variant="outline" size="lg" className="w-full sm:w-auto sm:min-w-[180px] h-12">
                 Já tenho licença
