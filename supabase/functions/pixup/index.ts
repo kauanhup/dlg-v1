@@ -80,12 +80,12 @@ async function getSettings(supabase: any) {
   );
 }
 
-async function saveCredentials(supabase: any, params: { client_id: string; client_secret: string; webhook_url?: string }) {
+async function saveCredentials(supabase: any, params: { client_id: string; client_secret?: string; webhook_url?: string }) {
   const { client_id, client_secret, webhook_url } = params;
 
-  if (!client_id || !client_secret) {
+  if (!client_id) {
     return new Response(
-      JSON.stringify({ error: 'client_id and client_secret are required' }),
+      JSON.stringify({ error: 'client_id is required' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -93,21 +93,35 @@ async function saveCredentials(supabase: any, params: { client_id: string; clien
   // Check if settings exist
   const { data: existing } = await supabase
     .from('gateway_settings')
-    .select('id')
+    .select('id, client_secret')
     .eq('provider', 'pixup')
     .maybeSingle();
 
+  // If no existing settings and no secret provided, error
+  if (!existing && !client_secret) {
+    return new Response(
+      JSON.stringify({ error: 'client_secret is required for new configuration' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   let result;
   if (existing) {
+    const updateData: any = {
+      client_id,
+      webhook_url: webhook_url || null,
+      is_active: true,
+      updated_at: new Date().toISOString()
+    };
+    
+    // Only update secret if provided
+    if (client_secret) {
+      updateData.client_secret = client_secret;
+    }
+    
     result = await supabase
       .from('gateway_settings')
-      .update({
-        client_id,
-        client_secret,
-        webhook_url: webhook_url || null,
-        is_active: true,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', existing.id);
   } else {
     result = await supabase
