@@ -57,6 +57,7 @@ async function getSettings(supabase: any) {
     .from('gateway_settings')
     .select('*')
     .eq('provider', 'pixup')
+    .eq('is_active', true)
     .maybeSingle();
 
   if (error) {
