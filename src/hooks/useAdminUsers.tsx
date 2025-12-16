@@ -66,10 +66,10 @@ export const useAdminUsers = () => {
 
   const updateUserRole = async (userId: string, newRole: 'admin' | 'user') => {
     try {
+      // Use upsert to handle cases where user might not have a role entry
       const { error } = await supabase
         .from('user_roles')
-        .update({ role: newRole })
-        .eq('user_id', userId);
+        .upsert({ user_id: userId, role: newRole }, { onConflict: 'user_id' });
 
       if (error) throw error;
 
