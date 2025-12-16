@@ -253,6 +253,7 @@ const SubscriptionsTabContent = () => {
     createPlan,
     deletePlan,
     updateSubscription,
+    renewSubscription,
     updatePayment 
   } = useAdminSubscriptions();
   
@@ -305,12 +306,12 @@ const SubscriptionsTabContent = () => {
 
   const handleConfirmRenew = async () => {
     if (selectedSubscriber) {
-      const nextBilling = new Date();
-      nextBilling.setMonth(nextBilling.getMonth() + 1);
-      await updateSubscription(selectedSubscriber.id, { 
-        status: 'active', 
-        next_billing_date: nextBilling.toISOString() 
-      });
+      const result = await renewSubscription(selectedSubscriber.id, selectedSubscriber.plan_id);
+      if (!result.success) {
+        toast.error(result.error || 'Erro ao renovar assinatura');
+      } else {
+        toast.success('Assinatura renovada com sucesso');
+      }
     }
     setShowRenewModal(false);
     setSelectedSubscriber(null);
