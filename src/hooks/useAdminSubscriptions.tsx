@@ -267,6 +267,46 @@ export const useAdminSubscriptions = () => {
     }
   };
 
+  const renewSubscription = async (subId: string, planId: string) => {
+    try {
+      // Check if plan still exists
+      const { data: planData, error: planError } = await supabase
+        .from('subscription_plans')
+        .select('id, period')
+        .eq('id', planId)
+        .maybeSingle();
+
+      if (planError) throw planError;
+      
+      if (!planData) {
+        return { success: false, error: 'O plano desta assinatura não existe mais' };
+      }
+
+      // Calculate next billing date based on plan period
+      const nextBillingDate = new Date();
+      nextBillingDate.setDate(nextBillingDate.getDate() + (planData.period || 30));
+
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .update({ 
+          status: 'active', 
+          next_billing_date: nextBillingDate.toISOString() 
+        })
+        .eq('id', subId);
+
+      if (error) throw error;
+
+      setSubscriptions(prev => prev.map(sub => 
+        sub.id === subId ? { ...sub, status: 'active', next_billing_date: nextBillingDate.toISOString() } : sub
+      ));
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error renewing subscription:', err);
+      return { success: false, error: 'Erro ao renovar assinatura' };
+    }
+  };
+
   const updatePayment = async (paymentId: string, data: Partial<Payment>) => {
     try {
       const { error } = await supabase
@@ -314,6 +354,7 @@ export const useAdminSubscriptions = () => {
     createPlan,
     deletePlan,
     updateSubscription,
+    renewSubscription,
     updatePayment,
     stats,
   };
