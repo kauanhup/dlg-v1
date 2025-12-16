@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      bot_files: {
+        Row: {
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          is_active: boolean
+          updated_at: string
+          uploaded_at: string
+          version: string
+        }
+        Insert: {
+          file_name: string
+          file_path: string
+          file_size?: number
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          uploaded_at?: string
+          version?: string
+        }
+        Update: {
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          uploaded_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
       gateway_settings: {
         Row: {
           client_id: string | null
