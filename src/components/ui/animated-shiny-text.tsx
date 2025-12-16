@@ -41,14 +41,15 @@ const AnimatedText = React.forwardRef<HTMLDivElement, AnimatedTextProps>(
     };
 
     return (
-      <div ref={ref} className={cn("relative", className)} {...props}>
+      <div ref={ref} className={cn("relative overflow-visible", className)} {...props}>
         <motion.span
           className={cn(
-            "inline-block bg-clip-text text-transparent bg-[length:200%_100%]",
+            "inline bg-clip-text text-transparent bg-[length:200%_100%] pb-2",
             textClassName
           )}
           style={{
             backgroundImage: gradientColors,
+            lineHeight: 1.3,
           }}
           variants={textVariants}
           initial="initial"
