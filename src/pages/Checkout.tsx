@@ -266,7 +266,6 @@ const Checkout = () => {
     setIsProcessing(true);
     
     try {
-      let orderData: any;
       let amount: number;
       let productName: string;
       let productType: string;
@@ -277,6 +276,23 @@ const Checkout = () => {
         productName = sessionInfo.type;
         productType = sessionInfo.dbType;
         quantity = sessionInfo.quantity;
+
+        // Validate stock for session purchases
+        const { count, error: stockError } = await supabase
+          .from('session_files')
+          .select('*', { count: 'exact', head: true })
+          .eq('type', productType)
+          .eq('status', 'available');
+
+        if (stockError) {
+          throw new Error('Erro ao verificar estoque');
+        }
+
+        if (count === null || count < quantity) {
+          toast.error("Estoque insuficiente", `Apenas ${count || 0} sessions disponíveis deste tipo.`);
+          setIsProcessing(false);
+          return;
+        }
       } else if (isPlanPurchase && plan) {
         amount = planPrice;
         productName = plan.name;
@@ -287,7 +303,7 @@ const Checkout = () => {
       }
 
       // Create order
-      const { data: createdOrder, error: orderError } = await supabase.from('orders').insert({
+      const { data: orderData, error: orderError } = await supabase.from('orders').insert({
         user_id: user.id,
         product_name: productName,
         product_type: productType,
@@ -298,7 +314,6 @@ const Checkout = () => {
       }).select().single();
 
       if (orderError) throw orderError;
-      orderData = createdOrder;
       setOrderId(orderData.id);
 
       // Create payment record
