@@ -2088,6 +2088,7 @@ const GatewaySection = () => {
   const [clientSecret, setClientSecret] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [isConnected, setIsConnected] = useState(false);
+  const [hasSecret, setHasSecret] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -2104,6 +2105,7 @@ const GatewaySection = () => {
           setClientId(data.data.client_id || "");
           setWebhookUrl(data.data.webhook_url || "");
           setIsConnected(data.data.is_active || false);
+          setHasSecret(data.data.has_secret || false);
         }
       } catch (error) {
         console.error('Error loading gateway settings:', error);
@@ -2114,25 +2116,37 @@ const GatewaySection = () => {
   }, []);
 
   const handleSave = async () => {
-    if (!clientId || !clientSecret) {
-      toast.error("Preencha o Client ID e Client Secret");
+    if (!clientId) {
+      toast.error("Preencha o Client ID");
+      return;
+    }
+    
+    if (!hasSecret && !clientSecret) {
+      toast.error("Preencha o Client Secret");
       return;
     }
 
     setIsLoading(true);
     try {
+      const payload: any = { 
+        action: 'save_credentials',
+        client_id: clientId,
+        webhook_url: webhookUrl
+      };
+      
+      // Only include secret if provided (for update)
+      if (clientSecret) {
+        payload.client_secret = clientSecret;
+      }
+
       const { data, error } = await supabase.functions.invoke('pixup', {
-        body: { 
-          action: 'save_credentials',
-          client_id: clientId,
-          client_secret: clientSecret,
-          webhook_url: webhookUrl
-        }
+        body: payload
       });
 
       if (data?.success) {
         toast.success("Credenciais salvas com sucesso!");
         setIsConnected(true);
+        setHasSecret(true);
         setClientSecret(""); // Clear secret after save
       } else {
         toast.error(data?.error || "Erro ao salvar credenciais");
@@ -2215,7 +2229,7 @@ const GatewaySection = () => {
                 type={showSecret ? "text" : "password"}
                 value={clientSecret}
                 onChange={(e) => setClientSecret(e.target.value)}
-                placeholder="Seu client_secret do BSPAY"
+                placeholder={hasSecret ? "••••••••••••••••••••••••••••••••" : "Seu client_secret do BSPAY"}
                 className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
               <button
@@ -2227,7 +2241,9 @@ const GatewaySection = () => {
               </button>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Obtenha suas credenciais no painel do BSPAY
+              {hasSecret 
+                ? "Secret já configurado. Deixe em branco para manter o atual ou digite um novo para alterar."
+                : "Obtenha suas credenciais no painel do BSPAY"}
             </p>
           </div>
 
