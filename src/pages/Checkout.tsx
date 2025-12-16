@@ -22,6 +22,7 @@ interface Plan {
   promotional_price: number | null;
   period: number;
   features: string[] | null;
+  max_subscriptions_per_user: number | null;
 }
 
 const PIX_EXPIRATION_MINUTES = 30;
@@ -198,6 +199,23 @@ const Checkout = () => {
     
     try {
       if (isPlanPurchase && plan) {
+        // Check subscription limit if set
+        if (plan.max_subscriptions_per_user !== null) {
+          const { count, error: countError } = await supabase
+            .from('user_subscriptions')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('plan_id', plan.id);
+
+          if (countError) throw countError;
+
+          if (count !== null && count >= plan.max_subscriptions_per_user) {
+            toast.error("Limite atingido", `Você já utilizou este plano o máximo de ${plan.max_subscriptions_per_user} vez(es).`);
+            setIsProcessing(false);
+            return;
+          }
+        }
+
         // Create subscription for free plan
         const startDate = new Date();
         const nextBillingDate = plan.period > 0 
@@ -561,6 +579,8 @@ const Checkout = () => {
                         ? 'bg-success/10 text-success'
                         : isExpired
                         ? 'bg-destructive/10 text-destructive'
+                        : !pixData?.pixCode
+                        ? 'bg-primary/10 text-primary'
                         : 'bg-warning/10 text-warning'
                     }`}>
                       {paymentStatus === 'completed' || paymentStatus === 'paid' ? (
@@ -573,6 +593,11 @@ const Checkout = () => {
                           <Clock className="w-5 h-5" />
                           <span className="font-medium">PIX expirado</span>
                         </>
+                      ) : !pixData?.pixCode ? (
+                        <>
+                          <CheckCircle2 className="w-5 h-5" />
+                          <span className="font-medium">Pedido criado - Aguardando aprovação</span>
+                        </>
                       ) : (
                         <>
                           <Loader2 className="w-5 h-5 animate-spin" />
@@ -581,8 +606,23 @@ const Checkout = () => {
                       )}
                     </div>
 
+                    {/* Gateway unavailable message */}
+                    {!pixData?.pixCode && paymentStatus === 'pending' && !isExpired && (
+                      <div className="bg-muted/50 border border-border/50 rounded-xl p-4 text-center">
+                        <p className="text-sm text-muted-foreground mb-2">
+                          O gateway de pagamento está indisponível no momento.
+                        </p>
+                        <p className="text-sm font-medium text-foreground">
+                          Seu pedido foi registrado e será processado pelo admin.
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          ID do pedido: <span className="font-mono">{orderId?.slice(0, 8)}...</span>
+                        </p>
+                      </div>
+                    )}
+
                     {/* Countdown Timer */}
-                    {timeLeft && !isExpired && paymentStatus === 'pending' && (
+                    {timeLeft && !isExpired && paymentStatus === 'pending' && pixData?.pixCode && (
                       <div className="flex items-center justify-center gap-2 p-3 bg-muted/50 rounded-lg">
                         <Clock className="w-4 h-4 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">Expira em</span>
@@ -603,13 +643,11 @@ const Checkout = () => {
                       </div>
                     )}
 
-                    {(!pixData?.qrCodeBase64 || isExpired) && paymentStatus === 'pending' && (
+                    {(!pixData?.qrCodeBase64 && pixData?.pixCode) && !isExpired && paymentStatus === 'pending' && (
                       <div className="flex justify-center p-4 bg-muted/50 rounded-xl">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <QrCode className="w-16 h-16" />
-                          <span className="text-sm">
-                            {isExpired ? 'Código expirado' : 'QR Code não disponível'}
-                          </span>
+                          <span className="text-sm">QR Code não disponível</span>
                         </div>
                       </div>
                     )}
@@ -638,23 +676,27 @@ const Checkout = () => {
                       </div>
                     )}
 
-                    {/* Generate new PIX button when expired */}
-                    {isExpired && (
+                    {/* Generate new PIX button when expired OR when gateway failed */}
+                    {(isExpired || (!pixData?.pixCode && paymentStatus === 'pending')) && (
                       <Button 
                         onClick={() => {
                           setPixData(null);
                           setExpirationTime(null);
                           setOrderId(null);
+                          setPaymentStatus('pending');
                         }}
                         className="w-full"
+                        variant={isExpired ? "default" : "outline"}
                       >
-                        Gerar novo código PIX
+                        {isExpired ? "Gerar novo código PIX" : "Tentar novamente"}
                       </Button>
                     )}
 
                     <p className="text-xs text-muted-foreground text-center">
                       {isExpired 
                         ? "O código PIX expirou. Gere um novo código para continuar."
+                        : !pixData?.pixCode && paymentStatus === 'pending'
+                        ? "Seu pedido foi registrado. Você será notificado quando for aprovado."
                         : isPlanPurchase 
                           ? "Após o pagamento, sua licença será ativada automaticamente."
                           : "Após o pagamento, suas sessions serão liberadas automaticamente."

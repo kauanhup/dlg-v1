@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useAdminSessions } from "@/hooks/useAdminSessions";
+import { useAdminOrders } from "@/hooks/useAdminOrders";
 import { useAdminSubscriptions } from "@/hooks/useAdminSubscriptions";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { useAdminBot } from "@/hooks/useAdminBot";
@@ -48,6 +49,7 @@ import {
   X,
   CreditCard,
   Calendar,
+  ShoppingCart,
   AlertCircle,
   UserCheck,
   Repeat,
@@ -1093,6 +1095,302 @@ const SubscriptionsTabContent = () => {
         </div>
       )}
     </div>
+  );
+};
+
+// Orders Management Section
+const OrdersSection = () => {
+  const { orders, isLoading, completeOrder, refundOrder, stats, refetch } = useAdminOrders();
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatPrice = (amount: number) => {
+    return `R$ ${Number(amount).toFixed(2).replace('.', ',')}`;
+  };
+
+  const statusStyles: Record<string, string> = {
+    pending: "bg-warning/10 text-warning",
+    paid: "bg-primary/10 text-primary",
+    completed: "bg-success/10 text-success",
+    cancelled: "bg-muted text-muted-foreground",
+    refunded: "bg-destructive/10 text-destructive",
+  };
+
+  const statusLabels: Record<string, string> = {
+    pending: "Pendente",
+    paid: "Pago",
+    completed: "Concluído",
+    cancelled: "Cancelado",
+    refunded: "Reembolsado",
+  };
+
+  const handleCompleteClick = (order: any) => {
+    setSelectedOrder(order);
+    setShowCompleteModal(true);
+  };
+
+  const handleRefundClick = (order: any) => {
+    setSelectedOrder(order);
+    setShowRefundModal(true);
+  };
+
+  const handleConfirmComplete = async () => {
+    if (!selectedOrder) return;
+    setIsProcessing(true);
+    const result = await completeOrder(selectedOrder.id);
+    setIsProcessing(false);
+    
+    if (result.success) {
+      toast.success('Pedido aprovado e entregue com sucesso!');
+    } else {
+      toast.error(result.error || 'Erro ao completar pedido');
+    }
+    
+    setShowCompleteModal(false);
+    setSelectedOrder(null);
+  };
+
+  const handleConfirmRefund = async () => {
+    if (!selectedOrder) return;
+    setIsProcessing(true);
+    const result = await refundOrder(selectedOrder.id);
+    setIsProcessing(false);
+    
+    if (result.success) {
+      toast.success('Pedido reembolsado com sucesso!');
+    } else {
+      toast.error(result.error || 'Erro ao reembolsar pedido');
+    }
+    
+    setShowRefundModal(false);
+    setSelectedOrder(null);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Spinner />
+      </div>
+    );
+  }
+
+  return (
+    <motion.div {...fadeIn} className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-foreground">Pedidos</h1>
+          <p className="text-sm text-muted-foreground">Gerenciar pedidos e aprovações</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={refetch}>
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Atualizar
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard 
+          title="Total Pedidos" 
+          value={stats.total.toString()} 
+          change={`${stats.pending} pendentes`}
+          icon={ShoppingCart}
+          trend="up"
+        />
+        <StatCard 
+          title="Concluídos" 
+          value={stats.completed.toString()} 
+          change={`${Math.round((stats.completed / Math.max(stats.total, 1)) * 100)}%`}
+          icon={CheckCircle}
+          trend="up"
+        />
+        <StatCard 
+          title="Pendentes" 
+          value={stats.pending.toString()} 
+          change="Aguardando"
+          icon={Clock}
+          trend={stats.pending > 0 ? "down" : "up"}
+        />
+        <StatCard 
+          title="Receita" 
+          value={formatPrice(stats.totalRevenue)} 
+          change="Confirmada"
+          icon={DollarSign}
+          trend="up"
+        />
+      </div>
+
+      {/* Orders Table */}
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Cliente</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Produto</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Qtd</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Valor</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Data</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {orders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                    Nenhum pedido encontrado
+                  </td>
+                </tr>
+              ) : (
+                orders.map((order) => (
+                  <tr key={order.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{order.user_name}</p>
+                        <p className="text-xs text-muted-foreground">{order.user_email}</p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-sm text-foreground">{order.product_name}</p>
+                      <p className="text-xs text-muted-foreground">{order.product_type}</p>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-foreground">{order.quantity}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-foreground">{formatPrice(order.amount)}</td>
+                    <td className="px-4 py-3">
+                      <span className={cn(
+                        "text-xs font-medium px-2 py-1 rounded-md",
+                        statusStyles[order.status] || statusStyles.pending
+                      )}>
+                        {statusLabels[order.status] || order.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(order.created_at)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2">
+                        {(order.status === 'pending' || order.status === 'paid') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCompleteClick(order)}
+                            className="h-8 text-success hover:text-success hover:bg-success/10"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Aprovar
+                          </Button>
+                        )}
+                        {order.status === 'completed' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRefundClick(order)}
+                            className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <XCircle className="w-4 h-4 mr-1" />
+                            Reembolsar
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Complete Order Modal */}
+      {showCompleteModal && selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowCompleteModal(false)} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative bg-card border border-border rounded-lg p-6 w-full max-w-md"
+          >
+            <h3 className="text-lg font-semibold mb-4">Aprovar e Entregar Pedido</h3>
+            <div className="space-y-3 mb-6">
+              <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Cliente</span>
+                  <span className="font-medium">{selectedOrder.user_name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Produto</span>
+                  <span className="font-medium">{selectedOrder.product_name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Quantidade</span>
+                  <span className="font-medium">{selectedOrder.quantity}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Valor</span>
+                  <span className="font-medium text-primary">{formatPrice(selectedOrder.amount)}</span>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {selectedOrder.product_type === 'subscription' 
+                  ? 'Isso irá ativar a licença do usuário automaticamente.'
+                  : 'Isso irá liberar as sessions para o usuário automaticamente.'}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowCompleteModal(false)} className="flex-1" disabled={isProcessing}>
+                Cancelar
+              </Button>
+              <Button onClick={handleConfirmComplete} className="flex-1 bg-success hover:bg-success/90" disabled={isProcessing}>
+                {isProcessing ? <Spinner size="sm" className="mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                {isProcessing ? 'Processando...' : 'Aprovar e Entregar'}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Refund Modal */}
+      {showRefundModal && selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowRefundModal(false)} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative bg-card border border-border rounded-lg p-6 w-full max-w-md"
+          >
+            <h3 className="text-lg font-semibold mb-4">Reembolsar Pedido</h3>
+            <div className="space-y-3 mb-6">
+              <div className="flex items-center gap-3 p-3 bg-destructive/10 rounded-lg">
+                <XCircle className="w-5 h-5 text-destructive" />
+                <p className="text-sm">Reembolsar pedido de <strong>{selectedOrder.user_name}</strong>?</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Valor: <span className="font-medium">{formatPrice(selectedOrder.amount)}</span>
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowRefundModal(false)} className="flex-1" disabled={isProcessing}>
+                Cancelar
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmRefund} className="flex-1" disabled={isProcessing}>
+                {isProcessing ? <Spinner size="sm" className="mr-2" /> : null}
+                {isProcessing ? 'Processando...' : 'Confirmar Reembolso'}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </motion.div>
   );
 };
 
@@ -2710,10 +3008,11 @@ const Admin = () => {
     initials: (user?.user_metadata?.name || "AD").slice(0, 2).toUpperCase(),
   };
 
-  const sidebarTabs = ["dashboard", "users", "sessions", "bot", "gateway"];
+  const sidebarTabs = ["dashboard", "orders", "users", "sessions", "bot", "gateway"];
 
   const profileNavItems = [
     { label: "Dashboard", icon: <LayoutDashboard className="h-full w-full" />, onClick: () => setActiveTab("dashboard") },
+    { label: "Pedidos", icon: <ShoppingCart className="h-full w-full" />, onClick: () => setActiveTab("orders") },
     { label: "Usuários", icon: <Users className="h-full w-full" />, onClick: () => setActiveTab("users") },
     { label: "Sessions", icon: <Globe className="h-full w-full" />, onClick: () => setActiveTab("sessions") },
     { label: "Bot", icon: <HardDrive className="h-full w-full" />, onClick: () => setActiveTab("bot") },
@@ -2754,6 +3053,8 @@ const Admin = () => {
     switch (activeTab) {
       case "dashboard":
         return <DashboardSection />;
+      case "orders":
+        return <OrdersSection />;
       case "users":
         return <UsersSection />;
       case "sessions":
