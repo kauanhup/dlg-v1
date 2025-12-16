@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
-import { Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import useEmblaCarousel from "embla-carousel-react";
 
 interface Plan {
   id: string;
@@ -34,15 +33,6 @@ const formatPeriod = (days: number) => {
 const Pricing = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [emblaRef, emblaApi] = useEmblaCarousel({ 
-    loop: false, 
-    align: 'center',
-    skipSnaps: false,
-    dragFree: false,
-  });
-  const [canScrollPrev, setCanScrollPrev] = useState(false);
-  const [canScrollNext, setCanScrollNext] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(0);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -67,32 +57,10 @@ const Pricing = () => {
     fetchPlans();
   }, []);
 
-  useEffect(() => {
-    if (!emblaApi) return;
-
-    const onSelect = () => {
-      setCanScrollPrev(emblaApi.canScrollPrev());
-      setCanScrollNext(emblaApi.canScrollNext());
-      setSelectedIndex(emblaApi.selectedScrollSnap());
-    };
-
-    emblaApi.on('select', onSelect);
-    emblaApi.on('reInit', onSelect);
-    onSelect();
-
-    return () => {
-      emblaApi.off('select', onSelect);
-      emblaApi.off('reInit', onSelect);
-    };
-  }, [emblaApi]);
-
-  const scrollPrev = () => emblaApi?.scrollPrev();
-  const scrollNext = () => emblaApi?.scrollNext();
-
   const getPopularIndex = () => {
     if (plans.length === 0) return -1;
     if (plans.length <= 2) return plans.length - 1;
-    return Math.floor(plans.length / 2);
+    return 1; // Middle plan
   };
 
   const popularIndex = getPopularIndex();
@@ -125,118 +93,79 @@ const Pricing = () => {
             Nenhum plano disponível no momento.
           </div>
         ) : (
-          <div className="relative">
-            {/* Navigation Buttons */}
-            <button
-              onClick={scrollPrev}
-              disabled={!canScrollPrev}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-background/80 border border-border backdrop-blur-sm flex items-center justify-center text-foreground hover:bg-background transition-colors disabled:opacity-30 disabled:cursor-not-allowed -translate-x-1/2 sm:translate-x-0"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              onClick={scrollNext}
-              disabled={!canScrollNext}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-background/80 border border-border backdrop-blur-sm flex items-center justify-center text-foreground hover:bg-background transition-colors disabled:opacity-30 disabled:cursor-not-allowed translate-x-1/2 sm:translate-x-0"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {plans.map((plan, index) => {
+              const isPopular = index === popularIndex;
+              const effectivePrice = plan.promotional_price ?? plan.price;
+              const hasPromo = plan.promotional_price !== null && plan.promotional_price < plan.price;
 
-            {/* Carousel */}
-            <div className="overflow-hidden px-4 sm:px-12" ref={emblaRef}>
-              <div className="flex gap-5">
-                {plans.map((plan, index) => {
-                  const isPopular = index === popularIndex;
-                  const effectivePrice = plan.promotional_price ?? plan.price;
-                  const hasPromo = plan.promotional_price !== null && plan.promotional_price < plan.price;
-                  const isSelected = index === selectedIndex;
+              return (
+                <motion.div
+                  key={plan.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className={`relative p-6 rounded-xl transition-all duration-300 ${
+                    isPopular 
+                      ? "border-2 border-primary bg-primary/5 shadow-lg shadow-primary/10 scale-105" 
+                      : "border border-border bg-card hover:shadow-lg hover:shadow-primary/5"
+                  }`}
+                >
+                  {isPopular && (
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary text-primary-foreground shadow-md whitespace-nowrap">
+                        ⭐ Popular
+                      </span>
+                    </div>
+                  )}
 
-                  return (
-                    <motion.div
-                      key={plan.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.5, delay: index * 0.1 }}
-                      className={`relative p-6 rounded-xl transition-all duration-300 flex-shrink-0 w-[280px] sm:w-[300px] ${
+                  <div className="mb-5 pt-2">
+                    <h3 className="font-display font-bold text-lg mb-3">{plan.name}</h3>
+                    <div className="flex items-baseline gap-1 flex-wrap">
+                      <span className="text-sm text-muted-foreground">R$</span>
+                      {hasPromo ? (
+                        <>
+                          <span className="text-3xl font-display font-bold text-success">{formatPrice(effectivePrice)}</span>
+                          <span className="text-sm text-muted-foreground line-through ml-2">R$ {formatPrice(plan.price)}</span>
+                        </>
+                      ) : (
+                        <span className="text-3xl font-display font-bold">{formatPrice(effectivePrice)}</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{formatPeriod(plan.period)}</p>
+                  </div>
+
+                  {plan.features && plan.features.length > 0 && (
+                    <ul className="space-y-2.5 mb-5">
+                      {plan.features.map((feature, i) => (
+                        <li key={i} className="flex items-start gap-2.5 text-sm">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                            isPopular ? 'bg-primary/20' : 'bg-muted'
+                          }`}>
+                            <Check className={`w-3 h-3 ${isPopular ? 'text-primary' : 'text-muted-foreground'}`} />
+                          </div>
+                          <span className="text-muted-foreground text-sm">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <Link to="/comprar" className="w-full">
+                    <Button 
+                      className={`w-full h-11 ${
                         isPopular 
-                          ? "border-2 border-primary bg-primary/5 shadow-lg shadow-primary/10" 
-                          : "border border-border bg-card hover:shadow-lg hover:shadow-primary/5"
-                      } ${isSelected ? 'scale-100' : 'scale-95 opacity-80'}`}
+                          ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
+                          : ''
+                      }`}
+                      variant={isPopular ? "default" : "outline"}
                     >
-                      {isPopular && (
-                        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary text-primary-foreground shadow-md whitespace-nowrap">
-                            ⭐ Popular
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="mb-5 pt-2">
-                        <h3 className="font-display font-bold text-lg mb-3">{plan.name}</h3>
-                        <div className="flex items-baseline gap-1 flex-wrap">
-                          <span className="text-sm text-muted-foreground">R$</span>
-                          {hasPromo ? (
-                            <>
-                              <span className="text-3xl font-display font-bold text-success">{formatPrice(effectivePrice)}</span>
-                              <span className="text-sm text-muted-foreground line-through ml-2">R$ {formatPrice(plan.price)}</span>
-                            </>
-                          ) : (
-                            <span className="text-3xl font-display font-bold">{formatPrice(effectivePrice)}</span>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">{formatPeriod(plan.period)}</p>
-                      </div>
-
-                      {plan.features && plan.features.length > 0 && (
-                        <ul className="space-y-2.5 mb-5">
-                          {plan.features.map((feature, i) => (
-                            <li key={i} className="flex items-start gap-2.5 text-sm">
-                              <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                                isPopular ? 'bg-primary/20' : 'bg-muted'
-                              }`}>
-                                <Check className={`w-3 h-3 ${isPopular ? 'text-primary' : 'text-muted-foreground'}`} />
-                              </div>
-                              <span className="text-muted-foreground text-sm">{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-
-                      <Link to="/comprar" className="w-full">
-                        <Button 
-                          className={`w-full h-11 ${
-                            isPopular 
-                              ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
-                              : ''
-                          }`}
-                          variant={isPopular ? "default" : "outline"}
-                        >
-                          Começar Agora
-                        </Button>
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Dots Indicator */}
-            {plans.length > 1 && (
-              <div className="flex justify-center gap-2 mt-6">
-                {plans.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => emblaApi?.scrollTo(index)}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                      index === selectedIndex 
-                        ? 'bg-primary w-6' 
-                        : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
+                      Começar Agora
+                    </Button>
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
         )}
 
