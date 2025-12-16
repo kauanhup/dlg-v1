@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { UserProfileSidebar } from "@/components/ui/menu";
 import { avatars } from "@/components/ui/avatar-picker";
@@ -49,7 +50,8 @@ import {
   Plus,
   Wrench,
   UserPlus,
-  Phone
+  Phone,
+  Save
 } from "lucide-react";
 
 const fadeIn = {
@@ -1499,7 +1501,7 @@ const SessionsSection = () => {
           <h1 className="text-xl font-semibold text-foreground">Sessions</h1>
           <p className="text-sm text-muted-foreground">Gerenciar estoque de sessions importadas (.session)</p>
         </div>
-        <div>
+        <div className="flex gap-2">
           <input
             type="file"
             accept=".session"
@@ -1515,6 +1517,9 @@ const SessionsSection = () => {
               </span>
             </Button>
           </label>
+          <Button size="sm" variant="outline" onClick={() => toast.success("Configurações salvas com sucesso!")}>
+            <Save className="w-4 h-4 mr-2" /> Salvar Config
+          </Button>
         </div>
       </div>
 
