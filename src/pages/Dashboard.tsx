@@ -1149,10 +1149,20 @@ const Dashboard = () => {
             <div className="grid gap-4 sm:grid-cols-2">
               {/* Histórico de Compras */}
               <div className="bg-card border border-border rounded-md p-5 space-y-4">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-primary" />
-                  Compras Recentes
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-primary" />
+                    Compras Recentes
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-primary hover:text-primary/80"
+                    onClick={() => navigate('/pagamentos')}
+                  >
+                    Ver todos
+                  </Button>
+                </div>
                 <div className="space-y-2">
                   {orders && orders.length > 0 ? (
                     orders.slice(0, 5).map((order) => {

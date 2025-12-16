@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { Check, CreditCard, ArrowLeft, Copy, CheckCircle2, Loader2, QrCode } from "lucide-react";
+import { Check, CreditCard, ArrowLeft, Copy, CheckCircle2, Loader2, QrCode, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { MorphingSquare } from "@/components/ui/morphing-square";
@@ -15,6 +15,8 @@ interface PixData {
   expiresAt?: string;
 }
 
+const PIX_EXPIRATION_MINUTES = 30;
+
 const Checkout = () => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -27,6 +29,8 @@ const Checkout = () => {
   const [copied, setCopied] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<string>('pending');
+  const [expirationTime, setExpirationTime] = useState<Date | null>(null);
+  const [timeLeft, setTimeLeft] = useState<{ minutes: number; seconds: number } | null>(null);
 
   // Get parameters from location state (from Dashboard) OR searchParams (from Buy page)
   const locationState = location.state as { type?: string; qty?: number; price?: string } | null;
@@ -63,6 +67,35 @@ const Checkout = () => {
     quantity: parseInt(qty || '0'),
     price: parsePrice(price),
   } : null;
+
+  // Countdown timer logic
+  useEffect(() => {
+    if (!expirationTime) return;
+
+    const updateTimer = () => {
+      const now = new Date();
+      const diff = expirationTime.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setTimeLeft(null);
+        if (paymentStatus === 'pending') {
+          toast.error("PIX expirado", "O código PIX expirou. Gere um novo código.");
+          setPixData(null);
+          setExpirationTime(null);
+        }
+        return;
+      }
+
+      const minutes = Math.floor(diff / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      setTimeLeft({ minutes, seconds });
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [expirationTime, paymentStatus, toast]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -164,6 +197,11 @@ const Checkout = () => {
           },
         });
 
+        // Set expiration time regardless of gateway response
+        const expTime = new Date();
+        expTime.setMinutes(expTime.getMinutes() + PIX_EXPIRATION_MINUTES);
+        setExpirationTime(expTime);
+
         if (pixError) {
           console.error('PIX generation error:', pixError);
           toast.error("Gateway indisponível", "Pedido criado. Configure o gateway PIX ou aguarde aprovação manual.");
@@ -228,6 +266,8 @@ const Checkout = () => {
   const formatPrice = (value: number) => {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
+
+  const isExpired = timeLeft === null && expirationTime !== null;
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -314,7 +354,7 @@ const Checkout = () => {
               <div className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-6 sm:p-8">
                 <h2 className="font-display font-bold text-lg mb-6">Pagamento</h2>
 
-                {!pixData ? (
+                {!pixData && !orderId ? (
                   <div className="space-y-4">
                     <div className="bg-muted/50 border border-border/50 rounded-xl p-4">
                       <div className="flex items-center gap-3 mb-2">
@@ -349,12 +389,19 @@ const Checkout = () => {
                     <div className={`flex items-center gap-2 p-3 rounded-lg ${
                       paymentStatus === 'completed' || paymentStatus === 'paid'
                         ? 'bg-success/10 text-success'
+                        : isExpired
+                        ? 'bg-destructive/10 text-destructive'
                         : 'bg-warning/10 text-warning'
                     }`}>
                       {paymentStatus === 'completed' || paymentStatus === 'paid' ? (
                         <>
                           <CheckCircle2 className="w-5 h-5" />
                           <span className="font-medium">Pagamento confirmado!</span>
+                        </>
+                      ) : isExpired ? (
+                        <>
+                          <Clock className="w-5 h-5" />
+                          <span className="font-medium">PIX expirado</span>
                         </>
                       ) : (
                         <>
@@ -364,8 +411,19 @@ const Checkout = () => {
                       )}
                     </div>
 
+                    {/* Countdown Timer */}
+                    {timeLeft && !isExpired && paymentStatus === 'pending' && (
+                      <div className="flex items-center justify-center gap-2 p-3 bg-muted/50 rounded-lg">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Expira em</span>
+                        <span className="font-mono font-bold text-lg">
+                          {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+                        </span>
+                      </div>
+                    )}
+
                     {/* QR Code */}
-                    {pixData.qrCodeBase64 && (
+                    {pixData?.qrCodeBase64 && !isExpired && (
                       <div className="flex justify-center p-4 bg-white rounded-xl">
                         <img 
                           src={`data:image/png;base64,${pixData.qrCodeBase64}`} 
@@ -375,39 +433,60 @@ const Checkout = () => {
                       </div>
                     )}
 
-                    {!pixData.qrCodeBase64 && (
+                    {(!pixData?.qrCodeBase64 || isExpired) && paymentStatus === 'pending' && (
                       <div className="flex justify-center p-4 bg-muted/50 rounded-xl">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <QrCode className="w-16 h-16" />
-                          <span className="text-sm">QR Code não disponível</span>
+                          <span className="text-sm">
+                            {isExpired ? 'Código expirado' : 'QR Code não disponível'}
+                          </span>
                         </div>
                       </div>
                     )}
 
                     {/* PIX Code */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Código PIX Copia e Cola:</label>
-                      <div className="relative">
-                        <div className="bg-muted/50 border border-border/50 rounded-lg p-3 pr-12 font-mono text-xs break-all max-h-24 overflow-y-auto">
-                          {pixData.pixCode}
+                    {pixData?.pixCode && !isExpired && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Código PIX Copia e Cola:</label>
+                        <div className="relative">
+                          <div className="bg-muted/50 border border-border/50 rounded-lg p-3 pr-12 font-mono text-xs break-all max-h-24 overflow-y-auto">
+                            {pixData.pixCode}
+                          </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={copyPixCode}
+                            className="absolute right-2 top-1/2 -translate-y-1/2"
+                          >
+                            {copied ? (
+                              <CheckCircle2 className="w-4 h-4 text-success" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </Button>
                         </div>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={copyPixCode}
-                          className="absolute right-2 top-1/2 -translate-y-1/2"
-                        >
-                          {copied ? (
-                            <CheckCircle2 className="w-4 h-4 text-success" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </Button>
                       </div>
-                    </div>
+                    )}
+
+                    {/* Generate new PIX button when expired */}
+                    {isExpired && (
+                      <Button 
+                        onClick={() => {
+                          setPixData(null);
+                          setExpirationTime(null);
+                          setOrderId(null);
+                        }}
+                        className="w-full"
+                      >
+                        Gerar novo código PIX
+                      </Button>
+                    )}
 
                     <p className="text-xs text-muted-foreground text-center">
-                      Após o pagamento, suas sessions serão liberadas automaticamente.
+                      {isExpired 
+                        ? "O código PIX expirou. Gere um novo código para continuar."
+                        : "Após o pagamento, suas sessions serão liberadas automaticamente."
+                      }
                     </p>
                   </div>
                 )}
