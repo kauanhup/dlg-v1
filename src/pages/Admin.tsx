@@ -111,12 +111,14 @@ const PlanFormModal = ({
   isOpen, 
   onClose, 
   plan, 
-  onSave 
+  onSave,
+  isLoading = false
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
   plan: { id: string; name: string; price: string; promotional_price?: string | null; period: number; features: string[]; status: string } | null;
   onSave: (planData: { name: string; price: string; promotional_price: string | null; period: number; features: string[]; status: string }) => void;
+  isLoading?: boolean;
 }) => {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -153,7 +155,6 @@ const PlanFormModal = ({
       features: features.split("\n").filter(f => f.trim()),
       status
     });
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -255,11 +256,11 @@ const PlanFormModal = ({
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1" disabled={isLoading}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1">
-              {plan ? "Salvar" : "Criar Plano"}
+            <Button type="submit" className="flex-1" disabled={isLoading}>
+              {isLoading ? <Spinner /> : (plan ? "Salvar" : "Criar Plano")}
             </Button>
           </div>
         </form>
@@ -308,6 +309,7 @@ const SubscriptionsTabContent = () => {
   const [isCancelling, setIsCancelling] = useState(false);
   const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [isRefunding, setIsRefunding] = useState(false);
+  const [isSavingPlan, setIsSavingPlan] = useState(false);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "—";
@@ -370,34 +372,39 @@ const SubscriptionsTabContent = () => {
   };
 
   const handleSavePlan = async (planData: { name: string; price: string; promotional_price: string | null; period: number; features: string[]; status: string }) => {
-    const priceValue = parseFloat(planData.price.replace('R$ ', '').replace(',', '.')) || 0;
-    const promoValue = planData.promotional_price 
-      ? parseFloat(planData.promotional_price.replace('R$ ', '').replace(',', '.')) || null 
-      : null;
-    
-    if (editingPlan) {
-      await updatePlan(editingPlan.id, { 
-        name: planData.name,
-        price: priceValue,
-        promotional_price: promoValue,
-        period: planData.period,
-        features: planData.features,
-        is_active: planData.status === 'active'
-      });
-      toast.success('Plano atualizado');
-    } else {
-      await createPlan({
-        name: planData.name,
-        price: priceValue,
-        promotional_price: promoValue,
-        period: planData.period,
-        features: planData.features
-      });
-      toast.success('Plano criado');
+    setIsSavingPlan(true);
+    try {
+      const priceValue = parseFloat(planData.price.replace('R$ ', '').replace(',', '.')) || 0;
+      const promoValue = planData.promotional_price 
+        ? parseFloat(planData.promotional_price.replace('R$ ', '').replace(',', '.')) || null 
+        : null;
+      
+      if (editingPlan) {
+        await updatePlan(editingPlan.id, { 
+          name: planData.name,
+          price: priceValue,
+          promotional_price: promoValue,
+          period: planData.period,
+          features: planData.features,
+          is_active: planData.status === 'active'
+        });
+        toast.success('Plano atualizado');
+      } else {
+        await createPlan({
+          name: planData.name,
+          price: priceValue,
+          promotional_price: promoValue,
+          period: planData.period,
+          features: planData.features
+        });
+        toast.success('Plano criado');
+      }
+      setEditingPlan(null);
+      setIsModalOpen(false);
+      refetch();
+    } finally {
+      setIsSavingPlan(false);
     }
-    setEditingPlan(null);
-    setIsModalOpen(false);
-    refetch();
   };
 
   const handleEditPlan = (plan: any) => {
@@ -699,6 +706,7 @@ const SubscriptionsTabContent = () => {
         }}
         plan={editingPlan}
         onSave={handleSavePlan}
+        isLoading={isSavingPlan}
       />
 
       {/* Delete Plan Confirmation Modal */}
