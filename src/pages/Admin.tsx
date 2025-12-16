@@ -2202,6 +2202,7 @@ const BotManagementSection = () => {
   const [version, setVersion] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; path: string; version: string } | null>(null);
+  const [activateConfirm, setActivateConfirm] = useState<{ id: string; version: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const formatBytes = (bytes: number) => {
@@ -2248,6 +2249,13 @@ const BotManagementSection = () => {
     if (deleteConfirm) {
       await deleteBotFile(deleteConfirm.id, deleteConfirm.path);
       setDeleteConfirm(null);
+    }
+  };
+
+  const handleActivateConfirm = async () => {
+    if (activateConfirm) {
+      await setActiveVersion(activateConfirm.id);
+      setActivateConfirm(null);
     }
   };
 
@@ -2414,7 +2422,7 @@ const BotManagementSection = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setActiveVersion(file.id)}
+                      onClick={() => setActivateConfirm({ id: file.id, version: file.version })}
                     >
                       Ativar
                     </Button>
@@ -2479,6 +2487,46 @@ const BotManagementSection = () => {
                 <Button variant="destructive" onClick={handleDeleteConfirm}>
                   <Trash2 className="w-4 h-4 mr-2" />
                   Excluir
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Activate Confirmation Modal */}
+      <AnimatePresence>
+        {activateConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setActivateConfirm(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-card border border-border rounded-lg p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">Confirmar Ativação</h3>
+              </div>
+              <p className="text-muted-foreground mb-6">
+                Deseja ativar a versão <span className="font-medium text-foreground">v{activateConfirm.version}</span>? A versão atual será desativada.
+              </p>
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" onClick={() => setActivateConfirm(null)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleActivateConfirm}>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Ativar
                 </Button>
               </div>
             </motion.div>
