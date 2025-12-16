@@ -1970,11 +1970,26 @@ const Admin = () => {
   const { settings, setMaintenanceMode, setAllowRegistration } = useSystemSettings();
 
   // Use auth hook with admin role requirement
-  const { user, isLoading, isAdmin, role, signOut } = useAuth('admin');
+  const { user, isLoading, isAdmin, role, signOut, profile, updateProfile } = useAuth('admin');
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
   }, []);
+
+  // Initialize avatar from profile
+  useEffect(() => {
+    if (profile?.avatar) {
+      const avatarIndex = avatars.findIndex(a => a.alt === profile.avatar);
+      if (avatarIndex >= 0) {
+        setSelectedAvatarId(avatars[avatarIndex].id);
+      }
+    }
+  }, [profile?.avatar]);
+
+  const handleAvatarChange = async (avatar: typeof avatars[0]) => {
+    setSelectedAvatarId(avatar.id);
+    await updateProfile({ avatar: avatar.alt });
+  };
 
   // Redirect non-admins immediately when role is loaded
   useEffect(() => {
@@ -2083,7 +2098,7 @@ const Admin = () => {
           logoutItem={logoutItem}
           activeIndex={sidebarActiveIndex >= 0 ? sidebarActiveIndex : 0}
           onActiveChange={handleSidebarChange}
-          onAvatarChange={(avatar) => setSelectedAvatarId(avatar.id)}
+          onAvatarChange={handleAvatarChange}
           className="h-full border-r-0"
         />
       </aside>
@@ -2142,7 +2157,7 @@ const Admin = () => {
                   handleSidebarChange(index);
                   setIsMobileSidebarOpen(false);
                 }}
-                onAvatarChange={(avatar) => setSelectedAvatarId(avatar.id)}
+                onAvatarChange={handleAvatarChange}
                 className="h-full border-r-0"
               />
             </motion.aside>
