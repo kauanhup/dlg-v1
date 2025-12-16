@@ -86,7 +86,7 @@ const Pricing = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-          <p className="text-primary text-sm font-medium mb-3">PREÇOS</p>
+          <p className="text-primary text-sm font-medium mb-3">PLANOS</p>
           <h2 className="text-3xl sm:text-4xl font-display font-bold mb-4">
             Escolha seu plano
           </h2>
@@ -180,8 +180,22 @@ const Pricing = () => {
           </div>
         )}
 
+        <motion.div
+          className="flex justify-center mt-8"
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+        >
+          <Link to="/comprar">
+            <Button variant="ghost" className="text-primary hover:text-primary/80">
+              Ver todos os planos →
+            </Button>
+          </Link>
+        </motion.div>
+
         <motion.p 
-          className="text-center text-muted-foreground text-sm mt-10"
+          className="text-center text-muted-foreground text-sm mt-6"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
