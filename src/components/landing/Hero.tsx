@@ -18,8 +18,7 @@ const Hero = () => {
 
           {/* Title */}
           <motion.h1 
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold tracking-tight mb-6"
-            style={{ lineHeight: 1.3, overflow: 'visible' }}
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold tracking-tight mb-6 leading-tight"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -27,9 +26,8 @@ const Hero = () => {
             Escale seus grupos com{" "}
             <AnimatedText 
               text="automação inteligente"
-              textClassName="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold"
+              textClassName="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold leading-tight"
               gradientColors="linear-gradient(90deg, hsl(var(--primary)), hsl(var(--foreground)), hsl(var(--primary)))"
-              className="inline"
             />
           </motion.h1>
 
