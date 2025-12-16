@@ -54,6 +54,10 @@ const Buy = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     const fetchPlans = async () => {
       const { data, error } = await supabase
         .from('subscription_plans')
