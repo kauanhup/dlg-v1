@@ -13,6 +13,7 @@ import { useAdminSubscriptions } from "@/hooks/useAdminSubscriptions";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { useAdminBot } from "@/hooks/useAdminBot";
 import { MorphingSquare } from "@/components/ui/morphing-square";
+import { Spinner } from "@/components/ui/spinner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
@@ -2203,6 +2204,8 @@ const BotManagementSection = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; path: string; version: string } | null>(null);
   const [activateConfirm, setActivateConfirm] = useState<{ id: string; version: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const formatBytes = (bytes: number) => {
@@ -2247,14 +2250,18 @@ const BotManagementSection = () => {
 
   const handleDeleteConfirm = async () => {
     if (deleteConfirm) {
+      setIsDeleting(true);
       await deleteBotFile(deleteConfirm.id, deleteConfirm.path);
+      setIsDeleting(false);
       setDeleteConfirm(null);
     }
   };
 
   const handleActivateConfirm = async () => {
     if (activateConfirm) {
+      setIsActivating(true);
       await setActiveVersion(activateConfirm.id);
+      setIsActivating(false);
       setActivateConfirm(null);
     }
   };
@@ -2481,12 +2488,16 @@ const BotManagementSection = () => {
                 Tem certeza que deseja excluir a versão <span className="font-medium text-foreground">v{deleteConfirm.version}</span>? Esta ação não pode ser desfeita.
               </p>
               <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
+                <Button variant="outline" onClick={() => setDeleteConfirm(null)} disabled={isDeleting}>
                   Cancelar
                 </Button>
-                <Button variant="destructive" onClick={handleDeleteConfirm}>
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Excluir
+                <Button variant="destructive" onClick={handleDeleteConfirm} disabled={isDeleting}>
+                  {isDeleting ? (
+                    <Spinner size="sm" className="mr-2" />
+                  ) : (
+                    <Trash2 className="w-4 h-4 mr-2" />
+                  )}
+                  {isDeleting ? "Excluindo..." : "Excluir"}
                 </Button>
               </div>
             </motion.div>
@@ -2521,12 +2532,16 @@ const BotManagementSection = () => {
                 Deseja ativar a versão <span className="font-medium text-foreground">v{activateConfirm.version}</span>? A versão atual será desativada.
               </p>
               <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setActivateConfirm(null)}>
+                <Button variant="outline" onClick={() => setActivateConfirm(null)} disabled={isActivating}>
                   Cancelar
                 </Button>
-                <Button onClick={handleActivateConfirm}>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Ativar
+                <Button onClick={handleActivateConfirm} disabled={isActivating}>
+                  {isActivating ? (
+                    <Spinner size="sm" className="mr-2" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                  )}
+                  {isActivating ? "Ativando..." : "Ativar"}
                 </Button>
               </div>
             </motion.div>
