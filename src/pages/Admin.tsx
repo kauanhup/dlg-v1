@@ -662,6 +662,11 @@ const SubscriptionsTabContent = () => {
                         / {plan.period === 0 ? 'vitalício' : `${plan.period} dias`}
                       </span>
                     </div>
+                    {plan.max_subscriptions_per_user && (
+                      <span className="text-xs text-warning mt-1">
+                        Limite: {plan.max_subscriptions_per_user}x por usuário
+                      </span>
+                    )}
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
