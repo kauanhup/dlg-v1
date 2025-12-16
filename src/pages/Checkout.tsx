@@ -1,12 +1,19 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { Check, CreditCard, ArrowLeft } from "lucide-react";
+import { Check, CreditCard, ArrowLeft, Copy, CheckCircle2, Loader2, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { supabase } from "@/integrations/supabase/client";
+
+interface PixData {
+  pixCode: string;
+  qrCodeBase64?: string;
+  transactionId: string;
+  expiresAt?: string;
+}
 
 const Checkout = () => {
   const [searchParams] = useSearchParams();
@@ -16,6 +23,10 @@ const Checkout = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [pixData, setPixData] = useState<PixData | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<string>('pending');
 
   // Get parameters from location state (from Dashboard) OR searchParams (from Buy page)
   const locationState = location.state as { type?: string; qty?: number; price?: string } | null;
@@ -79,6 +90,37 @@ const Checkout = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Subscribe to order status changes
+  useEffect(() => {
+    if (!orderId) return;
+
+    const channel = supabase
+      .channel(`order-${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        (payload) => {
+          const newStatus = payload.new.status;
+          setPaymentStatus(newStatus);
+          
+          if (newStatus === 'completed' || newStatus === 'paid') {
+            toast.success("Pagamento confirmado!", "Suas sessions foram liberadas.");
+            setTimeout(() => navigate('/dashboard'), 2000);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orderId, navigate, toast]);
+
   const handlePayment = async () => {
     if (!user) return;
 
@@ -99,6 +141,8 @@ const Checkout = () => {
 
         if (orderError) throw orderError;
 
+        setOrderId(orderData.id);
+
         // Create payment record
         const { error: paymentError } = await supabase.from('payments').insert({
           user_id: user.id,
@@ -110,12 +154,36 @@ const Checkout = () => {
 
         if (paymentError) console.error('Payment record error:', paymentError);
 
-        toast.success("Pedido criado!", "Aguardando confirmação do pagamento PIX.");
-        
-        // Redirect back to dashboard after order creation
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 2000);
+        // Generate PIX via gateway
+        const { data: pixResponse, error: pixError } = await supabase.functions.invoke('pixup', {
+          body: {
+            action: 'create_pix',
+            amount: sessionInfo.price,
+            orderId: orderData.id,
+            description: `${sessionInfo.quantity}x ${sessionInfo.type}`,
+          },
+        });
+
+        if (pixError) {
+          console.error('PIX generation error:', pixError);
+          toast.error("Gateway indisponível", "Pedido criado. Configure o gateway PIX ou aguarde aprovação manual.");
+        } else if (pixResponse?.pixCode) {
+          setPixData({
+            pixCode: pixResponse.pixCode,
+            qrCodeBase64: pixResponse.qrCodeBase64,
+            transactionId: pixResponse.transactionId,
+            expiresAt: pixResponse.expiresAt,
+          });
+
+          // Update payment with PIX code
+          await supabase.from('payments').update({
+            pix_code: pixResponse.pixCode,
+          }).eq('order_id', orderData.id);
+
+          toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
+        } else {
+          toast.warning("Gateway não configurado", "Pedido criado. Aguarde aprovação manual do admin.");
+        }
       } else if (planId) {
         // Handle plan purchase (license)
         toast.success("Pagamento iniciado!", "Você será redirecionado para o pagamento via PIX.");
@@ -128,6 +196,19 @@ const Checkout = () => {
       toast.error("Erro", "Não foi possível criar o pedido. Tente novamente.");
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const copyPixCode = async () => {
+    if (!pixData?.pixCode) return;
+    
+    try {
+      await navigator.clipboard.writeText(pixData.pixCode);
+      setCopied(true);
+      toast.success("Copiado!", "Código PIX copiado para a área de transferência.");
+      setTimeout(() => setCopied(false), 3000);
+    } catch (error) {
+      toast.error("Erro", "Não foi possível copiar o código.");
     }
   };
 
@@ -233,34 +314,103 @@ const Checkout = () => {
               <div className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-6 sm:p-8">
                 <h2 className="font-display font-bold text-lg mb-6">Pagamento</h2>
 
-                <div className="space-y-4">
-                  <div className="bg-muted/50 border border-border/50 rounded-xl p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 bg-success/10 rounded-lg flex items-center justify-center">
-                        <span className="text-success font-bold text-sm">PIX</span>
+                {!pixData ? (
+                  <div className="space-y-4">
+                    <div className="bg-muted/50 border border-border/50 rounded-xl p-4">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 bg-success/10 rounded-lg flex items-center justify-center">
+                          <span className="text-success font-bold text-sm">PIX</span>
+                        </div>
+                        <span className="font-medium">Pagamento via PIX</span>
                       </div>
-                      <span className="font-medium">Pagamento via PIX</span>
+                      <p className="text-sm text-muted-foreground">
+                        Pagamento instantâneo. Suas sessions serão liberadas automaticamente após a confirmação.
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Pagamento instantâneo. Suas sessions serão liberadas automaticamente após a confirmação.
+
+                    <Button 
+                      onClick={handlePayment}
+                      disabled={isProcessing || !isSessionPurchase}
+                      className="w-full h-12 sm:h-14 text-base bg-primary hover:bg-primary/90"
+                    >
+                      {isProcessing ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Gerando PIX...
+                        </span>
+                      ) : (
+                        "Gerar código PIX"
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Payment Status */}
+                    <div className={`flex items-center gap-2 p-3 rounded-lg ${
+                      paymentStatus === 'completed' || paymentStatus === 'paid'
+                        ? 'bg-success/10 text-success'
+                        : 'bg-warning/10 text-warning'
+                    }`}>
+                      {paymentStatus === 'completed' || paymentStatus === 'paid' ? (
+                        <>
+                          <CheckCircle2 className="w-5 h-5" />
+                          <span className="font-medium">Pagamento confirmado!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span className="font-medium">Aguardando pagamento...</span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* QR Code */}
+                    {pixData.qrCodeBase64 && (
+                      <div className="flex justify-center p-4 bg-white rounded-xl">
+                        <img 
+                          src={`data:image/png;base64,${pixData.qrCodeBase64}`} 
+                          alt="QR Code PIX" 
+                          className="w-48 h-48"
+                        />
+                      </div>
+                    )}
+
+                    {!pixData.qrCodeBase64 && (
+                      <div className="flex justify-center p-4 bg-muted/50 rounded-xl">
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <QrCode className="w-16 h-16" />
+                          <span className="text-sm">QR Code não disponível</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* PIX Code */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Código PIX Copia e Cola:</label>
+                      <div className="relative">
+                        <div className="bg-muted/50 border border-border/50 rounded-lg p-3 pr-12 font-mono text-xs break-all max-h-24 overflow-y-auto">
+                          {pixData.pixCode}
+                        </div>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={copyPixCode}
+                          className="absolute right-2 top-1/2 -translate-y-1/2"
+                        >
+                          {copied ? (
+                            <CheckCircle2 className="w-4 h-4 text-success" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground text-center">
+                      Após o pagamento, suas sessions serão liberadas automaticamente.
                     </p>
                   </div>
-
-                  <Button 
-                    onClick={handlePayment}
-                    disabled={isProcessing || !isSessionPurchase}
-                    className="w-full h-12 sm:h-14 text-base bg-primary hover:bg-primary/90"
-                  >
-                    {isProcessing ? (
-                      <span className="flex items-center gap-2">
-                        <MorphingSquare className="w-5 h-5" />
-                        Processando...
-                      </span>
-                    ) : (
-                      "Pagar com PIX"
-                    )}
-                  </Button>
-                </div>
+                )}
               </div>
             </div>
           </motion.div>
