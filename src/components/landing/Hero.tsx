@@ -18,7 +18,7 @@ const Hero = () => {
 
           {/* Title */}
           <motion.h1 
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold tracking-tight mb-6 leading-[1.1]"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold tracking-tight mb-6 leading-[1.2] pb-1"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -28,7 +28,7 @@ const Hero = () => {
               text="automação inteligente"
               textClassName="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold"
               gradientColors="linear-gradient(90deg, hsl(var(--primary)), hsl(var(--foreground)), hsl(var(--primary)))"
-              className="inline-block"
+              className="inline-block pb-1"
             />
           </motion.h1>
 
