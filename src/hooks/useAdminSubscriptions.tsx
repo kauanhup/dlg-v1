@@ -60,10 +60,16 @@ export const useAdminSubscriptions = () => {
       // Fetch plans
       const { data: plansData, error: plansError } = await supabase
         .from('subscription_plans')
-        .select('*')
-        .order('price', { ascending: true });
+        .select('*');
 
       if (plansError) throw plansError;
+      
+      // Sort by effective price (promotional if exists, otherwise regular)
+      const sortedPlans = (plansData || []).sort((a, b) => {
+        const priceA = a.promotional_price ?? a.price;
+        const priceB = b.promotional_price ?? b.price;
+        return priceA - priceB;
+      });
 
       // Fetch subscriptions
       const { data: subsData, error: subsError } = await supabase
@@ -101,7 +107,7 @@ export const useAdminSubscriptions = () => {
       });
 
       // Merge plans with subscriber counts
-      const plansWithCounts: SubscriptionPlan[] = (plansData || []).map(plan => ({
+      const plansWithCounts: SubscriptionPlan[] = sortedPlans.map(plan => ({
         ...plan,
         subscribers_count: subscriberCounts[plan.id] || 0,
       }));
