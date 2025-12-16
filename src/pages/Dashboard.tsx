@@ -356,7 +356,7 @@ const Dashboard = () => {
     }
     return { email: true, license: true, promos: true };
   });
-  const [showApiKey, setShowApiKey] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState<number>(1);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [selectedUpgradePlan, setSelectedUpgradePlan] = useState(1);
@@ -459,11 +459,7 @@ const Dashboard = () => {
   
   const userLicense = getLicenseInfo();
 
-  // Mock data removed - sessions now come from useUserDashboard hook
-
-  // loginHistory is now fetched from useUserDashboard hook
-
-  // Use real user data from auth
+  // User data from auth
   const userData = {
     name: profile?.name || "Usuário",
     email: profile?.email || user?.email || "",
@@ -1482,7 +1478,7 @@ const Dashboard = () => {
                     <label className="text-xs text-muted-foreground">Nova senha</label>
                     <div className="relative group">
                       <input 
-                        type={showApiKey ? "text" : "password"}
+                        type={showPassword ? "text" : "password"}
                         placeholder="Mínimo 8 caracteres"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
@@ -1490,10 +1486,10 @@ const Dashboard = () => {
                       />
                       <button 
                         type="button"
-                        onClick={() => setShowApiKey(!showApiKey)}
+                        onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       >
-                        {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>

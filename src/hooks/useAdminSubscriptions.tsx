@@ -239,7 +239,7 @@ export const useAdminSubscriptions = () => {
         .delete()
         .eq('plan_id', planId);
 
-      console.log('Delete subscriptions result:', { planId, deleteSubsError });
+      
       
       if (deleteSubsError) {
         console.error('Error deleting subscriptions:', deleteSubsError);
