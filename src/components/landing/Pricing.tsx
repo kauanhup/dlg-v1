@@ -171,7 +171,7 @@ const Pricing = () => {
                       }`}
                       variant={isPopular ? "default" : "outline"}
                     >
-                      Começar Agora
+                      {effectivePrice === 0 ? 'Testar Agora' : 'Começar Agora'}
                     </Button>
                   </Link>
                 </motion.div>
