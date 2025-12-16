@@ -2,7 +2,37 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-signature',
+}
+
+// Simple HMAC verification for webhook authenticity
+async function verifyWebhookSignature(payload: string, signature: string | null, secret: string): Promise<boolean> {
+  if (!signature || !secret) {
+    console.log('Missing signature or secret for webhook verification')
+    return false
+  }
+  
+  try {
+    const encoder = new TextEncoder()
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
+    
+    const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(payload))
+    const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+    
+    // Compare signatures (timing-safe comparison)
+    return signature.toLowerCase() === expectedSignature.toLowerCase()
+  } catch (error) {
+    console.error('Signature verification error:', error)
+    return false
+  }
 }
 
 Deno.serve(async (req) => {
@@ -16,9 +46,42 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const payload = await req.json()
+    // Get raw body for signature verification
+    const rawBody = await req.text()
+    const payload = JSON.parse(rawBody)
     
-    console.log('PixUp Webhook received:', JSON.stringify(payload, null, 2))
+    console.log('PixUp Webhook received')
+
+    // Get the webhook signature from headers
+    const signature = req.headers.get('x-webhook-signature') || 
+                      req.headers.get('x-bspay-signature') ||
+                      req.headers.get('x-pixup-signature')
+
+    // Fetch webhook secret from gateway settings
+    const { data: settings } = await supabase
+      .from('gateway_settings')
+      .select('client_secret, webhook_url')
+      .eq('provider', 'pixup')
+      .eq('is_active', true)
+      .maybeSingle()
+
+    // SECURITY: Verify webhook signature if secret is configured
+    // This prevents attackers from forging payment confirmations
+    if (settings?.client_secret) {
+      const isValid = await verifyWebhookSignature(rawBody, signature, settings.client_secret)
+      
+      if (!isValid) {
+        console.error('Invalid webhook signature - potential spoofing attempt')
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid signature' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        )
+      }
+      console.log('Webhook signature verified successfully')
+    } else {
+      // If no secret configured, log warning but still validate order exists
+      console.warn('WARNING: Webhook secret not configured - signature verification skipped')
+    }
 
     // PixUp/BSPAY webhook payload structure
     const {
@@ -35,6 +98,40 @@ Deno.serve(async (req) => {
       console.log('No externalId (order_id) in webhook payload')
       return new Response(
         JSON.stringify({ success: false, error: 'Missing externalId' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
+
+    // SECURITY: Validate that the order exists and is in pending state
+    // This prevents attackers from completing already-processed or non-existent orders
+    const { data: existingOrder, error: orderCheckError } = await supabase
+      .from('orders')
+      .select('id, status, amount, user_id')
+      .eq('id', externalId)
+      .single()
+
+    if (orderCheckError || !existingOrder) {
+      console.error('Order not found:', externalId)
+      return new Response(
+        JSON.stringify({ success: false, error: 'Order not found' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      )
+    }
+
+    // SECURITY: Only process if order is still pending
+    if (existingOrder.status !== 'pending') {
+      console.log(`Order ${externalId} already processed with status: ${existingOrder.status}`)
+      return new Response(
+        JSON.stringify({ success: true, message: 'Order already processed', status: existingOrder.status }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // SECURITY: Optionally validate amount matches (if provided in webhook)
+    if (amount && Math.abs(Number(amount) - Number(existingOrder.amount)) > 0.01) {
+      console.error(`Amount mismatch: webhook=${amount}, order=${existingOrder.amount}`)
+      return new Response(
+        JSON.stringify({ success: false, error: 'Amount mismatch' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }

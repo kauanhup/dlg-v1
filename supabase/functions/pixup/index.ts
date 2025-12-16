@@ -9,6 +9,38 @@ const corsHeaders = {
 
 const BSPAY_API_URL = "https://api.bspay.co";
 
+// SECURITY: Helper to verify admin role
+async function isAdmin(supabase: any, userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId)
+    .single();
+  
+  return !error && data?.role === 'admin';
+}
+
+// SECURITY: Extract user from JWT token
+async function getUserFromRequest(req: Request, supabase: any): Promise<{ userId: string | null; isAuthenticated: boolean }> {
+  const authHeader = req.headers.get('Authorization');
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { userId: null, isAuthenticated: false };
+  }
+
+  const token = authHeader.replace('Bearer ', '');
+  
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return { userId: null, isAuthenticated: false };
+    }
+    return { userId: user.id, isAuthenticated: true };
+  } catch {
+    return { userId: null, isAuthenticated: false };
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -18,23 +50,62 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    
+    // Use service role for database operations
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    // Use anon key for auth verification
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
 
     const { action, ...params } = await req.json();
-    console.log(`PixUp action: ${action}`, params);
+    console.log(`PixUp action: ${action}`);
+
+    // Get user authentication
+    const { userId, isAuthenticated } = await getUserFromRequest(req, supabaseAuth);
+
+    // SECURITY: Define which actions require authentication and admin role
+    const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection'];
+    const authRequiredActions = ['create_pix'];
+
+    if (adminOnlyActions.includes(action)) {
+      if (!isAuthenticated || !userId) {
+        return new Response(
+          JSON.stringify({ error: 'Authentication required' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      const adminCheck = await isAdmin(supabaseAdmin, userId);
+      if (!adminCheck) {
+        console.log(`User ${userId} attempted admin action ${action} without admin role`);
+        return new Response(
+          JSON.stringify({ error: 'Admin access required' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (authRequiredActions.includes(action)) {
+      if (!isAuthenticated || !userId) {
+        return new Response(
+          JSON.stringify({ error: 'Authentication required' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     switch (action) {
       case 'test_connection':
-        return await testConnection(supabase);
+        return await testConnection(supabaseAdmin);
       
       case 'save_credentials':
-        return await saveCredentials(supabase, params);
+        return await saveCredentials(supabaseAdmin, params);
       
       case 'get_settings':
-        return await getSettings(supabase);
+        return await getSettings(supabaseAdmin);
       
       case 'create_pix':
-        return await createPixCharge(supabase, params);
+        return await createPixCharge(supabaseAdmin, params, userId!);
       
       default:
         return new Response(
@@ -65,15 +136,15 @@ async function getSettings(supabase: any) {
     throw new Error('Failed to fetch gateway settings');
   }
 
+  // SECURITY: Never return client_secret in the response
   return new Response(
     JSON.stringify({ 
       success: true, 
       data: data ? {
         client_id: data.client_id,
-        client_secret: data.client_secret, // Return secret for admin
         webhook_url: data.webhook_url,
         is_active: data.is_active,
-        has_secret: !!data.client_secret
+        has_secret: !!data.client_secret // Only indicate if secret exists, never expose it
       } : null 
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -221,7 +292,7 @@ async function createPixCharge(supabase: any, params: {
   orderId?: string;
   payer_name?: string;
   payer_document?: string;
-}) {
+}, userId: string) {
   const { amount, description, external_id, orderId, payer_name, payer_document } = params;
   const externalId = external_id || orderId;
 
@@ -230,6 +301,38 @@ async function createPixCharge(supabase: any, params: {
       JSON.stringify({ error: 'Invalid amount' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+  }
+
+  // SECURITY: Validate that the order belongs to the authenticated user
+  if (externalId) {
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('user_id, amount')
+      .eq('id', externalId)
+      .single();
+
+    if (orderError || !order) {
+      return new Response(
+        JSON.stringify({ error: 'Order not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (order.user_id !== userId) {
+      console.log(`User ${userId} attempted to create PIX for order owned by ${order.user_id}`);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate amount matches
+    if (Math.abs(Number(order.amount) - amount) > 0.01) {
+      return new Response(
+        JSON.stringify({ error: 'Amount mismatch' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
   }
 
   // Get credentials
@@ -286,7 +389,7 @@ async function createPixCharge(supabase: any, params: {
     }
 
     const pixData = await pixResponse.json();
-    console.log('PIX charge created successfully:', pixData);
+    console.log('PIX charge created successfully');
 
     // Normalize response format
     return new Response(
