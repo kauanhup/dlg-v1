@@ -116,8 +116,8 @@ const PlanFormModal = ({
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
-  plan: { id: string; name: string; price: string; promotional_price?: string | null; period: number; features: string[]; status: string } | null;
-  onSave: (planData: { name: string; price: string; promotional_price: string | null; period: number; features: string[]; status: string }) => void;
+  plan: { id: string; name: string; price: string; promotional_price?: string | null; period: number; features: string[]; status: string; max_subscriptions_per_user?: number | null } | null;
+  onSave: (planData: { name: string; price: string; promotional_price: string | null; period: number; features: string[]; status: string; max_subscriptions_per_user: number | null }) => void;
   isLoading?: boolean;
 }) => {
   const [name, setName] = useState("");
@@ -126,6 +126,7 @@ const PlanFormModal = ({
   const [period, setPeriod] = useState(30);
   const [features, setFeatures] = useState("");
   const [status, setStatus] = useState("active");
+  const [maxSubscriptions, setMaxSubscriptions] = useState<string>("");
 
   useEffect(() => {
     if (isOpen && plan) {
@@ -135,6 +136,7 @@ const PlanFormModal = ({
       setPeriod(Number(plan.period) || 30);
       setFeatures(plan.features?.join("\n") || "");
       setStatus(plan.status);
+      setMaxSubscriptions(plan.max_subscriptions_per_user !== null && plan.max_subscriptions_per_user !== undefined ? String(plan.max_subscriptions_per_user) : "");
     } else if (isOpen && !plan) {
       setName("");
       setPrice("");
@@ -142,6 +144,7 @@ const PlanFormModal = ({
       setPeriod(30);
       setFeatures("");
       setStatus("active");
+      setMaxSubscriptions("");
     }
   }, [plan, isOpen]);
 
@@ -153,7 +156,8 @@ const PlanFormModal = ({
       promotional_price: promotionalPrice ? `R$ ${promotionalPrice}` : null,
       period,
       features: features.split("\n").filter(f => f.trim()),
-      status
+      status,
+      max_subscriptions_per_user: maxSubscriptions ? parseInt(maxSubscriptions) : null
     });
   };
 
@@ -253,6 +257,19 @@ const PlanFormModal = ({
               <option value="active">Ativo</option>
               <option value="inactive">Inativo</option>
             </select>
+          </div>
+
+          <div>
+            <label className="text-sm text-muted-foreground mb-2 block">Limite de Assinaturas por Usuário</label>
+            <input
+              type="number"
+              min="1"
+              value={maxSubscriptions}
+              onChange={(e) => setMaxSubscriptions(e.target.value)}
+              placeholder="Ilimitado"
+              className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+            <p className="text-xs text-muted-foreground mt-1">Deixe vazio para ilimitado. Use 1 para planos de teste únicos.</p>
           </div>
 
           <div className="flex gap-3 pt-4">
@@ -371,7 +388,7 @@ const SubscriptionsTabContent = () => {
     refetch();
   };
 
-  const handleSavePlan = async (planData: { name: string; price: string; promotional_price: string | null; period: number; features: string[]; status: string }) => {
+  const handleSavePlan = async (planData: { name: string; price: string; promotional_price: string | null; period: number; features: string[]; status: string; max_subscriptions_per_user: number | null }) => {
     setIsSavingPlan(true);
     try {
       const priceValue = parseFloat(planData.price.replace('R$ ', '').replace(',', '.')) || 0;
@@ -386,7 +403,8 @@ const SubscriptionsTabContent = () => {
           promotional_price: promoValue,
           period: planData.period,
           features: planData.features,
-          is_active: planData.status === 'active'
+          is_active: planData.status === 'active',
+          max_subscriptions_per_user: planData.max_subscriptions_per_user
         });
         toast.success('Plano atualizado');
       } else {
@@ -395,7 +413,8 @@ const SubscriptionsTabContent = () => {
           price: priceValue,
           promotional_price: promoValue,
           period: planData.period,
-          features: planData.features
+          features: planData.features,
+          max_subscriptions_per_user: planData.max_subscriptions_per_user
         });
         toast.success('Plano criado');
       }
@@ -412,7 +431,8 @@ const SubscriptionsTabContent = () => {
       ...plan,
       price: formatPrice(plan.price),
       promotional_price: plan.promotional_price ? formatPrice(plan.promotional_price) : null,
-      status: plan.is_active ? 'active' : 'inactive'
+      status: plan.is_active ? 'active' : 'inactive',
+      max_subscriptions_per_user: plan.max_subscriptions_per_user
     });
     setIsModalOpen(true);
   };

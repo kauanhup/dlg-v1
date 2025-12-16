@@ -385,6 +385,7 @@ export type Database = {
           features: string[] | null
           id: string
           is_active: boolean
+          max_subscriptions_per_user: number | null
           name: string
           period: number
           price: number
@@ -396,6 +397,7 @@ export type Database = {
           features?: string[] | null
           id?: string
           is_active?: boolean
+          max_subscriptions_per_user?: number | null
           name: string
           period: number
           price: number
@@ -407,6 +409,7 @@ export type Database = {
           features?: string[] | null
           id?: string
           is_active?: boolean
+          max_subscriptions_per_user?: number | null
           name?: string
           period?: number
           price?: number
