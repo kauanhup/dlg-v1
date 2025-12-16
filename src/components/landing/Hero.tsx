@@ -46,7 +46,7 @@ const Hero = () => {
 
           {/* CTA Buttons */}
           <motion.div 
-            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-8 sm:mb-10 px-4"
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -57,21 +57,12 @@ const Hero = () => {
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
+            <DownloadBotButton />
             <Link to="/login" className="w-full sm:w-auto">
               <Button variant="outline" size="lg" className="w-full sm:w-auto sm:min-w-[180px] h-12">
                 Já tenho licença
               </Button>
             </Link>
-          </motion.div>
-
-          {/* Download Bot Button */}
-          <motion.div 
-            className="flex justify-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
-          >
-            <DownloadBotButton />
           </motion.div>
 
         </div>
