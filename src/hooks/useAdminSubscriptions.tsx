@@ -5,6 +5,7 @@ export interface SubscriptionPlan {
   id: string;
   name: string;
   price: number;
+  promotional_price: number | null;
   period: number;
   features: string[];
   is_active: boolean;
@@ -162,11 +163,18 @@ export const useAdminSubscriptions = () => {
     }
   };
 
-  const createPlan = async (data: { name: string; price: number; period: number; features: string[] }) => {
+  const createPlan = async (data: { name: string; price: number; promotional_price?: number | null; period: number; features: string[] }) => {
     try {
       const { data: newPlan, error } = await supabase
         .from('subscription_plans')
-        .insert({ ...data, is_active: true })
+        .insert({ 
+          name: data.name,
+          price: data.price,
+          promotional_price: data.promotional_price || null,
+          period: data.period,
+          features: data.features,
+          is_active: true 
+        })
         .select()
         .single();
 

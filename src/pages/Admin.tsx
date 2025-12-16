@@ -103,11 +103,12 @@ const PlanFormModal = ({
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
-  plan: { id: string; name: string; price: string; period: number; features: string[]; status: string } | null;
-  onSave: (planData: { name: string; price: string; period: number; features: string[]; status: string }) => void;
+  plan: { id: string; name: string; price: string; promotional_price?: string | null; period: number; features: string[]; status: string } | null;
+  onSave: (planData: { name: string; price: string; promotional_price: string | null; period: number; features: string[]; status: string }) => void;
 }) => {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [promotionalPrice, setPromotionalPrice] = useState("");
   const [period, setPeriod] = useState(30);
   const [features, setFeatures] = useState("");
   const [status, setStatus] = useState("active");
@@ -116,12 +117,14 @@ const PlanFormModal = ({
     if (isOpen && plan) {
       setName(plan.name);
       setPrice(String(plan.price).replace("R$ ", "").replace(",", "."));
+      setPromotionalPrice(plan.promotional_price ? String(plan.promotional_price).replace("R$ ", "").replace(",", ".") : "");
       setPeriod(Number(plan.period) || 30);
       setFeatures(plan.features?.join("\n") || "");
       setStatus(plan.status);
     } else if (isOpen && !plan) {
       setName("");
       setPrice("");
+      setPromotionalPrice("");
       setPeriod(30);
       setFeatures("");
       setStatus("active");
@@ -133,6 +136,7 @@ const PlanFormModal = ({
     onSave({
       name,
       price: `R$ ${price}`,
+      promotional_price: promotionalPrice ? `R$ ${promotionalPrice}` : null,
       period,
       features: features.split("\n").filter(f => f.trim()),
       status
@@ -186,23 +190,34 @@ const PlanFormModal = ({
               />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Dias de Acesso</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="0"
-                  value={period}
-                  onChange={(e) => setPeriod(Number(e.target.value) || 0)}
-                  placeholder="30"
-                  className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  required
-                />
-                <span className="text-sm text-muted-foreground whitespace-nowrap">dias</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">0 = acesso vitalício</p>
+              <label className="text-sm text-muted-foreground mb-2 block">Preço Promocional (R$)</label>
+              <input
+                type="text"
+                value={promotionalPrice}
+                onChange={(e) => setPromotionalPrice(e.target.value)}
+                placeholder="39,90"
+                className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Deixe vazio se não houver</p>
             </div>
           </div>
 
+          <div>
+            <label className="text-sm text-muted-foreground mb-2 block">Dias de Acesso</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                value={period}
+                onChange={(e) => setPeriod(Number(e.target.value) || 0)}
+                placeholder="30"
+                className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                required
+              />
+              <span className="text-sm text-muted-foreground whitespace-nowrap">dias</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">0 = acesso vitalício</p>
+          </div>
 
           <div>
             <label className="text-sm text-muted-foreground mb-2 block">Recursos (um por linha)</label>
@@ -332,13 +347,17 @@ const SubscriptionsTabContent = () => {
     refetch();
   };
 
-  const handleSavePlan = async (planData: { name: string; price: string; period: number; features: string[]; status: string }) => {
+  const handleSavePlan = async (planData: { name: string; price: string; promotional_price: string | null; period: number; features: string[]; status: string }) => {
     const priceValue = parseFloat(planData.price.replace('R$ ', '').replace(',', '.')) || 0;
+    const promoValue = planData.promotional_price 
+      ? parseFloat(planData.promotional_price.replace('R$ ', '').replace(',', '.')) || null 
+      : null;
     
     if (editingPlan) {
       await updatePlan(editingPlan.id, { 
         name: planData.name,
         price: priceValue,
+        promotional_price: promoValue,
         period: planData.period,
         features: planData.features,
         is_active: planData.status === 'active'
@@ -348,6 +367,7 @@ const SubscriptionsTabContent = () => {
       await createPlan({
         name: planData.name,
         price: priceValue,
+        promotional_price: promoValue,
         period: planData.period,
         features: planData.features
       });
@@ -362,6 +382,7 @@ const SubscriptionsTabContent = () => {
     setEditingPlan({
       ...plan,
       price: formatPrice(plan.price),
+      promotional_price: plan.promotional_price ? formatPrice(plan.promotional_price) : null,
       status: plan.is_active ? 'active' : 'inactive'
     });
     setIsModalOpen(true);
