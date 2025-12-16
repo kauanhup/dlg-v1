@@ -2086,6 +2086,7 @@ const SessionsSection = () => {
 const GatewaySection = () => {
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
+  const [savedSecret, setSavedSecret] = useState(""); // Stored secret from DB
   const [webhookUrl, setWebhookUrl] = useState("");
   const [isConnected, setIsConnected] = useState(false);
   const [hasSecret, setHasSecret] = useState(false);
@@ -2106,6 +2107,7 @@ const GatewaySection = () => {
           setWebhookUrl(data.data.webhook_url || "");
           setIsConnected(data.data.is_active || false);
           setHasSecret(data.data.has_secret || false);
+          setSavedSecret(data.data.client_secret || "");
         }
       } catch (error) {
         console.error('Error loading gateway settings:', error);
@@ -2227,9 +2229,9 @@ const GatewaySection = () => {
             <div className="relative">
               <input
                 type={showSecret ? "text" : "password"}
-                value={clientSecret}
+                value={clientSecret || (showSecret ? savedSecret : "")}
                 onChange={(e) => setClientSecret(e.target.value)}
-                placeholder={hasSecret ? "••••••••••••••••••••••••••••••••" : "Seu client_secret do BSPAY"}
+                placeholder={hasSecret && !showSecret ? "••••••••••••••••••••••••••••••••" : "Seu client_secret do BSPAY"}
                 className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
               <button
@@ -2242,7 +2244,7 @@ const GatewaySection = () => {
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {hasSecret 
-                ? "Secret já configurado. Deixe em branco para manter o atual ou digite um novo para alterar."
+                ? "Clique no olho para ver o secret atual. Digite um novo para alterar."
                 : "Obtenha suas credenciais no painel do BSPAY"}
             </p>
           </div>

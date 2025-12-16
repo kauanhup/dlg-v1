@@ -70,9 +70,9 @@ async function getSettings(supabase: any) {
       success: true, 
       data: data ? {
         client_id: data.client_id,
+        client_secret: data.client_secret, // Return secret for admin
         webhook_url: data.webhook_url,
         is_active: data.is_active,
-        // Don't expose client_secret
         has_secret: !!data.client_secret
       } : null 
     }),
