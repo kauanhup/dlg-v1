@@ -12,6 +12,7 @@ export interface SubscriptionPlan {
   created_at: string;
   updated_at: string;
   subscribers_count?: number;
+  max_subscriptions_per_user: number | null;
 }
 
 export interface UserSubscription {
@@ -163,7 +164,7 @@ export const useAdminSubscriptions = () => {
     }
   };
 
-  const createPlan = async (data: { name: string; price: number; promotional_price?: number | null; period: number; features: string[] }) => {
+  const createPlan = async (data: { name: string; price: number; promotional_price?: number | null; period: number; features: string[]; max_subscriptions_per_user?: number | null }) => {
     try {
       const { data: newPlan, error } = await supabase
         .from('subscription_plans')
@@ -173,7 +174,8 @@ export const useAdminSubscriptions = () => {
           promotional_price: data.promotional_price || null,
           period: data.period,
           features: data.features,
-          is_active: true 
+          is_active: true,
+          max_subscriptions_per_user: data.max_subscriptions_per_user ?? null
         })
         .select()
         .single();
