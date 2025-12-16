@@ -1,87 +1,20 @@
-import { Check, Sparkles, Crown, Shield, Clock, Zap, CreditCard } from "lucide-react";
+import { Check, Sparkles, Crown, Shield, Clock, Zap, CreditCard, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Header, Footer } from "@/components/landing";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-const plans = [
-  {
-    id: "7dias",
-    name: "7 Dias",
-    price: "47",
-    period: "por 7 dias",
-    description: "Ideal para testar",
-    features: [
-      "Até 3 contas Telegram",
-      "500 adições/dia",
-      "Dashboard básico",
-      "Suporte por email",
-    ],
-  },
-  {
-    id: "15dias",
-    name: "15 Dias",
-    price: "77",
-    period: "por 15 dias",
-    description: "Para iniciantes",
-    features: [
-      "Até 5 contas Telegram",
-      "1.000 adições/dia",
-      "Dashboard completo",
-      "Histórico completo",
-      "Suporte prioritário",
-    ],
-  },
-  {
-    id: "30dias",
-    name: "30 Dias",
-    price: "127",
-    period: "por 30 dias",
-    description: "Mais popular",
-    features: [
-      "Até 10 contas Telegram",
-      "2.500 adições/dia",
-      "Dashboard completo",
-      "Histórico completo",
-      "Rotação automática",
-      "Suporte 24/7",
-    ],
-    popular: true,
-  },
-  {
-    id: "1ano",
-    name: "1 Ano",
-    price: "997",
-    period: "por 1 ano",
-    description: "Melhor custo-benefício",
-    features: [
-      "Até 25 contas Telegram",
-      "5.000 adições/dia",
-      "Todos os recursos",
-      "Histórico ilimitado",
-      "Suporte VIP",
-      "Atualizações incluídas",
-      "Equivale a R$83/mês",
-    ],
-  },
-  {
-    id: "vitalicio",
-    name: "Vitalício",
-    price: "1.997",
-    period: "pagamento único",
-    description: "Licença permanente",
-    features: [
-      "Contas ilimitadas",
-      "Adições ilimitadas",
-      "Todos os recursos",
-      "Atualizações vitalícias",
-      "Suporte VIP prioritário",
-      "Acesso beta features",
-      "Treinamento exclusivo",
-    ],
-    lifetime: true,
-  },
-];
+interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  promotional_price: number | null;
+  period: number;
+  features: string[] | null;
+  is_active: boolean;
+}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -105,7 +38,45 @@ const cardVariants = {
   },
 } as const;
 
+const formatPeriod = (days: number): string => {
+  if (days === 0) return "pagamento único";
+  if (days === 7) return "por 7 dias";
+  if (days === 15) return "por 15 dias";
+  if (days === 30) return "por 30 dias";
+  if (days === 90) return "por 3 meses";
+  if (days === 180) return "por 6 meses";
+  if (days === 365) return "por 1 ano";
+  return `por ${days} dias`;
+};
+
 const Buy = () => {
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('price', { ascending: true });
+
+      if (!error && data) {
+        setPlans(data);
+      }
+      setIsLoading(false);
+    };
+
+    fetchPlans();
+  }, []);
+
+  // Determine which plans are "popular" (cheapest with period >= 30) and "lifetime" (period = 0)
+  const getCardStyle = (plan: Plan, index: number) => {
+    const isLifetime = plan.period === 0;
+    const isPopular = !isLifetime && plan.period >= 30 && index === plans.findIndex(p => p.period >= 30 && p.period !== 0);
+    return { isPopular, isLifetime };
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -131,88 +102,120 @@ const Buy = () => {
             </p>
           </motion.div>
 
-          {/* Plans Grid */}
-          <motion.div 
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5 mb-10"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            {plans.map((plan, index) => (
-              <motion.div
-                key={index}
-                variants={cardVariants}
-                whileHover={{ 
-                  y: -8,
-                  transition: { duration: 0.2 }
-                }}
-                className={`relative p-5 sm:p-6 rounded-2xl transition-shadow overflow-visible ${
-                  plan.popular 
-                    ? "border-2 border-primary bg-primary/5 shadow-lg shadow-primary/10 mt-4" 
-                    : plan.lifetime 
-                      ? "border-2 border-warning/50 bg-warning/5 mt-4" 
-                      : "border border-border bg-card hover:shadow-lg hover:shadow-primary/5"
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary text-primary-foreground shadow-md whitespace-nowrap">
-                      <Sparkles className="w-3 h-3" />
-                      Popular
-                    </span>
-                  </div>
-                )}
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="flex justify-center items-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : plans.length === 0 ? (
+            <div className="text-center py-20 text-muted-foreground">
+              Nenhum plano disponível no momento.
+            </div>
+          ) : (
+            /* Plans Grid */
+            <motion.div 
+              className={`grid gap-4 sm:gap-5 mb-10 ${
+                plans.length <= 3 
+                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto' 
+                  : plans.length === 4 
+                    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl mx-auto'
+                    : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'
+              }`}
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {plans.map((plan, index) => {
+                const { isPopular, isLifetime } = getCardStyle(plan, index);
+                const displayPrice = plan.promotional_price ?? plan.price;
                 
-                {plan.lifetime && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-warning text-warning-foreground shadow-md whitespace-nowrap">
-                      <Crown className="w-3 h-3" />
-                      Melhor valor
-                    </span>
-                  </div>
-                )}
-
-                <div className="mb-5">
-                  <h3 className="font-display font-bold text-lg mb-1">{plan.name}</h3>
-                  <p className="text-xs text-muted-foreground mb-3">{plan.description}</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-sm text-muted-foreground">R$</span>
-                    <span className="text-3xl font-display font-bold">{plan.price}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">{plan.period}</p>
-                </div>
-
-                <ul className="space-y-2.5 sm:space-y-3 mb-5 sm:mb-6">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2.5 text-sm">
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                        plan.popular ? 'bg-primary/20' : plan.lifetime ? 'bg-warning/20' : 'bg-success/20'
-                      }`}>
-                        <Check className={`w-3 h-3 ${plan.popular ? 'text-primary' : plan.lifetime ? 'text-warning' : 'text-success'}`} />
-                      </div>
-                      <span className="text-muted-foreground text-xs sm:text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Link to={`/checkout?plano=${plan.id}`} className="w-full">
-                  <Button 
-                    className={`w-full h-11 ${
-                      plan.popular 
-                        ? 'bg-primary hover:bg-primary/90' 
-                        : plan.lifetime 
-                          ? 'bg-warning hover:bg-warning/90 text-warning-foreground' 
-                          : ''
+                return (
+                  <motion.div
+                    key={plan.id}
+                    variants={cardVariants}
+                    whileHover={{ 
+                      y: -8,
+                      transition: { duration: 0.2 }
+                    }}
+                    className={`relative p-5 sm:p-6 rounded-2xl transition-shadow overflow-visible ${
+                      isPopular 
+                        ? "border-2 border-primary bg-primary/5 shadow-lg shadow-primary/10 mt-4" 
+                        : isLifetime 
+                          ? "border-2 border-warning/50 bg-warning/5 mt-4" 
+                          : "border border-border bg-card hover:shadow-lg hover:shadow-primary/5"
                     }`}
-                    variant={plan.popular || plan.lifetime ? "default" : "outline"}
                   >
-                    Comprar agora
-                  </Button>
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
+                    {isPopular && (
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary text-primary-foreground shadow-md whitespace-nowrap">
+                          <Sparkles className="w-3 h-3" />
+                          Popular
+                        </span>
+                      </div>
+                    )}
+                    
+                    {isLifetime && (
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-warning text-warning-foreground shadow-md whitespace-nowrap">
+                          <Crown className="w-3 h-3" />
+                          Vitalício
+                        </span>
+                      </div>
+                    )}
 
+                    <div className="mb-5">
+                      <h3 className="font-display font-bold text-lg mb-1">{plan.name}</h3>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {isLifetime ? "Licença permanente" : `Acesso por ${plan.period} dias`}
+                      </p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-sm text-muted-foreground">R$</span>
+                        <span className="text-3xl font-display font-bold">
+                          {displayPrice.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      {plan.promotional_price && (
+                        <p className="text-xs text-muted-foreground line-through mt-1">
+                          R$ {plan.price.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1">{formatPeriod(plan.period)}</p>
+                    </div>
+
+                    {plan.features && plan.features.length > 0 && (
+                      <ul className="space-y-2.5 sm:space-y-3 mb-5 sm:mb-6">
+                        {plan.features.map((feature, i) => (
+                          <li key={i} className="flex items-start gap-2.5 text-sm">
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                              isPopular ? 'bg-primary/20' : isLifetime ? 'bg-warning/20' : 'bg-success/20'
+                            }`}>
+                              <Check className={`w-3 h-3 ${isPopular ? 'text-primary' : isLifetime ? 'text-warning' : 'text-success'}`} />
+                            </div>
+                            <span className="text-muted-foreground text-xs sm:text-sm">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <Link to={`/checkout?plano=${plan.id}`} className="w-full">
+                      <Button 
+                        className={`w-full h-11 ${
+                          isPopular 
+                            ? 'bg-primary hover:bg-primary/90' 
+                            : isLifetime 
+                              ? 'bg-warning hover:bg-warning/90 text-warning-foreground' 
+                              : ''
+                        }`}
+                        variant={isPopular || isLifetime ? "default" : "outline"}
+                      >
+                        Comprar agora
+                      </Button>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          )}
 
           {/* Trust badges */}
           <motion.div 
