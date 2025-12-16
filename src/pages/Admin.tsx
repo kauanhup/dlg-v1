@@ -2201,6 +2201,7 @@ const BotManagementSection = () => {
   const { botFile, botHistory, isLoading, isUploading, uploadBotFile, deleteBotFile, getDownloadUrl, setActiveVersion } = useAdminBot();
   const [version, setVersion] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; path: string; version: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const formatBytes = (bytes: number) => {
@@ -2241,6 +2242,13 @@ const BotManagementSection = () => {
     setSelectedFile(null);
     setVersion("");
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteConfirm) {
+      await deleteBotFile(deleteConfirm.id, deleteConfirm.path);
+      setDeleteConfirm(null);
+    }
   };
 
   return (
@@ -2421,7 +2429,7 @@ const BotManagementSection = () => {
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => deleteBotFile(file.id, file.file_path)}
+                    onClick={() => setDeleteConfirm({ id: file.id, path: file.file_path, version: file.version })}
                     disabled={file.is_active}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -2437,6 +2445,46 @@ const BotManagementSection = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setDeleteConfirm(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-card border border-border rounded-lg p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-destructive/10 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-destructive" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">Confirmar Exclusão</h3>
+              </div>
+              <p className="text-muted-foreground mb-6">
+                Tem certeza que deseja excluir a versão <span className="font-medium text-foreground">v{deleteConfirm.version}</span>? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
+                  Cancelar
+                </Button>
+                <Button variant="destructive" onClick={handleDeleteConfirm}>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
