@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useAdminSessions } from "@/hooks/useAdminSessions";
 import { useAdminSubscriptions } from "@/hooks/useAdminSubscriptions";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { useAdminBot } from "@/hooks/useAdminBot";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -56,7 +57,10 @@ import {
   Save,
   Zap,
   Copy,
-  Info
+  Info,
+  Upload,
+  FileDown,
+  HardDrive
 } from "lucide-react";
 
 
@@ -2191,6 +2195,192 @@ const GatewaySection = () => {
   );
 };
 
+// Bot Management Section
+const BotManagementSection = () => {
+  const { botFile, isLoading, isUploading, uploadBotFile, deleteBotFile, getDownloadUrl } = useAdminBot();
+  const [version, setVersion] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith('.exe')) {
+        toast.error('Apenas arquivos .exe são permitidos');
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile || !version.trim()) {
+      toast.error('Selecione um arquivo e informe a versão');
+      return;
+    }
+    await uploadBotFile(selectedFile, version.trim());
+    setSelectedFile(null);
+    setVersion("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDelete = async () => {
+    if (botFile) {
+      await deleteBotFile(botFile.id, botFile.file_path);
+    }
+  };
+
+  return (
+    <motion.div {...fadeIn} className="space-y-6">
+      <div>
+        <h2 className="text-xl sm:text-2xl font-bold text-foreground">Gerenciar Bot</h2>
+        <p className="text-sm text-muted-foreground">Upload do executável SWEXTRACTOR.exe</p>
+      </div>
+
+      {/* Current Bot File */}
+      <div className="bg-card border border-border rounded-lg p-6">
+        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+          <HardDrive className="w-4 h-4 text-primary" />
+          Arquivo Atual
+        </h3>
+        
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : botFile ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <FileDown className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">{botFile.file_name}</p>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <span>v{botFile.version}</span>
+                    <span>•</span>
+                    <span>{formatBytes(botFile.file_size)}</span>
+                    <span>•</span>
+                    <span>{formatDate(botFile.uploaded_at)}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(getDownloadUrl() || '', '_blank')}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDelete}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              URL de download: <code className="bg-muted px-2 py-1 rounded text-xs">{getDownloadUrl()}</code>
+            </p>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <HardDrive className="w-10 h-10 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">Nenhum arquivo de bot enviado</p>
+          </div>
+        )}
+      </div>
+
+      {/* Upload New Bot */}
+      <div className="bg-card border border-border rounded-lg p-6">
+        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+          <Upload className="w-4 h-4 text-primary" />
+          Enviar Nova Versão
+        </h3>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-foreground mb-2 block">Versão</label>
+            <input
+              type="text"
+              value={version}
+              onChange={(e) => setVersion(e.target.value)}
+              placeholder="Ex: 1.0.0"
+              className="w-full max-w-xs px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-foreground mb-2 block">Arquivo .exe</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".exe"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Selecionar Arquivo
+              </Button>
+              {selectedFile && (
+                <span className="text-sm text-foreground">
+                  {selectedFile.name} ({formatBytes(selectedFile.size)})
+                </span>
+              )}
+            </div>
+          </div>
+
+          <Button
+            onClick={handleUpload}
+            disabled={!selectedFile || !version.trim() || isUploading}
+            className="gap-2"
+          >
+            {isUploading ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Enviando...
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4" />
+                Enviar Bot
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 // Main Admin Component
 const Admin = () => {
   const navigate = useNavigate();
@@ -2261,12 +2451,13 @@ const Admin = () => {
     initials: (user?.user_metadata?.name || "AD").slice(0, 2).toUpperCase(),
   };
 
-  const sidebarTabs = ["dashboard", "users", "sessions", "gateway"];
+  const sidebarTabs = ["dashboard", "users", "sessions", "bot", "gateway"];
 
   const profileNavItems = [
     { label: "Dashboard", icon: <LayoutDashboard className="h-full w-full" />, onClick: () => setActiveTab("dashboard") },
     { label: "Usuários", icon: <Users className="h-full w-full" />, onClick: () => setActiveTab("users") },
     { label: "Sessions", icon: <Globe className="h-full w-full" />, onClick: () => setActiveTab("sessions") },
+    { label: "Bot", icon: <HardDrive className="h-full w-full" />, onClick: () => setActiveTab("bot") },
     { label: "Gateway", icon: <Zap className="h-full w-full" />, onClick: () => setActiveTab("gateway") },
   ];
 
@@ -2308,6 +2499,8 @@ const Admin = () => {
         return <UsersSection />;
       case "sessions":
         return <SessionsSection />;
+      case "bot":
+        return <BotManagementSection />;
       case "gateway":
         return <GatewaySection />;
       default:
