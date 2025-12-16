@@ -39,7 +39,7 @@ const Header = () => {
       toast.error("Bot não disponível no momento");
       return;
     }
-    window.open(downloadUrl, '_blank');
+    window.location.href = downloadUrl;
   };
 
   const navItems = [
