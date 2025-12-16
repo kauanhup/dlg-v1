@@ -51,7 +51,8 @@ import {
   Wrench,
   UserPlus,
   Phone,
-  Save
+  Save,
+  Zap
 } from "lucide-react";
 
 const fadeIn = {
@@ -2000,6 +2001,35 @@ const SessionsSection = () => {
   );
 };
 
+// Gateway Section
+const GatewaySection = () => {
+  return (
+    <motion.div {...fadeIn} className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Gateway</h2>
+          <p className="text-sm text-muted-foreground">Gerencie as configurações do gateway</p>
+        </div>
+      </div>
+
+      <div className="bg-card border border-border rounded-lg p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+            <Zap className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">Configurações do Gateway</h3>
+            <p className="text-sm text-muted-foreground">Em desenvolvimento</p>
+          </div>
+        </div>
+        <p className="text-muted-foreground text-sm">
+          Esta seção está em desenvolvimento. Aqui você poderá gerenciar as configurações do gateway.
+        </p>
+      </div>
+    </motion.div>
+  );
+};
+
 // Main Admin Component
 const Admin = () => {
   const navigate = useNavigate();
@@ -2070,12 +2100,13 @@ const Admin = () => {
     initials: (user?.user_metadata?.name || "AD").slice(0, 2).toUpperCase(),
   };
 
-  const sidebarTabs = ["dashboard", "users", "sessions"];
+  const sidebarTabs = ["dashboard", "users", "sessions", "gateway"];
 
   const profileNavItems = [
     { label: "Dashboard", icon: <LayoutDashboard className="h-full w-full" />, onClick: () => setActiveTab("dashboard") },
     { label: "Usuários", icon: <Users className="h-full w-full" />, onClick: () => setActiveTab("users") },
     { label: "Sessions", icon: <Globe className="h-full w-full" />, onClick: () => setActiveTab("sessions") },
+    { label: "Gateway", icon: <Zap className="h-full w-full" />, onClick: () => setActiveTab("gateway") },
   ];
 
   const toggleItems = [
@@ -2116,6 +2147,8 @@ const Admin = () => {
         return <UsersSection />;
       case "sessions":
         return <SessionsSection />;
+      case "gateway":
+        return <GatewaySection />;
       default:
         return <DashboardSection />;
     }
