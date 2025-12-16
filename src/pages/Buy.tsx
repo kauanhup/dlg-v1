@@ -212,7 +212,7 @@ const Buy = () => {
                         }`}
                         variant={isPopular || isLifetime ? "default" : "outline"}
                       >
-                        Comprar agora
+                        {(plan.promotional_price ?? plan.price) === 0 ? 'Testar Agora' : 'Comprar agora'}
                       </Button>
                     </Link>
                   </motion.div>
