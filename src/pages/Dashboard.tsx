@@ -7,6 +7,7 @@ import { avatars } from "@/components/ui/avatar-picker";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserDashboard } from "@/hooks/useUserDashboard";
 import { MorphingSquare } from "@/components/ui/morphing-square";
+import { Spinner } from "@/components/ui/spinner";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DownloadBotButton } from "@/components/ui/download-bot-button";
@@ -1538,6 +1539,7 @@ const Dashboard = () => {
                             disabled={isChangingPassword}
                             className="bg-primary hover:bg-primary/90"
                           >
+                            {isChangingPassword ? <Spinner size="sm" className="mr-2" /> : null}
                             {isChangingPassword ? "Alterando..." : "Sim, alterar senha"}
                           </AlertDialogAction>
                         </AlertDialogFooter>

@@ -303,6 +303,12 @@ const SubscriptionsTabContent = () => {
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [newPaymentStatus, setNewPaymentStatus] = useState("");
 
+  // Loading states
+  const [isRenewing, setIsRenewing] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isSavingStatus, setIsSavingStatus] = useState(false);
+  const [isRefunding, setIsRefunding] = useState(false);
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "—";
     return new Date(dateString).toLocaleDateString('pt-BR', { 
@@ -334,12 +340,14 @@ const SubscriptionsTabContent = () => {
 
   const handleConfirmRenew = async () => {
     if (selectedSubscriber) {
+      setIsRenewing(true);
       const result = await renewSubscription(selectedSubscriber.id, selectedSubscriber.plan_id);
       if (!result.success) {
         toast.error(result.error || 'Erro ao renovar assinatura');
       } else {
         toast.success('Assinatura renovada com sucesso');
       }
+      setIsRenewing(false);
     }
     setShowRenewModal(false);
     setSelectedSubscriber(null);
@@ -348,11 +356,13 @@ const SubscriptionsTabContent = () => {
 
   const handleConfirmCancel = async () => {
     if (selectedSubscriber) {
+      setIsCancelling(true);
       await updateSubscription(selectedSubscriber.id, { 
         status: 'cancelled', 
         next_billing_date: null 
       });
       toast.success('Assinatura cancelada');
+      setIsCancelling(false);
     }
     setShowCancelModal(false);
     setSelectedSubscriber(null);
@@ -419,8 +429,10 @@ const SubscriptionsTabContent = () => {
 
   const handleConfirmStatusChange = async () => {
     if (selectedPayment && newPaymentStatus) {
+      setIsSavingStatus(true);
       await updatePayment(selectedPayment.id, { status: newPaymentStatus });
       toast.success('Status atualizado');
+      setIsSavingStatus(false);
     }
     setShowEditStatusModal(false);
     setSelectedPayment(null);
@@ -429,8 +441,10 @@ const SubscriptionsTabContent = () => {
 
   const handleConfirmRefund = async () => {
     if (selectedPayment) {
+      setIsRefunding(true);
       await updatePayment(selectedPayment.id, { status: 'refunded' });
       toast.success('Pagamento reembolsado');
+      setIsRefunding(false);
     }
     setShowRefundModal(false);
     setSelectedPayment(null);
@@ -847,11 +861,12 @@ const SubscriptionsTabContent = () => {
               </div>
             </div>
             <div className="flex gap-3 pt-6">
-              <Button variant="outline" onClick={() => setShowEditStatusModal(false)} className="flex-1">
+              <Button variant="outline" onClick={() => setShowEditStatusModal(false)} className="flex-1" disabled={isSavingStatus}>
                 Cancelar
               </Button>
-              <Button onClick={handleConfirmStatusChange} className="flex-1">
-                Salvar
+              <Button onClick={handleConfirmStatusChange} className="flex-1" disabled={isSavingStatus}>
+                {isSavingStatus ? <Spinner size="sm" className="mr-2" /> : null}
+                {isSavingStatus ? "Salvando..." : "Salvar"}
               </Button>
             </div>
           </motion.div>
@@ -889,11 +904,12 @@ const SubscriptionsTabContent = () => {
               </p>
             </div>
             <div className="flex gap-3 pt-6">
-              <Button variant="outline" onClick={() => setShowRefundModal(false)} className="flex-1">
+              <Button variant="outline" onClick={() => setShowRefundModal(false)} className="flex-1" disabled={isRefunding}>
                 Cancelar
               </Button>
-              <Button variant="destructive" onClick={handleConfirmRefund} className="flex-1">
-                Reembolsar
+              <Button variant="destructive" onClick={handleConfirmRefund} className="flex-1" disabled={isRefunding}>
+                {isRefunding ? <Spinner size="sm" className="mr-2" /> : null}
+                {isRefunding ? "Reembolsando..." : "Reembolsar"}
               </Button>
             </div>
           </motion.div>
@@ -987,11 +1003,12 @@ const SubscriptionsTabContent = () => {
               </div>
             </div>
             <div className="flex gap-3 pt-6">
-              <Button variant="outline" onClick={() => setShowRenewModal(false)} className="flex-1">
+              <Button variant="outline" onClick={() => setShowRenewModal(false)} className="flex-1" disabled={isRenewing}>
                 Cancelar
               </Button>
-              <Button onClick={handleConfirmRenew} className="flex-1 bg-success hover:bg-success/90">
-                Renovar
+              <Button onClick={handleConfirmRenew} className="flex-1 bg-success hover:bg-success/90" disabled={isRenewing}>
+                {isRenewing ? <Spinner size="sm" className="mr-2" /> : null}
+                {isRenewing ? "Renovando..." : "Renovar"}
               </Button>
             </div>
           </motion.div>
@@ -1024,11 +1041,12 @@ const SubscriptionsTabContent = () => {
               </p>
             </div>
             <div className="flex gap-3 pt-6">
-              <Button variant="outline" onClick={() => setShowCancelModal(false)} className="flex-1">
+              <Button variant="outline" onClick={() => setShowCancelModal(false)} className="flex-1" disabled={isCancelling}>
                 Voltar
               </Button>
-              <Button variant="destructive" onClick={handleConfirmCancel} className="flex-1">
-                Cancelar Assinatura
+              <Button variant="destructive" onClick={handleConfirmCancel} className="flex-1" disabled={isCancelling}>
+                {isCancelling ? <Spinner size="sm" className="mr-2" /> : null}
+                {isCancelling ? "Cancelando..." : "Cancelar Assinatura"}
               </Button>
             </div>
           </motion.div>
@@ -1062,6 +1080,8 @@ const UsersSection = () => {
   const [showBanModal, setShowBanModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", email: "" });
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isBanning, setIsBanning] = useState(false);
   
   const { users: dbUsers, isLoading, updateUserRole, banUser, updateUserProfile, refetch } = useAdminUsers();
   
@@ -1102,10 +1122,12 @@ const UsersSection = () => {
 
   const handleSaveEdit = async () => {
     if (selectedUser) {
+      setIsSavingEdit(true);
       const result = await updateUserProfile(selectedUser.user_id, {
         name: editForm.name,
         email: editForm.email,
       });
+      setIsSavingEdit(false);
       if (result.success) {
         setShowEditModal(false);
         setSelectedUser(null);
@@ -1120,8 +1142,10 @@ const UsersSection = () => {
 
   const handleConfirmBan = async () => {
     if (selectedUser) {
+      setIsBanning(true);
       const newBannedStatus = !selectedUser.banned;
       const result = await banUser(selectedUser.user_id, newBannedStatus);
+      setIsBanning(false);
       if (result.success) {
         setShowBanModal(false);
         setSelectedUser(null);
@@ -1380,11 +1404,12 @@ const UsersSection = () => {
                     />
                   </div>
                   <div className="flex gap-3 pt-2">
-                    <Button variant="outline" className="flex-1" onClick={() => setShowEditModal(false)}>
+                    <Button variant="outline" className="flex-1" onClick={() => setShowEditModal(false)} disabled={isSavingEdit}>
                       Cancelar
                     </Button>
-                    <Button className="flex-1" onClick={handleSaveEdit}>
-                      Salvar
+                    <Button className="flex-1" onClick={handleSaveEdit} disabled={isSavingEdit}>
+                      {isSavingEdit ? <Spinner size="sm" className="mr-2" /> : null}
+                      {isSavingEdit ? "Salvando..." : "Salvar"}
                     </Button>
                   </div>
                 </div>
@@ -1429,15 +1454,20 @@ const UsersSection = () => {
                     }
                   </p>
                   <div className="flex gap-3">
-                    <Button variant="outline" className="flex-1" onClick={() => setShowBanModal(false)}>
+                    <Button variant="outline" className="flex-1" onClick={() => setShowBanModal(false)} disabled={isBanning}>
                       Cancelar
                     </Button>
                     <Button 
                       variant={selectedUser.banned ? "default" : "destructive"} 
                       className="flex-1" 
                       onClick={handleConfirmBan}
+                      disabled={isBanning}
                     >
-                      {selectedUser.banned ? "Desbanir" : "Banir"}
+                      {isBanning ? <Spinner size="sm" className="mr-2" /> : null}
+                      {isBanning 
+                        ? (selectedUser.banned ? "Desbanindo..." : "Banindo...") 
+                        : (selectedUser.banned ? "Desbanir" : "Banir")
+                      }
                     </Button>
                   </div>
                 </div>
@@ -2178,8 +2208,8 @@ const GatewaySection = () => {
               disabled={isLoading}
               className="gap-2"
             >
-              {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Salvar Configurações
+              {isLoading ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
+              {isLoading ? "Salvando..." : "Salvar Configurações"}
             </Button>
             <Button 
               variant="outline" 
@@ -2187,8 +2217,8 @@ const GatewaySection = () => {
               onClick={handleTestConnection}
               disabled={isTesting}
             >
-              {isTesting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              Testar Conexão
+              {isTesting ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+              {isTesting ? "Testando..." : "Testar Conexão"}
             </Button>
           </div>
         </div>
