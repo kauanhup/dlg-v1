@@ -9,6 +9,7 @@ import { useUserDashboard } from "@/hooks/useUserDashboard";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { DownloadBotButton } from "@/components/ui/download-bot-button";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import {
   Popover,
@@ -871,6 +872,27 @@ const Dashboard = () => {
                 </div>
               </motion.div>
             )}
+
+            {/* Download Bot Card */}
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="bg-card border border-border rounded-md p-5 hover:shadow-lg hover:shadow-primary/5 transition-shadow duration-300"
+            >
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
+                    <Download className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Baixar Bot</h3>
+                    <p className="text-xs text-muted-foreground">SWEXTRACTOR.exe - Insira sua chave de licença</p>
+                  </div>
+                </div>
+                <DownloadBotButton />
+              </div>
+            </motion.div>
 
             {/* Warning Alert */}
             <motion.div 
