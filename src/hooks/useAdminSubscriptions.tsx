@@ -184,8 +184,8 @@ export const useAdminSubscriptions = () => {
 
   const deletePlan = async (planId: string) => {
     try {
-      // Check for ACTIVE subscribers before deleting (cancelled subscriptions don't block deletion)
-      const { count, error: countError } = await supabase
+      // Check for ACTIVE subscribers before deleting
+      const { count: activeCount, error: countError } = await supabase
         .from('user_subscriptions')
         .select('*', { count: 'exact', head: true })
         .eq('plan_id', planId)
@@ -193,10 +193,17 @@ export const useAdminSubscriptions = () => {
 
       if (countError) throw countError;
       
-      if (count && count > 0) {
+      if (activeCount && activeCount > 0) {
         return { success: false, error: 'Não é possível excluir um plano com assinantes ativos' };
       }
 
+      // Delete cancelled/inactive subscriptions first (to avoid FK constraint)
+      await supabase
+        .from('user_subscriptions')
+        .delete()
+        .eq('plan_id', planId);
+
+      // Now delete the plan
       const { error } = await supabase
         .from('subscription_plans')
         .delete()
