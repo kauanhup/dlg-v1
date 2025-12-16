@@ -2,3 +2,6 @@ project_id = "nydtfckvvslkbyolipsf"
 
 [functions.pixup]
 verify_jwt = false
+
+[functions.pixup-webhook]
+verify_jwt = false
