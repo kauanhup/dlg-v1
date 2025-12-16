@@ -674,7 +674,7 @@ const Dashboard = () => {
                   <h3 className="text-sm font-semibold text-foreground">Nenhuma licença ativa</h3>
                   <p className="text-xs text-muted-foreground mt-1">Adquira uma licença para começar a usar o sistema</p>
                 </div>
-                <Button size="sm" onClick={() => navigate("/buy")}>
+                <Button size="sm" onClick={() => navigate("/comprar")}>
                   <CreditCard className="w-4 h-4 mr-2" />
                   Ver Planos
                 </Button>
@@ -788,17 +788,14 @@ const Dashboard = () => {
                                 <span className="text-muted-foreground">Renovação</span>
                                 <span className="text-foreground font-medium">+{userLicense.totalDays} dias</span>
                               </div>
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Valor</span>
-                                <span className="text-primary font-semibold">R$ 29,90</span>
-                              </div>
                             </div>
+                            <p className="text-xs text-muted-foreground">Você será redirecionado para a página de planos.</p>
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => navigate('/checkout', { state: { type: 'Renovação', plan: userLicense.plan, price: 'R$ 29,90' } })}>
-                            Continuar para pagamento
+                          <AlertDialogAction onClick={() => navigate('/comprar')}>
+                            Ver Planos
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
