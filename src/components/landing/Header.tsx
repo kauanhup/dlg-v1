@@ -45,7 +45,7 @@ const Header = () => {
   const navItems = [
     { name: "Início", url: "/", icon: Home },
     { name: "Recursos", url: "#features", icon: Layers },
-    { name: "Preços", url: "#pricing", icon: CreditCard },
+    { name: "Planos", url: "#pricing", icon: CreditCard },
     { name: "FAQ", url: "#faq", icon: HelpCircle },
     { name: "Entrar", url: "/login", icon: LogIn, isPage: true },
     { name: "Download", url: "#", icon: Download, isPage: true, onClick: handleDownload },
