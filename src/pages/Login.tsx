@@ -287,6 +287,7 @@ const Login = () => {
         }
 
         toast.success("Login realizado!", "Bem-vindo de volta.");
+        setIsSubmitting(false);
         
         // Redirect is handled by onAuthStateChange
       } else {
@@ -314,6 +315,7 @@ const Login = () => {
         }
 
         toast.success("Conta criada!", "Sua conta foi criada com sucesso.");
+        setIsSubmitting(false);
         
         // Redirect is handled by onAuthStateChange
       }
