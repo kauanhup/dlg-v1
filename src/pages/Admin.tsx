@@ -1424,6 +1424,34 @@ const SessionsSection = () => {
   const [uploadType, setUploadType] = useState<'brasileiras' | 'estrangeiras'>('brasileiras');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadResult, setUploadResult] = useState<{ success: boolean; totalUploaded: number } | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Local state for editable values
+  const [costBrasileiras, setCostBrasileiras] = useState("");
+  const [costEstrangeiras, setCostEstrangeiras] = useState("");
+  const [comboEdits, setComboEdits] = useState<Record<string, { quantity: string; price: string }>>({});
+
+  // Initialize local state from DB values
+  useEffect(() => {
+    if (stats.brasileiras) {
+      setCostBrasileiras(stats.brasileiras.cost_per_session?.toFixed(2) || "0.00");
+    }
+    if (stats.estrangeiras) {
+      setCostEstrangeiras(stats.estrangeiras.cost_per_session?.toFixed(2) || "0.00");
+    }
+  }, [stats.brasileiras, stats.estrangeiras]);
+
+  useEffect(() => {
+    const edits: Record<string, { quantity: string; price: string }> = {};
+    dbCombos.forEach(combo => {
+      if (!comboEdits[combo.id]) {
+        edits[combo.id] = { quantity: combo.quantity.toString(), price: combo.price.toFixed(2) };
+      }
+    });
+    if (Object.keys(edits).length > 0) {
+      setComboEdits(prev => ({ ...prev, ...edits }));
+    }
+  }, [dbCombos]);
 
   const brasileirasInv = stats.brasileiras;
   const estrangeirasInv = stats.estrangeiras;
@@ -1462,18 +1490,36 @@ const SessionsSection = () => {
     setUploadResult(null);
   };
 
-  const handleUpdateCost = async (type: string, cost: string) => {
-    const costValue = parseFloat(cost.replace(',', '.')) || 0;
-    await updateInventory(type, { cost_per_session: costValue });
+  const handleComboEdit = (comboId: string, field: 'quantity' | 'price', value: string) => {
+    setComboEdits(prev => ({
+      ...prev,
+      [comboId]: { ...prev[comboId], [field]: value }
+    }));
   };
 
-  const handleUpdateComboPrice = async (comboId: string, price: string) => {
-    const priceValue = parseFloat(price.replace(',', '.')) || 0;
-    await updateDbCombo(comboId, { price: priceValue });
-  };
+  const handleSaveAll = async () => {
+    setIsSaving(true);
+    try {
+      // Save inventory costs
+      const costBrValue = parseFloat(costBrasileiras.replace(',', '.')) || 0;
+      const costEstValue = parseFloat(costEstrangeiras.replace(',', '.')) || 0;
+      
+      await updateInventory('brasileiras', { cost_per_session: costBrValue });
+      await updateInventory('estrangeiras', { cost_per_session: costEstValue });
 
-  const handleUpdateComboQty = async (comboId: string, quantity: number) => {
-    await updateDbCombo(comboId, { quantity });
+      // Save combo edits
+      for (const [comboId, edit] of Object.entries(comboEdits)) {
+        const quantity = parseInt(edit.quantity) || 0;
+        const price = parseFloat(edit.price.replace(',', '.')) || 0;
+        await updateDbCombo(comboId, { quantity, price });
+      }
+
+      toast.success("Configurações salvas com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao salvar configurações");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAddCombo = async (type: string) => {
@@ -1482,6 +1528,11 @@ const SessionsSection = () => {
 
   const handleDeleteCombo = async (comboId: string) => {
     await deleteCombo(comboId);
+    setComboEdits(prev => {
+      const newEdits = { ...prev };
+      delete newEdits[comboId];
+      return newEdits;
+    });
   };
 
   const formatDate = (dateString: string) => {
@@ -1517,8 +1568,9 @@ const SessionsSection = () => {
               </span>
             </Button>
           </label>
-          <Button size="sm" variant="outline" onClick={() => toast.success("Configurações salvas com sucesso!")}>
-            <Save className="w-4 h-4 mr-2" /> Salvar Config
+          <Button size="sm" variant="outline" onClick={handleSaveAll} disabled={isSaving}>
+            {isSaving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+            {isSaving ? "Salvando..." : "Salvar Config"}
           </Button>
         </div>
       </div>
@@ -1727,8 +1779,8 @@ const SessionsSection = () => {
             <label className="text-sm text-muted-foreground mb-2 block">Custo Session Brasileira (R$)</label>
             <input
               type="text"
-              defaultValue={brasileirasInv?.cost_per_session?.toFixed(2) || "0.00"}
-              onBlur={(e) => handleUpdateCost('brasileiras', e.target.value)}
+              value={costBrasileiras}
+              onChange={(e) => setCostBrasileiras(e.target.value)}
               className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
               placeholder="5.00"
             />
@@ -1737,8 +1789,8 @@ const SessionsSection = () => {
             <label className="text-sm text-muted-foreground mb-2 block">Custo Session Estrangeira (R$)</label>
             <input
               type="text"
-              defaultValue={estrangeirasInv?.cost_per_session?.toFixed(2) || "0.00"}
-              onBlur={(e) => handleUpdateCost('estrangeiras', e.target.value)}
+              value={costEstrangeiras}
+              onChange={(e) => setCostEstrangeiras(e.target.value)}
               className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
               placeholder="2.50"
             />
@@ -1765,8 +1817,8 @@ const SessionsSection = () => {
                   <label className="text-xs text-muted-foreground mb-1 block">Quantidade</label>
                   <input
                     type="number"
-                    defaultValue={combo.quantity}
-                    onBlur={(e) => handleUpdateComboQty(combo.id, parseInt(e.target.value) || 0)}
+                    value={comboEdits[combo.id]?.quantity || combo.quantity}
+                    onChange={(e) => handleComboEdit(combo.id, 'quantity', e.target.value)}
                     className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
                     min="1"
                   />
@@ -1775,8 +1827,8 @@ const SessionsSection = () => {
                   <label className="text-xs text-muted-foreground mb-1 block">Preço Venda (R$)</label>
                   <input
                     type="text"
-                    defaultValue={combo.price.toFixed(2)}
-                    onBlur={(e) => handleUpdateComboPrice(combo.id, e.target.value)}
+                    value={comboEdits[combo.id]?.price || combo.price.toFixed(2)}
+                    onChange={(e) => handleComboEdit(combo.id, 'price', e.target.value)}
                     className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
@@ -1813,8 +1865,8 @@ const SessionsSection = () => {
                   <label className="text-xs text-muted-foreground mb-1 block">Quantidade</label>
                   <input
                     type="number"
-                    defaultValue={combo.quantity}
-                    onBlur={(e) => handleUpdateComboQty(combo.id, parseInt(e.target.value) || 0)}
+                    value={comboEdits[combo.id]?.quantity || combo.quantity}
+                    onChange={(e) => handleComboEdit(combo.id, 'quantity', e.target.value)}
                     className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
                     min="1"
                   />
@@ -1823,8 +1875,8 @@ const SessionsSection = () => {
                   <label className="text-xs text-muted-foreground mb-1 block">Preço Venda (R$)</label>
                   <input
                     type="text"
-                    defaultValue={combo.price.toFixed(2)}
-                    onBlur={(e) => handleUpdateComboPrice(combo.id, e.target.value)}
+                    value={comboEdits[combo.id]?.price || combo.price.toFixed(2)}
+                    onChange={(e) => handleComboEdit(combo.id, 'price', e.target.value)}
                     className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
