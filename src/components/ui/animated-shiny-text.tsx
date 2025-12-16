@@ -2,7 +2,7 @@ import * as React from "react";
 import { motion, Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-interface AnimatedTextProps extends React.HTMLAttributes<HTMLDivElement> {
+interface AnimatedTextProps extends React.HTMLAttributes<HTMLSpanElement> {
   text: string;
   gradientColors?: string;
   gradientAnimationDuration?: number;
@@ -11,7 +11,7 @@ interface AnimatedTextProps extends React.HTMLAttributes<HTMLDivElement> {
   textClassName?: string;
 }
 
-const AnimatedText = React.forwardRef<HTMLDivElement, AnimatedTextProps>(
+const AnimatedText = React.forwardRef<HTMLSpanElement, AnimatedTextProps>(
   (
     {
       text,
@@ -41,7 +41,7 @@ const AnimatedText = React.forwardRef<HTMLDivElement, AnimatedTextProps>(
     };
 
     return (
-      <div ref={ref} className={cn("relative", className)} style={{ overflow: 'visible' }} {...props}>
+      <span ref={ref} className={cn("relative", className)} {...props}>
         <motion.span
           className={cn(
             "bg-clip-text text-transparent bg-[length:200%_100%]",
@@ -49,9 +49,10 @@ const AnimatedText = React.forwardRef<HTMLDivElement, AnimatedTextProps>(
           )}
           style={{
             backgroundImage: gradientColors,
-            display: 'inline',
-            lineHeight: 1.4,
-            paddingBottom: '0.15em',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            paddingBottom: '0.25em',
+            display: 'inline-block',
           }}
           variants={textVariants}
           initial="initial"
@@ -61,7 +62,7 @@ const AnimatedText = React.forwardRef<HTMLDivElement, AnimatedTextProps>(
         >
           {text}
         </motion.span>
-      </div>
+      </span>
     );
   }
 );
