@@ -41,12 +41,23 @@ const Pricing = () => {
           .from('subscription_plans')
           .select('*')
           .eq('is_active', true)
-          .order('price', { ascending: true })
-          .limit(3);
+          .order('price', { ascending: true });
 
         if (error) throw error;
 
-        setPlans(data || []);
+        const allPlans = data || [];
+        
+        // Pega os 2 primeiros e o último
+        if (allPlans.length <= 3) {
+          setPlans(allPlans);
+        } else {
+          const selectedPlans = [
+            allPlans[0],
+            allPlans[1],
+            allPlans[allPlans.length - 1]
+          ];
+          setPlans(selectedPlans);
+        }
       } catch (error) {
         console.error('Error fetching plans:', error);
       } finally {
