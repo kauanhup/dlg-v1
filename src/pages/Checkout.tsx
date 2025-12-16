@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { Check, CreditCard, ArrowLeft, Copy, CheckCircle2, Loader2, QrCode, Clock } from "lucide-react";
+import { Check, CreditCard, ArrowLeft, Copy, CheckCircle2, Loader2, QrCode, Clock, Crown, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { MorphingSquare } from "@/components/ui/morphing-square";
@@ -13,6 +13,15 @@ interface PixData {
   qrCodeBase64?: string;
   transactionId: string;
   expiresAt?: string;
+}
+
+interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  promotional_price: number | null;
+  period: number;
+  features: string[] | null;
 }
 
 const PIX_EXPIRATION_MINUTES = 30;
@@ -31,6 +40,7 @@ const Checkout = () => {
   const [paymentStatus, setPaymentStatus] = useState<string>('pending');
   const [expirationTime, setExpirationTime] = useState<Date | null>(null);
   const [timeLeft, setTimeLeft] = useState<{ minutes: number; seconds: number } | null>(null);
+  const [plan, setPlan] = useState<Plan | null>(null);
 
   // Get parameters from location state (from Dashboard) OR searchParams (from Buy page)
   const locationState = location.state as { type?: string; qty?: number; price?: string } | null;
@@ -45,7 +55,6 @@ const Checkout = () => {
   const parsePrice = (priceValue: string | number | null | undefined): number => {
     if (!priceValue) return 0;
     if (typeof priceValue === 'number') return priceValue;
-    // Remove "R$", spaces, and convert comma to dot
     const cleaned = priceValue.replace(/R\$\s?/g, '').replace(/\./g, '').replace(',', '.');
     return parseFloat(cleaned) || 0;
   };
@@ -60,6 +69,7 @@ const Checkout = () => {
 
   // Determine if it's a session purchase or plan purchase
   const isSessionPurchase = type && qty && price;
+  const isPlanPurchase = !!planId;
 
   const sessionInfo = isSessionPurchase ? {
     type: type.includes('Brasileir') ? 'Sessions Brasileiras' : type.includes('Estrangeir') ? 'Sessions Estrangeiras' : type,
@@ -67,6 +77,34 @@ const Checkout = () => {
     quantity: parseInt(qty || '0'),
     price: parsePrice(price),
   } : null;
+
+  // Fetch plan if planId is present
+  useEffect(() => {
+    if (!planId) return;
+
+    const fetchPlan = async () => {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('id', planId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching plan:', error);
+        toast.error("Erro", "Plano não encontrado.");
+        navigate('/comprar');
+        return;
+      }
+
+      setPlan(data);
+    };
+
+    fetchPlan();
+  }, [planId, navigate, toast]);
+
+  // Get effective price for plan
+  const planPrice = plan ? (plan.promotional_price ?? plan.price) : 0;
+  const isFreeProduct = (isSessionPurchase && sessionInfo?.price === 0) || (isPlanPurchase && planPrice === 0);
 
   // Countdown timer logic
   useEffect(() => {
@@ -102,7 +140,6 @@ const Checkout = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        // Build redirect URL with all current params
         const currentUrl = window.location.pathname + window.location.search;
         navigate(`/login?redirect=${encodeURIComponent(currentUrl)}`);
         return;
@@ -142,7 +179,7 @@ const Checkout = () => {
           setPaymentStatus(newStatus);
           
           if (newStatus === 'completed' || newStatus === 'paid') {
-            toast.success("Pagamento confirmado!", "Suas sessions foram liberadas.");
+            toast.success("Pagamento confirmado!", isPlanPurchase ? "Sua licença foi ativada." : "Suas sessions foram liberadas.");
             setTimeout(() => navigate('/dashboard'), 2000);
           }
         }
@@ -152,82 +189,148 @@ const Checkout = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [orderId, navigate, toast]);
+  }, [orderId, navigate, toast, isPlanPurchase]);
 
-  const handlePayment = async () => {
+  const handleFreeActivation = async () => {
     if (!user) return;
 
     setIsProcessing(true);
     
     try {
+      if (isPlanPurchase && plan) {
+        // Create subscription for free plan
+        const startDate = new Date();
+        const nextBillingDate = plan.period > 0 
+          ? new Date(startDate.getTime() + plan.period * 24 * 60 * 60 * 1000) 
+          : null;
+
+        const { error: subError } = await supabase.from('user_subscriptions').insert({
+          user_id: user.id,
+          plan_id: plan.id,
+          status: 'active',
+          start_date: startDate.toISOString(),
+          next_billing_date: nextBillingDate?.toISOString() || null,
+        });
+
+        if (subError) throw subError;
+
+        // Create license
+        const { error: licenseError } = await supabase.from('licenses').insert({
+          user_id: user.id,
+          plan_name: plan.name,
+          status: 'active',
+          start_date: startDate.toISOString(),
+          end_date: nextBillingDate?.toISOString() || new Date(startDate.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        });
+
+        if (licenseError) console.error('License error:', licenseError);
+
+        toast.success("Plano ativado!", "Seu plano gratuito foi ativado com sucesso.");
+        setTimeout(() => navigate('/dashboard'), 1500);
+      }
+    } catch (error) {
+      console.error('Error activating free plan:', error);
+      toast.error("Erro", "Não foi possível ativar o plano. Tente novamente.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePayment = async () => {
+    if (!user) return;
+
+    // Handle free products
+    if (isFreeProduct) {
+      await handleFreeActivation();
+      return;
+    }
+
+    setIsProcessing(true);
+    
+    try {
+      let orderData: any;
+      let amount: number;
+      let productName: string;
+      let productType: string;
+      let quantity: number;
+
       if (isSessionPurchase && sessionInfo) {
-        // Create order for session purchase
-        const { data: orderData, error: orderError } = await supabase.from('orders').insert({
-          user_id: user.id,
-          product_name: sessionInfo.type,
-          product_type: sessionInfo.dbType,
-          quantity: sessionInfo.quantity,
-          amount: sessionInfo.price,
-          status: 'pending',
-          payment_method: 'pix',
-        }).select().single();
+        amount = sessionInfo.price;
+        productName = sessionInfo.type;
+        productType = sessionInfo.dbType;
+        quantity = sessionInfo.quantity;
+      } else if (isPlanPurchase && plan) {
+        amount = planPrice;
+        productName = plan.name;
+        productType = 'subscription';
+        quantity = 1;
+      } else {
+        throw new Error('Invalid product');
+      }
 
-        if (orderError) throw orderError;
+      // Create order
+      const { data: createdOrder, error: orderError } = await supabase.from('orders').insert({
+        user_id: user.id,
+        product_name: productName,
+        product_type: productType,
+        quantity: quantity,
+        amount: amount,
+        status: 'pending',
+        payment_method: 'pix',
+      }).select().single();
 
-        setOrderId(orderData.id);
+      if (orderError) throw orderError;
+      orderData = createdOrder;
+      setOrderId(orderData.id);
 
-        // Create payment record
-        const { error: paymentError } = await supabase.from('payments').insert({
-          user_id: user.id,
-          order_id: orderData.id,
-          amount: sessionInfo.price,
-          payment_method: 'pix',
-          status: 'pending',
+      // Create payment record
+      const { error: paymentError } = await supabase.from('payments').insert({
+        user_id: user.id,
+        order_id: orderData.id,
+        amount: amount,
+        payment_method: 'pix',
+        status: 'pending',
+      });
+
+      if (paymentError) console.error('Payment record error:', paymentError);
+
+      // Generate PIX via gateway
+      const { data: pixResponse, error: pixError } = await supabase.functions.invoke('pixup', {
+        body: {
+          action: 'create_pix',
+          amount: amount,
+          external_id: orderData.id,
+          description: isPlanPurchase ? `Licença: ${productName}` : `${quantity}x ${productName}`,
+        },
+      });
+
+      // Set expiration time regardless of gateway response
+      const expTime = new Date();
+      expTime.setMinutes(expTime.getMinutes() + PIX_EXPIRATION_MINUTES);
+      setExpirationTime(expTime);
+
+      if (pixError) {
+        console.error('PIX generation error:', pixError);
+        toast.error("Gateway indisponível", "Pedido criado. Configure o gateway PIX ou aguarde aprovação manual.");
+      } else if (pixResponse?.data?.pixCode || pixResponse?.data?.qrcode) {
+        const pixCode = pixResponse.data.pixCode || pixResponse.data.qrcode;
+        const qrCodeBase64 = pixResponse.data.qrCodeBase64 || pixResponse.data.qrcode_base64;
+        
+        setPixData({
+          pixCode: pixCode,
+          qrCodeBase64: qrCodeBase64,
+          transactionId: pixResponse.data.transactionId || pixResponse.data.id,
+          expiresAt: pixResponse.data.expiresAt,
         });
 
-        if (paymentError) console.error('Payment record error:', paymentError);
+        // Update payment with PIX code
+        await supabase.from('payments').update({
+          pix_code: pixCode,
+        }).eq('order_id', orderData.id);
 
-        // Generate PIX via gateway
-        const { data: pixResponse, error: pixError } = await supabase.functions.invoke('pixup', {
-          body: {
-            action: 'create_pix',
-            amount: sessionInfo.price,
-            orderId: orderData.id,
-            description: `${sessionInfo.quantity}x ${sessionInfo.type}`,
-          },
-        });
-
-        // Set expiration time regardless of gateway response
-        const expTime = new Date();
-        expTime.setMinutes(expTime.getMinutes() + PIX_EXPIRATION_MINUTES);
-        setExpirationTime(expTime);
-
-        if (pixError) {
-          console.error('PIX generation error:', pixError);
-          toast.error("Gateway indisponível", "Pedido criado. Configure o gateway PIX ou aguarde aprovação manual.");
-        } else if (pixResponse?.pixCode) {
-          setPixData({
-            pixCode: pixResponse.pixCode,
-            qrCodeBase64: pixResponse.qrCodeBase64,
-            transactionId: pixResponse.transactionId,
-            expiresAt: pixResponse.expiresAt,
-          });
-
-          // Update payment with PIX code
-          await supabase.from('payments').update({
-            pix_code: pixResponse.pixCode,
-          }).eq('order_id', orderData.id);
-
-          toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
-        } else {
-          toast.warning("Gateway não configurado", "Pedido criado. Aguarde aprovação manual do admin.");
-        }
-      } else if (planId) {
-        // Handle plan purchase (license)
-        toast.success("Pagamento iniciado!", "Você será redirecionado para o pagamento via PIX.");
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 2000);
+        toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
+      } else {
+        toast.warning("Gateway não configurado", "Pedido criado. Aguarde aprovação manual do admin.");
       }
     } catch (error) {
       console.error('Error creating order:', error);
@@ -250,7 +353,7 @@ const Checkout = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || (isPlanPurchase && !plan)) {
     return (
       <div className="min-h-screen w-full relative flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
@@ -267,7 +370,38 @@ const Checkout = () => {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
+  const formatPeriod = (days: number): string => {
+    if (days === 0) return "Acesso vitalício";
+    if (days === 7) return "7 dias de acesso";
+    if (days === 15) return "15 dias de acesso";
+    if (days === 30) return "30 dias de acesso";
+    if (days === 90) return "3 meses de acesso";
+    if (days === 180) return "6 meses de acesso";
+    if (days === 365) return "1 ano de acesso";
+    return `${days} dias de acesso`;
+  };
+
   const isExpired = timeLeft === null && expirationTime !== null;
+
+  // Determine product info for display
+  const displayInfo = isSessionPurchase && sessionInfo ? {
+    title: sessionInfo.type,
+    subtitle: `${sessionInfo.quantity} sessions`,
+    price: sessionInfo.price,
+    features: [
+      `${sessionInfo.quantity} sessions incluídas`,
+      'Download imediato após confirmação',
+      'Suporte incluído',
+    ],
+    isPlan: false,
+  } : isPlanPurchase && plan ? {
+    title: plan.name,
+    subtitle: formatPeriod(plan.period),
+    price: planPrice,
+    features: plan.features || [],
+    isPlan: true,
+    isLifetime: plan.period === 0,
+  } : null;
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -285,19 +419,29 @@ const Checkout = () => {
           >
             {/* Back button */}
             <Link 
-              to="/dashboard" 
+              to={isPlanPurchase ? "/comprar" : "/dashboard"} 
               className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
             >
               <ArrowLeft className="w-4 h-4" />
-              Voltar ao dashboard
+              {isPlanPurchase ? "Voltar aos planos" : "Voltar ao dashboard"}
             </Link>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
               {/* Order Summary */}
               <div className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-6 sm:p-8">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <CreditCard className="w-5 h-5 text-primary" />
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    displayInfo?.isPlan && displayInfo?.isLifetime 
+                      ? 'bg-warning/10' 
+                      : 'bg-primary/10'
+                  }`}>
+                    {displayInfo?.isPlan && displayInfo?.isLifetime ? (
+                      <Crown className="w-5 h-5 text-warning" />
+                    ) : displayInfo?.isPlan ? (
+                      <Sparkles className="w-5 h-5 text-primary" />
+                    ) : (
+                      <CreditCard className="w-5 h-5 text-primary" />
+                    )}
                   </div>
                   <div>
                     <h2 className="font-display font-bold text-lg">Resumo do Pedido</h2>
@@ -306,32 +450,32 @@ const Checkout = () => {
                 </div>
 
                 <div className="border-t border-border/50 pt-6">
-                  {isSessionPurchase && sessionInfo ? (
+                  {displayInfo ? (
                     <>
                       <div className="flex justify-between items-start mb-4">
                         <div>
-                          <h3 className="font-display font-bold text-xl">{sessionInfo.type}</h3>
-                          <p className="text-sm text-muted-foreground">{sessionInfo.quantity} sessions</p>
+                          <h3 className="font-display font-bold text-xl">{displayInfo.title}</h3>
+                          <p className="text-sm text-muted-foreground">{displayInfo.subtitle}</p>
                         </div>
                         <div className="text-right">
-                          <span className="text-2xl font-display font-bold">{formatPrice(sessionInfo.price)}</span>
+                          {displayInfo.price === 0 ? (
+                            <span className="text-2xl font-display font-bold text-success">Grátis</span>
+                          ) : (
+                            <span className="text-2xl font-display font-bold">{formatPrice(displayInfo.price)}</span>
+                          )}
                         </div>
                       </div>
 
-                      <ul className="space-y-2 mt-6">
-                        <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                          {sessionInfo.quantity} sessions incluídas
-                        </li>
-                        <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                          Download imediato após confirmação
-                        </li>
-                        <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                          Suporte incluído
-                        </li>
-                      </ul>
+                      {displayInfo.features.length > 0 && (
+                        <ul className="space-y-2 mt-6">
+                          {displayInfo.features.map((feature, i) => (
+                            <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </>
                   ) : (
                     <div className="text-center py-8">
@@ -340,11 +484,15 @@ const Checkout = () => {
                   )}
                 </div>
 
-                {isSessionPurchase && sessionInfo && (
+                {displayInfo && (
                   <div className="border-t border-border/50 mt-6 pt-6">
                     <div className="flex justify-between items-center">
                       <span className="font-medium">Total</span>
-                      <span className="text-2xl font-display font-bold text-primary">{formatPrice(sessionInfo.price)}</span>
+                      {displayInfo.price === 0 ? (
+                        <span className="text-2xl font-display font-bold text-success">Grátis</span>
+                      ) : (
+                        <span className="text-2xl font-display font-bold text-primary">{formatPrice(displayInfo.price)}</span>
+                      )}
                     </div>
                   </div>
                 )}
@@ -352,32 +500,54 @@ const Checkout = () => {
 
               {/* Payment Section */}
               <div className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-6 sm:p-8">
-                <h2 className="font-display font-bold text-lg mb-6">Pagamento</h2>
+                <h2 className="font-display font-bold text-lg mb-6">
+                  {isFreeProduct ? "Ativação" : "Pagamento"}
+                </h2>
 
                 {!pixData && !orderId ? (
                   <div className="space-y-4">
-                    <div className="bg-muted/50 border border-border/50 rounded-xl p-4">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 bg-success/10 rounded-lg flex items-center justify-center">
-                          <span className="text-success font-bold text-sm">PIX</span>
+                    {isFreeProduct ? (
+                      <div className="bg-success/10 border border-success/20 rounded-xl p-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-8 h-8 bg-success/20 rounded-lg flex items-center justify-center">
+                            <CheckCircle2 className="w-4 h-4 text-success" />
+                          </div>
+                          <span className="font-medium text-success">Ativação Gratuita</span>
                         </div>
-                        <span className="font-medium">Pagamento via PIX</span>
+                        <p className="text-sm text-muted-foreground">
+                          Clique no botão abaixo para ativar seu plano gratuito instantaneamente.
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        Pagamento instantâneo. Suas sessions serão liberadas automaticamente após a confirmação.
-                      </p>
-                    </div>
+                    ) : (
+                      <div className="bg-muted/50 border border-border/50 rounded-xl p-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-8 h-8 bg-success/10 rounded-lg flex items-center justify-center">
+                            <span className="text-success font-bold text-sm">PIX</span>
+                          </div>
+                          <span className="font-medium">Pagamento via PIX</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Pagamento instantâneo. {isPlanPurchase ? "Sua licença será" : "Suas sessions serão"} liberada{isPlanPurchase ? "" : "s"} automaticamente após a confirmação.
+                        </p>
+                      </div>
+                    )}
 
                     <Button 
                       onClick={handlePayment}
-                      disabled={isProcessing || !isSessionPurchase}
-                      className="w-full h-12 sm:h-14 text-base bg-primary hover:bg-primary/90"
+                      disabled={isProcessing || !displayInfo}
+                      className={`w-full h-12 sm:h-14 text-base ${
+                        isFreeProduct 
+                          ? 'bg-success hover:bg-success/90' 
+                          : 'bg-primary hover:bg-primary/90'
+                      }`}
                     >
                       {isProcessing ? (
                         <span className="flex items-center gap-2">
                           <Loader2 className="w-5 h-5 animate-spin" />
-                          Gerando PIX...
+                          {isFreeProduct ? "Ativando..." : "Gerando PIX..."}
                         </span>
+                      ) : isFreeProduct ? (
+                        "Ativar Agora"
                       ) : (
                         "Gerar código PIX"
                       )}
@@ -485,7 +655,9 @@ const Checkout = () => {
                     <p className="text-xs text-muted-foreground text-center">
                       {isExpired 
                         ? "O código PIX expirou. Gere um novo código para continuar."
-                        : "Após o pagamento, suas sessions serão liberadas automaticamente."
+                        : isPlanPurchase 
+                          ? "Após o pagamento, sua licença será ativada automaticamente."
+                          : "Após o pagamento, suas sessions serão liberadas automaticamente."
                       }
                     </p>
                   </div>
