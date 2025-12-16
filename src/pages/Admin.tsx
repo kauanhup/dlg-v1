@@ -656,8 +656,15 @@ const SubscriptionsTabContent = () => {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="font-semibold text-foreground">{plan.name}</h3>
-                    <div className="flex items-baseline gap-1 mt-1">
-                      <span className="text-2xl font-bold text-foreground">{formatPrice(plan.price)}</span>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      {plan.promotional_price ? (
+                        <>
+                          <span className="text-2xl font-bold text-success">{formatPrice(plan.promotional_price)}</span>
+                          <span className="text-sm text-muted-foreground line-through">{formatPrice(plan.price)}</span>
+                        </>
+                      ) : (
+                        <span className="text-2xl font-bold text-foreground">{formatPrice(plan.price)}</span>
+                      )}
                       <span className="text-sm text-muted-foreground">
                         / {plan.period === 0 ? 'vitalício' : `${plan.period} dias`}
                       </span>
