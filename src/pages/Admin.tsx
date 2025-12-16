@@ -249,6 +249,7 @@ const SubscriptionsTabContent = () => {
     payments: dbPayments, 
     isLoading, 
     stats,
+    refetch,
     updatePlan,
     createPlan,
     deletePlan,
@@ -315,6 +316,7 @@ const SubscriptionsTabContent = () => {
     }
     setShowRenewModal(false);
     setSelectedSubscriber(null);
+    refetch();
   };
 
   const handleConfirmCancel = async () => {
@@ -323,9 +325,11 @@ const SubscriptionsTabContent = () => {
         status: 'cancelled', 
         next_billing_date: null 
       });
+      toast.success('Assinatura cancelada');
     }
     setShowCancelModal(false);
     setSelectedSubscriber(null);
+    refetch();
   };
 
   const handleSavePlan = async (planData: { name: string; price: string; period: number; features: string[]; status: string }) => {
@@ -339,6 +343,7 @@ const SubscriptionsTabContent = () => {
         features: planData.features,
         is_active: planData.status === 'active'
       });
+      toast.success('Plano atualizado');
     } else {
       await createPlan({
         name: planData.name,
@@ -346,9 +351,11 @@ const SubscriptionsTabContent = () => {
         period: planData.period,
         features: planData.features
       });
+      toast.success('Plano criado');
     }
     setEditingPlan(null);
     setIsModalOpen(false);
+    refetch();
   };
 
   const handleEditPlan = (plan: any) => {
@@ -380,17 +387,21 @@ const SubscriptionsTabContent = () => {
   const handleConfirmStatusChange = async () => {
     if (selectedPayment && newPaymentStatus) {
       await updatePayment(selectedPayment.id, { status: newPaymentStatus });
+      toast.success('Status atualizado');
     }
     setShowEditStatusModal(false);
     setSelectedPayment(null);
+    refetch();
   };
 
   const handleConfirmRefund = async () => {
     if (selectedPayment) {
       await updatePayment(selectedPayment.id, { status: 'refunded' });
+      toast.success('Pagamento reembolsado');
     }
     setShowRefundModal(false);
     setSelectedPayment(null);
+    refetch();
   };
 
   const statusStyles: Record<string, string> = {
@@ -685,9 +696,15 @@ const SubscriptionsTabContent = () => {
                   variant="destructive" 
                   className="flex-1"
                   onClick={async () => {
-                    await deletePlan(planToDelete.id);
+                    const result = await deletePlan(planToDelete.id);
+                    if (result.success) {
+                      toast.success('Plano excluído');
+                    } else {
+                      toast.error(result.error || 'Erro ao excluir plano');
+                    }
                     setShowDeletePlanModal(false);
                     setPlanToDelete(null);
+                    refetch();
                   }}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
