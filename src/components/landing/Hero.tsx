@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DownloadBotButton } from "@/components/ui/download-bot-button";
 import { Link } from "react-router-dom";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { AnimatedText } from "@/components/ui/animated-shiny-text";
@@ -61,6 +62,16 @@ const Hero = () => {
                 Já tenho licença
               </Button>
             </Link>
+          </motion.div>
+
+          {/* Download Bot Button */}
+          <motion.div 
+            className="flex justify-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
+          >
+            <DownloadBotButton />
           </motion.div>
 
         </div>
