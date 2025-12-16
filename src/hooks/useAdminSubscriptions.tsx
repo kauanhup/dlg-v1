@@ -184,6 +184,12 @@ export const useAdminSubscriptions = () => {
 
   const deletePlan = async (planId: string) => {
     try {
+      // Check for active subscribers before deleting
+      const plan = plans.find(p => p.id === planId);
+      if (plan && (plan.subscribers_count || 0) > 0) {
+        return { success: false, error: 'Não é possível excluir um plano com assinantes ativos' };
+      }
+
       const { error } = await supabase
         .from('subscription_plans')
         .delete()

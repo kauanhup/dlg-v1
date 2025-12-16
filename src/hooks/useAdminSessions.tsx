@@ -204,6 +204,21 @@ export const useAdminSessions = () => {
 
   const deleteSessionFile = async (fileId: string, filePath: string) => {
     try {
+      // Get file info from database (fresh, not cached state)
+      const { data: fileData, error: fileError } = await supabase
+        .from('session_files')
+        .select('type, status')
+        .eq('id', fileId)
+        .maybeSingle();
+
+      if (fileError) throw fileError;
+      if (!fileData) {
+        return { success: false, error: 'Arquivo não encontrado' };
+      }
+
+      const fileType = fileData.type;
+      const wasAvailable = fileData.status === 'available';
+
       // Delete from storage
       const { error: storageError } = await supabase.storage
         .from('sessions')
@@ -214,10 +229,6 @@ export const useAdminSessions = () => {
         // Continue anyway to delete the record
       }
 
-      // Get file type before deleting
-      const file = sessionFiles.find(f => f.id === fileId);
-      const fileType = file?.type;
-
       // Delete record
       const { error: deleteError } = await supabase
         .from('session_files')
@@ -226,18 +237,24 @@ export const useAdminSessions = () => {
 
       if (deleteError) throw deleteError;
 
-      // Update inventory count
-      if (fileType) {
-        const currentInventory = inventory.find(i => i.type === fileType);
-        if (currentInventory && currentInventory.quantity > 0) {
+      // Update inventory count only if file was available (not already sold)
+      if (wasAvailable && fileType) {
+        // Use atomic decrement via RPC or fetch fresh count
+        const { data: freshInventory } = await supabase
+          .from('sessions_inventory')
+          .select('quantity')
+          .eq('type', fileType)
+          .maybeSingle();
+
+        if (freshInventory && freshInventory.quantity > 0) {
           await supabase
             .from('sessions_inventory')
-            .update({ quantity: currentInventory.quantity - 1 })
+            .update({ quantity: freshInventory.quantity - 1 })
             .eq('type', fileType);
         }
       }
 
-      // Update local state
+      // Update local state and refetch
       setSessionFiles(prev => prev.filter(f => f.id !== fileId));
       await fetchData();
 
