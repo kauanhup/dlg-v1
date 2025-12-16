@@ -31,6 +31,7 @@ import {
   Search,
   MoreHorizontal,
   Eye,
+  EyeOff,
   Edit,
   Trash2,
   CheckCircle,
@@ -52,8 +53,11 @@ import {
   UserPlus,
   Phone,
   Save,
-  Zap
+  Zap,
+  Copy,
+  Info
 } from "lucide-react";
+
 
 const fadeIn = {
   initial: { opacity: 0, y: 12 },
@@ -2001,30 +2005,185 @@ const SessionsSection = () => {
   );
 };
 
-// Gateway Section
+// Gateway Section - PixUp
 const GatewaySection = () => {
+  const [pixupToken, setPixupToken] = useState("");
+  const [pixupWebhook, setPixupWebhook] = useState("");
+  const [isConnected, setIsConnected] = useState(false);
+  const [showToken, setShowToken] = useState(false);
+
   return (
     <motion.div {...fadeIn} className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Gateway</h2>
-          <p className="text-sm text-muted-foreground">Gerencie as configurações do gateway</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Gateway de Pagamento</h2>
+          <p className="text-sm text-muted-foreground">Configurações do PixUp</p>
+        </div>
+        <div className={cn(
+          "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium",
+          isConnected ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
+        )}>
+          <div className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-yellow-500")} />
+          {isConnected ? "Conectado" : "Desconectado"}
         </div>
       </div>
 
+      {/* API Configuration */}
       <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
             <Zap className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">Configurações do Gateway</h3>
-            <p className="text-sm text-muted-foreground">Em desenvolvimento</p>
+            <h3 className="font-semibold text-foreground">Configuração da API</h3>
+            <p className="text-sm text-muted-foreground">Credenciais de acesso ao PixUp</p>
           </div>
         </div>
-        <p className="text-muted-foreground text-sm">
-          Esta seção está em desenvolvimento. Aqui você poderá gerenciar as configurações do gateway.
-        </p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-foreground mb-2 block">Token de API</label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type={showToken ? "text" : "password"}
+                  value={pixupToken}
+                  onChange={(e) => setPixupToken(e.target.value)}
+                  placeholder="Insira seu token do PixUp"
+                  className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowToken(!showToken)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <Button variant="outline" size="icon">
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Obtenha seu token no painel do PixUp
+            </p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-foreground mb-2 block">URL do Webhook</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={pixupWebhook}
+                onChange={(e) => setPixupWebhook(e.target.value)}
+                placeholder="https://seu-dominio.com/webhook/pixup"
+                className="flex-1 px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+              <Button variant="outline" size="icon">
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Configure esta URL no painel do PixUp para receber notificações
+            </p>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button 
+              onClick={() => setIsConnected(!isConnected)}
+              className="gap-2"
+            >
+              <Save className="w-4 h-4" />
+              Salvar Configurações
+            </Button>
+            <Button variant="outline" className="gap-2">
+              <RefreshCw className="w-4 h-4" />
+              Testar Conexão
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-green-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-foreground">0</p>
+              <p className="text-sm text-muted-foreground">Pagamentos Aprovados</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center">
+              <Clock className="w-5 h-5 text-yellow-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-foreground">0</p>
+              <p className="text-sm text-muted-foreground">Pagamentos Pendentes</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center">
+              <XCircle className="w-5 h-5 text-red-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-foreground">0</p>
+              <p className="text-sm text-muted-foreground">Pagamentos Recusados</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-foreground">R$ 0,00</p>
+              <p className="text-sm text-muted-foreground">Volume Total</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Transactions */}
+      <div className="bg-card border border-border rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-foreground">Transações Recentes</h3>
+          <Button variant="outline" size="sm" className="gap-2">
+            <RefreshCw className="w-4 h-4" />
+            Atualizar
+          </Button>
+        </div>
+
+        <div className="text-center py-8 text-muted-foreground">
+          <Zap className="w-12 h-12 mx-auto mb-3 opacity-50" />
+          <p>Nenhuma transação registrada</p>
+          <p className="text-sm">Configure o gateway para começar a receber pagamentos</p>
+        </div>
+      </div>
+
+      {/* Info Card */}
+      <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+        <div className="flex gap-3">
+          <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Sobre o PixUp</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              O PixUp é uma solução de pagamentos via PIX que permite receber pagamentos instantâneos 
+              com confirmação automática. Configure seu token e webhook para começar a processar pagamentos.
+            </p>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
