@@ -197,11 +197,38 @@ export const useAdminSubscriptions = () => {
         return { success: false, error: 'Não é possível excluir um plano com assinantes ativos' };
       }
 
-      // Delete cancelled/inactive subscriptions first (to avoid FK constraint)
-      await supabase
+      // Get all subscription IDs for this plan
+      const { data: subs } = await supabase
+        .from('user_subscriptions')
+        .select('id')
+        .eq('plan_id', planId);
+
+      const subIds = subs?.map(s => s.id) || [];
+
+      // Unlink payments from these subscriptions first
+      if (subIds.length > 0) {
+        const { error: paymentError } = await supabase
+          .from('payments')
+          .update({ subscription_id: null })
+          .in('subscription_id', subIds);
+
+        if (paymentError) {
+          console.error('Error unlinking payments:', paymentError);
+        }
+      }
+
+      // Delete subscriptions
+      const { error: deleteSubsError } = await supabase
         .from('user_subscriptions')
         .delete()
         .eq('plan_id', planId);
+
+      console.log('Delete subscriptions result:', { planId, deleteSubsError });
+      
+      if (deleteSubsError) {
+        console.error('Error deleting subscriptions:', deleteSubsError);
+        throw deleteSubsError;
+      }
 
       // Now delete the plan
       const { error } = await supabase
