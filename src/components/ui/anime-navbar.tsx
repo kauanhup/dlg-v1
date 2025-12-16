@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -22,6 +22,7 @@ interface NavBarProps {
 
 export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBarProps) {
   const location = useLocation()
+  const navigate = useNavigate()
   const [mounted, setMounted] = useState(false)
   const [hoveredTab, setHoveredTab] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string>(defaultActive)
@@ -30,8 +31,22 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
     setMounted(true)
   }, [])
 
+  // Handle hash scrolling after navigation
+  useEffect(() => {
+    if (location.pathname === '/' && location.hash) {
+      const element = document.querySelector(location.hash)
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth' })
+        }, 100)
+      }
+    }
+  }, [location])
+
   // Update active tab based on scroll position for anchor links
   useEffect(() => {
+    if (location.pathname !== '/') return
+
     const handleScroll = () => {
       const sections = ['features', 'pricing', 'faq']
       const scrollPosition = window.scrollY + 150
@@ -63,7 +78,7 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [items, activeTab])
+  }, [items, activeTab, location.pathname])
 
   // Update active tab based on current route
   useEffect(() => {
@@ -78,6 +93,30 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
   // Separate navigation items from action items (pages)
   const navItems = items.filter(item => !item.isPage)
   const actionItems = items.filter(item => item.isPage)
+
+  const handleAnchorClick = (e: React.MouseEvent, item: NavItem) => {
+    e.preventDefault()
+    setActiveTab(item.name)
+    
+    if (location.pathname === '/') {
+      // Already on homepage, just scroll
+      const element = document.querySelector(item.url)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' })
+      }
+    } else {
+      // Navigate to homepage with hash
+      navigate('/' + item.url)
+    }
+  }
+
+  const handleHomeClick = (e: React.MouseEvent, item: NavItem) => {
+    setActiveTab(item.name)
+    if (location.pathname === '/') {
+      e.preventDefault()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
 
   return (
     <div className={cn("fixed top-0 left-0 right-0 z-[9999]", className)}>
@@ -98,17 +137,7 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
             const isActive = activeTab === item.name
             const isHovered = hoveredTab === item.name
             const isAnchor = item.url.startsWith('#')
-
-            const handleClick = (e: React.MouseEvent) => {
-              setActiveTab(item.name)
-              if (isAnchor) {
-                e.preventDefault()
-                const element = document.querySelector(item.url)
-                if (element) {
-                  element.scrollIntoView({ behavior: 'smooth' })
-                }
-              }
-            }
+            const isHome = item.url === '/'
 
             const linkContent = (
               <>
@@ -157,7 +186,7 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
                 <a
                   key={item.name}
                   href={item.url}
-                  onClick={handleClick}
+                  onClick={(e) => handleAnchorClick(e, item)}
                   onMouseEnter={() => setHoveredTab(item.name)}
                   onMouseLeave={() => setHoveredTab(null)}
                   className={linkClasses}
@@ -171,7 +200,7 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
               <Link
                 key={item.name}
                 to={item.url}
-                onClick={handleClick}
+                onClick={(e) => isHome ? handleHomeClick(e, item) : setActiveTab(item.name)}
                 onMouseEnter={() => setHoveredTab(item.name)}
                 onMouseLeave={() => setHoveredTab(null)}
                 className={linkClasses}
