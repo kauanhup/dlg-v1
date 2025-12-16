@@ -1420,6 +1420,7 @@ const SessionsSection = () => {
     stats 
   } = useAdminSessions();
   
+  const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadType, setUploadType] = useState<'brasileiras' | 'estrangeiras'>('brasileiras');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -1460,13 +1461,20 @@ const SessionsSection = () => {
   const brasileirasFiles = getFilesByType('brasileiras');
   const estrangeirasFiles = getFilesByType('estrangeiras');
 
+  const handleSelectType = (type: 'brasileiras' | 'estrangeiras') => {
+    setUploadType(type);
+    setShowTypeSelector(false);
+    // Trigger file input
+    document.getElementById('session-upload')?.click();
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
+    if (files && files.length > 0) {
       setSelectedFiles(Array.from(files));
       setShowUploadModal(true);
-      e.target.value = '';
     }
+    e.target.value = '';
   };
 
   const handleConfirmUpload = async () => {
@@ -1561,17 +1569,56 @@ const SessionsSection = () => {
             className="hidden"
             id="session-upload"
           />
-          <label htmlFor="session-upload">
-            <Button asChild size="sm" disabled={isUploading}>
-              <span>
-                <Plus className="w-4 h-4 mr-2" /> Importar Sessions
-              </span>
-            </Button>
-          </label>
+          <Button size="sm" disabled={isUploading} onClick={() => setShowTypeSelector(true)}>
+            <Plus className="w-4 h-4 mr-2" /> Importar Sessions
+          </Button>
         </div>
       </div>
 
-      {/* Upload Modal */}
+      {/* Type Selector Modal */}
+      <AnimatePresence>
+        {showTypeSelector && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50"
+              onClick={() => setShowTypeSelector(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-sm bg-card border border-border rounded-lg p-6 shadow-xl">
+                <h2 className="text-lg font-semibold text-foreground mb-4 text-center">
+                  Qual tipo de session?
+                </h2>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleSelectType('brasileiras')}
+                    className="flex-1 p-4 rounded-lg bg-success/10 hover:bg-success/20 border border-success/30 transition-colors"
+                  >
+                    <span className="text-3xl block mb-2">🇧🇷</span>
+                    <span className="text-sm font-medium text-foreground">Brasileiras</span>
+                  </button>
+                  <button
+                    onClick={() => handleSelectType('estrangeiras')}
+                    className="flex-1 p-4 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-colors"
+                  >
+                    <span className="text-3xl block mb-2">🌍</span>
+                    <span className="text-sm font-medium text-foreground">Estrangeiras</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Upload Confirmation Modal */}
       <AnimatePresence>
         {showUploadModal && (
           <>
@@ -1590,7 +1637,9 @@ const SessionsSection = () => {
             >
               <div className="w-full max-w-md bg-card border border-border rounded-lg p-6 shadow-xl">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-foreground">Upload de Sessions</h2>
+                  <h2 className="text-lg font-semibold text-foreground">
+                    Upload {uploadType === 'brasileiras' ? '🇧🇷 Brasileiras' : '🌍 Estrangeiras'}
+                  </h2>
                   <button onClick={handleCancelUpload} className="text-muted-foreground hover:text-foreground">
                     <X className="w-5 h-5" />
                   </button>
@@ -1627,34 +1676,6 @@ const SessionsSection = () => {
                             {file.name}
                           </div>
                         ))}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm text-muted-foreground mb-2 block">Tipo de Session</label>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setUploadType('brasileiras')}
-                          className={cn(
-                            "flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                            uploadType === 'brasileiras' 
-                              ? "bg-success text-success-foreground" 
-                              : "bg-muted text-muted-foreground hover:bg-muted/80"
-                          )}
-                        >
-                          🇧🇷 Brasileiras
-                        </button>
-                        <button
-                          onClick={() => setUploadType('estrangeiras')}
-                          className={cn(
-                            "flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                            uploadType === 'estrangeiras' 
-                              ? "bg-primary text-primary-foreground" 
-                              : "bg-muted text-muted-foreground hover:bg-muted/80"
-                          )}
-                        >
-                          🌍 Estrangeiras
-                        </button>
                       </div>
                     </div>
                     
