@@ -50,17 +50,13 @@ const Pricing = () => {
         const { data, error } = await supabase
           .from('subscription_plans')
           .select('*')
-          .eq('is_active', true);
+          .eq('is_active', true)
+          .order('price', { ascending: true })
+          .limit(3);
 
         if (error) throw error;
 
-        const sortedPlans = (data || []).sort((a, b) => {
-          const priceA = a.promotional_price ?? a.price;
-          const priceB = b.promotional_price ?? b.price;
-          return priceA - priceB;
-        });
-
-        setPlans(sortedPlans);
+        setPlans(data || []);
       } catch (error) {
         console.error('Error fetching plans:', error);
       } finally {
