@@ -12,6 +12,7 @@ import { useAdminSessions } from "@/hooks/useAdminSessions";
 import { useAdminSubscriptions } from "@/hooks/useAdminSubscriptions";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { MorphingSquare } from "@/components/ui/morphing-square";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -2007,17 +2008,96 @@ const SessionsSection = () => {
 
 // Gateway Section - PixUp
 const GatewaySection = () => {
-  const [pixupToken, setPixupToken] = useState("");
-  const [pixupWebhook, setPixupWebhook] = useState("");
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
   const [isConnected, setIsConnected] = useState(false);
-  const [showToken, setShowToken] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+
+  // Load settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('pixup', {
+          body: { action: 'get_settings' }
+        });
+
+        if (data?.success && data?.data) {
+          setClientId(data.data.client_id || "");
+          setWebhookUrl(data.data.webhook_url || "");
+          setIsConnected(data.data.is_active || false);
+        }
+      } catch (error) {
+        console.error('Error loading gateway settings:', error);
+      }
+    };
+
+    loadSettings();
+  }, []);
+
+  const handleSave = async () => {
+    if (!clientId || !clientSecret) {
+      toast.error("Preencha o Client ID e Client Secret");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('pixup', {
+        body: { 
+          action: 'save_credentials',
+          client_id: clientId,
+          client_secret: clientSecret,
+          webhook_url: webhookUrl
+        }
+      });
+
+      if (data?.success) {
+        toast.success("Credenciais salvas com sucesso!");
+        setIsConnected(true);
+        setClientSecret(""); // Clear secret after save
+      } else {
+        toast.error(data?.error || "Erro ao salvar credenciais");
+      }
+    } catch (error) {
+      console.error('Error saving credentials:', error);
+      toast.error("Erro ao salvar credenciais");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    setIsTesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('pixup', {
+        body: { action: 'test_connection' }
+      });
+
+      if (data?.success) {
+        toast.success("Conexão bem sucedida!");
+        setIsConnected(true);
+      } else {
+        toast.error(data?.error || "Falha na conexão");
+        setIsConnected(false);
+      }
+    } catch (error) {
+      console.error('Error testing connection:', error);
+      toast.error("Erro ao testar conexão");
+      setIsConnected(false);
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   return (
     <motion.div {...fadeIn} className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-foreground">Gateway de Pagamento</h2>
-          <p className="text-sm text-muted-foreground">Configurações do PixUp</p>
+          <p className="text-sm text-muted-foreground">Configurações do PixUp (BSPAY)</p>
         </div>
         <div className={cn(
           "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium",
@@ -2036,68 +2116,72 @@ const GatewaySection = () => {
           </div>
           <div>
             <h3 className="font-semibold text-foreground">Configuração da API</h3>
-            <p className="text-sm text-muted-foreground">Credenciais de acesso ao PixUp</p>
+            <p className="text-sm text-muted-foreground">Credenciais de acesso ao PixUp/BSPAY</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">Token de API</label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <input
-                  type={showToken ? "text" : "password"}
-                  value={pixupToken}
-                  onChange={(e) => setPixupToken(e.target.value)}
-                  placeholder="Insira seu token do PixUp"
-                  className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowToken(!showToken)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <Button variant="outline" size="icon">
-                <Copy className="w-4 h-4" />
-              </Button>
+            <label className="text-sm font-medium text-foreground mb-2 block">Client ID</label>
+            <input
+              type="text"
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              placeholder="Seu client_id do BSPAY"
+              className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-foreground mb-2 block">Client Secret</label>
+            <div className="relative">
+              <input
+                type={showSecret ? "text" : "password"}
+                value={clientSecret}
+                onChange={(e) => setClientSecret(e.target.value)}
+                placeholder="Seu client_secret do BSPAY"
+                className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+              <button
+                type="button"
+                onClick={() => setShowSecret(!showSecret)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Obtenha seu token no painel do PixUp
+              Obtenha suas credenciais no painel do BSPAY
             </p>
           </div>
 
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">URL do Webhook</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={pixupWebhook}
-                onChange={(e) => setPixupWebhook(e.target.value)}
-                placeholder="https://seu-dominio.com/webhook/pixup"
-                className="flex-1 px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-              <Button variant="outline" size="icon">
-                <Copy className="w-4 h-4" />
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Configure esta URL no painel do PixUp para receber notificações
-            </p>
+            <label className="text-sm font-medium text-foreground mb-2 block">URL do Webhook (opcional)</label>
+            <input
+              type="text"
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder="https://seu-dominio.com/webhook/pixup"
+              className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
           </div>
 
           <div className="flex gap-3 pt-2">
             <Button 
-              onClick={() => setIsConnected(!isConnected)}
+              onClick={handleSave}
+              disabled={isLoading}
               className="gap-2"
             >
-              <Save className="w-4 h-4" />
+              {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Salvar Configurações
             </Button>
-            <Button variant="outline" className="gap-2">
-              <RefreshCw className="w-4 h-4" />
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={handleTestConnection}
+              disabled={isTesting}
+            >
+              {isTesting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               Testar Conexão
             </Button>
           </div>

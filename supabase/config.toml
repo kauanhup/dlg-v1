@@ -1,1 +1,4 @@
 project_id = "nydtfckvvslkbyolipsf"
+
+[functions.pixup]
+verify_jwt = false
