@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // ========================================
 // CONFIGURAÇÃO - ALTERE AQUI
 // ========================================
-define('PROXY_SECRET', 'SUA_CHAVE_SECRETA_AQUI'); // Chave para validar requisições do seu servidor
+define('PROXY_SECRET', 'swx_proxy_2024_Xk9mP2nQ7rT3wY5z'); // Chave para validar requisições do seu servidor
 define('BSPAY_API_URL', 'https://api.bspay.co');
 
 // ========================================
