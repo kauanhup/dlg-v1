@@ -6,12 +6,14 @@ import { MorphingSquare } from "@/components/ui/morphing-square";
 import { supabase } from "@/integrations/supabase/client";
 import { Ban, MessageCircle, X, AlertTriangle, Wrench } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MathCaptcha } from "@/components/ui/math-captcha";
 
 interface SystemSettings {
   maintenanceMode: boolean;
   allowRegistration: boolean;
 }
+
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -22,15 +24,14 @@ const Login = () => {
   const [passwordError, setPasswordError] = useState("");
   const [whatsappError, setWhatsappError] = useState("");
   const [nameError, setNameError] = useState("");
-  const [captchaError, setCaptchaError] = useState("");
-  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [honeypot, setHoneypot] = useState(""); // Honeypot field - should stay empty
+  const [rateLimitError, setRateLimitError] = useState("");
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showBannedModal, setShowBannedModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
-  const [captchaKey, setCaptchaKey] = useState(0);
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
     maintenanceMode: false,
     allowRegistration: true,
@@ -203,16 +204,26 @@ const Login = () => {
     return value.trim().length >= 2;
   };
 
-  const handleCaptchaVerify = (isValid: boolean) => {
-    setCaptchaVerified(isValid);
-    if (isValid) {
-      setCaptchaError("");
+  // Check rate limiting based on recent failed login attempts
+  const checkRateLimit = async (emailToCheck: string): Promise<boolean> => {
+    try {
+      const cutoffTime = new Date(Date.now() - LOCKOUT_MINUTES * 60 * 1000).toISOString();
+      
+      const { data, error } = await supabase
+        .from('login_history')
+        .select('id')
+        .eq('status', 'failed')
+        .gte('created_at', cutoffTime);
+      
+      if (error) {
+        console.error('Error checking rate limit:', error);
+        return true; // Allow on error to not block legitimate users
+      }
+      
+      return (data?.length || 0) < MAX_ATTEMPTS;
+    } catch {
+      return true;
     }
-  };
-
-  const resetCaptcha = () => {
-    setCaptchaVerified(false);
-    setCaptchaKey(prev => prev + 1);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -237,7 +248,7 @@ const Login = () => {
     setPasswordError("");
     setWhatsappError("");
     setNameError("");
-    setCaptchaError("");
+    setRateLimitError("");
 
     if (!validateEmail(email)) {
       setEmailError("Por favor, insira um email válido.");
@@ -261,10 +272,21 @@ const Login = () => {
       }
     }
 
-    // Validate captcha
-    if (!captchaVerified) {
-      setCaptchaError("Por favor, resolva o cálculo corretamente.");
-      valid = false;
+    // Honeypot check - if filled, it's a bot
+    if (honeypot) {
+      // Silently reject - don't reveal it's a bot trap
+      toast.error("Erro", "Ocorreu um erro inesperado. Tente novamente.");
+      return;
+    }
+
+    // Rate limiting check (only for login)
+    if (isLogin) {
+      const allowed = await checkRateLimit(email);
+      if (!allowed) {
+        setRateLimitError(`Muitas tentativas. Aguarde ${LOCKOUT_MINUTES} minutos.`);
+        toast.error("Muitas tentativas", `Por segurança, aguarde ${LOCKOUT_MINUTES} minutos antes de tentar novamente.`);
+        return;
+      }
     }
 
     if (!valid) {
@@ -283,7 +305,6 @@ const Login = () => {
         });
 
         if (error) {
-          resetCaptcha();
           if (error.message.includes('Invalid login credentials')) {
             toast.error("Erro no login", "Email ou senha incorretos.");
           } else if (error.message.includes('Email not confirmed')) {
@@ -303,7 +324,6 @@ const Login = () => {
             await supabase.auth.signOut();
             setShowBannedModal(true);
             setIsSubmitting(false);
-            resetCaptcha();
             return;
           }
           
@@ -330,7 +350,6 @@ const Login = () => {
         });
 
         if (error) {
-          resetCaptcha();
           if (error.message.includes('User already registered')) {
             toast.error("Erro no cadastro", "Este email já está cadastrado.");
           } else {
@@ -346,7 +365,6 @@ const Login = () => {
         // Redirect is handled by onAuthStateChange
       }
     } catch (error: any) {
-      resetCaptcha();
       toast.error("Erro", error.message || "Ocorreu um erro inesperado.");
       setIsSubmitting(false);
     }
@@ -377,8 +395,8 @@ const Login = () => {
     setPasswordError("");
     setWhatsappError("");
     setNameError("");
-    setCaptchaError("");
-    resetCaptcha();
+    setRateLimitError("");
+    setHoneypot("");
     setTimeout(() => {
       setIsLogin(!isLogin);
       setIsTransitioning(false);
@@ -513,12 +531,23 @@ const Login = () => {
               </div>
             )}
 
-            {/* Math Captcha */}
-            <MathCaptcha
-              key={captchaKey}
-              onVerify={handleCaptchaVerify}
-              error={captchaError}
-            />
+            {/* Honeypot field - hidden from users, bots will fill it */}
+            <div className="absolute -left-[9999px] opacity-0 h-0 overflow-hidden" aria-hidden="true">
+              <label htmlFor="website">Website</label>
+              <input
+                type="text"
+                id="website"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+              />
+            </div>
+
+            {rateLimitError && (
+              <p className="text-sm text-destructive text-center">{rateLimitError}</p>
+            )}
 
             <button
               type="submit"
