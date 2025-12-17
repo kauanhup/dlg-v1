@@ -49,6 +49,7 @@ function makeRequest($url, $method, $headers, $body = null) {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4); // Força IPv4 para whitelist
     
     if ($method === 'POST') {
         curl_setopt($ch, CURLOPT_POST, true);
