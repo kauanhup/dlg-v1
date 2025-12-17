@@ -204,25 +204,69 @@ const Login = () => {
     return value.trim().length >= 2;
   };
 
-  // Check rate limiting based on recent failed login attempts
-  const checkRateLimit = async (emailToCheck: string): Promise<boolean> => {
+  // Rate limiting using localStorage (works without auth)
+  const getRateLimitKey = (emailToCheck: string) => `rate_limit_${emailToCheck.toLowerCase()}`;
+  
+  const checkRateLimit = (emailToCheck: string): boolean => {
     try {
-      const cutoffTime = new Date(Date.now() - LOCKOUT_MINUTES * 60 * 1000).toISOString();
+      const key = getRateLimitKey(emailToCheck);
+      const data = localStorage.getItem(key);
       
-      const { data, error } = await supabase
-        .from('login_history')
-        .select('id')
-        .eq('status', 'failed')
-        .gte('created_at', cutoffTime);
+      if (!data) return true;
       
-      if (error) {
-        console.error('Error checking rate limit:', error);
-        return true; // Allow on error to not block legitimate users
+      const { attempts, lockedUntil } = JSON.parse(data);
+      
+      // Check if still locked
+      if (lockedUntil && Date.now() < lockedUntil) {
+        return false;
       }
       
-      return (data?.length || 0) < MAX_ATTEMPTS;
+      // Reset if lockout expired
+      if (lockedUntil && Date.now() >= lockedUntil) {
+        localStorage.removeItem(key);
+        return true;
+      }
+      
+      return attempts < MAX_ATTEMPTS;
     } catch {
       return true;
+    }
+  };
+  
+  const recordFailedAttempt = (emailToCheck: string) => {
+    try {
+      const key = getRateLimitKey(emailToCheck);
+      const data = localStorage.getItem(key);
+      
+      let attempts = 1;
+      let lockedUntil = null;
+      
+      if (data) {
+        const parsed = JSON.parse(data);
+        // Reset if lockout expired
+        if (parsed.lockedUntil && Date.now() >= parsed.lockedUntil) {
+          attempts = 1;
+        } else {
+          attempts = (parsed.attempts || 0) + 1;
+        }
+      }
+      
+      // Lock if max attempts reached
+      if (attempts >= MAX_ATTEMPTS) {
+        lockedUntil = Date.now() + LOCKOUT_MINUTES * 60 * 1000;
+      }
+      
+      localStorage.setItem(key, JSON.stringify({ attempts, lockedUntil }));
+    } catch {
+      // Ignore localStorage errors
+    }
+  };
+  
+  const clearRateLimit = (emailToCheck: string) => {
+    try {
+      localStorage.removeItem(getRateLimitKey(emailToCheck));
+    } catch {
+      // Ignore
     }
   };
 
@@ -281,7 +325,7 @@ const Login = () => {
 
     // Rate limiting check (only for login)
     if (isLogin) {
-      const allowed = await checkRateLimit(email);
+      const allowed = checkRateLimit(email);
       if (!allowed) {
         setRateLimitError(`Muitas tentativas. Aguarde ${LOCKOUT_MINUTES} minutos.`);
         toast.error("Muitas tentativas", `Por segurança, aguarde ${LOCKOUT_MINUTES} minutos antes de tentar novamente.`);
@@ -305,6 +349,9 @@ const Login = () => {
         });
 
         if (error) {
+          // Record failed attempt for rate limiting
+          recordFailedAttempt(email);
+          
           if (error.message.includes('Invalid login credentials')) {
             toast.error("Erro no login", "Email ou senha incorretos.");
           } else if (error.message.includes('Email not confirmed')) {
@@ -327,8 +374,9 @@ const Login = () => {
             return;
           }
           
-          // Log successful login
+          // Log successful login and clear rate limit
           await logLoginAttempt(data.user.id, 'success');
+          clearRateLimit(email);
         }
 
         toast.success("Login realizado!", "Bem-vindo de volta.");
