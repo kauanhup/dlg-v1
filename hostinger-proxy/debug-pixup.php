@@ -101,7 +101,11 @@ if ($token_http_code === 200 && $access_token) {
     ]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
         'amount' => 0.01,
-        'external_id' => 'test_' . time()
+        'external_id' => 'test_' . time(),
+        'payer' => [
+            'name' => 'Teste Usuario',
+            'document' => '12345678900'
+        ]
     ]));
     
     $qr_response = curl_exec($ch);
