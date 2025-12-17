@@ -1,11 +1,11 @@
 <?php
 /**
- * Proxy PixUp/BSPAY para Hostinger
+ * Proxy PixUp para Hostinger
  * Este script recebe requisições do Supabase Edge Function
- * e encaminha para a API do BSPAY com IP fixo.
+ * e encaminha para a API do PixUp com IP fixo.
  * 
  * Upload este arquivo para: public_html/api/proxy-pixup.php
- * URL: https://seusite.com/api/proxy-pixup.php
+ * URL: https://dlgconnect.com/api/proxy-pixup.php
  */
 
 // CORS headers
@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // CONFIGURAÇÃO - ALTERE AQUI
 // ========================================
 define('PROXY_SECRET', 'swx_proxy_2024_Xk9mP2nQ7rT3wY5z'); // Chave para validar requisições do seu servidor
-define('BSPAY_API_URL', 'https://api.bspay.co');
+define('PIXUP_API_URL', 'https://api.pixupbr.com'); // URL correta do PixUp
 
 // ========================================
 // VALIDAÇÃO DE SEGURANÇA
@@ -71,27 +71,15 @@ function makeRequest($url, $method, $headers, $body = null) {
     ];
 }
 
-function getAccessToken($clientId, $clientSecret) {
+// PixUp usa client_id e client_secret como API Key no header Authorization
+function getAuthHeaders($clientId, $clientSecret) {
+    // PixUp aceita Basic Auth com client_id:client_secret
     $credentials = base64_encode("$clientId:$clientSecret");
-    
-    $headers = [
+    return [
         "Authorization: Basic $credentials",
-        "Content-Type: application/x-www-form-urlencoded"
+        "Content-Type: application/json",
+        "Accept: application/json"
     ];
-    
-    $result = makeRequest(
-        BSPAY_API_URL . '/v2/oauth/token',
-        'POST',
-        $headers,
-        'grant_type=client_credentials'
-    );
-    
-    if ($result['status'] !== 200) {
-        return ['error' => 'Failed to get access token', 'details' => $result['body']];
-    }
-    
-    $data = json_decode($result['body'], true);
-    return ['access_token' => $data['access_token']];
 }
 
 // ========================================
@@ -105,13 +93,44 @@ function handleTestConnection($params) {
         return ['success' => false, 'error' => 'Credentials required'];
     }
     
-    $tokenResult = getAccessToken($clientId, $clientSecret);
+    // Testar conexão fazendo uma requisição simples
+    // PixUp não tem endpoint específico de teste, vamos verificar se as credenciais são aceitas
+    $headers = getAuthHeaders($clientId, $clientSecret);
     
-    if (isset($tokenResult['error'])) {
-        return ['success' => false, 'error' => $tokenResult['error']];
+    // Tentar criar uma cobrança de teste mínima para validar credenciais
+    $testBody = json_encode([
+        'amount' => 0.01,
+        'external_id' => 'test_' . time()
+    ]);
+    
+    $result = makeRequest(
+        PIXUP_API_URL . '/v2/pix/qrcode',
+        'POST',
+        $headers,
+        $testBody
+    );
+    
+    // Se retornou 401, credenciais inválidas
+    if ($result['status'] === 401) {
+        return ['success' => false, 'error' => 'Credenciais inválidas ou IP não autorizado'];
     }
     
-    return ['success' => true, 'message' => 'Connection successful'];
+    // Se retornou 403, IP não autorizado
+    if ($result['status'] === 403) {
+        return ['success' => false, 'error' => 'IP não autorizado no PixUp'];
+    }
+    
+    // Se retornou 200, 201 ou até 400/422 (parâmetros inválidos), significa que autenticou
+    if ($result['status'] === 200 || $result['status'] === 201 || $result['status'] === 400 || $result['status'] === 422) {
+        return ['success' => true, 'message' => 'Conexão bem sucedida!'];
+    }
+    
+    // Outro erro
+    return [
+        'success' => false, 
+        'error' => 'Erro na conexão: HTTP ' . $result['status'],
+        'details' => $result['body']
+    ];
 }
 
 function handleCreatePix($params) {
@@ -131,36 +150,24 @@ function handleCreatePix($params) {
         return ['success' => false, 'error' => 'Invalid amount'];
     }
     
-    // Get access token
-    $tokenResult = getAccessToken($clientId, $clientSecret);
+    $headers = getAuthHeaders($clientId, $clientSecret);
     
-    if (isset($tokenResult['error'])) {
-        return ['success' => false, 'error' => $tokenResult['error']];
-    }
-    
-    $token = $tokenResult['access_token'];
-    
-    // Create PIX charge
+    // Create PIX charge - formato PixUp
     $pixBody = [
-        'amount' => $amount,
-        'description' => $description,
-        'external_id' => $externalId
+        'amount' => floatval($amount),
+        'external_id' => $externalId,
+        'payerQuestion' => $description
     ];
     
     if ($payerName && $payerDocument) {
         $pixBody['payer'] = [
             'name' => $payerName,
-            'document' => $payerDocument
+            'document' => preg_replace('/\D/', '', $payerDocument) // Remove non-digits
         ];
     }
     
-    $headers = [
-        "Authorization: Bearer $token",
-        "Content-Type: application/json"
-    ];
-    
     $result = makeRequest(
-        BSPAY_API_URL . '/v2/pix/qrcode',
+        PIXUP_API_URL . '/v2/pix/qrcode',
         'POST',
         $headers,
         json_encode($pixBody)
@@ -169,23 +176,24 @@ function handleCreatePix($params) {
     if ($result['status'] !== 200 && $result['status'] !== 201) {
         return [
             'success' => false, 
-            'error' => 'Failed to create PIX charge',
-            'details' => $result['body']
+            'error' => 'Falha ao criar cobrança PIX',
+            'details' => $result['body'],
+            'http_code' => $result['status']
         ];
     }
     
     $pixData = json_decode($result['body'], true);
     
-    // Normalize response
+    // Normalize response - formato PixUp
     return [
         'success' => true,
         'data' => [
-            'id' => $pixData['id'] ?? $pixData['transactionId'] ?? null,
-            'pixCode' => $pixData['qrcode'] ?? $pixData['pixCode'] ?? $pixData['pix_code'] ?? null,
-            'qrCodeBase64' => $pixData['qrcode_base64'] ?? $pixData['qrCodeBase64'] ?? null,
-            'transactionId' => $pixData['transactionId'] ?? $pixData['id'] ?? null,
-            'expiresAt' => $pixData['expires_at'] ?? $pixData['expiresAt'] ?? null,
-            'status' => $pixData['status'] ?? 'pending'
+            'id' => $pixData['transactionId'] ?? null,
+            'pixCode' => $pixData['qrcode'] ?? null,
+            'qrCodeBase64' => $pixData['qrcode_base64'] ?? null,
+            'transactionId' => $pixData['transactionId'] ?? null,
+            'expiresAt' => $pixData['calendar']['dueDate'] ?? null,
+            'status' => $pixData['status'] ?? 'PENDING'
         ]
     ];
 }
