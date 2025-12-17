@@ -103,16 +103,32 @@ const LojaSection = ({
   const intlCombos = combos.filter(c => c.type === 'estrangeiras');
   const brInventory = inventory.find(i => i.type === 'brasileiras');
   const intlInventory = inventory.find(i => i.type === 'estrangeiras');
+  const brStock = brInventory?.quantity || 0;
+  const intlStock = intlInventory?.quantity || 0;
 
-  // Set default selections
+  // Check if combo has enough stock
+  const hasEnoughStock = (combo: { quantity: number; type: string }) => {
+    const stock = combo.type === 'brasileiras' ? brStock : intlStock;
+    return stock >= combo.quantity;
+  };
+
+  // Get available combos (with enough stock)
+  const availableBrCombos = brCombos.filter(hasEnoughStock);
+  const availableIntlCombos = intlCombos.filter(hasEnoughStock);
+
+  // Set default selections (only from available combos)
   useEffect(() => {
-    if (brCombos.length > 0 && !brSelectedComboId) {
-      setBrSelectedComboId(brCombos[0].id);
+    if (availableBrCombos.length > 0 && (!brSelectedComboId || !availableBrCombos.find(c => c.id === brSelectedComboId))) {
+      setBrSelectedComboId(availableBrCombos[0].id);
+    } else if (availableBrCombos.length === 0) {
+      setBrSelectedComboId(null);
     }
-    if (intlCombos.length > 0 && !intlSelectedComboId) {
-      setIntlSelectedComboId(intlCombos[0].id);
+    if (availableIntlCombos.length > 0 && (!intlSelectedComboId || !availableIntlCombos.find(c => c.id === intlSelectedComboId))) {
+      setIntlSelectedComboId(availableIntlCombos[0].id);
+    } else if (availableIntlCombos.length === 0) {
+      setIntlSelectedComboId(null);
     }
-  }, [brCombos, intlCombos]);
+  }, [brCombos, intlCombos, brStock, intlStock]);
 
   const formatPrice = (value: number) => {
     return `R$ ${Number(value).toFixed(2).replace('.', ',')}`;
@@ -139,6 +155,17 @@ const LojaSection = ({
   const getIntlQty = () => {
     const combo = getSelectedIntlCombo();
     return combo?.quantity || 0;
+  };
+
+  // Check if selected combo can be purchased
+  const canPurchaseBr = () => {
+    const combo = getSelectedBrCombo();
+    return combo && hasEnoughStock(combo);
+  };
+
+  const canPurchaseIntl = () => {
+    const combo = getSelectedIntlCombo();
+    return combo && hasEnoughStock(combo);
   };
 
   const handleBrCheckout = () => {
@@ -186,40 +213,53 @@ const LojaSection = ({
                 <p className="text-xs text-muted-foreground">Números do Brasil</p>
               </div>
             </div>
-            <span className="text-xs bg-success/10 text-success px-2 py-1 rounded-md font-medium">{brInventory?.quantity || 0} disponíveis</span>
+            <span className={cn(
+              "text-xs px-2 py-1 rounded-md font-medium",
+              brStock > 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+            )}>{brStock} disponíveis</span>
           </div>
           <div className="space-y-2">
-            {brCombos.map((combo) => (
-              <div 
-                key={combo.id}
-                onClick={() => setBrSelectedComboId(combo.id)}
-                className={cn(
-                  "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-all duration-150",
-                  brSelectedComboId === combo.id
-                    ? "bg-primary/10 border border-primary/20" 
-                    : "bg-muted/50 hover:bg-muted"
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
-                    brSelectedComboId === combo.id ? "border-primary" : "border-muted-foreground"
-                  )}>
-                    {brSelectedComboId === combo.id && <div className="w-2 h-2 rounded-full bg-primary" />}
-                  </div>
-                  <span className="text-foreground text-sm">+{combo.quantity} sessions</span>
-                  {combo.is_popular && (
-                    <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">TOP</span>
+            {brCombos.map((combo) => {
+              const isAvailable = hasEnoughStock(combo);
+              return (
+                <div 
+                  key={combo.id}
+                  onClick={() => isAvailable && setBrSelectedComboId(combo.id)}
+                  className={cn(
+                    "flex items-center justify-between p-3 rounded-md text-sm transition-all duration-150",
+                    !isAvailable 
+                      ? "bg-muted/30 opacity-50 cursor-not-allowed" 
+                      : brSelectedComboId === combo.id
+                        ? "bg-primary/10 border border-primary/20 cursor-pointer" 
+                        : "bg-muted/50 hover:bg-muted cursor-pointer"
                   )}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
+                      !isAvailable 
+                        ? "border-muted-foreground/50" 
+                        : brSelectedComboId === combo.id ? "border-primary" : "border-muted-foreground"
+                    )}>
+                      {brSelectedComboId === combo.id && isAvailable && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <span className={cn("text-sm", isAvailable ? "text-foreground" : "text-muted-foreground")}>+{combo.quantity} sessions</span>
+                    {combo.is_popular && isAvailable && (
+                      <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">TOP</span>
+                    )}
+                    {!isAvailable && (
+                      <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-medium">Sem estoque</span>
+                    )}
+                  </div>
+                  <span className={cn("font-semibold text-sm", isAvailable ? "text-primary" : "text-muted-foreground")}>{formatPrice(combo.price)}</span>
                 </div>
-                <span className="font-semibold text-primary text-sm">{formatPrice(combo.price)}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <AlertDialog open={showBrConfirm} onOpenChange={setShowBrConfirm}>
             <AlertDialogTrigger asChild>
-              <Button size="sm" className="w-full h-9 active:scale-[0.99] transition-transform" disabled={brCombos.length === 0}>
-                Comprar {getBrTotal()}
+              <Button size="sm" className="w-full h-9 active:scale-[0.99] transition-transform" disabled={!canPurchaseBr()}>
+                {canPurchaseBr() ? `Comprar ${getBrTotal()}` : 'Estoque insuficiente'}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-card border-border">
@@ -268,40 +308,53 @@ const LojaSection = ({
                 <p className="text-xs text-muted-foreground">Números internacionais</p>
               </div>
             </div>
-            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-md font-medium">{intlInventory?.quantity || 0} disponíveis</span>
+            <span className={cn(
+              "text-xs px-2 py-1 rounded-md font-medium",
+              intlStock > 0 ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
+            )}>{intlStock} disponíveis</span>
           </div>
           <div className="space-y-2">
-            {intlCombos.map((combo) => (
-              <div 
-                key={combo.id}
-                onClick={() => setIntlSelectedComboId(combo.id)}
-                className={cn(
-                  "flex items-center justify-between p-3 rounded-md text-sm cursor-pointer transition-all duration-150",
-                  intlSelectedComboId === combo.id
-                    ? "bg-primary/10 border border-primary/20" 
-                    : "bg-muted/50 hover:bg-muted"
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
-                    intlSelectedComboId === combo.id ? "border-primary" : "border-muted-foreground"
-                  )}>
-                    {intlSelectedComboId === combo.id && <div className="w-2 h-2 rounded-full bg-primary" />}
-                  </div>
-                  <span className="text-foreground text-sm">+{combo.quantity} sessions</span>
-                  {combo.is_popular && (
-                    <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">MELHOR</span>
+            {intlCombos.map((combo) => {
+              const isAvailable = hasEnoughStock(combo);
+              return (
+                <div 
+                  key={combo.id}
+                  onClick={() => isAvailable && setIntlSelectedComboId(combo.id)}
+                  className={cn(
+                    "flex items-center justify-between p-3 rounded-md text-sm transition-all duration-150",
+                    !isAvailable 
+                      ? "bg-muted/30 opacity-50 cursor-not-allowed" 
+                      : intlSelectedComboId === combo.id
+                        ? "bg-primary/10 border border-primary/20 cursor-pointer" 
+                        : "bg-muted/50 hover:bg-muted cursor-pointer"
                   )}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
+                      !isAvailable 
+                        ? "border-muted-foreground/50" 
+                        : intlSelectedComboId === combo.id ? "border-primary" : "border-muted-foreground"
+                    )}>
+                      {intlSelectedComboId === combo.id && isAvailable && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <span className={cn("text-sm", isAvailable ? "text-foreground" : "text-muted-foreground")}>+{combo.quantity} sessions</span>
+                    {combo.is_popular && isAvailable && (
+                      <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">MELHOR</span>
+                    )}
+                    {!isAvailable && (
+                      <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-medium">Sem estoque</span>
+                    )}
+                  </div>
+                  <span className={cn("font-semibold text-sm", isAvailable ? "text-primary" : "text-muted-foreground")}>{formatPrice(combo.price)}</span>
                 </div>
-                <span className="font-semibold text-primary text-sm">{formatPrice(combo.price)}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <AlertDialog open={showIntlConfirm} onOpenChange={setShowIntlConfirm}>
             <AlertDialogTrigger asChild>
-              <Button size="sm" className="w-full h-9 active:scale-[0.99] transition-transform" disabled={intlCombos.length === 0}>
-                Comprar {getIntlTotal()}
+              <Button size="sm" className="w-full h-9 active:scale-[0.99] transition-transform" disabled={!canPurchaseIntl()}>
+                {canPurchaseIntl() ? `Comprar ${getIntlTotal()}` : 'Estoque insuficiente'}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-card border-border">
