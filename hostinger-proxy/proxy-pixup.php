@@ -56,35 +56,31 @@ $client_secret = $data['client_secret'] ?? '';
 // Log para debug
 error_log("PixUp Proxy - Action: $action");
 
-// Função para obter access_token via OAuth2
+/**
+ * Obtém access_token via Basic Auth conforme documentação PixUp
+ * Concatena client_id:client_secret e codifica em base64
+ */
 function getAccessToken($client_id, $client_secret) {
+    // Concatenar client_id:client_secret e codificar em base64
+    $credentials = $client_id . ':' . $client_secret;
+    $base64_credentials = base64_encode($credentials);
+    
     $ch = curl_init();
-    
-    // Endpoint de token OAuth2
-    $url = PIXUP_API_URL . '/v2/oauth/token';
-    
-    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_URL, PIXUP_API_URL . '/v2/oauth/token');
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 30);
     curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-    
-    // OAuth2 client_credentials flow
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/x-www-form-urlencoded',
-        'Accept: application/json'
+        'Authorization: Basic ' . $base64_credentials,
+        'Accept: application/json',
+        'Content-Type: application/json'
     ]);
-    
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
-        'grant_type' => 'client_credentials',
-        'client_id' => $client_id,
-        'client_secret' => $client_secret
-    ]));
+    curl_setopt($ch, CURLOPT_POSTFIELDS, '');
     
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
-    
     curl_close($ch);
     
     if ($curlError) {
@@ -104,24 +100,20 @@ function getAccessToken($client_id, $client_secret) {
     ];
 }
 
-// Função para chamar a API PixUp com access_token
+/**
+ * Chama a API PixUp com Bearer token
+ */
 function callPixUpAPI($endpoint, $method, $access_token, $body = null) {
     $ch = curl_init();
-    
-    $url = PIXUP_API_URL . $endpoint;
-    
-    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_URL, PIXUP_API_URL . $endpoint);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 30);
     curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-    
-    $headers = [
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
         "Authorization: Bearer $access_token",
         'Content-Type: application/json',
         'Accept: application/json'
-    ];
-    
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    ]);
     
     if ($method === 'POST') {
         curl_setopt($ch, CURLOPT_POST, true);
@@ -133,7 +125,6 @@ function callPixUpAPI($endpoint, $method, $access_token, $body = null) {
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
-    
     curl_close($ch);
     
     if ($curlError) {
@@ -149,7 +140,7 @@ function callPixUpAPI($endpoint, $method, $access_token, $body = null) {
 // Processar ações
 switch ($action) {
     case 'test_connection':
-        // Primeiro obter access_token
+        // Obter access_token
         $tokenResult = getAccessToken($client_id, $client_secret);
         
         if (isset($tokenResult['error'])) {
@@ -163,12 +154,14 @@ switch ($action) {
             exit;
         }
         
-        // Testar conexão criando um QR code de teste
+        // Testar conexão criando um QR code de teste (mínimo R$ 1,00)
         $result = callPixUpAPI('/v2/pix/qrcode', 'POST', $tokenResult['access_token'], [
-            'amount' => 0.01,
+            'amount' => 1.00,
             'external_id' => 'test_' . time(),
-            'payer_name' => 'Teste Conexao',
-            'payer_document' => '00000000000'
+            'payer' => [
+                'name' => 'Teste Conexao',
+                'document' => '12345678900'
+            ]
         ]);
         
         if ($result['http_code'] === 200 || $result['http_code'] === 201) {
@@ -195,13 +188,13 @@ switch ($action) {
         $payer_name = $data['payer_name'] ?? '';
         $payer_document = $data['payer_document'] ?? '';
         
-        if ($amount <= 0) {
+        if ($amount < 1) {
             http_response_code(400);
-            echo json_encode(['error' => 'Valor inválido']);
+            echo json_encode(['error' => 'Valor mínimo é R$ 1,00']);
             exit;
         }
         
-        // Primeiro obter access_token
+        // Obter access_token
         $tokenResult = getAccessToken($client_id, $client_secret);
         
         if (isset($tokenResult['error'])) {
@@ -214,17 +207,19 @@ switch ($action) {
             exit;
         }
         
+        // Montar dados do PIX - campo payer é obrigatório
         $pixData = [
             'amount' => (float) $amount,
-            'external_id' => $external_id
+            'external_id' => $external_id,
+            'payer' => [
+                'name' => $payer_name ?: 'Cliente',
+                'document' => preg_replace('/[^0-9]/', '', $payer_document) ?: '00000000000'
+            ]
         ];
         
-        // Adicionar campos opcionais se fornecidos
-        if ($payer_name) {
-            $pixData['payer_name'] = $payer_name;
-        }
-        if ($payer_document) {
-            $pixData['payer_document'] = preg_replace('/[^0-9]/', '', $payer_document);
+        // Adicionar descrição se fornecida
+        if (!empty($description)) {
+            $pixData['description'] = $description;
         }
         
         $result = callPixUpAPI('/v2/pix/qrcode', 'POST', $tokenResult['access_token'], $pixData);
@@ -245,9 +240,39 @@ switch ($action) {
         }
         break;
         
+    case 'get_pix_status':
+        $transaction_id = $data['transaction_id'] ?? '';
+        
+        if (empty($transaction_id)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'transaction_id é obrigatório']);
+            exit;
+        }
+        
+        // Obter access_token
+        $tokenResult = getAccessToken($client_id, $client_secret);
+        
+        if (isset($tokenResult['error'])) {
+            http_response_code($tokenResult['http_code'] ?: 401);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Falha na autenticação: ' . $tokenResult['error']
+            ]);
+            exit;
+        }
+        
+        $result = callPixUpAPI('/v2/pix/qrcode/' . $transaction_id, 'GET', $tokenResult['access_token']);
+        
+        echo json_encode([
+            'success' => $result['http_code'] === 200,
+            'data' => $result['response'],
+            'http_code' => $result['http_code']
+        ]);
+        break;
+        
     default:
         http_response_code(400);
-        echo json_encode(['error' => 'Ação inválida: ' . $action]);
+        echo json_encode(['error' => 'Ação inválida: ' . $action . '. Ações válidas: test_connection, create_pix, get_pix_status']);
         break;
 }
 ?>
