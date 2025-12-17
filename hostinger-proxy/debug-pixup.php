@@ -35,9 +35,16 @@ echo "<p><strong>IP de saída:</strong> $outgoing_ip</p>";
 echo "<p>⚠️ Certifique-se que este IP está no whitelist do PixUp!</p>";
 
 echo "<hr>";
-echo "<h2>🔐 Passo 1: Obtendo Access Token via OAuth2...</h2>";
+echo "<h2>🔐 Passo 1: Obtendo Access Token via Basic Auth...</h2>";
 
-// Primeiro obter o access_token via OAuth2
+// Criar header Basic Auth conforme documentação PixUp
+// Concatenar client_id:client_secret e codificar em base64
+$credentials = $CLIENT_ID . ':' . $CLIENT_SECRET;
+$base64_credentials = base64_encode($credentials);
+
+echo "<p><strong>Credenciais (mascaradas):</strong> " . substr($CLIENT_ID, 0, 10) . "...:..." . substr($CLIENT_SECRET, -5) . "</p>";
+echo "<p><strong>Base64:</strong> " . substr($base64_credentials, 0, 20) . "...</p>";
+
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, $PIXUP_API_URL . '/v2/oauth/token');
 curl_setopt($ch, CURLOPT_POST, true);
@@ -45,14 +52,12 @@ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Content-Type: application/x-www-form-urlencoded',
-    'Accept: application/json'
+    'Authorization: Basic ' . $base64_credentials,
+    'Accept: application/json',
+    'Content-Type: application/json'
 ]);
-curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
-    'grant_type' => 'client_credentials',
-    'client_id' => $CLIENT_ID,
-    'client_secret' => $CLIENT_SECRET
-]));
+// POST vazio conforme documentação
+curl_setopt($ch, CURLOPT_POSTFIELDS, '');
 
 $token_response = curl_exec($ch);
 $token_http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -76,12 +81,13 @@ $access_token = $token_data['access_token'] ?? null;
 
 if ($token_http_code === 200 && $access_token) {
     echo "<p style='color: green;'>✅ <strong>Token obtido com sucesso!</strong></p>";
-    echo "<p><strong>Access Token:</strong> " . substr($access_token, 0, 20) . "...</p>";
+    echo "<p><strong>Access Token:</strong> " . substr($access_token, 0, 30) . "...</p>";
+    echo "<p><strong>Expira em:</strong> " . ($token_data['expires_in'] ?? 'N/A') . " segundos</p>";
     
     echo "<hr>";
     echo "<h2>🔐 Passo 2: Testando criação de QR Code PIX...</h2>";
     
-    // Agora testar criação de QR code
+    // Agora testar criação de QR code com Bearer token
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $PIXUP_API_URL . '/v2/pix/qrcode');
     curl_setopt($ch, CURLOPT_POST, true);
@@ -101,7 +107,6 @@ if ($token_http_code === 200 && $access_token) {
     $qr_response = curl_exec($ch);
     $qr_http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $qr_curl_error = curl_error($ch);
-    $qr_curl_info = curl_getinfo($ch);
     curl_close($ch);
     
     echo "<p><strong>URL chamada:</strong> {$PIXUP_API_URL}/v2/pix/qrcode</p>";
