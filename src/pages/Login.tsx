@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { useAlertToast } from "@/hooks/use-alert-toast";
@@ -6,11 +6,7 @@ import { MorphingSquare } from "@/components/ui/morphing-square";
 import { supabase } from "@/integrations/supabase/client";
 import { Ban, MessageCircle, X, AlertTriangle, Wrench } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
-
-// Site key for hCaptcha - use test key for development
-// Replace with your production site key
-const HCAPTCHA_SITE_KEY = "10000000-ffff-ffff-ffff-000000000001";
+import { MathCaptcha } from "@/components/ui/math-captcha";
 
 interface SystemSettings {
   maintenanceMode: boolean;
@@ -27,13 +23,14 @@ const Login = () => {
   const [whatsappError, setWhatsappError] = useState("");
   const [nameError, setNameError] = useState("");
   const [captchaError, setCaptchaError] = useState("");
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showBannedModal, setShowBannedModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+  const [captchaKey, setCaptchaKey] = useState(0);
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
     maintenanceMode: false,
     allowRegistration: true,
@@ -41,7 +38,6 @@ const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const toast = useAlertToast();
-  const captchaRef = useRef<HCaptcha>(null);
   
   const redirectUrl = searchParams.get("redirect") || "/dashboard";
 
@@ -207,18 +203,16 @@ const Login = () => {
     return value.trim().length >= 2;
   };
 
-  const handleCaptchaVerify = (token: string) => {
-    setCaptchaToken(token);
-    setCaptchaError("");
-  };
-
-  const handleCaptchaExpire = () => {
-    setCaptchaToken(null);
+  const handleCaptchaVerify = (isValid: boolean) => {
+    setCaptchaVerified(isValid);
+    if (isValid) {
+      setCaptchaError("");
+    }
   };
 
   const resetCaptcha = () => {
-    setCaptchaToken(null);
-    captchaRef.current?.resetCaptcha();
+    setCaptchaVerified(false);
+    setCaptchaKey(prev => prev + 1);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -268,8 +262,8 @@ const Login = () => {
     }
 
     // Validate captcha
-    if (!captchaToken) {
-      setCaptchaError("Por favor, complete a verificação.");
+    if (!captchaVerified) {
+      setCaptchaError("Por favor, resolva o cálculo corretamente.");
       valid = false;
     }
 
@@ -519,19 +513,12 @@ const Login = () => {
               </div>
             )}
 
-            {/* hCaptcha */}
-            <div className="flex flex-col items-center space-y-2">
-              <HCaptcha
-                ref={captchaRef}
-                sitekey={HCAPTCHA_SITE_KEY}
-                onVerify={handleCaptchaVerify}
-                onExpire={handleCaptchaExpire}
-                theme="dark"
-              />
-              {captchaError && (
-                <p className="text-xs text-destructive">{captchaError}</p>
-              )}
-            </div>
+            {/* Math Captcha */}
+            <MathCaptcha
+              key={captchaKey}
+              onVerify={handleCaptchaVerify}
+              error={captchaError}
+            />
 
             <button
               type="submit"
