@@ -7,6 +7,7 @@ import { MorphingSquare } from "@/components/ui/morphing-square";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { QRCodeSVG } from "qrcode.react";
 
 interface PixData {
   pixCode: string;
@@ -647,23 +648,15 @@ const Checkout = () => {
                       </div>
                     )}
 
-                    {/* QR Code */}
-                    {pixData?.qrCodeBase64 && !isExpired && (
+                    {/* QR Code - Generate from PIX code string */}
+                    {pixData?.pixCode && !isExpired && paymentStatus === 'pending' && (
                       <div className="flex justify-center p-4 bg-white rounded-xl">
-                        <img 
-                          src={`data:image/png;base64,${pixData.qrCodeBase64}`} 
-                          alt="QR Code PIX" 
-                          className="w-48 h-48"
+                        <QRCodeSVG 
+                          value={pixData.pixCode} 
+                          size={192}
+                          level="M"
+                          includeMargin={true}
                         />
-                      </div>
-                    )}
-
-                    {(!pixData?.qrCodeBase64 && pixData?.pixCode) && !isExpired && paymentStatus === 'pending' && (
-                      <div className="flex justify-center p-4 bg-muted/50 rounded-xl">
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <QrCode className="w-16 h-16" />
-                          <span className="text-sm">QR Code não disponível</span>
-                        </div>
                       </div>
                     )}
 
