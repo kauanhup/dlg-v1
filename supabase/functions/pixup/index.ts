@@ -156,11 +156,11 @@ serve(async (req) => {
 });
 
 async function getSettings(supabase: any) {
+  // FIXED: Remove is_active filter so admin can always see saved credentials
   const { data, error } = await supabase
     .from('gateway_settings')
     .select('*')
     .eq('provider', 'pixup')
-    .eq('is_active', true)
     .maybeSingle();
 
   if (error) {
