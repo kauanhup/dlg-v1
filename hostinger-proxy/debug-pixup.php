@@ -100,7 +100,7 @@ if ($token_http_code === 200 && $access_token) {
         'Accept: application/json'
     ]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-        'amount' => 0.01,
+        'amount' => 1.00,
         'external_id' => 'test_' . time(),
         'payer' => [
             'name' => 'Teste Usuario',
