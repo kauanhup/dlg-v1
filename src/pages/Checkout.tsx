@@ -553,20 +553,14 @@ const Checkout = () => {
                 {!pixData && !orderId ? (
                   <div className="space-y-4">
                     {isFreeProduct ? (
-                      <div className="text-center py-4">
-                        <div className="w-16 h-16 mx-auto bg-success/10 rounded-2xl flex items-center justify-center mb-4">
-                          <CheckCircle2 className="w-8 h-8 text-success" />
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-6">
+                      <div className="text-center py-2">
+                        <p className="text-sm text-muted-foreground mb-4">
                           Clique no botão abaixo para ativar seu plano gratuito instantaneamente.
                         </p>
                       </div>
                     ) : (
-                      <div className="text-center py-4">
-                        <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
-                          <span className="text-primary font-display font-bold text-lg">PIX</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-6">
+                      <div className="text-center py-2">
+                        <p className="text-sm text-muted-foreground mb-4">
                           Pagamento instantâneo via PIX. {isPlanPurchase ? "Sua licença será" : "Suas sessions serão"} liberada{isPlanPurchase ? "" : "s"} automaticamente.
                         </p>
                       </div>
