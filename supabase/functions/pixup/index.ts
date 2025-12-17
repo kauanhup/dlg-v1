@@ -7,7 +7,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const BSPAY_API_URL = "https://api.bspay.co";
+// Hostinger proxy configuration
+const PROXY_URL = Deno.env.get('PIXUP_PROXY_URL') || '';
+const PROXY_SECRET = Deno.env.get('PIXUP_PROXY_SECRET') || '';
 
 // SECURITY: Helper to verify admin role
 async function isAdmin(supabase: any, userId: string): Promise<boolean> {
@@ -39,6 +41,36 @@ async function getUserFromRequest(req: Request, supabase: any): Promise<{ userId
   } catch {
     return { userId: null, isAuthenticated: false };
   }
+}
+
+// Call proxy with secret authentication
+async function callProxy(action: string, params: any): Promise<any> {
+  if (!PROXY_URL || !PROXY_SECRET) {
+    throw new Error('Proxy not configured');
+  }
+
+  console.log(`Calling proxy for action: ${action}`);
+  
+  const response = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Proxy-Secret': PROXY_SECRET
+    },
+    body: JSON.stringify({
+      action,
+      ...params
+    })
+  });
+
+  const data = await response.json();
+  
+  if (!response.ok || data.error) {
+    console.error('Proxy error:', data);
+    throw new Error(data.error || 'Proxy request failed');
+  }
+
+  return data;
 }
 
 serve(async (req) => {
@@ -218,28 +250,6 @@ async function saveCredentials(supabase: any, params: { client_id: string; clien
   );
 }
 
-async function getAccessToken(client_id: string, client_secret: string): Promise<string> {
-  const credentials = btoa(`${client_id}:${client_secret}`);
-  
-  const response = await fetch(`${BSPAY_API_URL}/v2/oauth/token`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${credentials}`,
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: 'grant_type=client_credentials'
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Token error:', errorText);
-    throw new Error('Failed to get access token');
-  }
-
-  const data = await response.json();
-  return data.access_token;
-}
-
 async function testConnection(supabase: any) {
   // Get credentials from database
   const { data: settings, error } = await supabase
@@ -256,8 +266,13 @@ async function testConnection(supabase: any) {
   }
 
   try {
-    const token = await getAccessToken(settings.client_id, settings.client_secret);
-    console.log('Connection test successful, token obtained');
+    // Use proxy to test connection
+    const result = await callProxy('test_connection', {
+      client_id: settings.client_id,
+      client_secret: settings.client_secret
+    });
+    
+    console.log('Connection test via proxy successful');
     
     // Update is_active to true
     await supabase
@@ -279,7 +294,7 @@ async function testConnection(supabase: any) {
       .eq('provider', 'pixup');
 
     return new Response(
-      JSON.stringify({ success: false, error: 'Connection failed - check credentials' }),
+      JSON.stringify({ success: false, error: 'Connection failed - check credentials or proxy configuration' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -363,52 +378,37 @@ async function createPixCharge(supabase: any, params: {
   }
 
   try {
-    const token = await getAccessToken(settings.client_id, settings.client_secret);
-
-    const pixResponse = await fetch(`${BSPAY_API_URL}/v2/pix/qrcode`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        amount,
-        description: description || 'Payment',
-        external_id: externalId || `pix_${Date.now()}`,
-        payer: payer_name && payer_document ? {
-          name: payer_name,
-          document: payer_document
-        } : undefined
-      })
+    // Use proxy to create PIX charge
+    const result = await callProxy('create_pix', {
+      client_id: settings.client_id,
+      client_secret: settings.client_secret,
+      amount,
+      description: description || 'Payment',
+      external_id: externalId || `pix_${Date.now()}`,
+      payer_name,
+      payer_document
     });
-
-    if (!pixResponse.ok) {
-      const errorText = await pixResponse.text();
-      console.error('PIX creation error:', errorText);
-      throw new Error('Failed to create PIX charge');
-    }
-
-    const pixData = await pixResponse.json();
-    console.log('PIX charge created successfully');
+    
+    console.log('PIX charge created successfully via proxy');
 
     // Normalize response format
     return new Response(
       JSON.stringify({ 
         success: true, 
         data: {
-          id: pixData.id || pixData.transactionId,
-          pixCode: pixData.qrcode || pixData.pixCode || pixData.pix_code,
-          qrCodeBase64: pixData.qrcode_base64 || pixData.qrCodeBase64,
-          transactionId: pixData.transactionId || pixData.id,
-          expiresAt: pixData.expires_at || pixData.expiresAt,
-          status: pixData.status || 'pending'
+          id: result.data?.id || result.data?.transactionId,
+          pixCode: result.data?.pixCode || result.data?.qrcode || result.data?.pix_code,
+          qrCodeBase64: result.data?.qrCodeBase64 || result.data?.qrcode_base64,
+          transactionId: result.data?.transactionId || result.data?.id,
+          expiresAt: result.data?.expiresAt || result.data?.expires_at,
+          status: result.data?.status || 'pending'
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error creating PIX:', errorMessage);
+    console.error('Error creating PIX via proxy:', errorMessage);
     return new Response(
       JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
