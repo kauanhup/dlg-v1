@@ -209,6 +209,33 @@ const LojaSection = ({
     const combo = getSelectedIntlCombo();
     return combo && hasEnoughStock(combo);
   };
+
+  // Get appropriate button text
+  const getBrButtonText = () => {
+    if (brUseCustom) {
+      const qty = parseInt(brCustomQty) || 0;
+      if (qty < brCustomMin) return `Mínimo: ${brCustomMin} sessions`;
+      if (!hasEnoughCustomStock(qty, 'brasileiras')) return 'Estoque insuficiente';
+      return `Comprar ${getBrTotal()}`;
+    }
+    const combo = getSelectedBrCombo();
+    if (!combo) return 'Selecione um pacote';
+    if (!hasEnoughStock(combo)) return 'Sem estoque';
+    return `Comprar ${getBrTotal()}`;
+  };
+
+  const getIntlButtonText = () => {
+    if (intlUseCustom) {
+      const qty = parseInt(intlCustomQty) || 0;
+      if (qty < intlCustomMin) return `Mínimo: ${intlCustomMin} sessions`;
+      if (!hasEnoughCustomStock(qty, 'estrangeiras')) return 'Estoque insuficiente';
+      return `Comprar ${getIntlTotal()}`;
+    }
+    const combo = getSelectedIntlCombo();
+    if (!combo) return 'Selecione um pacote';
+    if (!hasEnoughStock(combo)) return 'Sem estoque';
+    return `Comprar ${getIntlTotal()}`;
+  };
   
   // Handle custom quantity toggle
   const handleBrCustomToggle = () => {
@@ -367,7 +394,7 @@ const LojaSection = ({
           <AlertDialog open={showBrConfirm} onOpenChange={setShowBrConfirm}>
             <AlertDialogTrigger asChild>
               <Button size="sm" className="w-full h-9 active:scale-[0.99] transition-transform" disabled={!canPurchaseBr()}>
-                {canPurchaseBr() ? `Comprar ${getBrTotal()}` : 'Estoque insuficiente'}
+                {getBrButtonText()}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-card border-border">
@@ -513,7 +540,7 @@ const LojaSection = ({
           <AlertDialog open={showIntlConfirm} onOpenChange={setShowIntlConfirm}>
             <AlertDialogTrigger asChild>
               <Button size="sm" className="w-full h-9 active:scale-[0.99] transition-transform" disabled={!canPurchaseIntl()}>
-                {canPurchaseIntl() ? `Comprar ${getIntlTotal()}` : 'Estoque insuficiente'}
+                {getIntlButtonText()}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-card border-border">
