@@ -8,6 +8,9 @@ export interface SessionInventory {
   cost_per_session: number;
   sale_price_per_session: number;
   updated_at: string;
+  custom_quantity_enabled: boolean;
+  custom_quantity_min: number;
+  custom_price_per_unit: number;
 }
 
 export interface SessionCombo {

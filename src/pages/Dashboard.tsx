@@ -91,13 +91,19 @@ const LojaSection = ({
 }: { 
   onCheckout: (type: string, qty: number, price: string) => void;
   combos: { id: string; type: string; quantity: number; price: number; is_popular: boolean }[];
-  inventory: { type: string; quantity: number }[];
+  inventory: { type: string; quantity: number; custom_quantity_enabled: boolean; custom_quantity_min: number; custom_price_per_unit: number }[];
 }) => {
   const navigate = useNavigate();
   const [brSelectedComboId, setBrSelectedComboId] = useState<string | null>(null);
   const [intlSelectedComboId, setIntlSelectedComboId] = useState<string | null>(null);
   const [showBrConfirm, setShowBrConfirm] = useState(false);
   const [showIntlConfirm, setShowIntlConfirm] = useState(false);
+  
+  // Custom quantity state
+  const [brUseCustom, setBrUseCustom] = useState(false);
+  const [intlUseCustom, setIntlUseCustom] = useState(false);
+  const [brCustomQty, setBrCustomQty] = useState("");
+  const [intlCustomQty, setIntlCustomQty] = useState("");
 
   const brCombos = combos.filter(c => c.type === 'brasileiras');
   const intlCombos = combos.filter(c => c.type === 'estrangeiras');
@@ -105,11 +111,25 @@ const LojaSection = ({
   const intlInventory = inventory.find(i => i.type === 'estrangeiras');
   const brStock = brInventory?.quantity || 0;
   const intlStock = intlInventory?.quantity || 0;
+  
+  // Custom quantity settings
+  const brCustomEnabled = brInventory?.custom_quantity_enabled || false;
+  const brCustomMin = brInventory?.custom_quantity_min || 1;
+  const brCustomPrice = brInventory?.custom_price_per_unit || 0;
+  const intlCustomEnabled = intlInventory?.custom_quantity_enabled || false;
+  const intlCustomMin = intlInventory?.custom_quantity_min || 1;
+  const intlCustomPrice = intlInventory?.custom_price_per_unit || 0;
 
   // Check if combo has enough stock
   const hasEnoughStock = (combo: { quantity: number; type: string }) => {
     const stock = combo.type === 'brasileiras' ? brStock : intlStock;
     return stock >= combo.quantity;
+  };
+  
+  // Check if custom quantity has enough stock
+  const hasEnoughCustomStock = (qty: number, type: string) => {
+    const stock = type === 'brasileiras' ? brStock : intlStock;
+    return stock >= qty;
   };
 
   // Get available combos (with enough stock)
@@ -138,34 +158,71 @@ const LojaSection = ({
   const getSelectedIntlCombo = () => intlCombos.find(c => c.id === intlSelectedComboId);
 
   const getBrTotal = () => {
+    if (brUseCustom) {
+      const qty = parseInt(brCustomQty) || 0;
+      return formatPrice(qty * brCustomPrice);
+    }
     const combo = getSelectedBrCombo();
     return combo ? formatPrice(combo.price) : '';
   };
 
   const getBrQty = () => {
+    if (brUseCustom) {
+      return parseInt(brCustomQty) || 0;
+    }
     const combo = getSelectedBrCombo();
     return combo?.quantity || 0;
   };
 
   const getIntlTotal = () => {
+    if (intlUseCustom) {
+      const qty = parseInt(intlCustomQty) || 0;
+      return formatPrice(qty * intlCustomPrice);
+    }
     const combo = getSelectedIntlCombo();
     return combo ? formatPrice(combo.price) : '';
   };
 
   const getIntlQty = () => {
+    if (intlUseCustom) {
+      return parseInt(intlCustomQty) || 0;
+    }
     const combo = getSelectedIntlCombo();
     return combo?.quantity || 0;
   };
 
   // Check if selected combo can be purchased
   const canPurchaseBr = () => {
+    if (brUseCustom) {
+      const qty = parseInt(brCustomQty) || 0;
+      return qty >= brCustomMin && hasEnoughCustomStock(qty, 'brasileiras');
+    }
     const combo = getSelectedBrCombo();
     return combo && hasEnoughStock(combo);
   };
 
   const canPurchaseIntl = () => {
+    if (intlUseCustom) {
+      const qty = parseInt(intlCustomQty) || 0;
+      return qty >= intlCustomMin && hasEnoughCustomStock(qty, 'estrangeiras');
+    }
     const combo = getSelectedIntlCombo();
     return combo && hasEnoughStock(combo);
+  };
+  
+  // Handle custom quantity toggle
+  const handleBrCustomToggle = () => {
+    setBrUseCustom(!brUseCustom);
+    if (!brUseCustom) {
+      setBrCustomQty(String(brCustomMin));
+    }
+  };
+  
+  const handleIntlCustomToggle = () => {
+    setIntlUseCustom(!intlUseCustom);
+    if (!intlUseCustom) {
+      setIntlCustomQty(String(intlCustomMin));
+    }
   };
 
   const handleBrCheckout = () => {
@@ -224,12 +281,17 @@ const LojaSection = ({
               return (
                 <div 
                   key={combo.id}
-                  onClick={() => isAvailable && setBrSelectedComboId(combo.id)}
+                  onClick={() => {
+                    if (isAvailable) {
+                      setBrSelectedComboId(combo.id);
+                      setBrUseCustom(false);
+                    }
+                  }}
                   className={cn(
                     "flex items-center justify-between p-3 rounded-md text-sm transition-all duration-150",
                     !isAvailable 
                       ? "bg-muted/30 opacity-50 cursor-not-allowed" 
-                      : brSelectedComboId === combo.id
+                      : !brUseCustom && brSelectedComboId === combo.id
                         ? "bg-primary/10 border border-primary/20 cursor-pointer" 
                         : "bg-muted/50 hover:bg-muted cursor-pointer"
                   )}
@@ -239,9 +301,9 @@ const LojaSection = ({
                       "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
                       !isAvailable 
                         ? "border-muted-foreground/50" 
-                        : brSelectedComboId === combo.id ? "border-primary" : "border-muted-foreground"
+                        : !brUseCustom && brSelectedComboId === combo.id ? "border-primary" : "border-muted-foreground"
                     )}>
-                      {brSelectedComboId === combo.id && isAvailable && <div className="w-2 h-2 rounded-full bg-primary" />}
+                      {!brUseCustom && brSelectedComboId === combo.id && isAvailable && <div className="w-2 h-2 rounded-full bg-primary" />}
                     </div>
                     <span className={cn("text-sm", isAvailable ? "text-foreground" : "text-muted-foreground")}>+{combo.quantity} sessions</span>
                     {combo.is_popular && isAvailable && (
@@ -255,6 +317,52 @@ const LojaSection = ({
                 </div>
               );
             })}
+            
+            {/* Custom Quantity Option - Brasileiras */}
+            {brCustomEnabled && (
+              <div 
+                onClick={() => {
+                  if (brStock >= brCustomMin) {
+                    handleBrCustomToggle();
+                  }
+                }}
+                className={cn(
+                  "p-3 rounded-md text-sm transition-all duration-150",
+                  brStock < brCustomMin
+                    ? "bg-muted/30 opacity-50 cursor-not-allowed"
+                    : brUseCustom
+                      ? "bg-primary/10 border border-primary/20 cursor-pointer"
+                      : "bg-muted/50 hover:bg-muted cursor-pointer"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
+                      brUseCustom ? "border-primary" : "border-muted-foreground"
+                    )}>
+                      {brUseCustom && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <span className="text-sm text-foreground">Quantidade personalizada</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{formatPrice(brCustomPrice)}/un</span>
+                </div>
+                {brUseCustom && (
+                  <div className="mt-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="number"
+                      min={brCustomMin}
+                      max={brStock}
+                      value={brCustomQty}
+                      onChange={(e) => setBrCustomQty(e.target.value)}
+                      className="flex-1 px-3 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      placeholder={`Mín: ${brCustomMin}`}
+                    />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">= {getBrTotal()}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <AlertDialog open={showBrConfirm} onOpenChange={setShowBrConfirm}>
             <AlertDialogTrigger asChild>
@@ -319,12 +427,17 @@ const LojaSection = ({
               return (
                 <div 
                   key={combo.id}
-                  onClick={() => isAvailable && setIntlSelectedComboId(combo.id)}
+                  onClick={() => {
+                    if (isAvailable) {
+                      setIntlSelectedComboId(combo.id);
+                      setIntlUseCustom(false);
+                    }
+                  }}
                   className={cn(
                     "flex items-center justify-between p-3 rounded-md text-sm transition-all duration-150",
                     !isAvailable 
                       ? "bg-muted/30 opacity-50 cursor-not-allowed" 
-                      : intlSelectedComboId === combo.id
+                      : !intlUseCustom && intlSelectedComboId === combo.id
                         ? "bg-primary/10 border border-primary/20 cursor-pointer" 
                         : "bg-muted/50 hover:bg-muted cursor-pointer"
                   )}
@@ -334,9 +447,9 @@ const LojaSection = ({
                       "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
                       !isAvailable 
                         ? "border-muted-foreground/50" 
-                        : intlSelectedComboId === combo.id ? "border-primary" : "border-muted-foreground"
+                        : !intlUseCustom && intlSelectedComboId === combo.id ? "border-primary" : "border-muted-foreground"
                     )}>
-                      {intlSelectedComboId === combo.id && isAvailable && <div className="w-2 h-2 rounded-full bg-primary" />}
+                      {!intlUseCustom && intlSelectedComboId === combo.id && isAvailable && <div className="w-2 h-2 rounded-full bg-primary" />}
                     </div>
                     <span className={cn("text-sm", isAvailable ? "text-foreground" : "text-muted-foreground")}>+{combo.quantity} sessions</span>
                     {combo.is_popular && isAvailable && (
@@ -350,6 +463,52 @@ const LojaSection = ({
                 </div>
               );
             })}
+            
+            {/* Custom Quantity Option - Estrangeiras */}
+            {intlCustomEnabled && (
+              <div 
+                onClick={() => {
+                  if (intlStock >= intlCustomMin) {
+                    handleIntlCustomToggle();
+                  }
+                }}
+                className={cn(
+                  "p-3 rounded-md text-sm transition-all duration-150",
+                  intlStock < intlCustomMin
+                    ? "bg-muted/30 opacity-50 cursor-not-allowed"
+                    : intlUseCustom
+                      ? "bg-primary/10 border border-primary/20 cursor-pointer"
+                      : "bg-muted/50 hover:bg-muted cursor-pointer"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
+                      intlUseCustom ? "border-primary" : "border-muted-foreground"
+                    )}>
+                      {intlUseCustom && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <span className="text-sm text-foreground">Quantidade personalizada</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{formatPrice(intlCustomPrice)}/un</span>
+                </div>
+                {intlUseCustom && (
+                  <div className="mt-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="number"
+                      min={intlCustomMin}
+                      max={intlStock}
+                      value={intlCustomQty}
+                      onChange={(e) => setIntlCustomQty(e.target.value)}
+                      className="flex-1 px-3 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      placeholder={`Mín: ${intlCustomMin}`}
+                    />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">= {getIntlTotal()}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <AlertDialog open={showIntlConfirm} onOpenChange={setShowIntlConfirm}>
             <AlertDialogTrigger asChild>
