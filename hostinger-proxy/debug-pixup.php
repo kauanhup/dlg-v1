@@ -37,9 +37,7 @@ echo "<p>⚠️ Certifique-se que este IP está no whitelist do PixUp!</p>";
 echo "<hr>";
 echo "<h2>🔐 Tentando autenticar no PixUp...</h2>";
 
-// PixUp usa Basic Auth
-$credentials = base64_encode("$CLIENT_ID:$CLIENT_SECRET");
-
+// PixUp usa Bearer token com o CLIENT_SECRET
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, $PIXUP_API_URL . '/v2/pix/qrcode');
 curl_setopt($ch, CURLOPT_POST, true);
@@ -47,7 +45,7 @@ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    "Authorization: Basic $credentials",
+    "Authorization: Bearer $CLIENT_SECRET",
     'Content-Type: application/json',
     'Accept: application/json'
 ]);
