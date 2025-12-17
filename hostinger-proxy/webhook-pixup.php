@@ -5,7 +5,7 @@
  * Este script recebe webhooks do PixUp no seu domínio Hostinger
  * e encaminha para a Supabase Edge Function.
  * 
- * URL para configurar no PixUp: https://seudominio.com/api/webhook-pixup.php
+ * URL para configurar no PixUp: https://dlgconnect.com/api/webhook-pixup.php
  */
 
 // Headers CORS
