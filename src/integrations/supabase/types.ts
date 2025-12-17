@@ -355,6 +355,9 @@ export type Database = {
       sessions_inventory: {
         Row: {
           cost_per_session: number
+          custom_price_per_unit: number
+          custom_quantity_enabled: boolean
+          custom_quantity_min: number
           id: string
           quantity: number
           sale_price_per_session: number
@@ -363,6 +366,9 @@ export type Database = {
         }
         Insert: {
           cost_per_session?: number
+          custom_price_per_unit?: number
+          custom_quantity_enabled?: boolean
+          custom_quantity_min?: number
           id?: string
           quantity?: number
           sale_price_per_session?: number
@@ -371,6 +377,9 @@ export type Database = {
         }
         Update: {
           cost_per_session?: number
+          custom_price_per_unit?: number
+          custom_quantity_enabled?: boolean
+          custom_quantity_min?: number
           id?: string
           quantity?: number
           sale_price_per_session?: number

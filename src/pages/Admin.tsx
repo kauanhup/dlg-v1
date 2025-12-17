@@ -1850,14 +1850,28 @@ const SessionsSection = () => {
   const [costBrasileiras, setCostBrasileiras] = useState("");
   const [costEstrangeiras, setCostEstrangeiras] = useState("");
   const [comboEdits, setComboEdits] = useState<Record<string, { quantity: string; price: string }>>({});
+  
+  // Custom quantity settings state
+  const [customQtyBrEnabled, setCustomQtyBrEnabled] = useState(false);
+  const [customQtyBrMin, setCustomQtyBrMin] = useState("1");
+  const [customQtyBrPrice, setCustomQtyBrPrice] = useState("0.00");
+  const [customQtyEstEnabled, setCustomQtyEstEnabled] = useState(false);
+  const [customQtyEstMin, setCustomQtyEstMin] = useState("1");
+  const [customQtyEstPrice, setCustomQtyEstPrice] = useState("0.00");
 
   // Initialize local state from DB values
   useEffect(() => {
     if (stats.brasileiras) {
       setCostBrasileiras(stats.brasileiras.cost_per_session?.toFixed(2) || "0.00");
+      setCustomQtyBrEnabled(stats.brasileiras.custom_quantity_enabled || false);
+      setCustomQtyBrMin(String(stats.brasileiras.custom_quantity_min || 1));
+      setCustomQtyBrPrice((stats.brasileiras.custom_price_per_unit || 0).toFixed(2));
     }
     if (stats.estrangeiras) {
       setCostEstrangeiras(stats.estrangeiras.cost_per_session?.toFixed(2) || "0.00");
+      setCustomQtyEstEnabled(stats.estrangeiras.custom_quantity_enabled || false);
+      setCustomQtyEstMin(String(stats.estrangeiras.custom_quantity_min || 1));
+      setCustomQtyEstPrice((stats.estrangeiras.custom_price_per_unit || 0).toFixed(2));
     }
   }, [stats.brasileiras, stats.estrangeiras]);
 
@@ -1927,12 +1941,26 @@ const SessionsSection = () => {
   const handleSaveAll = async () => {
     setIsSaving(true);
     try {
-      // Save inventory costs
+      // Save inventory costs and custom quantity settings
       const costBrValue = parseFloat(costBrasileiras.replace(',', '.')) || 0;
       const costEstValue = parseFloat(costEstrangeiras.replace(',', '.')) || 0;
+      const customBrMin = parseInt(customQtyBrMin) || 1;
+      const customBrPrice = parseFloat(customQtyBrPrice.replace(',', '.')) || 0;
+      const customEstMin = parseInt(customQtyEstMin) || 1;
+      const customEstPrice = parseFloat(customQtyEstPrice.replace(',', '.')) || 0;
       
-      await updateInventory('brasileiras', { cost_per_session: costBrValue });
-      await updateInventory('estrangeiras', { cost_per_session: costEstValue });
+      await updateInventory('brasileiras', { 
+        cost_per_session: costBrValue,
+        custom_quantity_enabled: customQtyBrEnabled,
+        custom_quantity_min: customBrMin,
+        custom_price_per_unit: customBrPrice
+      });
+      await updateInventory('estrangeiras', { 
+        cost_per_session: costEstValue,
+        custom_quantity_enabled: customQtyEstEnabled,
+        custom_quantity_min: customEstMin,
+        custom_price_per_unit: customEstPrice
+      });
 
       // Save combo edits
       for (const [comboId, edit] of Object.entries(comboEdits)) {
@@ -2230,6 +2258,101 @@ const SessionsSection = () => {
               className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
               placeholder="2.50"
             />
+          </div>
+        </div>
+      </div>
+
+      {/* Quantidade Personalizada */}
+      <div className="bg-card border border-border rounded-lg p-5">
+        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+          <Package className="w-4 h-4 text-primary" />
+          Quantidade Personalizada
+        </h3>
+        <p className="text-xs text-muted-foreground mb-4">Permite que usuários escolham uma quantidade personalizada além dos combos</p>
+        
+        <div className="grid sm:grid-cols-2 gap-6">
+          {/* Brasileiras */}
+          <div className="space-y-3 p-4 bg-success/5 border border-success/20 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-foreground flex items-center gap-2">
+                🇧🇷 Sessions Brasileiras
+              </span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={customQtyBrEnabled}
+                  onChange={(e) => setCustomQtyBrEnabled(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-success peer-focus:ring-2 peer-focus:ring-success/50 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+              </label>
+            </div>
+            {customQtyBrEnabled && (
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Quantidade Mín.</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={customQtyBrMin}
+                    onChange={(e) => setCustomQtyBrMin(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Preço/Unid. (R$)</label>
+                  <input
+                    type="text"
+                    value={customQtyBrPrice}
+                    onChange={(e) => setCustomQtyBrPrice(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="5.00"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Estrangeiras */}
+          <div className="space-y-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-foreground flex items-center gap-2">
+                🌍 Sessions Estrangeiras
+              </span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={customQtyEstEnabled}
+                  onChange={(e) => setCustomQtyEstEnabled(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary peer-focus:ring-2 peer-focus:ring-primary/50 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+              </label>
+            </div>
+            {customQtyEstEnabled && (
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Quantidade Mín.</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={customQtyEstMin}
+                    onChange={(e) => setCustomQtyEstMin(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Preço/Unid. (R$)</label>
+                  <input
+                    type="text"
+                    value={customQtyEstPrice}
+                    onChange={(e) => setCustomQtyEstPrice(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="2.50"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

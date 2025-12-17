@@ -48,6 +48,9 @@ export interface SessionCombo {
 export interface SessionInventory {
   type: string;
   quantity: number;
+  custom_quantity_enabled: boolean;
+  custom_quantity_min: number;
+  custom_price_per_unit: number;
 }
 
 export interface LoginHistory {
@@ -120,10 +123,10 @@ export const useUserDashboard = (userId: string | undefined) => {
       if (combosError) throw combosError;
       setCombos(combosData || []);
 
-      // Fetch inventory (public data - just quantities)
+      // Fetch inventory (public data - quantities and custom settings)
       const { data: inventoryData, error: inventoryError } = await supabase
         .from('sessions_inventory')
-        .select('type, quantity');
+        .select('type, quantity, custom_quantity_enabled, custom_quantity_min, custom_price_per_unit');
 
       if (inventoryError) throw inventoryError;
       setInventory(inventoryData || []);
