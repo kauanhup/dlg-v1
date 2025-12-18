@@ -751,7 +751,7 @@ const Login = () => {
   return (
     <div className="min-h-screen min-h-[100dvh] w-full flex flex-col lg:flex-row overflow-hidden">
       {/* Left Side - Branding & Visual (hidden on mobile/tablet) */}
-      <div className="hidden lg:flex lg:w-[45%] xl:w-1/2 relative bg-gradient-to-br from-primary/10 via-background to-background overflow-hidden">
+      <div className="hidden lg:flex lg:w-[40%] xl:w-[45%] relative bg-gradient-to-br from-primary/10 via-background to-background overflow-hidden">
         {/* Background Effects */}
         <div className="absolute inset-0">
           <div className="absolute top-0 left-0 w-full h-full">
@@ -768,15 +768,14 @@ const Login = () => {
         </div>
         
         {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center px-8 lg:px-10 xl:px-16 2xl:px-20">
+        <div className="relative z-10 flex flex-col justify-center px-6 lg:px-8 xl:px-12 2xl:px-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            
             {/* Title */}
-            <h1 className="text-3xl lg:text-4xl xl:text-5xl font-display font-bold text-foreground mb-3 lg:mb-4 leading-tight">
+            <h1 className="text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-display font-bold text-foreground mb-2 lg:mb-3 xl:mb-4 leading-tight">
               {isLogin ? (
                 <>Bem-vindo<br />de volta</>
               ) : (
@@ -784,14 +783,14 @@ const Login = () => {
               )}
             </h1>
             
-            <p className="text-base lg:text-lg text-muted-foreground max-w-sm lg:max-w-md mb-6 lg:mb-8">
+            <p className="text-sm lg:text-base xl:text-lg text-muted-foreground max-w-xs lg:max-w-sm xl:max-w-md mb-4 lg:mb-6 xl:mb-8">
               {isLogin 
                 ? "Acesse sua conta para gerenciar suas sessões e acompanhar suas licenças."
                 : "Crie sua conta e tenha acesso a todas as funcionalidades da plataforma."}
             </p>
 
             {/* Features */}
-            <div className="space-y-3 lg:space-y-4">
+            <div className="space-y-2 lg:space-y-3 xl:space-y-4">
               {[
                 { icon: "✓", text: "Painel completo de gerenciamento" },
                 { icon: "✓", text: "Acesso às suas sessões 24/7" },
@@ -802,12 +801,12 @@ const Login = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.4, delay: 0.2 + i * 0.1 }}
-                  className="flex items-center gap-2 lg:gap-3"
+                  className="flex items-center gap-2"
                 >
-                  <span className="w-5 lg:w-6 h-5 lg:h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs lg:text-sm font-medium shrink-0">
+                  <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-medium shrink-0">
                     {feature.icon}
                   </span>
-                  <span className="text-sm lg:text-base text-muted-foreground">{feature.text}</span>
+                  <span className="text-xs lg:text-sm xl:text-base text-muted-foreground">{feature.text}</span>
                 </motion.div>
               ))}
             </div>
@@ -816,7 +815,7 @@ const Login = () => {
       </div>
 
       {/* Right Side - Form */}
-      <div className="flex-1 lg:w-[55%] xl:w-1/2 flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12 bg-background relative min-h-screen lg:min-h-0">
+      <div className="flex-1 lg:w-[60%] xl:w-[55%] flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8 xl:p-10 bg-background relative min-h-screen lg:min-h-0 overflow-y-auto">
         {/* Mobile/Tablet Background */}
         <div className="absolute inset-0 lg:hidden">
           <AnimatedShaderBackground className="w-full h-full opacity-20" />
@@ -826,25 +825,24 @@ const Login = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-[400px] sm:max-w-[420px] relative z-10"
+          className="w-full max-w-[360px] sm:max-w-[400px] md:max-w-[420px] relative z-10 my-auto"
         >
-
           {/* Form Card */}
-          <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl sm:rounded-2xl p-5 sm:p-6 md:p-8 shadow-xl">
-            <div className="text-center mb-5 sm:mb-6">
-              <h2 className="text-xl sm:text-2xl font-display font-bold text-foreground">
+          <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 lg:p-7 shadow-xl">
+            <div className="text-center mb-4 sm:mb-5">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-display font-bold text-foreground">
                 {isLogin ? "Entrar" : "Criar Conta"}
               </h2>
-              <p className="text-muted-foreground text-xs sm:text-sm mt-1.5 sm:mt-2">
+              <p className="text-muted-foreground text-xs sm:text-sm mt-1 sm:mt-1.5">
                 {isLogin 
                   ? "Digite suas credenciais para acessar" 
                   : "Preencha os dados para criar sua conta"}
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3">
               {!isLogin && (
-                <div className="space-y-1 sm:space-y-1.5">
+                <div className="space-y-1">
                   <label htmlFor="name" className="text-xs sm:text-sm font-medium text-foreground">
                     Nome completo
                   </label>
@@ -852,7 +850,7 @@ const Login = () => {
                     id="name"
                     type="text"
                     placeholder="Seu nome"
-                    className={`text-sm w-full py-2 sm:py-2.5 px-3 sm:px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
+                    className={`text-sm w-full py-2 sm:py-2.5 px-3 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
                       nameError ? "border-destructive" : "border-border"
                     }`}
                     value={name}
@@ -865,7 +863,7 @@ const Login = () => {
                 </div>
               )}
 
-              <div className="space-y-1 sm:space-y-1.5">
+              <div className="space-y-1">
                 <label htmlFor="email" className="text-xs sm:text-sm font-medium text-foreground">
                   Email
                 </label>
@@ -873,7 +871,7 @@ const Login = () => {
                   id="email"
                   type="email"
                   placeholder="seu@email.com"
-                  className={`text-sm w-full py-2 sm:py-2.5 px-3 sm:px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
+                  className={`text-sm w-full py-2 sm:py-2.5 px-3 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
                     emailError ? "border-destructive" : "border-border"
                   }`}
                   value={email}
@@ -889,7 +887,7 @@ const Login = () => {
                 )}
               </div>
 
-              <div className="space-y-1 sm:space-y-1.5">
+              <div className="space-y-1">
                 <label htmlFor="password" className="text-xs sm:text-sm font-medium text-foreground">
                   {isLogin ? "Senha" : "Criar senha"}
                 </label>
@@ -897,7 +895,7 @@ const Login = () => {
                   id="password"
                   type="password"
                   placeholder="••••••••"
-                  className={`text-sm w-full py-2 sm:py-2.5 px-3 sm:px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
+                  className={`text-sm w-full py-2 sm:py-2.5 px-3 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
                     passwordError ? "border-destructive" : "border-border"
                   }`}
                   value={password}
@@ -914,7 +912,7 @@ const Login = () => {
                 {isLogin && (
                   <Link
                     to="/recuperar-senha"
-                    className="text-xs text-primary hover:underline block text-right mt-1"
+                    className="text-xs text-primary hover:underline block text-right mt-0.5"
                   >
                     Esqueceu sua senha?
                   </Link>
@@ -922,7 +920,7 @@ const Login = () => {
               </div>
 
               {!isLogin && (
-                <div className="space-y-1 sm:space-y-1.5">
+                <div className="space-y-1">
                   <label htmlFor="whatsapp" className="text-xs sm:text-sm font-medium text-foreground">
                     WhatsApp
                   </label>
@@ -930,7 +928,7 @@ const Login = () => {
                     id="whatsapp"
                     type="tel"
                     placeholder="+55 11 99999-9999"
-                    className={`text-sm w-full py-2 sm:py-2.5 px-3 sm:px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
+                    className={`text-sm w-full py-2 sm:py-2.5 px-3 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
                       whatsappError ? "border-destructive" : "border-border"
                     }`}
                     value={whatsapp}
@@ -997,7 +995,7 @@ const Login = () => {
               </button>
 
               {/* Divider */}
-              <div className="relative my-3 sm:my-4">
+              <div className="relative my-2 sm:my-3">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-border"></div>
                 </div>
@@ -1035,12 +1033,12 @@ const Login = () => {
               )}
             </form>
 
-            <div className="mt-4 sm:mt-6 text-center">
+            <div className="mt-3 sm:mt-4 text-center">
               <Link
                 to="/"
-                className="text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
               >
-                <svg className="w-3.5 sm:w-4 h-3.5 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="19" y1="12" x2="5" y2="12" />
                   <polyline points="12,19 5,12 12,5" />
                 </svg>
