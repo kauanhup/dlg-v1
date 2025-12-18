@@ -503,9 +503,10 @@ const Login = () => {
           },
         });
 
-        if (validationError) {
+        // Handle network/invocation errors separately from validation errors
+        if (validationError && !validationData) {
           recordFailedAttempt(email);
-          toast.error("Erro no login", "Ocorreu um erro inesperado. Tente novamente.");
+          toast.error("Erro de conexão", "Não foi possível conectar ao servidor. Tente novamente.");
           setIsSubmitting(false);
           return;
         }
@@ -513,20 +514,25 @@ const Login = () => {
         if (!validationData?.success) {
           recordFailedAttempt(email);
           
+          const errorCode = validationData?.code || '';
+          const errorMessage = validationData?.error || 'Credenciais inválidas';
+          
           // Handle specific error codes from validation
-          if (validationData?.code === 'MAINTENANCE') {
+          if (errorCode === 'MAINTENANCE') {
             setShowMaintenanceModal(true);
-          } else if (validationData?.code === 'BANNED') {
+          } else if (errorCode === 'BANNED') {
             setShowBannedModal(true);
+          } else if (errorCode === 'RATE_LIMITED' || errorCode === 'RATE_LIMIT_IP') {
+            toast.error("Muitas tentativas", errorMessage);
+          } else if (errorCode === 'RECAPTCHA_FAILED' || errorCode === 'RECAPTCHA_REQUIRED') {
+            toast.error("Verificação de segurança", errorMessage);
+            recaptchaRef.current?.reset();
+            setRecaptchaToken(null);
+          } else if (errorCode === 'INVALID_CREDENTIALS' || errorCode === 'PROFILE_NOT_FOUND') {
+            toast.error("Erro no login", "Credenciais inválidas");
           } else {
-            // Generic error - could be profile not found (not activated) or invalid email
-            // Check if it's a "not activated" scenario
-            if (validationData?.error === "Credenciais inválidas") {
-              // Could be profile doesn't exist - show generic error
-              toast.error("Erro no login", "Credenciais inválidas");
-            } else {
-              toast.error("Erro no login", validationData?.error || "Credenciais inválidas");
-            }
+            // Show the specific backend error message
+            toast.error("Erro no login", errorMessage);
           }
           setIsSubmitting(false);
           return;
