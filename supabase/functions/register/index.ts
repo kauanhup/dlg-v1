@@ -18,8 +18,8 @@ interface RegisterRequest {
 }
 
 // Rate limit configuration
-const MAX_ATTEMPTS_PER_EMAIL = 5;
-const RATE_LIMIT_WINDOW_MINUTES = 15;
+const MAX_ATTEMPTS_PER_EMAIL = 10;
+const RATE_LIMIT_WINDOW_MINUTES = 30;
 
 async function sendEmail(apiKey: string, from: string, to: string, subject: string, html: string) {
   const response = await fetch('https://api.resend.com/emails', {

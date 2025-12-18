@@ -41,6 +41,9 @@ const Login = () => {
   const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
   const [isResendingCode, setIsResendingCode] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendCount, setResendCount] = useState(0);
+  const [resendRecaptchaToken, setResendRecaptchaToken] = useState<string | null>(null);
+  const resendRecaptchaRef = useRef<ReCAPTCHA>(null);
   const [pendingEmail, setPendingEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [pendingPassword, setPendingPassword] = useState("");
@@ -611,6 +614,13 @@ const Login = () => {
       return;
     }
 
+    // After 3 resends, require reCAPTCHA
+    const requiresResendCaptcha = resendCount >= 3 && recaptchaSettings.enabled;
+    if (requiresResendCaptcha && !resendRecaptchaToken) {
+      toast.error("Verificação necessária", "Complete o reCAPTCHA para reenviar.");
+      return;
+    }
+
     setIsResendingCode(true);
     try {
       const { data, error } = await supabase.functions.invoke('register', {
@@ -620,6 +630,7 @@ const Login = () => {
           password: pendingPassword,
           name: pendingName,
           whatsapp: pendingWhatsapp,
+          recaptchaToken: requiresResendCaptcha ? resendRecaptchaToken : undefined,
         },
       });
 
@@ -628,11 +639,19 @@ const Login = () => {
         return;
       }
 
+      if (data?.code === 'RATE_LIMITED') {
+        toast.error("Limite atingido", "Muitos códigos enviados. Aguarde 30 minutos.");
+        return;
+      }
+
       if (data?.success && data?.requiresEmailConfirmation) {
         toast.success("Código reenviado!", "Verifique seu email.");
         setVerificationCode("");
-        // Start 60 second cooldown
+        setResendCount(prev => prev + 1);
         setResendCooldown(60);
+        // Reset resend reCAPTCHA
+        resendRecaptchaRef.current?.reset();
+        setResendRecaptchaToken(null);
       } else {
         toast.error("Erro", data?.error || "Não foi possível reenviar o código.");
       }
@@ -1059,16 +1078,38 @@ const Login = () => {
                   >
                     {isVerifying ? "Verificando..." : "Verificar Código"}
                   </button>
+                  
+                  {/* Show reCAPTCHA for resend after 3 attempts */}
+                  {resendCount >= 3 && recaptchaSettings.enabled && recaptchaSettings.siteKey && resendCooldown === 0 && (
+                    <div className="flex justify-center py-2">
+                      <ReCAPTCHA
+                        ref={resendRecaptchaRef}
+                        sitekey={recaptchaSettings.siteKey}
+                        onChange={(token) => setResendRecaptchaToken(token)}
+                        onExpired={() => setResendRecaptchaToken(null)}
+                        theme="dark"
+                        size="compact"
+                      />
+                    </div>
+                  )}
+                  
                   <button
                     onClick={handleResendCode}
-                    disabled={isVerifying || isResendingCode || resendCooldown > 0}
+                    disabled={
+                      isVerifying || 
+                      isResendingCode || 
+                      resendCooldown > 0 || 
+                      (resendCount >= 3 && recaptchaSettings.enabled && !resendRecaptchaToken)
+                    }
                     className="py-2 px-4 text-primary hover:text-primary/80 transition-colors text-sm disabled:opacity-50"
                   >
                     {isResendingCode 
                       ? "Reenviando..." 
                       : resendCooldown > 0 
                         ? `Reenviar código (${resendCooldown}s)` 
-                        : "Reenviar código"}
+                        : resendCount >= 3 && recaptchaSettings.enabled && !resendRecaptchaToken
+                          ? "Complete o captcha"
+                          : "Reenviar código"}
                   </button>
                   <button
                     onClick={() => {
@@ -1079,6 +1120,9 @@ const Login = () => {
                       setPendingName("");
                       setPendingWhatsapp("");
                       setResendCooldown(0);
+                      setResendCount(0);
+                      setResendRecaptchaToken(null);
+                      resendRecaptchaRef.current?.reset();
                     }}
                     className="py-2 px-4 text-muted-foreground hover:text-foreground transition-colors"
                     disabled={isVerifying || isResendingCode}
