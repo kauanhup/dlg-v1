@@ -2946,39 +2946,58 @@ const ApiSection = () => {
       </div>
 
       {/* Feature Toggles */}
-      {hasResendKey && emailEnabled && (
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h3 className="font-semibold text-foreground mb-4">Funcionalidades de Email</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-foreground">Recuperação de Senha</p>
-                <p className="text-sm text-muted-foreground">Permite usuários recuperarem senha via código por email</p>
-              </div>
-              <button
-                onClick={() => handleSaveToggles('password_recovery_enabled', !passwordRecoveryEnabled)}
-                disabled={isSavingToggles}
-                className={`w-12 h-6 rounded-full transition-colors ${passwordRecoveryEnabled ? 'bg-primary' : 'bg-muted'}`}
-              >
-                <div className={`w-5 h-5 bg-white rounded-full transition-transform ${passwordRecoveryEnabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
-              </button>
+      <div className="bg-card border border-border rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-foreground">Funcionalidades de Email</h3>
+          {!(hasResendKey && emailEnabled) && (
+            <span className="text-xs text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded">
+              Configure o Resend acima para ativar
+            </span>
+          )}
+        </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className={!(hasResendKey && emailEnabled) ? "opacity-50" : ""}>
+              <p className="font-medium text-foreground">Recuperação de Senha</p>
+              <p className="text-sm text-muted-foreground">Permite usuários recuperarem senha via código por email</p>
             </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-foreground">Verificação de Email no Cadastro</p>
-                <p className="text-sm text-muted-foreground">Requer confirmação de email para criar conta</p>
-              </div>
-              <button
-                onClick={() => handleSaveToggles('email_verification_enabled', !emailVerificationEnabled)}
-                disabled={isSavingToggles}
-                className={`w-12 h-6 rounded-full transition-colors ${emailVerificationEnabled ? 'bg-primary' : 'bg-muted'}`}
-              >
-                <div className={`w-5 h-5 bg-white rounded-full transition-transform ${emailVerificationEnabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
-              </button>
+            <button
+              onClick={() => handleSaveToggles('password_recovery_enabled', !passwordRecoveryEnabled)}
+              disabled={isSavingToggles || !(hasResendKey && emailEnabled)}
+              className={cn(
+                "w-12 h-6 rounded-full transition-colors",
+                passwordRecoveryEnabled && hasResendKey && emailEnabled ? 'bg-primary' : 'bg-muted',
+                !(hasResendKey && emailEnabled) && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <div className={cn(
+                "w-5 h-5 bg-white rounded-full transition-transform shadow-sm",
+                passwordRecoveryEnabled && hasResendKey && emailEnabled ? 'translate-x-6' : 'translate-x-0.5'
+              )} />
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className={!(hasResendKey && emailEnabled) ? "opacity-50" : ""}>
+              <p className="font-medium text-foreground">Verificação de Email no Cadastro</p>
+              <p className="text-sm text-muted-foreground">Requer confirmação de email para criar conta</p>
             </div>
+            <button
+              onClick={() => handleSaveToggles('email_verification_enabled', !emailVerificationEnabled)}
+              disabled={isSavingToggles || !(hasResendKey && emailEnabled)}
+              className={cn(
+                "w-12 h-6 rounded-full transition-colors",
+                emailVerificationEnabled && hasResendKey && emailEnabled ? 'bg-primary' : 'bg-muted',
+                !(hasResendKey && emailEnabled) && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <div className={cn(
+                "w-5 h-5 bg-white rounded-full transition-transform shadow-sm",
+                emailVerificationEnabled && hasResendKey && emailEnabled ? 'translate-x-6' : 'translate-x-0.5'
+              )} />
+            </button>
           </div>
         </div>
-      )}
+      </div>
     </motion.div>
   );
 };
