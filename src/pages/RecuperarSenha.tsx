@@ -161,17 +161,24 @@ const RecuperarSenha = () => {
 
   if (isCheckingSettings) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <MorphingSquare />
+      <div className="min-h-screen w-full relative flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <AnimatedShaderBackground className="w-full h-full" />
+        </div>
+        <div className="relative z-10">
+          <MorphingSquare message="Carregando..." className="bg-primary" />
+        </div>
       </div>
     );
   }
 
   if (!isEnabled) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <AnimatedShaderBackground />
-        <div className="relative z-10 bg-card border border-border rounded-xl p-8 max-w-md w-full text-center">
+      <div className="min-h-screen w-full relative flex items-center justify-center overflow-hidden p-4">
+        <div className="absolute inset-0 z-0">
+          <AnimatedShaderBackground className="w-full h-full" />
+        </div>
+        <div className="relative z-10 bg-card/80 backdrop-blur-xl border border-border/50 rounded-xl p-8 max-w-md w-full text-center shadow-2xl">
           <Mail className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h1 className="text-xl font-bold text-foreground mb-2">Recurso Desabilitado</h1>
           <p className="text-muted-foreground mb-6">
@@ -187,13 +194,16 @@ const RecuperarSenha = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <AnimatedShaderBackground />
+    <div className="min-h-screen w-full relative flex items-center justify-center overflow-hidden p-4">
+      {/* Aurora Shader Background */}
+      <div className="absolute inset-0 z-0">
+        <AnimatedShaderBackground className="w-full h-full" />
+      </div>
       
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 bg-card border border-border rounded-xl p-8 max-w-md w-full"
+        className="relative z-10 bg-card/80 backdrop-blur-xl border border-border/50 rounded-xl p-8 max-w-md w-full shadow-2xl"
       >
         {/* Header */}
         <div className="text-center mb-8">
