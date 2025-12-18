@@ -235,22 +235,116 @@ const Login = () => {
     }
   };
 
-  const validateEmail = (value: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  const validateEmail = (value: string): { valid: boolean; error?: string } => {
+    const trimmed = value.trim().toLowerCase();
+    
+    if (!trimmed) {
+      return { valid: false, error: "Email é obrigatório" };
+    }
+    
+    if (trimmed.length > 254) {
+      return { valid: false, error: "Email muito longo (máx. 254 caracteres)" };
+    }
+    
+    // More robust email regex
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+    if (!emailRegex.test(trimmed)) {
+      return { valid: false, error: "Formato de email inválido" };
+    }
+    
+    // Check for common disposable email domains
+    const disposableDomains = ['tempmail.com', 'throwaway.com', 'mailinator.com', 'guerrillamail.com', 'fakeinbox.com', '10minutemail.com'];
+    const domain = trimmed.split('@')[1];
+    if (disposableDomains.includes(domain)) {
+      return { valid: false, error: "Emails temporários não são permitidos" };
+    }
+    
+    return { valid: true };
   };
 
-  const validatePassword = (value: string) => {
-    return value.length >= 8;
+  const validatePassword = (value: string): { valid: boolean; error?: string } => {
+    if (!value) {
+      return { valid: false, error: "Senha é obrigatória" };
+    }
+    
+    if (value.length < 8) {
+      return { valid: false, error: "Mínimo 8 caracteres" };
+    }
+    
+    if (value.length > 128) {
+      return { valid: false, error: "Senha muito longa (máx. 128 caracteres)" };
+    }
+    
+    // Check for at least one uppercase, one lowercase, and one number
+    const hasUppercase = /[A-Z]/.test(value);
+    const hasLowercase = /[a-z]/.test(value);
+    const hasNumber = /[0-9]/.test(value);
+    
+    if (!hasUppercase || !hasLowercase || !hasNumber) {
+      return { valid: false, error: "Use letras maiúsculas, minúsculas e números" };
+    }
+    
+    // Check for common weak passwords
+    const weakPasswords = ['12345678', 'password', 'qwerty123', 'abc12345', 'password1', 'Password1'];
+    if (weakPasswords.some(weak => value.toLowerCase().includes(weak.toLowerCase()))) {
+      return { valid: false, error: "Senha muito comum, escolha outra" };
+    }
+    
+    return { valid: true };
   };
 
-  const validateWhatsapp = (value: string) => {
-    // Remove all non-digits for validation
+  const validateWhatsapp = (value: string): { valid: boolean; error?: string } => {
     const digitsOnly = value.replace(/\D/g, '');
-    return digitsOnly.length >= 10 && digitsOnly.length <= 15;
+    
+    if (!digitsOnly) {
+      return { valid: false, error: "WhatsApp é obrigatório" };
+    }
+    
+    if (digitsOnly.length < 10) {
+      return { valid: false, error: "Número muito curto (mín. 10 dígitos)" };
+    }
+    
+    if (digitsOnly.length > 15) {
+      return { valid: false, error: "Número muito longo (máx. 15 dígitos)" };
+    }
+    
+    // Basic check for valid Brazilian phone format (optional)
+    // Brazilian: 55 + DDD (2) + number (8-9) = 12-13 digits
+    if (digitsOnly.startsWith('55') && digitsOnly.length < 12) {
+      return { valid: false, error: "Número brasileiro deve ter DDD + 8-9 dígitos" };
+    }
+    
+    return { valid: true };
   };
 
-  const validateName = (value: string) => {
-    return value.trim().length >= 2;
+  const validateName = (value: string): { valid: boolean; error?: string } => {
+    const trimmed = value.trim();
+    
+    if (!trimmed) {
+      return { valid: false, error: "Nome é obrigatório" };
+    }
+    
+    if (trimmed.length < 2) {
+      return { valid: false, error: "Nome muito curto (mín. 2 caracteres)" };
+    }
+    
+    if (trimmed.length > 100) {
+      return { valid: false, error: "Nome muito longo (máx. 100 caracteres)" };
+    }
+    
+    // Check for valid name characters (letters, spaces, hyphens, apostrophes)
+    const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]+$/;
+    if (!nameRegex.test(trimmed)) {
+      return { valid: false, error: "Nome contém caracteres inválidos" };
+    }
+    
+    // Check for at least 2 parts (first and last name)
+    const parts = trimmed.split(/\s+/).filter(p => p.length > 0);
+    if (parts.length < 2) {
+      return { valid: false, error: "Informe nome e sobrenome" };
+    }
+    
+    return { valid: true };
   };
 
   // Rate limiting using localStorage (works without auth)
@@ -343,24 +437,28 @@ const Login = () => {
     setNameError("");
     setRateLimitError("");
 
-    if (!validateEmail(email)) {
-      setEmailError("Por favor, insira um email válido.");
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.valid) {
+      setEmailError(emailValidation.error || "Email inválido");
       valid = false;
     }
 
-    if (!validatePassword(password)) {
-      setPasswordError("A senha deve ter pelo menos 8 caracteres.");
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      setPasswordError(passwordValidation.error || "Senha inválida");
       valid = false;
     }
 
     if (!isLogin) {
-      if (!validateName(name)) {
-        setNameError("Por favor, insira seu nome.");
+      const nameValidation = validateName(name);
+      if (!nameValidation.valid) {
+        setNameError(nameValidation.error || "Nome inválido");
         valid = false;
       }
       
-      if (!validateWhatsapp(whatsapp)) {
-        setWhatsappError("Por favor, insira um número válido.");
+      const whatsappValidation = validateWhatsapp(whatsapp);
+      if (!whatsappValidation.valid) {
+        setWhatsappError(whatsappValidation.error || "WhatsApp inválido");
         valid = false;
       }
     }
