@@ -33,6 +33,7 @@ const Login = () => {
   const [showBannedModal, setShowBannedModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showEmailConfirmationModal, setShowEmailConfirmationModal] = useState(false);
+  const [showAccountNotActivatedModal, setShowAccountNotActivatedModal] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
     maintenanceMode: false,
@@ -116,6 +117,14 @@ const Login = () => {
         if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
           // Defer Supabase calls with setTimeout to avoid deadlock
           setTimeout(async () => {
+            // First check if profile exists (email confirmed)
+            const profileExists = await checkProfileExists(session.user.id);
+            if (!profileExists) {
+              await supabase.auth.signOut();
+              setShowAccountNotActivatedModal(true);
+              return;
+            }
+            
             // Check if user is banned
             const isBanned = await checkIfBanned(session.user.id);
             if (isBanned) {
@@ -151,6 +160,22 @@ const Login = () => {
     }
     
     return (data as any).banned === true;
+  };
+
+  // Check if profile exists (email confirmed)
+  const checkProfileExists = async (userId: string): Promise<boolean> => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error checking profile:', error);
+      return false;
+    }
+    
+    return data !== null;
   };
 
   const getUserRole = async (userId: string): Promise<string> => {
@@ -325,14 +350,12 @@ const Login = () => {
       return;
     }
 
-    // Rate limiting check (only for login)
-    if (isLogin) {
-      const allowed = checkRateLimit(email);
-      if (!allowed) {
-        setRateLimitError(`Muitas tentativas. Aguarde ${LOCKOUT_MINUTES} minutos.`);
-        toast.error("Muitas tentativas", `Por segurança, aguarde ${LOCKOUT_MINUTES} minutos antes de tentar novamente.`);
-        return;
-      }
+    // Rate limiting check (for both login AND signup)
+    const allowed = checkRateLimit(email);
+    if (!allowed) {
+      setRateLimitError(`Muitas tentativas. Aguarde ${LOCKOUT_MINUTES} minutos.`);
+      toast.error("Muitas tentativas", `Por segurança, aguarde ${LOCKOUT_MINUTES} minutos antes de tentar novamente.`);
+      return;
     }
 
     if (!valid) {
@@ -365,8 +388,18 @@ const Login = () => {
           return;
         }
 
-        // Check if user is banned after successful login
+        // Check if profile exists (email confirmed) and if user is banned
         if (data.user) {
+          // First check if profile exists
+          const profileExists = await checkProfileExists(data.user.id);
+          if (!profileExists) {
+            await supabase.auth.signOut();
+            setShowAccountNotActivatedModal(true);
+            setIsSubmitting(false);
+            return;
+          }
+          
+          // Then check if user is banned
           const isBanned = await checkIfBanned(data.user.id);
           if (isBanned) {
             await logLoginAttempt(data.user.id, 'failed', 'Conta banida');
@@ -386,27 +419,33 @@ const Login = () => {
         
         // Redirect is handled by onAuthStateChange
       } else {
-        // Signup via secure edge function
+        // Signup via secure edge function with honeypot
         const { data, error } = await supabase.functions.invoke('register', {
           body: {
             email: email.trim().toLowerCase(),
             password,
             name: name.trim(),
-            whatsapp: whatsapp.replace(/\s/g, ''),
+            whatsapp: whatsapp.replace(/\D/g, ''), // Remove all non-digits
+            honeypot, // Send honeypot for bot detection
           },
         });
 
         if (error) {
+          recordFailedAttempt(email);
           toast.error("Erro no cadastro", "Ocorreu um erro ao criar sua conta. Tente novamente.");
           setIsSubmitting(false);
           return;
         }
 
         if (!data?.success) {
+          recordFailedAttempt(email);
           toast.error("Erro no cadastro", data?.error || "Não foi possível criar a conta.");
           setIsSubmitting(false);
           return;
         }
+
+        // Clear rate limit on success
+        clearRateLimit(email);
 
         // Check if email confirmation is required
         if (data.requiresEmailConfirmation) {
@@ -417,6 +456,7 @@ const Login = () => {
           setPassword("");
           setName("");
           setWhatsapp("");
+          setHoneypot("");
         } else {
           toast.success("Conta criada!", "Faça login para continuar.");
           // Switch to login mode
@@ -425,11 +465,13 @@ const Login = () => {
           setPassword("");
           setName("");
           setWhatsapp("");
+          setHoneypot("");
         }
         
         setIsSubmitting(false);
       }
     } catch (error: any) {
+      recordFailedAttempt(email);
       toast.error("Erro", error.message || "Ocorreu um erro inesperado.");
       setIsSubmitting(false);
     }
@@ -813,6 +855,45 @@ const Login = () => {
                     className="py-3 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all"
                   >
                     <CheckCircle className="w-5 h-5 inline mr-2" />
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Account Not Activated Modal */}
+      <AnimatePresence>
+        {showAccountNotActivatedModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl"
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                  <AlertTriangle className="w-8 h-8 text-yellow-500" />
+                </div>
+                <h2 className="text-xl font-bold text-foreground mb-2">
+                  Conta não Ativada
+                </h2>
+                <p className="text-muted-foreground mb-6">
+                  Sua conta ainda não foi ativada. Verifique seu email e clique no link de confirmação para ativar sua conta.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => setShowAccountNotActivatedModal(false)}
+                    className="py-3 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all"
+                  >
                     Entendido
                   </button>
                 </div>

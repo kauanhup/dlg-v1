@@ -11,6 +11,7 @@ interface RegisterRequest {
   password: string;
   name: string;
   whatsapp: string;
+  honeypot?: string; // Bot trap field - should be empty
 }
 
 serve(async (req: Request): Promise<Response> => {
@@ -24,15 +25,35 @@ serve(async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     
-    // Create admin client for checking settings
+    // Create admin client for checking settings and admin operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     
     // Parse request body
     const body: RegisterRequest = await req.json();
-    const { email, password, name, whatsapp } = body;
+    const { email, password, name, whatsapp, honeypot } = body;
 
     console.log(`Register attempt for email: ${email}`);
 
+    // ==========================================
+    // HONEYPOT CHECK - Silent rejection for bots
+    // ==========================================
+    if (honeypot && honeypot.length > 0) {
+      console.log('Bot detected via honeypot');
+      // Return fake success to not reveal the trap
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          requiresEmailConfirmation: true,
+          message: "Verifique seu email para confirmar o cadastro."
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ==========================================
+    // FIELD VALIDATIONS
+    // ==========================================
+    
     // Validate required fields
     if (!email || !password || !name || !whatsapp) {
       return new Response(
@@ -58,10 +79,17 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // Validate WhatsApp format
-    const whatsappClean = whatsapp.replace(/\s/g, '');
-    const whatsappRegex = /^\+?[0-9]{10,15}$/;
-    if (!whatsappRegex.test(whatsappClean)) {
+    // Validate name
+    if (name.trim().length < 2) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Nome inválido" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate WhatsApp format (10-15 digits)
+    const whatsappClean = whatsapp.replace(/\D/g, ''); // Remove all non-digits
+    if (whatsappClean.length < 10 || whatsappClean.length > 15) {
       return new Response(
         JSON.stringify({ success: false, error: "WhatsApp inválido" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -69,12 +97,12 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // ==========================================
-    // SERVER-SIDE CHECK: Is registration allowed?
+    // SERVER-SIDE CHECK: System Settings
     // ==========================================
     const { data: settingsData, error: settingsError } = await supabaseAdmin
       .from('system_settings')
       .select('key, value')
-      .in('key', ['allow_registrations', 'maintenance_mode']);
+      .in('key', ['allow_registrations', 'maintenance_mode', 'require_email_confirmation']);
 
     if (settingsError) {
       console.error('Error fetching system settings:', settingsError);
@@ -86,6 +114,7 @@ serve(async (req: Request): Promise<Response> => {
 
     let allowRegistration = true;
     let maintenanceMode = false;
+    let requireEmailConfirmation = false;
 
     settingsData?.forEach((setting) => {
       if (setting.key === 'allow_registrations') {
@@ -93,6 +122,9 @@ serve(async (req: Request): Promise<Response> => {
       }
       if (setting.key === 'maintenance_mode') {
         maintenanceMode = setting.value === 'true';
+      }
+      if (setting.key === 'require_email_confirmation') {
+        requireEmailConfirmation = setting.value === 'true';
       }
     });
 
@@ -115,35 +147,38 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // ==========================================
-    // CREATE USER via Supabase Auth
+    // CREATE USER via Supabase Auth Admin API
     // ==========================================
     
-    // Use the anon key client for signup (respects email confirmation settings)
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+    const emailClean = email.trim().toLowerCase();
     
-    const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
-      email: email.trim().toLowerCase(),
+    // Use admin API to have full control over user creation
+    const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
+      email: emailClean,
       password,
-      options: {
-        emailRedirectTo: `${req.headers.get('origin') || supabaseUrl}/login`,
-        data: {
-          name: name.trim(),
-          whatsapp: whatsappClean,
-        },
+      email_confirm: !requireEmailConfirmation, // Auto-confirm if not requiring email confirmation
+      user_metadata: {
+        name: name.trim(),
+        whatsapp: whatsappClean,
       },
     });
 
     if (signUpError) {
       console.error('SignUp error:', signUpError.message);
       
-      // Handle specific errors with generic messages
-      if (signUpError.message.includes('User already registered')) {
-        // Don't reveal if email exists - use generic message
+      // Handle specific errors with generic messages to not reveal user existence
+      if (signUpError.message.includes('already been registered') || 
+          signUpError.message.includes('User already registered') ||
+          signUpError.message.includes('already exists')) {
+        console.log('Email already exists, returning generic message');
+        // Return same response as success to not reveal if email exists
         return new Response(
           JSON.stringify({ 
             success: true, 
-            requiresEmailConfirmation: true,
-            message: "Se este email não estiver cadastrado, você receberá um link de confirmação." 
+            requiresEmailConfirmation: requireEmailConfirmation,
+            message: requireEmailConfirmation 
+              ? "Se este email não estiver cadastrado, você receberá um link de confirmação."
+              : "Se este email não estiver cadastrado, sua conta foi criada."
           }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
@@ -155,16 +190,34 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check if email confirmation is required
-    const requiresEmailConfirmation = signUpData.user && !signUpData.session;
+    // If email confirmation is required, send the invite email
+    if (requireEmailConfirmation && signUpData.user) {
+      const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(emailClean, {
+        redirectTo: `${req.headers.get('origin') || supabaseUrl}/login`,
+        data: {
+          name: name.trim(),
+          whatsapp: whatsappClean,
+        },
+      });
 
-    console.log(`User created: ${signUpData.user?.id}, requires confirmation: ${requiresEmailConfirmation}`);
+      if (inviteError) {
+        console.error('Error sending invite email:', inviteError);
+        // User was created but email failed - delete the user to maintain consistency
+        await supabaseAdmin.auth.admin.deleteUser(signUpData.user.id);
+        return new Response(
+          JSON.stringify({ success: false, error: "Erro ao enviar email de confirmação. Tente novamente." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    console.log(`User created: ${signUpData.user?.id}, requires confirmation: ${requireEmailConfirmation}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        requiresEmailConfirmation,
-        message: requiresEmailConfirmation 
+        requiresEmailConfirmation: requireEmailConfirmation,
+        message: requireEmailConfirmation 
           ? "Verifique seu email para confirmar o cadastro." 
           : "Conta criada com sucesso!"
       }),
