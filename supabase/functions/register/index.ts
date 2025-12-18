@@ -113,9 +113,10 @@ serve(async (req: Request): Promise<Response> => {
 
         const recaptchaResult = await recaptchaResponse.json();
         console.log('reCAPTCHA verification result:', recaptchaResult.success);
+        console.log('reCAPTCHA full response:', JSON.stringify(recaptchaResult));
 
         if (!recaptchaResult.success) {
-          console.log('reCAPTCHA verification failed');
+          console.log('reCAPTCHA verification failed, error-codes:', recaptchaResult['error-codes']);
           return new Response(
             JSON.stringify({ 
               success: false, 
