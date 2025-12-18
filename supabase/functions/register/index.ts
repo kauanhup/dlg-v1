@@ -12,9 +12,13 @@ interface RegisterRequest {
   name: string;
   whatsapp: string;
   honeypot?: string;
-  verificationCode?: string; // For step 2: verify code
-  action?: 'register' | 'verify_code'; // Default is 'register'
+  verificationCode?: string;
+  action?: 'register' | 'verify_code';
 }
+
+// Rate limit configuration
+const MAX_ATTEMPTS_PER_EMAIL = 5;
+const RATE_LIMIT_WINDOW_MINUTES = 15;
 
 async function sendEmail(apiKey: string, from: string, to: string, subject: string, html: string) {
   const response = await fetch('https://api.resend.com/emails', {
@@ -37,12 +41,11 @@ async function sendEmail(apiKey: string, from: string, to: string, subject: stri
 /**
  * REGISTER EDGE FUNCTION
  * 
- * FLUXO COM VERIFICAÇÃO DE EMAIL:
- * 1. action='register': Valida dados, gera código 6 dígitos, envia por email
- * 2. action='verify_code': Verifica código, cria usuário no auth.users
- * 
- * FLUXO SEM VERIFICAÇÃO:
- * 1. action='register': Cria usuário diretamente (email_confirm=true)
+ * CORREÇÕES IMPLEMENTADAS:
+ * 1. Rollback de auth.users se profile não for criado (via trigger)
+ * 2. Rate limiting no backend por email
+ * 3. Limpeza automática de verification_codes expirados
+ * 4. profiles é fonte da verdade para dados do usuário
  */
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -76,6 +79,19 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // ==========================================
+    // CLEANUP EXPIRED VERIFICATION CODES
+    // ==========================================
+    try {
+      await supabaseAdmin
+        .from('verification_codes')
+        .delete()
+        .lt('expires_at', new Date().toISOString());
+      console.log('Cleaned up expired verification codes');
+    } catch (cleanupErr) {
+      console.error('Error cleaning up codes:', cleanupErr);
+    }
+
+    // ==========================================
     // SERVER-SIDE CHECK: System Settings
     // ==========================================
     const { data: settingsData } = await supabaseAdmin
@@ -97,14 +113,14 @@ serve(async (req: Request): Promise<Response> => {
 
     if (maintenanceMode) {
       return new Response(
-        JSON.stringify({ success: false, error: "Sistema temporariamente indisponível" }),
+        JSON.stringify({ success: false, error: "Sistema temporariamente indisponível", code: "MAINTENANCE" }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (!allowRegistration) {
       return new Response(
-        JSON.stringify({ success: false, error: "Não foi possível criar a conta no momento" }),
+        JSON.stringify({ success: false, error: "Não foi possível criar a conta no momento", code: "DISABLED" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -117,6 +133,33 @@ serve(async (req: Request): Promise<Response> => {
       .single();
 
     const requireEmailConfirmation = gatewayData?.email_verification_enabled ?? false;
+
+    // ==========================================
+    // BACKEND RATE LIMITING BY EMAIL
+    // ==========================================
+    if (email) {
+      const emailClean = email.trim().toLowerCase();
+      const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
+      
+      // Count recent attempts for this email
+      const { count } = await supabaseAdmin
+        .from('verification_codes')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_email', emailClean)
+        .gte('created_at', windowStart);
+      
+      if (count && count >= MAX_ATTEMPTS_PER_EMAIL) {
+        console.log(`Rate limit exceeded for email: ${emailClean}`);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: "Muitas tentativas. Aguarde alguns minutos.",
+            code: "RATE_LIMITED"
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     // ==========================================
     // ACTION: VERIFY CODE (Step 2)
@@ -148,17 +191,6 @@ serve(async (req: Request): Promise<Response> => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
-      // Get pending registration data
-      const { data: pendingData } = await supabaseAdmin
-        .from('verification_codes')
-        .select('*')
-        .eq('id', codeData.id)
-        .single();
-
-      // Parse stored metadata (name, whatsapp, password are stored in code metadata)
-      // We need to get this from a separate pending_registrations or from the request
-      // For security, we'll require password again in verify_code
 
       if (!password || !name || !whatsapp) {
         return new Response(
@@ -197,13 +229,33 @@ serve(async (req: Request): Promise<Response> => {
         );
       }
 
-      // Mark code as used
-      await supabaseAdmin
-        .from('verification_codes')
-        .update({ used: true })
-        .eq('id', codeData.id);
+      // ==========================================
+      // VERIFY PROFILE WAS CREATED BY TRIGGER
+      // If not, ROLLBACK the user creation
+      // ==========================================
+      const userId = signUpData.user?.id;
+      if (userId) {
+        // Wait a moment for trigger to execute
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const { data: profileCheck } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+        
+        if (!profileCheck) {
+          console.error('Profile not created by trigger, rolling back user creation');
+          // Delete the orphan user from auth.users
+          await supabaseAdmin.auth.admin.deleteUser(userId);
+          return new Response(
+            JSON.stringify({ success: false, error: "Erro ao criar conta. Tente novamente." }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
 
-      // Delete all codes for this email
+      // Mark code as used and delete all codes for this email
       await supabaseAdmin
         .from('verification_codes')
         .delete()
@@ -301,10 +353,10 @@ serve(async (req: Request): Promise<Response> => {
       }
 
       // Generate 6-digit code
-      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const newVerificationCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-      // Delete any existing codes for this email
+      // Delete any existing codes for this email (cleanup + prevent abuse)
       await supabaseAdmin
         .from('verification_codes')
         .delete()
@@ -314,7 +366,7 @@ serve(async (req: Request): Promise<Response> => {
       // Insert new code
       await supabaseAdmin.from('verification_codes').insert({
         user_email: emailClean,
-        code: verificationCode,
+        code: newVerificationCode,
         type: 'email_verification',
         expires_at: expiresAt.toISOString(),
         used: false,
@@ -331,7 +383,7 @@ serve(async (req: Request): Promise<Response> => {
             <p>Seu código de verificação é:</p>
             <div style="text-align: center; margin: 30px 0;">
               <div style="background: #111; padding: 20px 40px; border-radius: 12px; display: inline-block;">
-                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4ade80;">${verificationCode}</span>
+                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4ade80;">${newVerificationCode}</span>
               </div>
             </div>
             <p style="color: #888; font-size: 14px;">Este código expira em 15 minutos.</p>
@@ -393,6 +445,32 @@ serve(async (req: Request): Promise<Response> => {
         JSON.stringify({ success: false, error: "Erro ao criar conta. Tente novamente." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // ==========================================
+    // VERIFY PROFILE WAS CREATED BY TRIGGER
+    // If not, ROLLBACK the user creation
+    // ==========================================
+    const userId = signUpData.user?.id;
+    if (userId) {
+      // Wait a moment for trigger to execute
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const { data: profileCheck } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (!profileCheck) {
+        console.error('Profile not created by trigger, rolling back user creation');
+        // Delete the orphan user from auth.users
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+        return new Response(
+          JSON.stringify({ success: false, error: "Erro ao criar conta. Tente novamente." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     console.log(`User created: ${signUpData.user?.id}`);

@@ -11,6 +11,10 @@ interface LoginValidationRequest {
   honeypot?: string;
 }
 
+// Rate limit configuration
+const MAX_FAILED_ATTEMPTS = 5;
+const RATE_LIMIT_WINDOW_MINUTES = 15;
+
 /**
  * LOGIN EDGE FUNCTION
  * 
@@ -19,6 +23,7 @@ interface LoginValidationRequest {
  * - Verificar se usuário existe (via profiles)
  * - Verificar se usuário está banido
  * - Verificar se profile existe (conta ativada)
+ * - Rate limiting no backend
  * - Registrar tentativa de login (login_history)
  * 
  * NÃO FAZ:
@@ -79,6 +84,40 @@ serve(async (req: Request): Promise<Response> => {
     const emailClean = email.trim().toLowerCase();
 
     // ==========================================
+    // BACKEND RATE LIMITING (via login_history)
+    // ==========================================
+    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
+    
+    // First, get user_id from profiles (if exists)
+    const { data: profileForRate } = await supabaseAdmin
+      .from('profiles')
+      .select('user_id')
+      .eq('email', emailClean)
+      .maybeSingle();
+    
+    if (profileForRate) {
+      // Count recent failed attempts for this user
+      const { count } = await supabaseAdmin
+        .from('login_history')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', profileForRate.user_id)
+        .eq('status', 'failed')
+        .gte('created_at', windowStart);
+      
+      if (count && count >= MAX_FAILED_ATTEMPTS) {
+        console.log(`Rate limit exceeded for user: ${profileForRate.user_id}`);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `Muitas tentativas. Aguarde ${RATE_LIMIT_WINDOW_MINUTES} minutos.`,
+            code: "RATE_LIMITED"
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // ==========================================
     // SERVER-SIDE CHECK: System Settings
     // ==========================================
     const { data: settingsData } = await supabaseAdmin
@@ -123,9 +162,6 @@ serve(async (req: Request): Promise<Response> => {
     // Return generic error to not reveal if email exists
     if (!profileData) {
       console.log('Login validation failed: profile not found');
-      
-      // Log failed attempt (we don't have user_id, so we can't log to login_history)
-      // This is intentional - we don't want to reveal if email exists
       
       return new Response(
         JSON.stringify({ 

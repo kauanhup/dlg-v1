@@ -43,12 +43,12 @@ const RecuperarSenha = () => {
           }
         });
 
-        // Check if password recovery is enabled via pixup function
-        const { data } = await supabase.functions.invoke('pixup', {
-          body: { action: 'get_public_settings' }
+        // Check if password recovery is enabled via forgot-password function
+        const { data } = await supabase.functions.invoke('forgot-password', {
+          body: { action: 'check_enabled' }
         });
         
-        if (data?.success && data?.data?.password_recovery_enabled) {
+        if (data?.success && data?.enabled) {
           setIsEnabled(true);
         }
       } catch (err) {
