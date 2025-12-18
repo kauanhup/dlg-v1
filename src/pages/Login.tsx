@@ -4,7 +4,7 @@ import AnimatedShaderBackground from "@/components/ui/animated-shader-background
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import { supabase } from "@/integrations/supabase/client";
-import { Ban, MessageCircle, X, AlertTriangle, Wrench } from "lucide-react";
+import { Ban, MessageCircle, X, AlertTriangle, Wrench, Mail, CheckCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SystemSettings {
@@ -32,6 +32,8 @@ const Login = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showBannedModal, setShowBannedModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+  const [showEmailConfirmationModal, setShowEmailConfirmationModal] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState("");
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
     maintenanceMode: false,
     allowRegistration: true,
@@ -384,33 +386,48 @@ const Login = () => {
         
         // Redirect is handled by onAuthStateChange
       } else {
-        // Signup
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-            data: {
-              name: name.trim(),
-              whatsapp: whatsapp.replace(/\s/g, ''),
-            },
+        // Signup via secure edge function
+        const { data, error } = await supabase.functions.invoke('register', {
+          body: {
+            email: email.trim().toLowerCase(),
+            password,
+            name: name.trim(),
+            whatsapp: whatsapp.replace(/\s/g, ''),
           },
         });
 
         if (error) {
-          if (error.message.includes('User already registered')) {
-            toast.error("Erro no cadastro", "Este email já está cadastrado.");
-          } else {
-            toast.error("Erro no cadastro", error.message);
-          }
+          toast.error("Erro no cadastro", "Ocorreu um erro ao criar sua conta. Tente novamente.");
           setIsSubmitting(false);
           return;
         }
 
-        toast.success("Conta criada!", "Sua conta foi criada com sucesso.");
-        setIsSubmitting(false);
+        if (!data?.success) {
+          toast.error("Erro no cadastro", data?.error || "Não foi possível criar a conta.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Check if email confirmation is required
+        if (data.requiresEmailConfirmation) {
+          setPendingEmail(email.trim().toLowerCase());
+          setShowEmailConfirmationModal(true);
+          // Reset form
+          setEmail("");
+          setPassword("");
+          setName("");
+          setWhatsapp("");
+        } else {
+          toast.success("Conta criada!", "Faça login para continuar.");
+          // Switch to login mode
+          setIsLogin(true);
+          setEmail("");
+          setPassword("");
+          setName("");
+          setWhatsapp("");
+        }
         
-        // Redirect is handled by onAuthStateChange
+        setIsSubmitting(false);
       }
     } catch (error: any) {
       toast.error("Erro", error.message || "Ocorreu um erro inesperado.");
@@ -439,12 +456,19 @@ const Login = () => {
     }
 
     setIsTransitioning(true);
+    
+    // Reset ALL fields and errors when switching modes
+    setEmail("");
+    setPassword("");
+    setName("");
+    setWhatsapp("");
     setEmailError("");
     setPasswordError("");
     setWhatsappError("");
     setNameError("");
     setRateLimitError("");
     setHoneypot("");
+    
     setTimeout(() => {
       setIsLogin(!isLogin);
       setIsTransitioning(false);
@@ -741,6 +765,55 @@ const Login = () => {
                     className="py-2 px-4 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Fechar
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Email Confirmation Required Modal */}
+      <AnimatePresence>
+        {showEmailConfirmationModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl"
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Mail className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-xl font-bold text-foreground mb-2">
+                  Verifique seu Email
+                </h2>
+                <p className="text-muted-foreground mb-2">
+                  Enviamos um link de confirmação para:
+                </p>
+                <p className="text-primary font-medium mb-4">
+                  {pendingEmail}
+                </p>
+                <p className="text-sm text-muted-foreground mb-6">
+                  Clique no link enviado para ativar sua conta. Verifique também a pasta de spam.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => {
+                      setShowEmailConfirmationModal(false);
+                      setPendingEmail("");
+                    }}
+                    className="py-3 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all"
+                  >
+                    <CheckCircle className="w-5 h-5 inline mr-2" />
+                    Entendido
                   </button>
                 </div>
               </div>
