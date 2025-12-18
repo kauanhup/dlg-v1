@@ -480,21 +480,27 @@ const Login = () => {
         // Edge function now always returns 200, so data contains the response
         if (error) {
           recordFailedAttempt(email);
-          console.error('Edge function error:', error);
+          console.error('[Cadastro] Edge function error:', error);
           toast.error("Erro no cadastro", "Ocorreu um erro ao criar sua conta. Tente novamente.");
           setIsSubmitting(false);
           return;
         }
 
+        // Log for debugging
+        console.log('[Cadastro] Resposta recebida:', JSON.stringify(data));
+
         if (!data?.success) {
           recordFailedAttempt(email);
           
-          const errorCode = data?.code;
-          const errorMessage = data?.error;
+          const errorCode = data?.code || '';
+          const errorMessage = data?.error || '';
+          
+          console.log(`[Cadastro] Erro - Código: ${errorCode}, Mensagem: ${errorMessage}`);
           
           // Handle specific error codes with appropriate messages
           if (errorCode === "EMAIL_EXISTS") {
-            toast.error("Email já cadastrado", "Este email já possui uma conta.");
+            console.log('[Cadastro] Email já existe, redirecionando para login');
+            toast.error("Email já cadastrado", errorMessage || "Este email já possui uma conta. Faça login.");
             // Auto-switch to login and keep email
             setTimeout(() => {
               setIsLogin(true);
@@ -507,16 +513,22 @@ const Login = () => {
               setRecaptchaToken(null);
             }, 1500);
           } else if (errorCode === "RATE_LIMITED" || errorCode === "RATE_LIMIT_IP") {
+            console.log('[Cadastro] Rate limit atingido');
             toast.error("Muitas tentativas", errorMessage || "Aguarde alguns minutos.");
           } else if (errorCode === "RECAPTCHA_FAILED" || errorCode === "RECAPTCHA_REQUIRED") {
+            console.log('[Cadastro] Erro de reCAPTCHA');
             toast.error("Verificação de segurança", errorMessage || "Complete o reCAPTCHA.");
             recaptchaRef.current?.reset();
             setRecaptchaToken(null);
           } else if (errorCode === "MAINTENANCE") {
+            console.log('[Cadastro] Sistema em manutenção');
             toast.error("Sistema em manutenção", errorMessage || "Tente novamente mais tarde.");
           } else if (errorCode === "DISABLED") {
+            console.log('[Cadastro] Cadastro desativado');
             toast.error("Cadastro desativado", errorMessage || "Não é possível criar conta no momento.");
           } else {
+            console.log('[Cadastro] Erro genérico');
+            // Show the backend error message if available
             toast.error("Erro no cadastro", errorMessage || "Não foi possível criar a conta.");
           }
           
@@ -593,20 +605,28 @@ const Login = () => {
       });
 
       if (error) {
+        console.error('[Verificação] Edge function error:', error);
         toast.error("Erro", "Ocorreu um erro ao verificar o código.");
         setIsVerifying(false);
         return;
       }
 
+      console.log('[Verificação] Resposta recebida:', JSON.stringify(data));
+
       if (!data?.success) {
+        const errorCode = data?.code || '';
+        const errorMessage = data?.error || '';
+        
+        console.log(`[Verificação] Erro - Código: ${errorCode}, Mensagem: ${errorMessage}`);
+        
         // Handle code invalidation (too many wrong attempts)
-        if (data?.code === 'CODE_INVALIDATED') {
-          toast.error("Código invalidado", "Muitas tentativas incorretas. Solicite um novo código.");
+        if (errorCode === 'CODE_INVALIDATED') {
+          toast.error("Código invalidado", errorMessage || "Muitas tentativas incorretas. Solicite um novo código.");
           setVerificationCode("");
-          setIsVerifying(false); // BUG FIX: Faltava resetar isVerifying
+          setIsVerifying(false);
           return;
         }
-        toast.error("Código inválido", data?.error || "O código está incorreto ou expirado.");
+        toast.error("Código inválido", errorMessage || "O código está incorreto ou expirado.");
         setIsVerifying(false);
         return;
       }
@@ -659,16 +679,27 @@ const Login = () => {
       });
 
       if (error) {
+        console.error('[Reenvio] Edge function error:', error);
         toast.error("Erro", "Não foi possível reenviar o código.");
         return;
       }
 
+      console.log('[Reenvio] Resposta recebida:', JSON.stringify(data));
+
       if (data?.code === 'RATE_LIMITED') {
-        toast.error("Limite atingido", "Muitos códigos enviados. Aguarde 30 minutos.");
+        console.log('[Reenvio] Rate limit atingido');
+        toast.error("Limite atingido", data?.error || "Muitos códigos enviados. Aguarde 30 minutos.");
+        return;
+      }
+
+      if (data?.code === 'EMAIL_EXISTS') {
+        console.log('[Reenvio] Email já existe');
+        toast.error("Email já cadastrado", data?.error || "Este email já possui uma conta.");
         return;
       }
 
       if (data?.success && data?.requiresEmailConfirmation) {
+        console.log('[Reenvio] Código reenviado com sucesso');
         toast.success("Código reenviado!", "Verifique seu email.");
         setVerificationCode("");
         setResendCount(prev => prev + 1);
@@ -677,6 +708,7 @@ const Login = () => {
         resendRecaptchaRef.current?.reset();
         setResendRecaptchaToken(null);
       } else {
+        console.log('[Reenvio] Erro:', data?.error);
         toast.error("Erro", data?.error || "Não foi possível reenviar o código.");
       }
     } catch (err) {
