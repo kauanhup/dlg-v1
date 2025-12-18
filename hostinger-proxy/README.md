@@ -33,9 +33,9 @@ Use uma chave forte, por exemplo:
 define('PROXY_SECRET', 'swx_proxy_2024_Xk9mP2nQ7rT3wY5z');
 ```
 
-### 3. Configure no Supabase
+### 3. Configure o Secret
 
-Adicione um **secret** no Lovable Cloud com o nome `PIXUP_PROXY_SECRET` contendo a mesma chave.
+Adicione um **secret** com o nome `PIXUP_PROXY_SECRET` contendo a mesma chave.
 
 ### 4. Configure o IP na PixUp
 
