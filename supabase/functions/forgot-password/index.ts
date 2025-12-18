@@ -12,6 +12,7 @@ interface ForgotPasswordRequest {
   code?: string;
   newPassword?: string;
   honeypot?: string;
+  recaptchaToken?: string;
 }
 
 // Rate limit configuration
@@ -61,7 +62,7 @@ serve(async (req: Request): Promise<Response> => {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     
     const body: ForgotPasswordRequest = await req.json();
-    const { action, email, code, newPassword, honeypot } = body;
+    const { action, email, code, newPassword, honeypot, recaptchaToken } = body;
 
     console.log(`Forgot password action: ${action}`);
 
@@ -122,7 +123,7 @@ serve(async (req: Request): Promise<Response> => {
     // ==========================================
     const { data: gatewayData } = await supabaseAdmin
       .from('gateway_settings')
-      .select('password_recovery_enabled, resend_api_key, resend_from_email, resend_from_name')
+      .select('password_recovery_enabled, resend_api_key, resend_from_email, resend_from_name, recaptcha_enabled, recaptcha_secret_key')
       .limit(1)
       .single();
 
@@ -180,6 +181,44 @@ serve(async (req: Request): Promise<Response> => {
           JSON.stringify({ success: false, error: "Email inválido" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      }
+
+      // ==========================================
+      // reCAPTCHA VALIDATION FOR REQUEST CODE
+      // ==========================================
+      if (gatewayData?.recaptcha_enabled && gatewayData?.recaptcha_secret_key) {
+        if (!recaptchaToken) {
+          console.log('reCAPTCHA token missing for password recovery');
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: "Verificação de segurança necessária",
+              code: "RECAPTCHA_REQUIRED"
+            }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const recaptchaResponse = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `secret=${gatewayData.recaptcha_secret_key}&response=${recaptchaToken}`
+        });
+
+        const recaptchaResult = await recaptchaResponse.json();
+        console.log('reCAPTCHA verification result:', recaptchaResult.success);
+
+        if (!recaptchaResult.success) {
+          console.log('reCAPTCHA verification failed');
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: "Verificação de segurança falhou. Tente novamente.",
+              code: "RECAPTCHA_FAILED"
+            }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
 
       const emailClean = email.trim().toLowerCase();

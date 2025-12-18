@@ -14,6 +14,7 @@ interface RegisterRequest {
   honeypot?: string;
   verificationCode?: string;
   action?: 'register' | 'verify_code';
+  recaptchaToken?: string;
 }
 
 // Rate limit configuration
@@ -59,7 +60,7 @@ serve(async (req: Request): Promise<Response> => {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     
     const body: RegisterRequest = await req.json();
-    const { email, password, name, whatsapp, honeypot, verificationCode, action = 'register' } = body;
+    const { email, password, name, whatsapp, honeypot, verificationCode, action = 'register', recaptchaToken } = body;
 
     console.log(`Register action: ${action} for email: ${email}`);
 
@@ -76,6 +77,53 @@ serve(async (req: Request): Promise<Response> => {
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // ==========================================
+    // reCAPTCHA VALIDATION (only for register action, not verify_code)
+    // ==========================================
+    if (action === 'register') {
+      const { data: gatewayData } = await supabaseAdmin
+        .from('gateway_settings')
+        .select('recaptcha_enabled, recaptcha_secret_key')
+        .eq('provider', 'pixup')
+        .limit(1)
+        .maybeSingle();
+
+      if (gatewayData?.recaptcha_enabled && gatewayData?.recaptcha_secret_key) {
+        if (!recaptchaToken) {
+          console.log('reCAPTCHA token missing for registration');
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: "Verificação de segurança necessária",
+              code: "RECAPTCHA_REQUIRED"
+            }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const recaptchaResponse = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `secret=${gatewayData.recaptcha_secret_key}&response=${recaptchaToken}`
+        });
+
+        const recaptchaResult = await recaptchaResponse.json();
+        console.log('reCAPTCHA verification result:', recaptchaResult.success);
+
+        if (!recaptchaResult.success) {
+          console.log('reCAPTCHA verification failed');
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: "Verificação de segurança falhou. Tente novamente.",
+              code: "RECAPTCHA_FAILED"
+            }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
     }
 
     // ==========================================

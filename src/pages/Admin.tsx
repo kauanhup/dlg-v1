@@ -2503,7 +2503,7 @@ const SessionsSection = () => {
   );
 };
 
-// API Section - PixUp + Resend
+// API Section - PixUp + Resend + reCAPTCHA
 const ApiSection = () => {
   // PixUp state
   const [clientId, setClientId] = useState("");
@@ -2525,6 +2525,14 @@ const ApiSection = () => {
   const [showResendKey, setShowResendKey] = useState(false);
   const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [isTestingEmail, setIsTestingEmail] = useState(false);
+
+  // reCAPTCHA state
+  const [recaptchaEnabled, setRecaptchaEnabled] = useState(false);
+  const [recaptchaSiteKey, setRecaptchaSiteKey] = useState("");
+  const [recaptchaSecretKey, setRecaptchaSecretKey] = useState("");
+  const [hasRecaptchaSecret, setHasRecaptchaSecret] = useState(false);
+  const [showRecaptchaSecret, setShowRecaptchaSecret] = useState(false);
+  const [isSavingRecaptcha, setIsSavingRecaptcha] = useState(false);
 
   // Feature toggles
   const [passwordRecoveryEnabled, setPasswordRecoveryEnabled] = useState(false);
@@ -2552,6 +2560,10 @@ const ApiSection = () => {
           setResendFromName(data.data.resend_from_name || "SWEXTRACTOR");
           setEmailEnabled(data.data.email_enabled === true);
           setHasResendKey(data.data.has_resend_key === true);
+          // reCAPTCHA settings
+          setRecaptchaEnabled(data.data.recaptcha_enabled === true);
+          setRecaptchaSiteKey(data.data.recaptcha_site_key || "");
+          setHasRecaptchaSecret(data.data.has_recaptcha_secret === true);
           // Feature toggles
           setPasswordRecoveryEnabled(data.data.password_recovery_enabled === true);
           setEmailVerificationEnabled(data.data.email_verification_enabled === true);
@@ -2996,6 +3008,139 @@ const ApiSection = () => {
               )} />
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* reCAPTCHA Configuration */}
+      <div className="bg-card border border-border rounded-lg p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
+              <Shield className="w-5 h-5 text-green-500" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">reCAPTCHA v2</h3>
+              <p className="text-sm text-muted-foreground">Proteção contra bots no login e cadastro</p>
+            </div>
+          </div>
+          <button
+            onClick={async () => {
+              setIsSavingRecaptcha(true);
+              try {
+                const { data, error } = await supabase.functions.invoke('pixup', {
+                  body: { 
+                    action: 'save_recaptcha_settings',
+                    recaptcha_enabled: !recaptchaEnabled
+                  }
+                });
+                if (data?.success) {
+                  setRecaptchaEnabled(!recaptchaEnabled);
+                  toast.success(recaptchaEnabled ? "reCAPTCHA desativado" : "reCAPTCHA ativado");
+                } else {
+                  toast.error(data?.error || "Erro ao salvar");
+                }
+              } catch (error) {
+                toast.error("Erro ao salvar configuração");
+              } finally {
+                setIsSavingRecaptcha(false);
+              }
+            }}
+            disabled={isSavingRecaptcha || (!hasRecaptchaSecret && !recaptchaEnabled)}
+            className={cn(
+              "w-12 h-6 rounded-full transition-colors",
+              recaptchaEnabled ? 'bg-green-500' : 'bg-muted',
+              (!hasRecaptchaSecret && !recaptchaEnabled) && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <div className={cn(
+              "w-5 h-5 bg-white rounded-full transition-transform shadow-sm",
+              recaptchaEnabled ? 'translate-x-6' : 'translate-x-0.5'
+            )} />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-foreground mb-2 block">Site Key (Chave do Site)</label>
+            <input
+              type="text"
+              value={recaptchaSiteKey}
+              onChange={(e) => setRecaptchaSiteKey(e.target.value)}
+              placeholder="6Lc..."
+              className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Chave pública do reCAPTCHA v2
+            </p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-foreground mb-2 block">Secret Key (Chave Secreta)</label>
+            <div className="relative">
+              <input
+                type={showRecaptchaSecret ? "text" : "password"}
+                value={recaptchaSecretKey}
+                onChange={(e) => setRecaptchaSecretKey(e.target.value)}
+                placeholder={hasRecaptchaSecret ? "••••••••• (secret já configurado)" : "6Lc..."}
+                className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+              <button
+                type="button"
+                onClick={() => setShowRecaptchaSecret(!showRecaptchaSecret)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showRecaptchaSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Obtenha em <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener" className="text-primary hover:underline">google.com/recaptcha/admin</a>
+            </p>
+          </div>
+
+          <Button 
+            onClick={async () => {
+              if (!recaptchaSiteKey.trim()) {
+                toast.error("Preencha a Site Key");
+                return;
+              }
+              if (!hasRecaptchaSecret && !recaptchaSecretKey.trim()) {
+                toast.error("Preencha a Secret Key");
+                return;
+              }
+              
+              setIsSavingRecaptcha(true);
+              try {
+                const payload: any = { 
+                  action: 'save_recaptcha_settings',
+                  recaptcha_site_key: recaptchaSiteKey.trim()
+                };
+                if (recaptchaSecretKey.trim()) {
+                  payload.recaptcha_secret_key = recaptchaSecretKey.trim();
+                }
+                
+                const { data, error } = await supabase.functions.invoke('pixup', {
+                  body: payload
+                });
+                
+                if (data?.success) {
+                  toast.success("Configurações do reCAPTCHA salvas!");
+                  setHasRecaptchaSecret(true);
+                  setRecaptchaSecretKey("");
+                } else {
+                  toast.error(data?.error || "Erro ao salvar");
+                }
+              } catch (error) {
+                toast.error("Erro ao salvar configurações");
+              } finally {
+                setIsSavingRecaptcha(false);
+              }
+            }}
+            disabled={isSavingRecaptcha}
+            className="gap-2"
+          >
+            {isSavingRecaptcha ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
+            {isSavingRecaptcha ? "Salvando..." : "Salvar"}
+          </Button>
         </div>
       </div>
     </motion.div>

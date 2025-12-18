@@ -96,7 +96,7 @@ serve(async (req) => {
     const { userId, isAuthenticated } = await getUserFromRequest(req, supabaseAuth);
 
     // SECURITY: Define which actions require authentication and admin role
-    const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection', 'save_email_settings', 'save_feature_toggles'];
+    const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection', 'save_email_settings', 'save_feature_toggles', 'save_recaptcha_settings'];
     const authRequiredActions = ['create_pix'];
 
     if (adminOnlyActions.includes(action)) {
@@ -145,6 +145,9 @@ serve(async (req) => {
       case 'save_feature_toggles':
         return await saveFeatureToggles(supabaseAdmin, params);
       
+      case 'save_recaptcha_settings':
+        return await saveRecaptchaSettings(supabaseAdmin, params);
+      
       case 'create_pix':
         return await createPixCharge(supabaseAdmin, params, userId!);
       
@@ -179,7 +182,7 @@ async function getSettings(supabase: any) {
     throw new Error('Failed to fetch gateway settings');
   }
 
-  // SECURITY: Never return client_secret or resend_api_key in the response
+  // SECURITY: Never return client_secret, resend_api_key, or recaptcha_secret_key in the response
   return new Response(
     JSON.stringify({ 
       success: true, 
@@ -193,6 +196,10 @@ async function getSettings(supabase: any) {
         resend_from_name: data.resend_from_name,
         email_enabled: data.email_enabled,
         has_resend_key: !!data.resend_api_key,
+        // reCAPTCHA settings
+        recaptcha_enabled: data.recaptcha_enabled,
+        recaptcha_site_key: data.recaptcha_site_key,
+        has_recaptcha_secret: !!data.recaptcha_secret_key,
         // Feature toggles
         password_recovery_enabled: data.password_recovery_enabled,
         email_verification_enabled: data.email_verification_enabled
@@ -272,6 +279,60 @@ async function saveFeatureToggles(supabase: any, params: {
     throw new Error('Failed to save feature toggles');
   }
 
+  return new Response(
+    JSON.stringify({ success: true }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+async function saveRecaptchaSettings(supabase: any, params: { 
+  recaptcha_enabled?: boolean; 
+  recaptcha_site_key?: string;
+  recaptcha_secret_key?: string;
+}) {
+  const { recaptcha_enabled, recaptcha_site_key, recaptcha_secret_key } = params;
+
+  const { data: existing } = await supabase
+    .from('gateway_settings')
+    .select('id, recaptcha_secret_key')
+    .eq('provider', 'pixup')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const updateData: any = { updated_at: new Date().toISOString() };
+  
+  if (recaptcha_enabled !== undefined) {
+    updateData.recaptcha_enabled = recaptcha_enabled;
+  }
+  if (recaptcha_site_key !== undefined) {
+    updateData.recaptcha_site_key = recaptcha_site_key;
+  }
+  if (recaptcha_secret_key) {
+    updateData.recaptcha_secret_key = recaptcha_secret_key;
+  }
+
+  let result;
+  if (existing) {
+    result = await supabase
+      .from('gateway_settings')
+      .update(updateData)
+      .eq('id', existing.id);
+  } else {
+    result = await supabase
+      .from('gateway_settings')
+      .insert({
+        provider: 'pixup',
+        ...updateData
+      });
+  }
+
+  if (result.error) {
+    console.error('Error saving reCAPTCHA settings:', result.error);
+    throw new Error('Failed to save reCAPTCHA settings');
+  }
+
+  console.log('reCAPTCHA settings saved successfully');
   return new Response(
     JSON.stringify({ success: true }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
