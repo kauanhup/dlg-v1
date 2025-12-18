@@ -374,17 +374,15 @@ serve(async (req: Request): Promise<Response> => {
       .maybeSingle();
 
     if (existingProfile) {
-      // Return generic message to not reveal email exists
-      // IMPORTANT: Set requiresEmailConfirmation to false so frontend doesn't show verification modal
-      console.log('Email already registered, returning generic message');
+      // Explicit error - email already registered
+      console.log('Email already registered');
       return new Response(
         JSON.stringify({ 
-          success: true, 
-          requiresEmailConfirmation: false,
-          emailAlreadyExists: true, // Internal flag for generic handling
-          message: "Se este email não estiver cadastrado, você receberá instruções por email."
+          success: false, 
+          error: "Este email já está cadastrado",
+          code: "EMAIL_EXISTS"
         }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
