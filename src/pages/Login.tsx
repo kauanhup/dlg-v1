@@ -40,6 +40,7 @@ const Login = () => {
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
   const [isResendingCode, setIsResendingCode] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [pendingEmail, setPendingEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [pendingPassword, setPendingPassword] = useState("");
@@ -516,6 +517,7 @@ const Login = () => {
           setPendingName(name.trim());
           setPendingWhatsapp(whatsapp.replace(/\D/g, ''));
           setShowEmailVerificationModal(true);
+          setResendCooldown(60); // Start cooldown for first code
           toast.success("Código enviado!", "Verifique seu email e insira o código.");
           // Reset only visible form fields
           setEmail("");
@@ -602,6 +604,8 @@ const Login = () => {
 
   // Handle resend verification code
   const handleResendCode = async () => {
+    if (resendCooldown > 0) return;
+    
     if (!pendingEmail || !pendingName || !pendingWhatsapp) {
       toast.error("Erro", "Dados incompletos para reenvio.");
       return;
@@ -627,6 +631,8 @@ const Login = () => {
       if (data?.success && data?.requiresEmailConfirmation) {
         toast.success("Código reenviado!", "Verifique seu email.");
         setVerificationCode("");
+        // Start 60 second cooldown
+        setResendCooldown(60);
       } else {
         toast.error("Erro", data?.error || "Não foi possível reenviar o código.");
       }
@@ -636,6 +642,16 @@ const Login = () => {
       setIsResendingCode(false);
     }
   };
+
+  // Cooldown timer effect
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   if (isLoading || isTransitioning) {
     return (
@@ -1045,10 +1061,14 @@ const Login = () => {
                   </button>
                   <button
                     onClick={handleResendCode}
-                    disabled={isVerifying || isResendingCode}
+                    disabled={isVerifying || isResendingCode || resendCooldown > 0}
                     className="py-2 px-4 text-primary hover:text-primary/80 transition-colors text-sm disabled:opacity-50"
                   >
-                    {isResendingCode ? "Reenviando..." : "Reenviar código"}
+                    {isResendingCode 
+                      ? "Reenviando..." 
+                      : resendCooldown > 0 
+                        ? `Reenviar código (${resendCooldown}s)` 
+                        : "Reenviar código"}
                   </button>
                   <button
                     onClick={() => {
@@ -1058,6 +1078,7 @@ const Login = () => {
                       setPendingPassword("");
                       setPendingName("");
                       setPendingWhatsapp("");
+                      setResendCooldown(0);
                     }}
                     className="py-2 px-4 text-muted-foreground hover:text-foreground transition-colors"
                     disabled={isVerifying || isResendingCode}
