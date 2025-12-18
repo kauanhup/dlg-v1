@@ -240,7 +240,9 @@ const Login = () => {
   };
 
   const validateWhatsapp = (value: string) => {
-    return /^\+?[0-9]{10,15}$/.test(value.replace(/\s/g, ''));
+    // Remove all non-digits for validation
+    const digitsOnly = value.replace(/\D/g, '');
+    return digitsOnly.length >= 10 && digitsOnly.length <= 15;
   };
 
   const validateName = (value: string) => {
