@@ -87,12 +87,17 @@ export const useAdminUsers = () => {
 
   const banUser = async (userId: string, banned: boolean = true) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ banned })
-        .eq('user_id', userId);
+      // Use edge function to ban user AND invalidate sessions
+      const { data, error } = await supabase.functions.invoke('admin-actions', {
+        body: {
+          action: 'ban_user',
+          userId,
+          banned
+        }
+      });
 
       if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Erro ao banir usuário');
 
       // Update local state
       setUsers(prev => prev.map(user => 

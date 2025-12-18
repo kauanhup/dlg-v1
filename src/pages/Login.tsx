@@ -115,26 +115,13 @@ const Login = () => {
 
     checkSession();
 
-    // Listen for auth changes (for signup email confirmation flow ONLY)
-    // Note: Login flow does NOT use this - login validation happens in edge function
+    // Listen for auth changes (minimal - no duplicate ban checks)
+    // Note: All validation happens in edge function BEFORE auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        // Only handle email confirmation events for signup flow
-        if (event === 'USER_UPDATED' && session) {
-          // Defer Supabase calls with setTimeout to avoid deadlock
-          setTimeout(async () => {
-            // Check if profile exists (email confirmed)
-            const profileExists = await checkProfileExists(session.user.id);
-            if (profileExists) {
-              // Get role and redirect
-              const role = await getUserRole(session.user.id);
-              if (role === 'admin') {
-                navigate("/admin");
-              } else {
-                navigate(redirectUrl);
-              }
-            }
-          }, 0);
+        // Only handle sign out events
+        if (event === 'SIGNED_OUT') {
+          setIsLoading(false);
         }
       }
     );

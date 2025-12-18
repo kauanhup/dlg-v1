@@ -7,12 +7,16 @@ const corsHeaders = {
 };
 
 interface ForgotPasswordRequest {
-  action: 'request_code' | 'verify_code' | 'reset_password';
+  action: 'request_code' | 'verify_code' | 'reset_password' | 'check_enabled';
   email?: string;
   code?: string;
   newPassword?: string;
   honeypot?: string;
 }
+
+// Rate limit configuration
+const MAX_ATTEMPTS_PER_EMAIL = 5;
+const RATE_LIMIT_WINDOW_MINUTES = 15;
 
 async function sendEmail(apiKey: string, from: string, to: string, subject: string, html: string) {
   const response = await fetch('https://api.resend.com/emails', {
@@ -39,14 +43,11 @@ async function sendEmail(apiKey: string, from: string, to: string, subject: stri
  * - Verificar maintenance_mode
  * - Verificar password_recovery_enabled
  * - Validar usuário via profiles (NÃO listUsers)
+ * - Rate limiting no backend
  * - Gerar/verificar códigos
+ * - Limpeza de códigos expirados
  * - Redefinir senha
  * - Invalidar sessões com signOut(userId, 'global')
- * 
- * SEGURANÇA:
- * - Honeypot para bots
- * - Mensagens genéricas (não revelar se email existe)
- * - Validação completa antes do reset
  */
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -63,6 +64,18 @@ serve(async (req: Request): Promise<Response> => {
     const { action, email, code, newPassword, honeypot } = body;
 
     console.log(`Forgot password action: ${action}`);
+
+    // ==========================================
+    // CLEANUP EXPIRED VERIFICATION CODES
+    // ==========================================
+    try {
+      await supabaseAdmin
+        .from('verification_codes')
+        .delete()
+        .lt('expires_at', new Date().toISOString());
+    } catch (cleanupErr) {
+      console.error('Error cleaning up codes:', cleanupErr);
+    }
 
     // ==========================================
     // HONEYPOT CHECK - Silent rejection for bots
@@ -113,6 +126,19 @@ serve(async (req: Request): Promise<Response> => {
       .limit(1)
       .single();
 
+    // ==========================================
+    // ACTION: CHECK_ENABLED (for frontend to check if feature is enabled)
+    // ==========================================
+    if (action === 'check_enabled') {
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          enabled: gatewayData?.password_recovery_enabled ?? false
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (!gatewayData?.password_recovery_enabled) {
       return new Response(
         JSON.stringify({ 
@@ -158,6 +184,30 @@ serve(async (req: Request): Promise<Response> => {
 
       const emailClean = email.trim().toLowerCase();
 
+      // ==========================================
+      // BACKEND RATE LIMITING BY EMAIL
+      // ==========================================
+      const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
+      
+      const { count } = await supabaseAdmin
+        .from('verification_codes')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_email', emailClean)
+        .eq('type', 'password_reset')
+        .gte('created_at', windowStart);
+      
+      if (count && count >= MAX_ATTEMPTS_PER_EMAIL) {
+        console.log(`Rate limit exceeded for password recovery: ${emailClean}`);
+        // Return generic message to not reveal rate limit (could reveal email exists)
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: "Se este email estiver cadastrado, você receberá um código de recuperação."
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       // Check user via PROFILES table (NOT listUsers)
       const { data: profileData } = await supabaseAdmin
         .from('profiles')
@@ -171,7 +221,7 @@ serve(async (req: Request): Promise<Response> => {
         const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-        // Delete any existing codes for this email
+        // Delete any existing codes for this email (prevents accumulation)
         await supabaseAdmin
           .from('verification_codes')
           .delete()
@@ -336,11 +386,12 @@ serve(async (req: Request): Promise<Response> => {
         );
       }
 
-      // Mark code as used
+      // Mark code as used and delete all codes for this email
       await supabaseAdmin
         .from('verification_codes')
-        .update({ used: true })
-        .eq('id', codeData.id);
+        .delete()
+        .eq('user_email', emailClean)
+        .eq('type', 'password_reset');
 
       // Invalidate all sessions using userId with 'global' scope
       try {
