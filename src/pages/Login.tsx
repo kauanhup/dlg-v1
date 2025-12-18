@@ -477,21 +477,23 @@ const Login = () => {
           },
         });
 
-        // Handle edge function errors - check both error and data for specific codes
-        const responseData = data || (error as any)?.context;
-        
-        if (error && !responseData) {
+        // Edge function now always returns 200, so data contains the response
+        if (error) {
           recordFailedAttempt(email);
+          console.error('Edge function error:', error);
           toast.error("Erro no cadastro", "Ocorreu um erro ao criar sua conta. Tente novamente.");
           setIsSubmitting(false);
           return;
         }
 
-        if (!responseData?.success) {
+        if (!data?.success) {
           recordFailedAttempt(email);
           
+          const errorCode = data?.code;
+          const errorMessage = data?.error;
+          
           // Handle specific error codes with appropriate messages
-          if (responseData?.code === "EMAIL_EXISTS") {
+          if (errorCode === "EMAIL_EXISTS") {
             toast.error("Email já cadastrado", "Este email já possui uma conta.");
             // Auto-switch to login and keep email
             setTimeout(() => {
@@ -504,18 +506,18 @@ const Login = () => {
               recaptchaRef.current?.reset();
               setRecaptchaToken(null);
             }, 1500);
-          } else if (responseData?.code === "RATE_LIMITED" || responseData?.code === "RATE_LIMIT_IP") {
-            toast.error("Muitas tentativas", responseData?.error || "Aguarde alguns minutos.");
-          } else if (responseData?.code === "RECAPTCHA_FAILED" || responseData?.code === "RECAPTCHA_REQUIRED") {
-            toast.error("Verificação de segurança", responseData?.error || "Complete o reCAPTCHA.");
+          } else if (errorCode === "RATE_LIMITED" || errorCode === "RATE_LIMIT_IP") {
+            toast.error("Muitas tentativas", errorMessage || "Aguarde alguns minutos.");
+          } else if (errorCode === "RECAPTCHA_FAILED" || errorCode === "RECAPTCHA_REQUIRED") {
+            toast.error("Verificação de segurança", errorMessage || "Complete o reCAPTCHA.");
             recaptchaRef.current?.reset();
             setRecaptchaToken(null);
-          } else if (responseData?.code === "MAINTENANCE") {
-            toast.error("Sistema em manutenção", responseData?.error || "Tente novamente mais tarde.");
-          } else if (responseData?.code === "DISABLED") {
-            toast.error("Cadastro desativado", responseData?.error || "Não é possível criar conta no momento.");
+          } else if (errorCode === "MAINTENANCE") {
+            toast.error("Sistema em manutenção", errorMessage || "Tente novamente mais tarde.");
+          } else if (errorCode === "DISABLED") {
+            toast.error("Cadastro desativado", errorMessage || "Não é possível criar conta no momento.");
           } else {
-            toast.error("Erro no cadastro", responseData?.error || "Não foi possível criar a conta.");
+            toast.error("Erro no cadastro", errorMessage || "Não foi possível criar a conta.");
           }
           
           setIsSubmitting(false);

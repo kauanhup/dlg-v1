@@ -6,6 +6,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper function to return JSON response with status 200
+// This ensures Supabase functions.invoke always receives the data in 'data', not 'error'
+function jsonResponse(body: object): Response {
+  return new Response(
+    JSON.stringify(body),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
 interface RegisterRequest {
   email: string;
   password: string;
@@ -71,14 +80,11 @@ serve(async (req: Request): Promise<Response> => {
     // ==========================================
     if (honeypot && honeypot.length > 0) {
       console.log('Bot detected via honeypot');
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          requiresEmailConfirmation: true,
-          message: "Verifique seu email para confirmar o cadastro."
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ 
+        success: true, 
+        requiresEmailConfirmation: true,
+        message: "Verifique seu email para confirmar o cadastro."
+      });
     }
 
     // ==========================================
@@ -95,14 +101,11 @@ serve(async (req: Request): Promise<Response> => {
       if (gatewayData?.recaptcha_enabled && gatewayData?.recaptcha_secret_key) {
         if (!recaptchaToken) {
           console.log('reCAPTCHA token missing for registration');
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: "Verificação de segurança necessária",
-              code: "RECAPTCHA_REQUIRED"
-            }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return jsonResponse({ 
+            success: false, 
+            error: "Verificação de segurança necessária",
+            code: "RECAPTCHA_REQUIRED"
+          });
         }
 
         const recaptchaResponse = await fetch('https://www.google.com/recaptcha/api/siteverify', {
@@ -114,14 +117,11 @@ serve(async (req: Request): Promise<Response> => {
         const recaptchaResult = await recaptchaResponse.json();
 
         if (!recaptchaResult.success) {
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: "Verificação de segurança falhou. Tente novamente.",
-              code: "RECAPTCHA_FAILED"
-            }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return jsonResponse({ 
+            success: false, 
+            error: "Verificação de segurança falhou. Tente novamente.",
+            code: "RECAPTCHA_FAILED"
+          });
         }
       }
     }
@@ -149,14 +149,11 @@ serve(async (req: Request): Promise<Response> => {
       
       if (ipCount && ipCount >= MAX_ATTEMPTS_PER_IP) {
         console.log(`Global rate limit approached, may affect IP: ${clientIP}`);
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: "Sistema ocupado. Aguarde alguns minutos.",
-            code: "RATE_LIMITED"
-          }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ 
+          success: false, 
+          error: "Sistema ocupado. Aguarde alguns minutos.",
+          code: "RATE_LIMITED"
+        });
       }
     }
 
@@ -194,17 +191,11 @@ serve(async (req: Request): Promise<Response> => {
     });
 
     if (maintenanceMode) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Sistema temporariamente indisponível", code: "MAINTENANCE" }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ success: false, error: "Sistema temporariamente indisponível", code: "MAINTENANCE" });
     }
 
     if (!allowRegistration) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Não foi possível criar a conta no momento", code: "DISABLED" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ success: false, error: "Não foi possível criar a conta no momento", code: "DISABLED" });
     }
 
     // Get email verification setting and template from gateway_settings
@@ -232,14 +223,11 @@ serve(async (req: Request): Promise<Response> => {
       
       if (count && count >= MAX_ATTEMPTS_PER_EMAIL) {
         console.log(`Rate limit exceeded for email: ${emailClean}`);
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: "Muitas tentativas. Aguarde alguns minutos.",
-            code: "RATE_LIMITED"
-          }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ 
+          success: false, 
+          error: "Muitas tentativas. Aguarde alguns minutos.",
+          code: "RATE_LIMITED"
+        });
       }
     }
 
@@ -248,10 +236,7 @@ serve(async (req: Request): Promise<Response> => {
     // ==========================================
     if (action === 'verify_code') {
       if (!email || !verificationCode) {
-        return new Response(
-          JSON.stringify({ success: false, error: "Email e código são obrigatórios" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ success: false, error: "Email e código são obrigatórios" });
       }
 
       const emailClean = email.trim().toLowerCase();
@@ -267,10 +252,7 @@ serve(async (req: Request): Promise<Response> => {
         .maybeSingle();
 
       if (!codeData) {
-        return new Response(
-          JSON.stringify({ success: false, error: "Código expirado. Solicite um novo código." }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ success: false, error: "Código expirado. Solicite um novo código." });
       }
 
       // Check if code matches
@@ -290,14 +272,11 @@ serve(async (req: Request): Promise<Response> => {
           
           console.log(`Code invalidated after ${MAX_VERIFICATION_ATTEMPTS} failed attempts for ${emailClean}`);
           
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: "Muitas tentativas incorretas. Solicite um novo código.",
-              code: "CODE_INVALIDATED"
-            }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return jsonResponse({ 
+            success: false, 
+            error: "Muitas tentativas incorretas. Solicite um novo código.",
+            code: "CODE_INVALIDATED"
+          });
         }
         
         // Update failed attempts counter
@@ -306,20 +285,14 @@ serve(async (req: Request): Promise<Response> => {
           .update({ failed_attempts: newFailedAttempts })
           .eq('id', codeData.id);
         
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: `Código incorreto. ${MAX_VERIFICATION_ATTEMPTS - newFailedAttempts} tentativas restantes.`
-          }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ 
+          success: false, 
+          error: `Código incorreto. ${MAX_VERIFICATION_ATTEMPTS - newFailedAttempts} tentativas restantes.`
+        });
       }
 
       if (!password || !name || !whatsapp) {
-        return new Response(
-          JSON.stringify({ success: false, error: "Dados de cadastro incompletos" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ success: false, error: "Dados de cadastro incompletos" });
       }
 
       const whatsappClean = whatsapp.replace(/\D/g, '');
@@ -340,16 +313,10 @@ serve(async (req: Request): Promise<Response> => {
         
         if (signUpError.message.includes('already been registered') || 
             signUpError.message.includes('already exists')) {
-          return new Response(
-            JSON.stringify({ success: false, error: "Este email já está cadastrado" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return jsonResponse({ success: false, error: "Este email já está cadastrado", code: "EMAIL_EXISTS" });
         }
         
-        return new Response(
-          JSON.stringify({ success: false, error: "Erro ao criar conta" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ success: false, error: "Erro ao criar conta" });
       }
 
       // ==========================================
@@ -380,10 +347,7 @@ serve(async (req: Request): Promise<Response> => {
           console.error('Profile not created by trigger after retries, rolling back user creation');
           // Delete the orphan user from auth.users
           await supabaseAdmin.auth.admin.deleteUser(userId);
-          return new Response(
-            JSON.stringify({ success: false, error: "Erro ao criar conta. Tente novamente." }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return jsonResponse({ success: false, error: "Erro ao criar conta. Tente novamente." });
         }
       }
 
@@ -396,14 +360,11 @@ serve(async (req: Request): Promise<Response> => {
 
       console.log(`User created after email verification: ${signUpData.user?.id}`);
 
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          verified: true,
-          message: "Conta criada com sucesso! Faça login para continuar."
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ 
+        success: true, 
+        verified: true,
+        message: "Conta criada com sucesso! Faça login para continuar."
+      });
     }
 
     // ==========================================
@@ -412,40 +373,25 @@ serve(async (req: Request): Promise<Response> => {
     
     // Field validations
     if (!email || !password || !name || !whatsapp) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Todos os campos são obrigatórios" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ success: false, error: "Todos os campos são obrigatórios" });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Email inválido" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ success: false, error: "Email inválido" });
     }
 
     if (password.length < 8) {
-      return new Response(
-        JSON.stringify({ success: false, error: "A senha deve ter pelo menos 8 caracteres" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ success: false, error: "A senha deve ter pelo menos 8 caracteres" });
     }
 
     if (name.trim().length < 2) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Nome inválido" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ success: false, error: "Nome inválido" });
     }
 
     const whatsappClean = whatsapp.replace(/\D/g, '');
     if (whatsappClean.length < 10 || whatsappClean.length > 15) {
-      return new Response(
-        JSON.stringify({ success: false, error: "WhatsApp inválido" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ success: false, error: "WhatsApp inválido" });
     }
 
     const emailClean = email.trim().toLowerCase();
@@ -460,14 +406,11 @@ serve(async (req: Request): Promise<Response> => {
     if (existingProfile) {
       // Explicit error - email already registered
       console.log('Email already registered');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Este email já está cadastrado",
-          code: "EMAIL_EXISTS"
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ 
+        success: false, 
+        error: "Este email já está cadastrado",
+        code: "EMAIL_EXISTS"
+      });
     }
 
     // ==========================================
@@ -476,10 +419,7 @@ serve(async (req: Request): Promise<Response> => {
     if (requireEmailConfirmation) {
       if (!gatewayData?.resend_api_key) {
         console.error('Resend API key not configured');
-        return new Response(
-          JSON.stringify({ success: false, error: "Serviço de email não configurado" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ success: false, error: "Serviço de email não configurado" });
       }
 
       // Generate 6-digit code
@@ -536,20 +476,14 @@ serve(async (req: Request): Promise<Response> => {
         console.log(`Verification code sent to: ${emailClean}`);
       } catch (emailError) {
         console.error('Error sending verification email:', emailError);
-        return new Response(
-          JSON.stringify({ success: false, error: "Erro ao enviar email de verificação" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ success: false, error: "Erro ao enviar email de verificação" });
       }
 
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          requiresEmailConfirmation: true,
-          message: "Enviamos um código de verificação para seu email."
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ 
+        success: true, 
+        requiresEmailConfirmation: true,
+        message: "Enviamos um código de verificação para seu email."
+      });
     }
 
     // ==========================================
@@ -571,20 +505,14 @@ serve(async (req: Request): Promise<Response> => {
       // Email already exists - should have been caught earlier, but handle it
       if (signUpError.message.includes('already been registered') || 
           signUpError.message.includes('already exists')) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: "Este email já está cadastrado",
-            code: "EMAIL_EXISTS"
-          }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ 
+          success: false, 
+          error: "Este email já está cadastrado",
+          code: "EMAIL_EXISTS"
+        });
       }
       
-      return new Response(
-        JSON.stringify({ success: false, error: "Erro ao criar conta. Tente novamente." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ success: false, error: "Erro ao criar conta. Tente novamente." });
     }
 
     // ==========================================
@@ -615,29 +543,20 @@ serve(async (req: Request): Promise<Response> => {
         console.error('Profile not created by trigger after retries, rolling back user creation');
         // Delete the orphan user from auth.users
         await supabaseAdmin.auth.admin.deleteUser(userId);
-        return new Response(
-          JSON.stringify({ success: false, error: "Erro ao criar conta. Tente novamente." }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ success: false, error: "Erro ao criar conta. Tente novamente." });
       }
     }
 
     console.log(`User created: ${signUpData.user?.id}`);
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        requiresEmailConfirmation: false,
-        message: "Conta criada com sucesso!"
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse({ 
+      success: true, 
+      requiresEmailConfirmation: false,
+      message: "Conta criada com sucesso!"
+    });
 
   } catch (error: any) {
     console.error("Error in register function:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: "Erro interno do servidor" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse({ success: false, error: "Erro interno do servidor" });
   }
 });
