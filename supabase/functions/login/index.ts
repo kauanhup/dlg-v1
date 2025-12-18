@@ -180,21 +180,8 @@ serve(async (req: Request): Promise<Response> => {
       }
     });
 
-    // Block if maintenance mode is active
-    if (maintenanceMode) {
-      console.log('Login blocked: maintenance mode');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Sistema em manutenção. Tente novamente mais tarde.",
-          code: "MAINTENANCE"
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     // ==========================================
-    // CHECK USER VIA PROFILES TABLE
+    // CHECK USER VIA PROFILES TABLE (BEFORE maintenance check for admins)
     // ==========================================
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -220,6 +207,37 @@ serve(async (req: Request): Promise<Response> => {
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // ==========================================
+    // GET USER ROLE (needed for maintenance check)
+    // ==========================================
+    const { data: roleData } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', profileData.user_id)
+      .maybeSingle();
+
+    const userRole = roleData?.role || 'user';
+    const isAdmin = userRole === 'admin';
+
+    // ==========================================
+    // MAINTENANCE MODE CHECK (admins can bypass)
+    // ==========================================
+    if (maintenanceMode && !isAdmin) {
+      console.log('Login blocked: maintenance mode (non-admin user)');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Sistema em manutenção. Tente novamente mais tarde.",
+          code: "MAINTENANCE"
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (maintenanceMode && isAdmin) {
+      console.log('Maintenance mode active, but allowing admin login');
     }
 
     // ==========================================
@@ -262,17 +280,6 @@ serve(async (req: Request): Promise<Response> => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // ==========================================
-    // GET USER ROLE
-    // ==========================================
-    const { data: roleData } = await supabaseAdmin
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', profileData.user_id)
-      .maybeSingle();
-
-    const userRole = roleData?.role || 'user';
 
     console.log(`Login validation successful for: ${emailClean}, role: ${userRole}`);
 
