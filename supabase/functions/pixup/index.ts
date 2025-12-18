@@ -252,26 +252,39 @@ async function getPublicSettings(supabase: any) {
   );
 }
 
+// Helper function to ensure single settings record exists and get its ID
+async function getOrCreateSettingsId(supabase: any): Promise<string> {
+  const { data: existing } = await supabase
+    .from('gateway_settings')
+    .select('id')
+    .eq('provider', 'pixup')
+    .maybeSingle();
+
+  if (existing) {
+    return existing.id;
+  }
+
+  // Create new record if none exists
+  const { data: created, error } = await supabase
+    .from('gateway_settings')
+    .insert({ provider: 'pixup' })
+    .select('id')
+    .single();
+
+  if (error) {
+    throw new Error('Failed to create settings record');
+  }
+
+  return created.id;
+}
+
 async function saveFeatureToggles(supabase: any, params: { 
   password_recovery_enabled?: boolean; 
   email_verification_enabled?: boolean;
 }) {
   const { password_recovery_enabled, email_verification_enabled } = params;
 
-  const { data: existing } = await supabase
-    .from('gateway_settings')
-    .select('id')
-    .eq('provider', 'pixup')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (!existing) {
-    return new Response(
-      JSON.stringify({ error: 'Configure email primeiro' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
+  const settingsId = await getOrCreateSettingsId(supabase);
 
   const updateData: any = { updated_at: new Date().toISOString() };
   
@@ -285,7 +298,7 @@ async function saveFeatureToggles(supabase: any, params: {
   const { error } = await supabase
     .from('gateway_settings')
     .update(updateData)
-    .eq('id', existing.id);
+    .eq('id', settingsId);
 
   if (error) {
     console.error('Error saving feature toggles:', error);
@@ -305,13 +318,7 @@ async function saveRecaptchaSettings(supabase: any, params: {
 }) {
   const { recaptcha_enabled, recaptcha_site_key, recaptcha_secret_key } = params;
 
-  const { data: existing } = await supabase
-    .from('gateway_settings')
-    .select('id, recaptcha_secret_key')
-    .eq('provider', 'pixup')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const settingsId = await getOrCreateSettingsId(supabase);
 
   const updateData: any = { updated_at: new Date().toISOString() };
   
@@ -325,23 +332,13 @@ async function saveRecaptchaSettings(supabase: any, params: {
     updateData.recaptcha_secret_key = recaptcha_secret_key;
   }
 
-  let result;
-  if (existing) {
-    result = await supabase
-      .from('gateway_settings')
-      .update(updateData)
-      .eq('id', existing.id);
-  } else {
-    result = await supabase
-      .from('gateway_settings')
-      .insert({
-        provider: 'pixup',
-        ...updateData
-      });
-  }
+  const { error } = await supabase
+    .from('gateway_settings')
+    .update(updateData)
+    .eq('id', settingsId);
 
-  if (result.error) {
-    console.error('Error saving reCAPTCHA settings:', result.error);
+  if (error) {
+    console.error('Error saving reCAPTCHA settings:', error);
     throw new Error('Failed to save reCAPTCHA settings');
   }
 
@@ -371,13 +368,7 @@ async function saveEmailTemplate(supabase: any, params: {
     email_template_accent_color
   } = params;
 
-  const { data: existing } = await supabase
-    .from('gateway_settings')
-    .select('id')
-    .eq('provider', 'pixup')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const settingsId = await getOrCreateSettingsId(supabase);
 
   const updateData: any = { updated_at: new Date().toISOString() };
   
@@ -389,23 +380,13 @@ async function saveEmailTemplate(supabase: any, params: {
   if (email_template_bg_color !== undefined) updateData.email_template_bg_color = email_template_bg_color;
   if (email_template_accent_color !== undefined) updateData.email_template_accent_color = email_template_accent_color;
 
-  let result;
-  if (existing) {
-    result = await supabase
-      .from('gateway_settings')
-      .update(updateData)
-      .eq('id', existing.id);
-  } else {
-    result = await supabase
-      .from('gateway_settings')
-      .insert({
-        provider: 'pixup',
-        ...updateData
-      });
-  }
+  const { error } = await supabase
+    .from('gateway_settings')
+    .update(updateData)
+    .eq('id', settingsId);
 
-  if (result.error) {
-    console.error('Error saving email template:', result.error);
+  if (error) {
+    console.error('Error saving email template:', error);
     throw new Error('Failed to save email template');
   }
 
@@ -426,58 +407,42 @@ async function saveCredentials(supabase: any, params: { client_id: string; clien
     );
   }
 
-  // Check if settings exist
+  const settingsId = await getOrCreateSettingsId(supabase);
+
+  // Check if we have a secret already
   const { data: existing } = await supabase
     .from('gateway_settings')
-    .select('id, client_secret')
-    .eq('provider', 'pixup')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .select('client_secret')
+    .eq('id', settingsId)
+    .single();
 
-  // If no existing settings and no secret provided, error
-  if (!existing && !client_secret) {
+  // If no existing secret and no new secret provided, error
+  if (!existing?.client_secret && !client_secret) {
     return new Response(
       JSON.stringify({ error: 'client_secret is required for new configuration' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
-  let result;
-  if (existing) {
-    const updateData: any = {
-      client_id,
-      webhook_url: webhook_url || null,
-      // SECURITY FIX: Do NOT set is_active = true when saving credentials
-      // Status should only be updated via test_connection to ensure credentials are valid
-      // is_active: false, // Reset status - requires test connection to activate
-      updated_at: new Date().toISOString()
-    };
-    
-    // Only update secret if provided - and reset is_active when secret changes
-    if (client_secret) {
-      updateData.client_secret = client_secret;
-      updateData.is_active = false; // Force re-test when secret changes
-    }
-    
-    result = await supabase
-      .from('gateway_settings')
-      .update(updateData)
-      .eq('id', existing.id);
-  } else {
-    result = await supabase
-      .from('gateway_settings')
-      .insert({
-        provider: 'pixup',
-        client_id,
-        client_secret,
-        webhook_url: webhook_url || null,
-        is_active: false // SECURITY FIX: New configs start as inactive until tested
-      });
+  const updateData: any = {
+    client_id,
+    webhook_url: webhook_url || null,
+    updated_at: new Date().toISOString()
+  };
+  
+  // Only update secret if provided - and reset is_active when secret changes
+  if (client_secret) {
+    updateData.client_secret = client_secret;
+    updateData.is_active = false; // Force re-test when secret changes
   }
+  
+  const { error } = await supabase
+    .from('gateway_settings')
+    .update(updateData)
+    .eq('id', settingsId);
 
-  if (result.error) {
-    console.error('Error saving credentials:', result.error);
+  if (error) {
+    console.error('Error saving credentials:', error);
     throw new Error('Failed to save credentials');
   }
 
@@ -503,62 +468,41 @@ async function saveEmailSettings(supabase: any, params: {
     );
   }
 
-  // Check if settings exist
+  const settingsId = await getOrCreateSettingsId(supabase);
+
+  // Check if we have an API key already
   const { data: existing } = await supabase
     .from('gateway_settings')
-    .select('id, resend_api_key')
-    .eq('provider', 'pixup')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .select('resend_api_key')
+    .eq('id', settingsId)
+    .single();
 
-  // If no existing settings and no key provided, error
-  if (!existing && !resend_api_key) {
+  // If no existing key and no new key provided, error
+  if (!existing?.resend_api_key && !resend_api_key) {
     return new Response(
       JSON.stringify({ error: 'resend_api_key is required for new configuration' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
-  // If existing but no key saved and no new key provided
-  if (existing && !existing.resend_api_key && !resend_api_key) {
-    return new Response(
-      JSON.stringify({ error: 'resend_api_key is required' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+  const updateData: any = {
+    resend_from_email,
+    resend_from_name: resend_from_name || 'SWEXTRACTOR',
+    email_enabled: email_enabled !== false,
+    updated_at: new Date().toISOString()
+  };
+  
+  if (resend_api_key) {
+    updateData.resend_api_key = resend_api_key;
   }
+  
+  const { error } = await supabase
+    .from('gateway_settings')
+    .update(updateData)
+    .eq('id', settingsId);
 
-  let result;
-  if (existing) {
-    const updateData: any = {
-      resend_from_email,
-      resend_from_name: resend_from_name || 'SWEXTRACTOR',
-      email_enabled: email_enabled !== false,
-      updated_at: new Date().toISOString()
-    };
-    
-    if (resend_api_key) {
-      updateData.resend_api_key = resend_api_key;
-    }
-    
-    result = await supabase
-      .from('gateway_settings')
-      .update(updateData)
-      .eq('id', existing.id);
-  } else {
-    result = await supabase
-      .from('gateway_settings')
-      .insert({
-        provider: 'pixup',
-        resend_api_key,
-        resend_from_email,
-        resend_from_name: resend_from_name || 'SWEXTRACTOR',
-        email_enabled: email_enabled !== false
-      });
-  }
-
-  if (result.error) {
-    console.error('Error saving email settings:', result.error);
+  if (error) {
+    console.error('Error saving email settings:', error);
     throw new Error('Failed to save email settings');
   }
 
