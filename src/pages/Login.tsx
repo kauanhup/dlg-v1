@@ -562,14 +562,20 @@ const Login = () => {
 
         if (authError || !authData.session) {
           recordFailedAttempt(email);
+          
+          // Log failed login attempt on backend (password was wrong)
+          if (parsedResponse?.userId) {
+            await logLoginAttempt(parsedResponse.userId, 'failed', 'Senha incorreta');
+          }
+          
           toast.error("Erro no login", "Credenciais inválidas");
           setIsSubmitting(false);
           return;
         }
 
         // Log successful login attempt
-        if (validationData.userId) {
-          await logLoginAttempt(validationData.userId, 'success');
+        if (parsedResponse?.userId) {
+          await logLoginAttempt(parsedResponse.userId, 'success');
         }
 
         // Clear rate limit on success
@@ -579,7 +585,7 @@ const Login = () => {
         setIsSubmitting(false);
 
         // Redirect based on role (from validation response)
-        if (validationData.role === 'admin') {
+        if (parsedResponse?.role === 'admin') {
           navigate("/admin");
         } else {
           navigate(redirectUrl);
