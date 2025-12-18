@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { MorphingSquare } from "@/components/ui/morphing-square";
@@ -20,17 +20,30 @@ const RecuperarSenha = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSettings, setIsCheckingSettings] = useState(true);
   const [isEnabled, setIsEnabled] = useState(false);
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const toast = useAlertToast();
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
     
-    // Check if password recovery is enabled
+    // Check system settings and if password recovery is enabled
     const checkSettings = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('pixup', {
+        // Check maintenance mode
+        const { data: settingsData } = await supabase
+          .from('system_settings')
+          .select('key, value')
+          .in('key', ['maintenance_mode']);
+
+        settingsData?.forEach((setting) => {
+          if (setting.key === 'maintenance_mode' && setting.value === 'true') {
+            setIsMaintenanceMode(true);
+          }
+        });
+
+        // Check if password recovery is enabled via pixup function
+        const { data } = await supabase.functions.invoke('pixup', {
           body: { action: 'get_public_settings' }
         });
         
@@ -45,16 +58,7 @@ const RecuperarSenha = () => {
     };
 
     checkSettings();
-
-    // Check if coming from email link with token
-    const token = searchParams.get('token');
-    const emailParam = searchParams.get('email');
-    if (token && emailParam) {
-      setEmail(emailParam);
-      setCode(token);
-      setStep('code');
-    }
-  }, [searchParams]);
+  }, []);
 
   const handleRequestCode = async () => {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -64,25 +68,35 @@ const RecuperarSenha = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-email', {
+      const { data, error } = await supabase.functions.invoke('forgot-password', {
         body: { 
-          action: 'send_code',
-          type: 'password_reset',
-          to: email 
+          action: 'request_code',
+          email: email.trim().toLowerCase()
         }
       });
 
       if (error) throw error;
 
-      if (data?.success) {
-        toast.success("Código enviado!", "Verifique sua caixa de entrada.");
-        setStep('code');
-      } else {
-        toast.error("Erro", data?.error || "Não foi possível enviar o código.");
+      // Handle specific error codes
+      if (!data?.success) {
+        if (data?.code === 'MAINTENANCE') {
+          setIsMaintenanceMode(true);
+          toast.error("Sistema em manutenção", "Tente novamente mais tarde.");
+        } else if (data?.code === 'DISABLED') {
+          setIsEnabled(false);
+          toast.error("Recurso desabilitado", "Recuperação de senha não está disponível.");
+        } else {
+          toast.error("Erro", data?.error || "Não foi possível processar a solicitação.");
+        }
+        return;
       }
+
+      // Always show success message (generic - never reveal if email exists)
+      toast.success("Solicitação enviada!", data?.message || "Se o email existir, você receberá um código.");
+      setStep('code');
     } catch (err: any) {
-      console.error('Error sending code:', err);
-      toast.error("Erro", err.message || "Erro ao enviar código.");
+      console.error('Error requesting code:', err);
+      toast.error("Erro", "Erro ao processar solicitação.");
     } finally {
       setIsLoading(false);
     }
@@ -96,11 +110,10 @@ const RecuperarSenha = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-email', {
+      const { data, error } = await supabase.functions.invoke('forgot-password', {
         body: { 
           action: 'verify_code',
-          type: 'password_reset',
-          email,
+          email: email.trim().toLowerCase(),
           code 
         }
       });
@@ -115,7 +128,7 @@ const RecuperarSenha = () => {
       }
     } catch (err: any) {
       console.error('Error verifying code:', err);
-      toast.error("Erro", err.message || "Erro ao verificar código.");
+      toast.error("Erro", "Erro ao verificar código.");
     } finally {
       setIsLoading(false);
     }
@@ -134,10 +147,10 @@ const RecuperarSenha = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-email', {
+      const { data, error } = await supabase.functions.invoke('forgot-password', {
         body: { 
           action: 'reset_password',
-          email,
+          email: email.trim().toLowerCase(),
           code,
           newPassword: password 
         }
@@ -146,14 +159,19 @@ const RecuperarSenha = () => {
       if (error) throw error;
 
       if (data?.success) {
-        toast.success("Senha alterada!", "Faça login com sua nova senha.");
+        toast.success("Senha alterada!", data?.message || "Faça login com sua nova senha.");
         setStep('success');
+        // Clear form data
+        setEmail("");
+        setCode("");
+        setPassword("");
+        setConfirmPassword("");
       } else {
         toast.error("Erro", data?.error || "Não foi possível alterar a senha.");
       }
     } catch (err: any) {
       console.error('Error resetting password:', err);
-      toast.error("Erro", err.message || "Erro ao alterar senha.");
+      toast.error("Erro", "Erro ao alterar senha.");
     } finally {
       setIsLoading(false);
     }
@@ -167,6 +185,27 @@ const RecuperarSenha = () => {
         </div>
         <div className="relative z-10">
           <MorphingSquare message="Carregando..." className="bg-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isMaintenanceMode) {
+    return (
+      <div className="min-h-screen w-full relative flex items-center justify-center overflow-hidden p-4">
+        <div className="absolute inset-0 z-0">
+          <AnimatedShaderBackground className="w-full h-full" />
+        </div>
+        <div className="relative z-10 bg-card/80 backdrop-blur-xl border border-border/50 rounded-xl p-8 max-w-md w-full text-center shadow-2xl">
+          <Mail className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-foreground mb-2">Sistema em Manutenção</h1>
+          <p className="text-muted-foreground mb-6">
+            O sistema está temporariamente indisponível. Tente novamente mais tarde.
+          </p>
+          <Button onClick={() => navigate('/login')} variant="outline">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar ao Login
+          </Button>
         </div>
       </div>
     );
@@ -306,8 +345,12 @@ const RecuperarSenha = () => {
                 {isLoading ? "Verificando..." : "Verificar Código"}
               </Button>
               <button 
-                onClick={() => setStep('email')}
+                onClick={() => {
+                  setStep('email');
+                  setCode("");
+                }}
                 className="w-full text-sm text-muted-foreground hover:text-foreground"
+                disabled={isLoading}
               >
                 Usar outro email
               </button>
@@ -380,6 +423,7 @@ const RecuperarSenha = () => {
             <button 
               onClick={() => navigate('/login')}
               className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-2"
+              disabled={isLoading}
             >
               <ArrowLeft className="w-4 h-4" />
               Voltar ao Login
