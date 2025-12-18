@@ -768,7 +768,7 @@ const Login = () => {
         </div>
         
         {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center px-6 lg:px-8 xl:px-12 2xl:px-16">
+        <div className="relative z-10 flex flex-col justify-start pt-[20vh] lg:pt-[25vh] px-6 lg:px-8 xl:px-12 2xl:px-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
