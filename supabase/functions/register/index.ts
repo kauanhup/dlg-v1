@@ -277,8 +277,6 @@ serve(async (req: Request): Promise<Response> => {
 
       // Check if code matches
       if (codeData.code !== verificationCode) {
-        // Track failed attempts using a simple counter approach
-        // We'll use the verification_codes table metadata or a counter
         const failedAttempts = (codeData as any).failed_attempts || 0;
         const newFailedAttempts = failedAttempts + 1;
         
@@ -304,15 +302,10 @@ serve(async (req: Request): Promise<Response> => {
           );
         }
         
-        // Update failed attempts counter (store in code field temporarily by appending metadata)
-        // Since we can't easily add columns, we'll delete and recreate with tracking
+        // Update failed attempts counter
         await supabaseAdmin
           .from('verification_codes')
-          .update({ 
-            // We need a way to track this - let's use a workaround
-            // Store failed attempts in the code string itself won't work
-            // Best approach: add a column or use a separate tracking mechanism
-          })
+          .update({ failed_attempts: newFailedAttempts })
           .eq('id', codeData.id);
         
         return new Response(
