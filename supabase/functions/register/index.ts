@@ -371,27 +371,70 @@ serve(async (req: Request): Promise<Response> => {
     // ACTION: REGISTER (Step 1)
     // ==========================================
     
-    // Field validations
+    // Field validations - Enhanced security checks
     if (!email || !password || !name || !whatsapp) {
       return jsonResponse({ success: false, error: "Todos os campos são obrigatórios" });
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    // Email validation - strict format check
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+    if (!emailRegex.test(email) || email.length > 254) {
       return jsonResponse({ success: false, error: "Email inválido" });
     }
 
-    if (password.length < 8) {
-      return jsonResponse({ success: false, error: "A senha deve ter pelo menos 8 caracteres" });
+    // Check for disposable email domains
+    const disposableDomains = ['tempmail.com', 'throwaway.com', 'mailinator.com', 'guerrillamail.com', 'fakeinbox.com', '10minutemail.com', 'temp-mail.org', 'tempmailo.com'];
+    const emailDomain = email.split('@')[1]?.toLowerCase();
+    if (disposableDomains.includes(emailDomain)) {
+      return jsonResponse({ success: false, error: "Emails temporários não são permitidos" });
     }
 
-    if (name.trim().length < 2) {
-      return jsonResponse({ success: false, error: "Nome inválido" });
+    // Password validation - enhanced requirements
+    if (password.length < 8 || password.length > 128) {
+      return jsonResponse({ success: false, error: "A senha deve ter entre 8 e 128 caracteres" });
     }
 
+    // Check password complexity
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    if (!hasUppercase || !hasLowercase || !hasNumber) {
+      return jsonResponse({ success: false, error: "Senha deve ter letras maiúsculas, minúsculas e números" });
+    }
+
+    // Check for common weak passwords
+    const weakPasswords = ['12345678', 'password', 'qwerty123', 'abc12345', 'password1', 'Password1', '123456789', 'admin123'];
+    if (weakPasswords.some(weak => password.toLowerCase().includes(weak.toLowerCase()))) {
+      return jsonResponse({ success: false, error: "Senha muito comum, escolha outra mais segura" });
+    }
+
+    // Name validation - enhanced
+    const nameTrimmed = name.trim();
+    if (nameTrimmed.length < 2 || nameTrimmed.length > 100) {
+      return jsonResponse({ success: false, error: "Nome deve ter entre 2 e 100 caracteres" });
+    }
+
+    // Check for valid name characters
+    const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]+$/;
+    if (!nameRegex.test(nameTrimmed)) {
+      return jsonResponse({ success: false, error: "Nome contém caracteres inválidos" });
+    }
+
+    // Check for at least first and last name
+    const nameParts = nameTrimmed.split(/\s+/).filter(p => p.length > 0);
+    if (nameParts.length < 2) {
+      return jsonResponse({ success: false, error: "Informe nome e sobrenome" });
+    }
+
+    // WhatsApp validation - enhanced
     const whatsappClean = whatsapp.replace(/\D/g, '');
     if (whatsappClean.length < 10 || whatsappClean.length > 15) {
-      return jsonResponse({ success: false, error: "WhatsApp inválido" });
+      return jsonResponse({ success: false, error: "WhatsApp inválido (10-15 dígitos)" });
+    }
+
+    // Brazilian phone format check
+    if (whatsappClean.startsWith('55') && whatsappClean.length < 12) {
+      return jsonResponse({ success: false, error: "Número brasileiro deve ter DDD + 8-9 dígitos" });
     }
 
     const emailClean = email.trim().toLowerCase();
