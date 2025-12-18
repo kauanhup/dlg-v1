@@ -76,7 +76,7 @@ const DownloadBotButton = ({ className }: DownloadBotButtonProps) => {
       </svg>
       Baixar Bot
       <div className="absolute opacity-0 -bottom-10 rounded-md py-1.5 px-3 bg-foreground/90 text-background text-xs left-1/2 -translate-x-1/2 group-hover:opacity-100 transition-opacity duration-200 shadow-lg whitespace-nowrap pointer-events-none">
-        SWEXTRACTOR.exe
+        DLGConnect.exe
       </div>
     </motion.button>
   );

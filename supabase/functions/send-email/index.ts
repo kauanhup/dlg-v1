@@ -83,20 +83,20 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    const fromEmail = `${settings.resend_from_name || 'SWEXTRACTOR'} <${settings.resend_from_email}>`;
+    const fromEmail = `${settings.resend_from_name || 'DLG Connect'} <${settings.resend_from_email}>`;
 
     switch (action) {
       case 'test': {
         const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h1 style="color: #4ade80;">✅ Teste Bem Sucedido!</h1>
-            <p>Este é um email de teste do sistema SWEXTRACTOR.</p>
+            <p>Este é um email de teste do sistema DLG Connect.</p>
             <p>Se você recebeu este email, a configuração está funcionando corretamente.</p>
             <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
-            <p style="color: #888; font-size: 12px;">SWEXTRACTOR - Sistema de Gestão</p>
+            <p style="color: #888; font-size: 12px;">DLG Connect - Sistema de Gestão</p>
           </div>
         `;
-        await sendEmail(settings.resend_api_key, fromEmail, to!, "✅ Teste de Email - SWEXTRACTOR", html);
+        await sendEmail(settings.resend_api_key, fromEmail, to!, "✅ Teste de Email - DLG Connect", html);
         return new Response(
           JSON.stringify({ success: true }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -144,8 +144,8 @@ serve(async (req: Request): Promise<Response> => {
         }
 
         const subject = type === 'password_reset' 
-          ? "🔐 Código de Recuperação - SWEXTRACTOR"
-          : "📧 Confirme seu Email - SWEXTRACTOR";
+          ? "🔐 Código de Recuperação - DLG Connect"
+          : "📧 Confirme seu Email - DLG Connect";
 
         const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0a0a0a; color: #fff;">
@@ -159,7 +159,7 @@ serve(async (req: Request): Promise<Response> => {
             <p style="color: #888; font-size: 14px;">Este código expira em 15 minutos.</p>
             <p style="color: #888; font-size: 14px;">Se você não solicitou este código, ignore este email.</p>
             <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
-            <p style="color: #666; font-size: 12px;">SWEXTRACTOR - Sistema de Gestão</p>
+            <p style="color: #666; font-size: 12px;">DLG Connect - Sistema de Gestão</p>
           </div>
         `;
 
@@ -277,10 +277,10 @@ serve(async (req: Request): Promise<Response> => {
             </div>
             <p>Acesse sua conta para baixar suas sessions.</p>
             <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
-            <p style="color: #666; font-size: 12px;">SWEXTRACTOR - Sistema de Gestão</p>
+            <p style="color: #666; font-size: 12px;">DLG Connect - Sistema de Gestão</p>
           </div>
         `;
-        await sendEmail(settings.resend_api_key, fromEmail, to!, "✅ Pedido Confirmado - SWEXTRACTOR", html);
+        await sendEmail(settings.resend_api_key, fromEmail, to!, "✅ Pedido Confirmado - DLG Connect", html);
         return new Response(
           JSON.stringify({ success: true }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

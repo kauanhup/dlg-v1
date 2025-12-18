@@ -62,7 +62,7 @@ export const useAdminBot = () => {
         .eq('is_active', true);
 
       // Upload to storage
-      const fileName = `SWEXTRACTOR_${version}.exe`;
+      const fileName = `DLGConnect_${version}.exe`;
       const filePath = `${Date.now()}_${fileName}`;
       
       const { error: uploadError } = await supabase.storage

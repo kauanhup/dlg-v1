@@ -1170,7 +1170,7 @@ const Dashboard = () => {
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-foreground">Baixar Bot</h3>
-                    <p className="text-xs text-muted-foreground">SWEXTRACTOR.exe - Insira sua chave de licença</p>
+                    <p className="text-xs text-muted-foreground">DLGConnect.exe - Insira sua chave de licença</p>
                   </div>
                 </div>
                 <DownloadBotButton />
@@ -1842,7 +1842,7 @@ const Dashboard = () => {
         {/* Footer */}
         <footer className="mt-auto py-4 px-4 border-t border-border bg-card/50">
           <p className="text-xs text-muted-foreground text-center">
-            © 2025 SWEXTRATOR. Desenvolvido por{" "}
+            © 2025 DLG Connect. Desenvolvido por{" "}
             <a 
               href="https://wa.me/5565996498222" 
               target="_blank" 
