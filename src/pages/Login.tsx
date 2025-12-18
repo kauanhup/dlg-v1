@@ -551,6 +551,28 @@ const Login = () => {
                   {passwordError}
                 </p>
               )}
+              {isLogin && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!validateEmail(email)) {
+                      toast.error("Email inválido", "Digite seu email para recuperar a senha.");
+                      return;
+                    }
+                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                      redirectTo: `${window.location.origin}/login`,
+                    });
+                    if (error) {
+                      toast.error("Erro", error.message);
+                    } else {
+                      toast.success("Email enviado!", "Verifique sua caixa de entrada.");
+                    }
+                  }}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Esqueceu sua senha?
+                </button>
+              )}
             </div>
 
             {!isLogin && (
