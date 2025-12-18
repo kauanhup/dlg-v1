@@ -102,7 +102,7 @@ serve(async (req: Request): Promise<Response> => {
     const { data: settingsData, error: settingsError } = await supabaseAdmin
       .from('system_settings')
       .select('key, value')
-      .in('key', ['allow_registrations', 'maintenance_mode', 'require_email_confirmation']);
+      .in('key', ['allow_registrations', 'maintenance_mode']);
 
     if (settingsError) {
       console.error('Error fetching system settings:', settingsError);
@@ -112,9 +112,16 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
+    // Get email verification setting from gateway_settings (Admin API section)
+    const { data: gatewayData, error: gatewayError } = await supabaseAdmin
+      .from('gateway_settings')
+      .select('email_verification_enabled')
+      .limit(1)
+      .single();
+
     let allowRegistration = true;
     let maintenanceMode = false;
-    let requireEmailConfirmation = false;
+    let requireEmailConfirmation = gatewayData?.email_verification_enabled ?? false;
 
     settingsData?.forEach((setting) => {
       if (setting.key === 'allow_registrations') {
@@ -122,9 +129,6 @@ serve(async (req: Request): Promise<Response> => {
       }
       if (setting.key === 'maintenance_mode') {
         maintenanceMode = setting.value === 'true';
-      }
-      if (setting.key === 'require_email_confirmation') {
-        requireEmailConfirmation = setting.value === 'true';
       }
     });
 
