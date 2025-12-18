@@ -774,15 +774,6 @@ const Login = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            {/* Logo */}
-            <div className="flex items-center gap-2 lg:gap-3 mb-6 lg:mb-8">
-              <div className="w-10 lg:w-12 h-10 lg:h-12 rounded-xl bg-primary flex items-center justify-center">
-                <svg viewBox="0 0 24 24" className="w-5 lg:w-7 h-5 lg:h-7 text-primary-foreground" fill="currentColor">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <span className="text-xl lg:text-2xl font-display font-bold text-foreground">DLG Connect</span>
-            </div>
             
             {/* Title */}
             <h1 className="text-3xl lg:text-4xl xl:text-5xl font-display font-bold text-foreground mb-3 lg:mb-4 leading-tight">
@@ -837,15 +828,6 @@ const Login = () => {
           transition={{ duration: 0.5 }}
           className="w-full max-w-[400px] sm:max-w-[420px] relative z-10"
         >
-          {/* Mobile/Tablet Logo */}
-          <div className="lg:hidden flex items-center justify-center gap-2 mb-6 sm:mb-8">
-            <div className="w-9 sm:w-10 h-9 sm:h-10 rounded-xl bg-primary flex items-center justify-center">
-              <svg viewBox="0 0 24 24" className="w-5 sm:w-6 h-5 sm:h-6 text-primary-foreground" fill="currentColor">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <span className="text-lg sm:text-xl font-display font-bold text-foreground">DLG Connect</span>
-          </div>
 
           {/* Form Card */}
           <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl sm:rounded-2xl p-5 sm:p-6 md:p-8 shadow-xl">
