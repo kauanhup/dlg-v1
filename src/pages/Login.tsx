@@ -749,218 +749,324 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen w-full relative flex items-center justify-center overflow-hidden px-4 py-8 sm:py-12">
-      {/* Aurora Shader Background */}
-      <div className="absolute inset-0 z-0">
-        <AnimatedShaderBackground className="w-full h-full" />
-      </div>
-
-      {/* Decorative Grid - hidden on mobile */}
-      <div className="absolute inset-0 z-[1] opacity-20 hidden sm:block">
-        <div className="absolute top-[15%] left-[10%] w-px h-[200px] bg-gradient-to-b from-transparent via-primary/50 to-transparent" />
-        <div className="absolute top-[25%] left-[10%] w-[100px] h-px bg-gradient-to-r from-primary/50 to-transparent" />
-        <div className="absolute bottom-[20%] right-[15%] w-px h-[150px] bg-gradient-to-b from-transparent via-primary/50 to-transparent" />
-        <div className="absolute bottom-[20%] right-[15%] w-[80px] h-px bg-gradient-to-l from-primary/50 to-transparent" />
-      </div>
-
-      {/* Content Container */}
-      <div className="relative z-10 w-full max-w-sm sm:max-w-md animate-fade-in">
-
-        {/* Form Card */}
-        <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-2xl">
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-display font-bold text-foreground">
-              {isLogin ? "Entrar" : "Criar Conta"}
+    <div className="min-h-screen w-full flex">
+      {/* Left Side - Branding & Visual (hidden on mobile) */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-primary/10 via-background to-background overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-0 w-full h-full">
+            <div className="absolute top-[20%] left-[20%] w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-[30%] right-[10%] w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse delay-1000" />
+          </div>
+          {/* Grid Pattern */}
+          <div className="absolute inset-0 opacity-[0.03]" 
+            style={{
+              backgroundImage: `linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)`,
+              backgroundSize: '60px 60px'
+            }}
+          />
+        </div>
+        
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            {/* Logo */}
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
+                <svg viewBox="0 0 24 24" className="w-7 h-7 text-primary-foreground" fill="currentColor">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <span className="text-2xl font-display font-bold text-foreground">DLG Connect</span>
+            </div>
+            
+            {/* Title */}
+            <h1 className="text-4xl xl:text-5xl font-display font-bold text-foreground mb-4 leading-tight">
+              {isLogin ? (
+                <>Bem-vindo<br />de volta</>
+              ) : (
+                <>Junte-se a<br />nós hoje</>
+              )}
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">
+            
+            <p className="text-lg text-muted-foreground max-w-md mb-8">
               {isLogin 
-                ? "Bem-vindo de volta! Entre na sua conta." 
-                : "Crie sua conta para começar."}
+                ? "Acesse sua conta para gerenciar suas sessões e acompanhar suas licenças."
+                : "Crie sua conta e tenha acesso a todas as funcionalidades da plataforma."}
             </p>
+
+            {/* Features */}
+            <div className="space-y-4">
+              {[
+                { icon: "✓", text: "Painel completo de gerenciamento" },
+                { icon: "✓", text: "Acesso às suas sessões 24/7" },
+                { icon: "✓", text: "Suporte prioritário via WhatsApp" },
+              ].map((feature, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4, delay: 0.2 + i * 0.1 }}
+                  className="flex items-center gap-3"
+                >
+                  <span className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-medium">
+                    {feature.icon}
+                  </span>
+                  <span className="text-muted-foreground">{feature.text}</span>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Right Side - Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-background relative">
+        {/* Mobile Background */}
+        <div className="absolute inset-0 lg:hidden">
+          <AnimatedShaderBackground className="w-full h-full opacity-30" />
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md relative z-10"
+        >
+          {/* Mobile Logo */}
+          <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-6 h-6 text-primary-foreground" fill="currentColor">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span className="text-xl font-display font-bold text-foreground">DLG Connect</span>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium text-foreground">
-                  Nome completo
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  placeholder="Seu nome"
-                  className={`text-sm w-full py-3 px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
-                    nameError ? "border-destructive" : "border-border/50"
-                  }`}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  disabled={isSubmitting}
-                />
-                {nameError && (
-                  <p className="text-xs text-destructive">{nameError}</p>
-                )}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-foreground">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                className={`text-sm w-full py-3 px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
-                  emailError ? "border-destructive" : "border-border/50"
-                }`}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                aria-invalid={!!emailError}
-                aria-describedby="email-error"
-                disabled={isSubmitting}
-              />
-              {emailError && (
-                <p id="email-error" className="text-xs text-destructive">
-                  {emailError}
-                </p>
-              )}
+          {/* Form Card */}
+          <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl p-6 sm:p-8 shadow-xl">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-display font-bold text-foreground">
+                {isLogin ? "Entrar" : "Criar Conta"}
+              </h2>
+              <p className="text-muted-foreground text-sm mt-2">
+                {isLogin 
+                  ? "Digite suas credenciais para acessar" 
+                  : "Preencha os dados para criar sua conta"}
+              </p>
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-foreground">
-                {isLogin ? "Senha" : "Criar senha"}
-              </label>
-              <input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                className={`text-sm w-full py-3 px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
-                  passwordError ? "border-destructive" : "border-border/50"
-                }`}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                aria-invalid={!!passwordError}
-                aria-describedby="password-error"
-                disabled={isSubmitting}
-              />
-              {passwordError && (
-                <p id="password-error" className="text-xs text-destructive">
-                  {passwordError}
-                </p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {!isLogin && (
+                <div className="space-y-1.5">
+                  <label htmlFor="name" className="text-sm font-medium text-foreground">
+                    Nome completo
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    placeholder="Seu nome"
+                    className={`text-sm w-full py-2.5 px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
+                      nameError ? "border-destructive" : "border-border"
+                    }`}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                  {nameError && (
+                    <p className="text-xs text-destructive">{nameError}</p>
+                  )}
+                </div>
               )}
-              {isLogin && (
-                <a
-                  href="/recuperar-senha"
-                  className="text-xs text-primary hover:underline"
-                >
-                  Esqueceu sua senha?
-                </a>
-              )}
-            </div>
 
-            {!isLogin && (
-              <div className="space-y-2">
-                <label htmlFor="whatsapp" className="text-sm font-medium text-foreground">
-                  WhatsApp
+              <div className="space-y-1.5">
+                <label htmlFor="email" className="text-sm font-medium text-foreground">
+                  Email
                 </label>
                 <input
-                  id="whatsapp"
-                  type="tel"
-                  placeholder="+55 11 99999-9999"
-                  className={`text-sm w-full py-3 px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
-                    whatsappError ? "border-destructive" : "border-border/50"
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  className={`text-sm w-full py-2.5 px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
+                    emailError ? "border-destructive" : "border-border"
                   }`}
-                  value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
-                  aria-invalid={!!whatsappError}
-                  aria-describedby="whatsapp-error"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  aria-invalid={!!emailError}
+                  aria-describedby="email-error"
                   disabled={isSubmitting}
                 />
-                {whatsappError && (
-                  <p id="whatsapp-error" className="text-xs text-destructive">
-                    {whatsappError}
+                {emailError && (
+                  <p id="email-error" className="text-xs text-destructive">
+                    {emailError}
                   </p>
                 )}
               </div>
-            )}
 
-            {/* Honeypot field - hidden from users, bots will fill it */}
-            <div className="absolute -left-[9999px] opacity-0 h-0 overflow-hidden" aria-hidden="true">
-              <label htmlFor="website">Website</label>
-              <input
-                type="text"
-                id="website"
-                name="website"
-                tabIndex={-1}
-                autoComplete="off"
-                value={honeypot}
-                onChange={(e) => setHoneypot(e.target.value)}
-              />
-            </div>
+              <div className="space-y-1.5">
+                <label htmlFor="password" className="text-sm font-medium text-foreground">
+                  {isLogin ? "Senha" : "Criar senha"}
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  className={`text-sm w-full py-2.5 px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
+                    passwordError ? "border-destructive" : "border-border"
+                  }`}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  aria-invalid={!!passwordError}
+                  aria-describedby="password-error"
+                  disabled={isSubmitting}
+                />
+                {passwordError && (
+                  <p id="password-error" className="text-xs text-destructive">
+                    {passwordError}
+                  </p>
+                )}
+                {isLogin && (
+                  <Link
+                    to="/recuperar-senha"
+                    className="text-xs text-primary hover:underline block text-right mt-1"
+                  >
+                    Esqueceu sua senha?
+                  </Link>
+                )}
+              </div>
 
-            {rateLimitError && (
-              <p className="text-sm text-destructive text-center">{rateLimitError}</p>
-            )}
+              {!isLogin && (
+                <div className="space-y-1.5">
+                  <label htmlFor="whatsapp" className="text-sm font-medium text-foreground">
+                    WhatsApp
+                  </label>
+                  <input
+                    id="whatsapp"
+                    type="tel"
+                    placeholder="+55 11 99999-9999"
+                    className={`text-sm w-full py-2.5 px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
+                      whatsappError ? "border-destructive" : "border-border"
+                    }`}
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value)}
+                    aria-invalid={!!whatsappError}
+                    aria-describedby="whatsapp-error"
+                    disabled={isSubmitting}
+                  />
+                  {whatsappError && (
+                    <p id="whatsapp-error" className="text-xs text-destructive">
+                      {whatsappError}
+                    </p>
+                  )}
+                </div>
+              )}
 
-            {/* reCAPTCHA Widget */}
-            {recaptchaSettings.enabled && recaptchaSettings.siteKey && (
-              <div className="flex justify-center">
-                <ReCAPTCHA
-                  ref={recaptchaRef}
-                  sitekey={recaptchaSettings.siteKey}
-                  onChange={(token) => setRecaptchaToken(token)}
-                  onExpired={() => setRecaptchaToken(null)}
-                  theme="dark"
+              {/* Honeypot field - hidden from users, bots will fill it */}
+              <div className="absolute -left-[9999px] opacity-0 h-0 overflow-hidden" aria-hidden="true">
+                <label htmlFor="website">Website</label>
+                <input
+                  type="text"
+                  id="website"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
                 />
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={isSubmitting || (recaptchaSettings.enabled && !recaptchaToken)}
-              className="w-full py-3 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? "Aguarde..." : isLogin ? "Entrar" : "Criar conta"}
-            </button>
+              {rateLimitError && (
+                <p className="text-sm text-destructive text-center">{rateLimitError}</p>
+              )}
 
-            {isLogin ? (
-              systemSettings.allowRegistration ? (
+              {/* reCAPTCHA Widget */}
+              {recaptchaSettings.enabled && recaptchaSettings.siteKey && (
+                <div className="flex justify-center">
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey={recaptchaSettings.siteKey}
+                    onChange={(token) => setRecaptchaToken(token)}
+                    onExpired={() => setRecaptchaToken(null)}
+                    theme="dark"
+                  />
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isSubmitting || (recaptchaSettings.enabled && !recaptchaToken)}
+                className="w-full py-2.5 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  "Aguarde..."
+                ) : (
+                  <>
+                    {isLogin ? "Entrar" : "Criar conta"}
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12,5 19,12 12,19" />
+                    </svg>
+                  </>
+                )}
+              </button>
+
+              {/* Divider */}
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">ou</span>
+                </div>
+              </div>
+
+              {isLogin ? (
+                systemSettings.allowRegistration ? (
+                  <p className="text-center text-sm text-muted-foreground">
+                    Não tem uma conta?{" "}
+                    <button
+                      type="button"
+                      onClick={handleToggleMode}
+                      disabled={isSubmitting}
+                      className="text-primary hover:underline font-medium disabled:opacity-50"
+                    >
+                      Criar conta
+                    </button>
+                  </p>
+                ) : null
+              ) : (
                 <p className="text-center text-sm text-muted-foreground">
-                  Não tem uma conta?{" "}
+                  Já tem uma conta?{" "}
                   <button
                     type="button"
                     onClick={handleToggleMode}
                     disabled={isSubmitting}
                     className="text-primary hover:underline font-medium disabled:opacity-50"
                   >
-                    Criar conta
+                    Entrar
                   </button>
                 </p>
-              ) : null
-            ) : (
-              <p className="text-center text-sm text-muted-foreground">
-                Já tem uma conta?{" "}
-                <button
-                  type="button"
-                  onClick={handleToggleMode}
-                  disabled={isSubmitting}
-                  className="text-primary hover:underline font-medium disabled:opacity-50"
-                >
-                  Entrar
-                </button>
-              </p>
-            )}
-          </form>
+              )}
+            </form>
 
-          <div className="mt-6 text-center">
-            <Link
-              to="/"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              ← Voltar para a página inicial
-            </Link>
+            <div className="mt-6 text-center">
+              <Link
+                to="/"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12" />
+                  <polyline points="12,19 5,12 12,5" />
+                </svg>
+                Voltar para a página inicial
+              </Link>
+            </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Banned User Modal */}
