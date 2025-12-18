@@ -190,7 +190,10 @@ async function getSettings(supabase: any) {
         resend_from_email: data.resend_from_email,
         resend_from_name: data.resend_from_name,
         email_enabled: data.email_enabled,
-        has_resend_key: !!data.resend_api_key
+        has_resend_key: !!data.resend_api_key,
+        // Feature toggles
+        password_recovery_enabled: data.password_recovery_enabled,
+        email_verification_enabled: data.email_verification_enabled
       } : null 
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
