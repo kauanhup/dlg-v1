@@ -58,6 +58,9 @@ export type Database = {
           is_active: boolean
           password_recovery_enabled: boolean | null
           provider: string
+          recaptcha_enabled: boolean | null
+          recaptcha_secret_key: string | null
+          recaptcha_site_key: string | null
           resend_api_key: string | null
           resend_from_email: string | null
           resend_from_name: string | null
@@ -74,6 +77,9 @@ export type Database = {
           is_active?: boolean
           password_recovery_enabled?: boolean | null
           provider?: string
+          recaptcha_enabled?: boolean | null
+          recaptcha_secret_key?: string | null
+          recaptcha_site_key?: string | null
           resend_api_key?: string | null
           resend_from_email?: string | null
           resend_from_name?: string | null
@@ -90,6 +96,9 @@ export type Database = {
           is_active?: boolean
           password_recovery_enabled?: boolean | null
           provider?: string
+          recaptcha_enabled?: boolean | null
+          recaptcha_secret_key?: string | null
+          recaptcha_site_key?: string | null
           resend_api_key?: string | null
           resend_from_email?: string | null
           resend_from_name?: string | null

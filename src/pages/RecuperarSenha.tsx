@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import ReCAPTCHA from "react-google-recaptcha";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { MorphingSquare } from "@/components/ui/morphing-square";
@@ -22,6 +23,10 @@ const RecuperarSenha = () => {
   const [isCheckingSettings, setIsCheckingSettings] = useState(true);
   const [isEnabled, setIsEnabled] = useState(false);
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+  const [recaptchaEnabled, setRecaptchaEnabled] = useState(false);
+  const [recaptchaSiteKey, setRecaptchaSiteKey] = useState("");
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
   const navigate = useNavigate();
   const toast = useAlertToast();
 
@@ -51,6 +56,19 @@ const RecuperarSenha = () => {
         if (data?.success && data?.enabled) {
           setIsEnabled(true);
         }
+
+        // Check reCAPTCHA settings
+        const { data: gatewayData } = await supabase
+          .from('gateway_settings')
+          .select('recaptcha_enabled, recaptcha_site_key')
+          .eq('provider', 'pixup')
+          .limit(1)
+          .maybeSingle();
+        
+        if (gatewayData?.recaptcha_enabled && gatewayData?.recaptcha_site_key) {
+          setRecaptchaEnabled(true);
+          setRecaptchaSiteKey(gatewayData.recaptcha_site_key);
+        }
       } catch (err) {
         console.error('Error checking settings:', err);
       } finally {
@@ -74,13 +92,20 @@ const RecuperarSenha = () => {
       return;
     }
 
+    // reCAPTCHA validation
+    if (recaptchaEnabled && !recaptchaToken) {
+      toast.error("Verificação necessária", "Complete a verificação reCAPTCHA.");
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('forgot-password', {
         body: { 
           action: 'request_code',
           email: email.trim().toLowerCase(),
-          honeypot
+          honeypot,
+          recaptchaToken: recaptchaToken || undefined
         }
       });
 
@@ -103,9 +128,14 @@ const RecuperarSenha = () => {
       // Always show success message (generic - never reveal if email exists)
       toast.success("Solicitação enviada!", data?.message || "Se o email existir, você receberá um código.");
       setStep('code');
+      // Reset reCAPTCHA
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
     } catch (err: any) {
       console.error('Error requesting code:', err);
       toast.error("Erro", "Erro ao processar solicitação.");
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
     } finally {
       setIsLoading(false);
     }
@@ -337,9 +367,21 @@ const RecuperarSenha = () => {
                   onChange={(e) => setHoneypot(e.target.value)}
                 />
               </div>
+              {/* reCAPTCHA Widget */}
+              {recaptchaEnabled && recaptchaSiteKey && (
+                <div className="flex justify-center">
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey={recaptchaSiteKey}
+                    onChange={(token) => setRecaptchaToken(token)}
+                    onExpired={() => setRecaptchaToken(null)}
+                    theme="dark"
+                  />
+                </div>
+              )}
               <Button 
                 onClick={handleRequestCode} 
-                disabled={isLoading} 
+                disabled={isLoading || (recaptchaEnabled && !recaptchaToken)} 
                 className="w-full"
               >
                 {isLoading ? <Spinner size="sm" className="mr-2" /> : null}

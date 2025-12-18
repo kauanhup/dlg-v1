@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import ReCAPTCHA from "react-google-recaptcha";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { MorphingSquare } from "@/components/ui/morphing-square";
@@ -10,6 +11,11 @@ import { motion, AnimatePresence } from "framer-motion";
 interface SystemSettings {
   maintenanceMode: boolean;
   allowRegistration: boolean;
+}
+
+interface RecaptchaSettings {
+  enabled: boolean;
+  siteKey: string;
 }
 
 const MAX_ATTEMPTS = 5;
@@ -44,6 +50,12 @@ const Login = () => {
     maintenanceMode: false,
     allowRegistration: true,
   });
+  const [recaptchaSettings, setRecaptchaSettings] = useState<RecaptchaSettings>({
+    enabled: false,
+    siteKey: '',
+  });
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const toast = useAlertToast();
@@ -86,6 +98,36 @@ const Login = () => {
     };
 
     fetchSystemSettings();
+
+    // Fetch reCAPTCHA settings
+    const fetchRecaptchaSettings = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('pixup', {
+          body: { action: 'get_public_settings' }
+        });
+        
+        if (!error && data?.success && data?.data) {
+          // Get site key from gateway_settings
+          const { data: gatewayData } = await supabase
+            .from('gateway_settings')
+            .select('recaptcha_enabled, recaptcha_site_key')
+            .eq('provider', 'pixup')
+            .limit(1)
+            .maybeSingle();
+          
+          if (gatewayData?.recaptcha_enabled && gatewayData?.recaptcha_site_key) {
+            setRecaptchaSettings({
+              enabled: true,
+              siteKey: gatewayData.recaptcha_site_key,
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching reCAPTCHA settings:', err);
+      }
+    };
+
+    fetchRecaptchaSettings();
 
     // Check if user is already logged in
     const checkSession = async () => {
@@ -345,6 +387,12 @@ const Login = () => {
       return;
     }
 
+    // reCAPTCHA validation
+    if (recaptchaSettings.enabled && !recaptchaToken) {
+      toast.error("Verificação necessária", "Complete a verificação reCAPTCHA.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -355,6 +403,7 @@ const Login = () => {
           body: {
             email: email.trim().toLowerCase(),
             honeypot,
+            recaptchaToken: recaptchaToken || undefined,
           },
         });
 
@@ -426,6 +475,7 @@ const Login = () => {
             name: name.trim(),
             whatsapp: whatsapp.replace(/\D/g, ''), // Remove all non-digits
             honeypot, // Send honeypot for bot detection
+            recaptchaToken: recaptchaToken || undefined,
           },
         });
 
@@ -460,6 +510,9 @@ const Login = () => {
           setName("");
           setWhatsapp("");
           setHoneypot("");
+          // Reset reCAPTCHA
+          recaptchaRef.current?.reset();
+          setRecaptchaToken(null);
         } else {
           toast.success("Conta criada!", "Faça login para continuar.");
           // Switch to login mode
@@ -469,6 +522,9 @@ const Login = () => {
           setName("");
           setWhatsapp("");
           setHoneypot("");
+          // Reset reCAPTCHA
+          recaptchaRef.current?.reset();
+          setRecaptchaToken(null);
         }
         
         setIsSubmitting(false);
@@ -477,6 +533,9 @@ const Login = () => {
       recordFailedAttempt(email);
       toast.error("Erro", error.message || "Ocorreu um erro inesperado.");
       setIsSubmitting(false);
+      // Reset reCAPTCHA on error
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
     }
   };
 
@@ -722,9 +781,22 @@ const Login = () => {
               <p className="text-sm text-destructive text-center">{rateLimitError}</p>
             )}
 
+            {/* reCAPTCHA Widget */}
+            {recaptchaSettings.enabled && recaptchaSettings.siteKey && (
+              <div className="flex justify-center">
+                <ReCAPTCHA
+                  ref={recaptchaRef}
+                  sitekey={recaptchaSettings.siteKey}
+                  onChange={(token) => setRecaptchaToken(token)}
+                  onExpired={() => setRecaptchaToken(null)}
+                  theme="dark"
+                />
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || (recaptchaSettings.enabled && !recaptchaToken)}
               className="w-full py-3 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? "Aguarde..." : isLogin ? "Entrar" : "Criar conta"}
