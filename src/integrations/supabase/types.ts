@@ -53,8 +53,10 @@ export type Database = {
           client_secret: string | null
           created_at: string
           email_enabled: boolean | null
+          email_verification_enabled: boolean | null
           id: string
           is_active: boolean
+          password_recovery_enabled: boolean | null
           provider: string
           resend_api_key: string | null
           resend_from_email: string | null
@@ -67,8 +69,10 @@ export type Database = {
           client_secret?: string | null
           created_at?: string
           email_enabled?: boolean | null
+          email_verification_enabled?: boolean | null
           id?: string
           is_active?: boolean
+          password_recovery_enabled?: boolean | null
           provider?: string
           resend_api_key?: string | null
           resend_from_email?: string | null
@@ -81,8 +85,10 @@ export type Database = {
           client_secret?: string | null
           created_at?: string
           email_enabled?: boolean | null
+          email_verification_enabled?: boolean | null
           id?: string
           is_active?: boolean
+          password_recovery_enabled?: boolean | null
           provider?: string
           resend_api_key?: string | null
           resend_from_email?: string | null
@@ -559,6 +565,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      verification_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          type: string
+          used: boolean | null
+          user_email: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          type: string
+          used?: boolean | null
+          user_email: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          type?: string
+          used?: boolean | null
+          user_email?: string
+        }
+        Relationships: []
       }
     }
     Views: {

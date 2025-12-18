@@ -96,7 +96,7 @@ serve(async (req) => {
     const { userId, isAuthenticated } = await getUserFromRequest(req, supabaseAuth);
 
     // SECURITY: Define which actions require authentication and admin role
-    const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection', 'save_email_settings'];
+    const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection', 'save_email_settings', 'save_feature_toggles'];
     const authRequiredActions = ['create_pix'];
 
     if (adminOnlyActions.includes(action)) {
@@ -136,8 +136,14 @@ serve(async (req) => {
       case 'get_settings':
         return await getSettings(supabaseAdmin);
       
+      case 'get_public_settings':
+        return await getPublicSettings(supabaseAdmin);
+      
       case 'save_email_settings':
         return await saveEmailSettings(supabaseAdmin, params);
+      
+      case 'save_feature_toggles':
+        return await saveFeatureToggles(supabaseAdmin, params);
       
       case 'create_pix':
         return await createPixCharge(supabaseAdmin, params, userId!);
@@ -187,6 +193,78 @@ async function getSettings(supabase: any) {
         has_resend_key: !!data.resend_api_key
       } : null 
     }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+// Public settings (no auth required)
+async function getPublicSettings(supabase: any) {
+  const { data, error } = await supabase
+    .from('gateway_settings')
+    .select('password_recovery_enabled, email_verification_enabled, email_enabled')
+    .eq('provider', 'pixup')
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error fetching public settings:', error);
+    return new Response(
+      JSON.stringify({ success: true, data: null }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  return new Response(
+    JSON.stringify({ 
+      success: true, 
+      data: data ? {
+        password_recovery_enabled: data.password_recovery_enabled && data.email_enabled,
+        email_verification_enabled: data.email_verification_enabled && data.email_enabled
+      } : null 
+    }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+async function saveFeatureToggles(supabase: any, params: { 
+  password_recovery_enabled?: boolean; 
+  email_verification_enabled?: boolean;
+}) {
+  const { password_recovery_enabled, email_verification_enabled } = params;
+
+  const { data: existing } = await supabase
+    .from('gateway_settings')
+    .select('id')
+    .eq('provider', 'pixup')
+    .maybeSingle();
+
+  if (!existing) {
+    return new Response(
+      JSON.stringify({ error: 'Configure email primeiro' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const updateData: any = { updated_at: new Date().toISOString() };
+  
+  if (password_recovery_enabled !== undefined) {
+    updateData.password_recovery_enabled = password_recovery_enabled;
+  }
+  if (email_verification_enabled !== undefined) {
+    updateData.email_verification_enabled = email_verification_enabled;
+  }
+
+  const { error } = await supabase
+    .from('gateway_settings')
+    .update(updateData)
+    .eq('id', existing.id);
+
+  if (error) {
+    console.error('Error saving feature toggles:', error);
+    throw new Error('Failed to save feature toggles');
+  }
+
+  return new Response(
+    JSON.stringify({ success: true }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }

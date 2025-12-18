@@ -2526,6 +2526,11 @@ const ApiSection = () => {
   const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [isTestingEmail, setIsTestingEmail] = useState(false);
 
+  // Feature toggles
+  const [passwordRecoveryEnabled, setPasswordRecoveryEnabled] = useState(false);
+  const [emailVerificationEnabled, setEmailVerificationEnabled] = useState(false);
+  const [isSavingToggles, setIsSavingToggles] = useState(false);
+
   // Load settings on mount
   useEffect(() => {
     const loadSettings = async () => {
@@ -2547,6 +2552,9 @@ const ApiSection = () => {
           setResendFromName(data.data.resend_from_name || "SWEXTRACTOR");
           setEmailEnabled(data.data.email_enabled === true);
           setHasResendKey(data.data.has_resend_key === true);
+          // Feature toggles
+          setPasswordRecoveryEnabled(data.data.password_recovery_enabled === true);
+          setEmailVerificationEnabled(data.data.email_verification_enabled === true);
         } else {
           // No settings yet
           setClientId("");
@@ -2721,6 +2729,31 @@ const ApiSection = () => {
       toast.error("Erro ao testar email");
     } finally {
       setIsTestingEmail(false);
+    }
+  };
+
+  const handleSaveToggles = async (field: string, value: boolean) => {
+    setIsSavingToggles(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('pixup', {
+        body: { 
+          action: 'save_feature_toggles',
+          [field]: value
+        }
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast.success("Configuração salva!");
+        if (field === 'password_recovery_enabled') setPasswordRecoveryEnabled(value);
+        if (field === 'email_verification_enabled') setEmailVerificationEnabled(value);
+      } else {
+        toast.error(data?.error || "Erro ao salvar");
+      }
+    } catch (error) {
+      console.error('Error saving toggle:', error);
+      toast.error("Erro ao salvar configuração");
+    } finally {
+      setIsSavingToggles(false);
     }
   };
 
@@ -2911,6 +2944,41 @@ const ApiSection = () => {
           </div>
         </div>
       </div>
+
+      {/* Feature Toggles */}
+      {hasResendKey && emailEnabled && (
+        <div className="bg-card border border-border rounded-lg p-6">
+          <h3 className="font-semibold text-foreground mb-4">Funcionalidades de Email</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-foreground">Recuperação de Senha</p>
+                <p className="text-sm text-muted-foreground">Permite usuários recuperarem senha via código por email</p>
+              </div>
+              <button
+                onClick={() => handleSaveToggles('password_recovery_enabled', !passwordRecoveryEnabled)}
+                disabled={isSavingToggles}
+                className={`w-12 h-6 rounded-full transition-colors ${passwordRecoveryEnabled ? 'bg-primary' : 'bg-muted'}`}
+              >
+                <div className={`w-5 h-5 bg-white rounded-full transition-transform ${passwordRecoveryEnabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-foreground">Verificação de Email no Cadastro</p>
+                <p className="text-sm text-muted-foreground">Requer confirmação de email para criar conta</p>
+              </div>
+              <button
+                onClick={() => handleSaveToggles('email_verification_enabled', !emailVerificationEnabled)}
+                disabled={isSavingToggles}
+                className={`w-12 h-6 rounded-full transition-colors ${emailVerificationEnabled ? 'bg-primary' : 'bg-muted'}`}
+              >
+                <div className={`w-5 h-5 bg-white rounded-full transition-transform ${emailVerificationEnabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };

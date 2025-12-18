@@ -7,10 +7,13 @@ const corsHeaders = {
 };
 
 interface EmailRequest {
-  action: 'test' | 'password_reset' | 'welcome' | 'order_confirmation';
-  to: string;
+  action: 'test' | 'send_code' | 'verify_code' | 'reset_password' | 'order_confirmation';
+  type?: 'password_reset' | 'email_verification';
+  to?: string;
+  email?: string;
   name?: string;
-  resetLink?: string;
+  code?: string;
+  newPassword?: string;
   orderDetails?: {
     orderId: string;
     productName: string;
@@ -21,7 +24,7 @@ interface EmailRequest {
 async function getEmailSettings(supabase: any) {
   const { data, error } = await supabase
     .from('gateway_settings')
-    .select('resend_api_key, resend_from_email, resend_from_name, email_enabled')
+    .select('resend_api_key, resend_from_email, resend_from_name, email_enabled, password_recovery_enabled, email_verification_enabled')
     .eq('provider', 'pixup')
     .maybeSingle();
 
@@ -32,8 +35,31 @@ async function getEmailSettings(supabase: any) {
   return data;
 }
 
+function generateCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+async function sendEmail(apiKey: string, from: string, to: string, subject: string, html: string) {
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ from, to: [to], subject, html }),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    console.error("Resend API error:", result);
+    throw new Error(result.message || 'Failed to send email');
+  }
+
+  return result;
+}
+
 serve(async (req: Request): Promise<Response> => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -43,84 +69,205 @@ serve(async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { action, to, name, resetLink, orderDetails }: EmailRequest = await req.json();
+    const body: EmailRequest = await req.json();
+    const { action, type, to, email, name, code, newPassword, orderDetails } = body;
 
-    // Get email settings from database
+    console.log(`send-email action: ${action}, type: ${type}`);
+
     const settings = await getEmailSettings(supabase);
 
     if (!settings?.resend_api_key || !settings?.email_enabled) {
       return new Response(
-        JSON.stringify({ success: false, error: "Email not configured" }),
+        JSON.stringify({ success: false, error: "Email não configurado" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Use fetch to call Resend API directly
-    const resendApiKey = settings.resend_api_key;
     const fromEmail = `${settings.resend_from_name || 'SWEXTRACTOR'} <${settings.resend_from_email}>`;
 
-    let subject: string;
-    let html: string;
-
     switch (action) {
-      case 'test':
-        subject = "✅ Teste de Email - SWEXTRACTOR";
-        html = `
+      case 'test': {
+        const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #4ade80;">Teste Bem Sucedido!</h1>
+            <h1 style="color: #4ade80;">✅ Teste Bem Sucedido!</h1>
             <p>Este é um email de teste do sistema SWEXTRACTOR.</p>
             <p>Se você recebeu este email, a configuração está funcionando corretamente.</p>
             <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
             <p style="color: #888; font-size: 12px;">SWEXTRACTOR - Sistema de Gestão</p>
           </div>
         `;
-        break;
+        await sendEmail(settings.resend_api_key, fromEmail, to!, "✅ Teste de Email - SWEXTRACTOR", html);
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-      case 'password_reset':
-        subject = "🔐 Recuperação de Senha - SWEXTRACTOR";
-        html = `
+      case 'send_code': {
+        if (type === 'password_reset' && !settings.password_recovery_enabled) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Recuperação de senha desabilitada" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (type === 'email_verification' && !settings.email_verification_enabled) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Verificação de email desabilitada" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const verificationCode = generateCode();
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+        // Delete old codes for this email/type
+        await supabase
+          .from('verification_codes')
+          .delete()
+          .eq('user_email', to)
+          .eq('type', type);
+
+        // Insert new code
+        const { error: insertError } = await supabase
+          .from('verification_codes')
+          .insert({
+            user_email: to,
+            code: verificationCode,
+            type: type,
+            expires_at: expiresAt.toISOString()
+          });
+
+        if (insertError) {
+          console.error('Error inserting code:', insertError);
+          throw new Error('Failed to create verification code');
+        }
+
+        const subject = type === 'password_reset' 
+          ? "🔐 Código de Recuperação - SWEXTRACTOR"
+          : "📧 Confirme seu Email - SWEXTRACTOR";
+
+        const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0a0a0a; color: #fff;">
-            <h1 style="color: #4ade80;">Recuperação de Senha</h1>
-            <p>Olá${name ? ` ${name}` : ''},</p>
-            <p>Você solicitou a recuperação de senha da sua conta SWEXTRACTOR.</p>
-            <p>Clique no botão abaixo para redefinir sua senha:</p>
+            <h1 style="color: #4ade80;">${type === 'password_reset' ? '🔐 Recuperação de Senha' : '📧 Confirme seu Email'}</h1>
+            <p>Seu código de verificação é:</p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${resetLink}" style="background: #4ade80; color: #0a0a0a; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                Redefinir Senha
-              </a>
+              <div style="background: #111; padding: 20px 40px; border-radius: 12px; display: inline-block;">
+                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4ade80;">${verificationCode}</span>
+              </div>
             </div>
-            <p style="color: #888; font-size: 14px;">Se você não solicitou esta recuperação, ignore este email.</p>
-            <p style="color: #888; font-size: 14px;">O link expira em 1 hora.</p>
+            <p style="color: #888; font-size: 14px;">Este código expira em 15 minutos.</p>
+            <p style="color: #888; font-size: 14px;">Se você não solicitou este código, ignore este email.</p>
             <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
             <p style="color: #666; font-size: 12px;">SWEXTRACTOR - Sistema de Gestão</p>
           </div>
         `;
-        break;
 
-      case 'welcome':
-        subject = "🎉 Bem-vindo ao SWEXTRACTOR!";
-        html = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0a0a0a; color: #fff;">
-            <h1 style="color: #4ade80;">Bem-vindo ao SWEXTRACTOR!</h1>
-            <p>Olá${name ? ` ${name}` : ''},</p>
-            <p>Sua conta foi criada com sucesso!</p>
-            <p>Agora você pode acessar todos os recursos da plataforma.</p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${Deno.env.get('SITE_URL') || 'https://swextractor.com'}/login" style="background: #4ade80; color: #0a0a0a; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                Acessar Plataforma
-              </a>
-            </div>
-            <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
-            <p style="color: #666; font-size: 12px;">SWEXTRACTOR - Sistema de Gestão</p>
-          </div>
-        `;
-        break;
+        await sendEmail(settings.resend_api_key, fromEmail, to!, subject, html);
 
-      case 'order_confirmation':
-        subject = "✅ Pedido Confirmado - SWEXTRACTOR";
-        html = `
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case 'verify_code': {
+        const { data: codeData, error: codeError } = await supabase
+          .from('verification_codes')
+          .select('*')
+          .eq('user_email', email)
+          .eq('type', type)
+          .eq('code', code)
+          .eq('used', false)
+          .gt('expires_at', new Date().toISOString())
+          .maybeSingle();
+
+        if (codeError || !codeData) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Código inválido ou expirado" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Mark as used for email verification, but keep valid for password reset
+        if (type === 'email_verification') {
+          await supabase
+            .from('verification_codes')
+            .update({ used: true })
+            .eq('id', codeData.id);
+        }
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case 'reset_password': {
+        // Verify code again
+        const { data: codeData, error: codeError } = await supabase
+          .from('verification_codes')
+          .select('*')
+          .eq('user_email', email)
+          .eq('type', 'password_reset')
+          .eq('code', code)
+          .eq('used', false)
+          .gt('expires_at', new Date().toISOString())
+          .maybeSingle();
+
+        if (codeError || !codeData) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Código inválido ou expirado" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Find user by email
+        const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
+        
+        if (userError) {
+          console.error('Error listing users:', userError);
+          throw new Error('Failed to find user');
+        }
+
+        const user = userData.users.find((u: any) => u.email === email);
+        
+        if (!user) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Usuário não encontrado" }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Update password
+        const { error: updateError } = await supabase.auth.admin.updateUserById(
+          user.id,
+          { password: newPassword }
+        );
+
+        if (updateError) {
+          console.error('Error updating password:', updateError);
+          throw new Error('Failed to update password');
+        }
+
+        // Mark code as used
+        await supabase
+          .from('verification_codes')
+          .update({ used: true })
+          .eq('id', codeData.id);
+
+        console.log(`Password reset successful for ${email}`);
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case 'order_confirmation': {
+        const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0a0a0a; color: #fff;">
-            <h1 style="color: #4ade80;">Pedido Confirmado!</h1>
+            <h1 style="color: #4ade80;">✅ Pedido Confirmado!</h1>
             <p>Olá${name ? ` ${name}` : ''},</p>
             <p>Seu pedido foi confirmado com sucesso!</p>
             <div style="background: #111; padding: 15px; border-radius: 8px; margin: 20px 0;">
@@ -133,7 +280,12 @@ serve(async (req: Request): Promise<Response> => {
             <p style="color: #666; font-size: 12px;">SWEXTRACTOR - Sistema de Gestão</p>
           </div>
         `;
-        break;
+        await sendEmail(settings.resend_api_key, fromEmail, to!, "✅ Pedido Confirmado - SWEXTRACTOR", html);
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       default:
         return new Response(
@@ -141,40 +293,6 @@ serve(async (req: Request): Promise<Response> => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
     }
-
-    console.log(`Sending ${action} email to ${to}`);
-
-    // Call Resend API directly via fetch
-    const emailResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [to],
-        subject,
-        html,
-      }),
-    });
-
-    const emailResult = await emailResponse.json();
-
-    if (!emailResponse.ok) {
-      console.error("Resend API error:", emailResult);
-      return new Response(
-        JSON.stringify({ success: false, error: emailResult.message || 'Failed to send email' }),
-        { status: emailResponse.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log("Email sent successfully:", emailResult);
-
-    return new Response(
-      JSON.stringify({ success: true, data: emailResult }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
   } catch (error: any) {
     console.error("Error in send-email function:", error);
     return new Response(
