@@ -2522,7 +2522,7 @@ const ApiSection = () => {
   // Resend state
   const [resendApiKey, setResendApiKey] = useState("");
   const [resendFromEmail, setResendFromEmail] = useState("");
-  const [resendFromName, setResendFromName] = useState("SWEXTRACTOR");
+  const [resendFromName, setResendFromName] = useState("DLG Connect");
   const [emailEnabled, setEmailEnabled] = useState(false);
   const [hasResendKey, setHasResendKey] = useState(false);
   const [showResendKey, setShowResendKey] = useState(false);
@@ -2549,7 +2549,7 @@ const ApiSection = () => {
   const [templateGreeting, setTemplateGreeting] = useState("Olá {name}!");
   const [templateMessage, setTemplateMessage] = useState("Seu código de verificação é:");
   const [templateExpiryText, setTemplateExpiryText] = useState("Este código expira em 15 minutos.");
-  const [templateFooter, setTemplateFooter] = useState("SWEXTRACTOR - Sistema de Gestão");
+  const [templateFooter, setTemplateFooter] = useState("DLG Connect - Sistema de Gestão");
   const [templateBgColor, setTemplateBgColor] = useState("#0a0a0a");
   const [templateAccentColor, setTemplateAccentColor] = useState("#4ade80");
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
@@ -2573,7 +2573,7 @@ const ApiSection = () => {
           setHasSecret(data.data.has_secret === true);
           // Resend settings
           setResendFromEmail(data.data.resend_from_email || "");
-          setResendFromName(data.data.resend_from_name || "SWEXTRACTOR");
+          setResendFromName(data.data.resend_from_name || "DLG Connect");
           setEmailEnabled(data.data.email_enabled === true);
           setHasResendKey(data.data.has_resend_key === true);
           // reCAPTCHA settings
@@ -2588,7 +2588,7 @@ const ApiSection = () => {
           setTemplateGreeting(data.data.email_template_greeting || "Olá {name}!");
           setTemplateMessage(data.data.email_template_message || "Seu código de verificação é:");
           setTemplateExpiryText(data.data.email_template_expiry_text || "Este código expira em 15 minutos.");
-          setTemplateFooter(data.data.email_template_footer || "SWEXTRACTOR - Sistema de Gestão");
+          setTemplateFooter(data.data.email_template_footer || "DLG Connect - Sistema de Gestão");
           setTemplateBgColor(data.data.email_template_bg_color || "#0a0a0a");
           setTemplateAccentColor(data.data.email_template_accent_color || "#4ade80");
         } else {
@@ -2716,7 +2716,7 @@ const ApiSection = () => {
       const payload: any = { 
         action: 'save_email_settings',
         resend_from_email: trimmedFromEmail,
-        resend_from_name: resendFromName.trim() || "SWEXTRACTOR",
+        resend_from_name: resendFromName.trim() || "DLG Connect",
         email_enabled: true
       };
       
@@ -2975,7 +2975,7 @@ const ApiSection = () => {
                     type="text"
                     value={resendFromName}
                     onChange={(e) => setResendFromName(e.target.value)}
-                    placeholder="SWEXTRACTOR"
+                    placeholder="DLG Connect"
                     className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
@@ -3391,7 +3391,7 @@ const BotManagementSection = () => {
     <motion.div {...fadeIn} className="space-y-6">
       <div>
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">Gerenciar Bot</h2>
-        <p className="text-sm text-muted-foreground">Upload do executável SWEXTRACTOR.exe</p>
+        <p className="text-sm text-muted-foreground">Upload do executável DLGConnect.exe</p>
       </div>
 
       {/* Current Bot File */}
@@ -3739,7 +3739,7 @@ const Admin = () => {
   
   const adminUser = {
     name: user?.user_metadata?.name || "Administrador",
-    email: user?.email || "admin@swextractor.com",
+    email: user?.email || "admin@dlgconnect.com",
     initials: (user?.user_metadata?.name || "AD").slice(0, 2).toUpperCase(),
   };
 
@@ -3896,7 +3896,7 @@ const Admin = () => {
         {/* Footer */}
         <footer className="border-t border-border py-4 px-6">
           <p className="text-center text-xs text-muted-foreground">
-            © 2025 SWEXTRACTOR. Desenvolvido por{" "}
+            © 2025 DLG Connect. Desenvolvido por{" "}
             <a 
               href="https://wa.me/5565996498222" 
               target="_blank" 

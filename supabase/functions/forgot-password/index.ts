@@ -162,7 +162,7 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    const fromEmail = `${gatewayData.resend_from_name || 'SWEXTRACTOR'} <${gatewayData.resend_from_email || 'noreply@resend.dev'}>`;
+    const fromEmail = `${gatewayData.resend_from_name || 'DLG Connect'} <${gatewayData.resend_from_email || 'noreply@resend.dev'}>`;
 
     // ==========================================
     // ACTION: REQUEST CODE
@@ -285,7 +285,7 @@ serve(async (req: Request): Promise<Response> => {
           const greeting = (gatewayData.email_template_greeting || 'Olá!').replace('{name}', '');
           const message = 'Seu código de recuperação é:';
           const expiryText = gatewayData.email_template_expiry_text || 'Este código expira em 15 minutos.';
-          const footer = gatewayData.email_template_footer || 'SWEXTRACTOR - Sistema de Gestão';
+          const footer = gatewayData.email_template_footer || 'DLG Connect - Sistema de Gestão';
           
           const html = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: ${bgColor}; color: #fff;">

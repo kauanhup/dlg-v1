@@ -419,14 +419,14 @@ serve(async (req: Request): Promise<Response> => {
       });
 
       // Send verification email
-      const fromEmail = `${gatewayData.resend_from_name || 'SWEXTRACTOR'} <${gatewayData.resend_from_email || 'noreply@resend.dev'}>`;
+      const fromEmail = `${gatewayData.resend_from_name || 'DLG Connect'} <${gatewayData.resend_from_email || 'noreply@resend.dev'}>`;
       
       // Get template settings with defaults
       const templateTitle = gatewayData.email_template_title || '✉️ Verificação de Email';
       const templateGreeting = (gatewayData.email_template_greeting || 'Olá {name}!').replace('{name}', name.trim());
       const templateMessage = gatewayData.email_template_message || 'Seu código de verificação é:';
       const templateExpiryText = gatewayData.email_template_expiry_text || 'Este código expira em 15 minutos.';
-      const templateFooter = gatewayData.email_template_footer || 'SWEXTRACTOR - Sistema de Gestão';
+      const templateFooter = gatewayData.email_template_footer || 'DLG Connect - Sistema de Gestão';
       const templateBgColor = gatewayData.email_template_bg_color || '#0a0a0a';
       const templateAccentColor = gatewayData.email_template_accent_color || '#4ade80';
       
@@ -448,7 +448,7 @@ serve(async (req: Request): Promise<Response> => {
           </div>
         `;
         
-        await sendEmail(gatewayData.resend_api_key, fromEmail, emailClean, `${templateTitle.replace(/✉️\s*/, '')} - ${gatewayData.resend_from_name || 'SWEXTRACTOR'}`, html);
+        await sendEmail(gatewayData.resend_api_key, fromEmail, emailClean, `${templateTitle.replace(/✉️\s*/, '')} - ${gatewayData.resend_from_name || 'DLG Connect'}`, html);
         console.log(`Verification code sent to: ${emailClean}`);
       } catch (emailError) {
         console.error('Error sending verification email:', emailError);

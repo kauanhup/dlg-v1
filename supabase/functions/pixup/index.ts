@@ -211,7 +211,7 @@ async function getSettings(supabase: any) {
         email_template_greeting: data.email_template_greeting || 'Olá {name}!',
         email_template_message: data.email_template_message || 'Seu código de verificação é:',
         email_template_expiry_text: data.email_template_expiry_text || 'Este código expira em 15 minutos.',
-        email_template_footer: data.email_template_footer || 'SWEXTRACTOR - Sistema de Gestão',
+        email_template_footer: data.email_template_footer || 'DLG Connect - Sistema de Gestão',
         email_template_bg_color: data.email_template_bg_color || '#0a0a0a',
         email_template_accent_color: data.email_template_accent_color || '#4ade80'
       } : null 
@@ -487,7 +487,7 @@ async function saveEmailSettings(supabase: any, params: {
 
   const updateData: any = {
     resend_from_email,
-    resend_from_name: resend_from_name || 'SWEXTRACTOR',
+    resend_from_name: resend_from_name || 'DLG Connect',
     email_enabled: email_enabled !== false,
     updated_at: new Date().toISOString()
   };

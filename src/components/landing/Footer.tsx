@@ -11,7 +11,7 @@ const Footer = () => {
     >
       <div className="container mx-auto px-4 sm:px-6">
         <p className="text-muted-foreground text-sm text-center">
-          © 2025 SWEXTRATOR. Criado por{" "}
+          © 2025 DLG Connect. Criado por{" "}
           <a 
             href="https://wa.me/5565996498222" 
             target="_blank" 
