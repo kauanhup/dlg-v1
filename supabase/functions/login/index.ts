@@ -19,7 +19,7 @@ interface LoginValidationRequest {
  * - Verificar se usuário existe (via profiles)
  * - Verificar se usuário está banido
  * - Verificar se profile existe (conta ativada)
- * - Registrar tentativa de login
+ * - Registrar tentativa de login (login_history)
  * 
  * NÃO FAZ:
  * - signInWithPassword (isso é responsabilidade do frontend)
@@ -123,6 +123,10 @@ serve(async (req: Request): Promise<Response> => {
     // Return generic error to not reveal if email exists
     if (!profileData) {
       console.log('Login validation failed: profile not found');
+      
+      // Log failed attempt (we don't have user_id, so we can't log to login_history)
+      // This is intentional - we don't want to reveal if email exists
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -137,6 +141,10 @@ serve(async (req: Request): Promise<Response> => {
     // ==========================================
     if (profileData.banned === true) {
       console.log('Login blocked: user is banned');
+      
+      // Log failed login attempt
+      await logLoginAttempt(supabaseAdmin, profileData.user_id, 'failed', 'Conta suspensa');
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -162,6 +170,7 @@ serve(async (req: Request): Promise<Response> => {
 
     // ==========================================
     // RETURN SUCCESS - Frontend will do signInWithPassword
+    // Note: login_history will be logged after successful auth in frontend
     // ==========================================
     return new Response(
       JSON.stringify({ 
@@ -181,3 +190,23 @@ serve(async (req: Request): Promise<Response> => {
     );
   }
 });
+
+// Helper function to log login attempts
+async function logLoginAttempt(
+  supabaseAdmin: any, 
+  userId: string, 
+  status: 'success' | 'failed', 
+  failureReason?: string
+) {
+  try {
+    await supabaseAdmin.from('login_history').insert({
+      user_id: userId,
+      device: 'Web Browser',
+      location: 'Brasil',
+      status,
+      failure_reason: failureReason || null,
+    });
+  } catch (error) {
+    console.error('Error logging login attempt:', error);
+  }
+}

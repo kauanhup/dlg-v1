@@ -32,9 +32,14 @@ const Login = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showBannedModal, setShowBannedModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
-  const [showEmailConfirmationModal, setShowEmailConfirmationModal] = useState(false);
+  const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
   const [showAccountNotActivatedModal, setShowAccountNotActivatedModal] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [pendingPassword, setPendingPassword] = useState("");
+  const [pendingName, setPendingName] = useState("");
+  const [pendingWhatsapp, setPendingWhatsapp] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
     maintenanceMode: false,
     allowRegistration: true,
@@ -408,6 +413,11 @@ const Login = () => {
           return;
         }
 
+        // Log successful login attempt
+        if (validationData.userId) {
+          await logLoginAttempt(validationData.userId, 'success');
+        }
+
         // Clear rate limit on success
         clearRateLimit(email);
 
@@ -449,11 +459,15 @@ const Login = () => {
         // Clear rate limit on success
         clearRateLimit(email);
 
-        // Check if email confirmation is required
+        // Check if email confirmation is required (code verification)
         if (data.requiresEmailConfirmation) {
+          // Store pending data for verification step
           setPendingEmail(email.trim().toLowerCase());
-          setShowEmailConfirmationModal(true);
-          // Reset form
+          setPendingPassword(password);
+          setPendingName(name.trim());
+          setPendingWhatsapp(whatsapp.replace(/\D/g, ''));
+          setShowEmailVerificationModal(true);
+          // Reset only visible form fields
           setEmail("");
           setPassword("");
           setName("");
@@ -476,6 +490,54 @@ const Login = () => {
       recordFailedAttempt(email);
       toast.error("Erro", error.message || "Ocorreu um erro inesperado.");
       setIsSubmitting(false);
+    }
+  };
+
+  // Handle email verification code submission
+  const handleVerifyCode = async () => {
+    if (!verificationCode || verificationCode.length !== 6) {
+      toast.error("Código inválido", "Digite o código de 6 dígitos.");
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('register', {
+        body: {
+          action: 'verify_code',
+          email: pendingEmail,
+          password: pendingPassword,
+          name: pendingName,
+          whatsapp: pendingWhatsapp,
+          verificationCode,
+        },
+      });
+
+      if (error) {
+        toast.error("Erro", "Ocorreu um erro ao verificar o código.");
+        setIsVerifying(false);
+        return;
+      }
+
+      if (!data?.success) {
+        toast.error("Código inválido", data?.error || "O código está incorreto ou expirado.");
+        setIsVerifying(false);
+        return;
+      }
+
+      // Success - close modal and switch to login
+      toast.success("Conta criada!", "Faça login para continuar.");
+      setShowEmailVerificationModal(false);
+      setVerificationCode("");
+      setPendingEmail("");
+      setPendingPassword("");
+      setPendingName("");
+      setPendingWhatsapp("");
+      setIsLogin(true);
+    } catch (err: any) {
+      toast.error("Erro", "Erro ao verificar código.");
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -817,9 +879,9 @@ const Login = () => {
         )}
       </AnimatePresence>
 
-      {/* Email Confirmation Required Modal */}
+      {/* Email Verification Code Modal */}
       <AnimatePresence>
-        {showEmailConfirmationModal && (
+        {showEmailVerificationModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -837,27 +899,47 @@ const Login = () => {
                   <Mail className="w-8 h-8 text-primary" />
                 </div>
                 <h2 className="text-xl font-bold text-foreground mb-2">
-                  Verifique seu Email
+                  Verificar Email
                 </h2>
                 <p className="text-muted-foreground mb-2">
-                  Enviamos um link de confirmação para:
+                  Enviamos um código de verificação para:
                 </p>
                 <p className="text-primary font-medium mb-4">
                   {pendingEmail}
                 </p>
-                <p className="text-sm text-muted-foreground mb-6">
-                  Clique no link enviado para ativar sua conta. Verifique também a pasta de spam.
+                <p className="text-sm text-muted-foreground mb-4">
+                  Digite o código de 6 dígitos:
                 </p>
+                <input
+                  type="text"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  maxLength={6}
+                  className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground text-center text-2xl tracking-widest placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 mb-4"
+                  disabled={isVerifying}
+                />
                 <div className="flex flex-col gap-3">
                   <button
-                    onClick={() => {
-                      setShowEmailConfirmationModal(false);
-                      setPendingEmail("");
-                    }}
-                    className="py-3 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all"
+                    onClick={handleVerifyCode}
+                    disabled={isVerifying || verificationCode.length !== 6}
+                    className="py-3 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50"
                   >
-                    <CheckCircle className="w-5 h-5 inline mr-2" />
-                    Entendido
+                    {isVerifying ? "Verificando..." : "Verificar Código"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowEmailVerificationModal(false);
+                      setVerificationCode("");
+                      setPendingEmail("");
+                      setPendingPassword("");
+                      setPendingName("");
+                      setPendingWhatsapp("");
+                    }}
+                    className="py-2 px-4 text-muted-foreground hover:text-foreground transition-colors"
+                    disabled={isVerifying}
+                  >
+                    Cancelar
                   </button>
                 </div>
               </div>
