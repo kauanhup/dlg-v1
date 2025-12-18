@@ -503,33 +503,49 @@ const Login = () => {
           },
         });
 
-        // Handle network/invocation errors separately from validation errors
-        if (validationError && !validationData) {
+        // Get response data - supabase.functions.invoke returns data even on non-2xx status
+        // The error object contains the response body when status is not 2xx
+        const responseData = validationData || (validationError as any)?.context?.body || null;
+        
+        // Parse error response if needed
+        let parsedResponse = responseData;
+        if (!parsedResponse && validationError) {
+          // Try to extract error message from the error object
+          try {
+            const errorMessage = (validationError as any)?.message;
+            if (errorMessage) {
+              parsedResponse = JSON.parse(errorMessage);
+            }
+          } catch {
+            // Not a JSON error, might be network error
+          }
+        }
+        
+        // True network error - no data at all
+        if (!parsedResponse && validationError) {
           recordFailedAttempt(email);
           toast.error("Erro de conexão", "Não foi possível conectar ao servidor. Tente novamente.");
           setIsSubmitting(false);
           return;
         }
 
-        if (!validationData?.success) {
+        if (!parsedResponse?.success) {
           recordFailedAttempt(email);
           
-          const errorCode = validationData?.code || '';
-          const errorMessage = validationData?.error || 'Credenciais inválidas';
+          const errorCode = parsedResponse?.code || '';
+          const errorMessage = parsedResponse?.error || 'Credenciais inválidas';
           
           // Handle specific error codes from validation
           if (errorCode === 'MAINTENANCE') {
             setShowMaintenanceModal(true);
           } else if (errorCode === 'BANNED') {
             setShowBannedModal(true);
-          } else if (errorCode === 'RATE_LIMITED' || errorCode === 'RATE_LIMIT_IP') {
+          } else if (errorCode === 'USER_RATE_LIMITED' || errorCode === 'IP_RATE_LIMITED') {
             toast.error("Muitas tentativas", errorMessage);
           } else if (errorCode === 'RECAPTCHA_FAILED' || errorCode === 'RECAPTCHA_REQUIRED') {
             toast.error("Verificação de segurança", errorMessage);
             recaptchaRef.current?.reset();
             setRecaptchaToken(null);
-          } else if (errorCode === 'INVALID_CREDENTIALS' || errorCode === 'PROFILE_NOT_FOUND') {
-            toast.error("Erro no login", "Credenciais inválidas");
           } else {
             // Show the specific backend error message
             toast.error("Erro no login", errorMessage);
