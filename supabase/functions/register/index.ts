@@ -375,14 +375,14 @@ serve(async (req: Request): Promise<Response> => {
 
     if (existingProfile) {
       // Return generic message to not reveal email exists
+      // IMPORTANT: Set requiresEmailConfirmation to false so frontend doesn't show verification modal
       console.log('Email already registered, returning generic message');
       return new Response(
         JSON.stringify({ 
           success: true, 
-          requiresEmailConfirmation: requireEmailConfirmation,
-          message: requireEmailConfirmation 
-            ? "Se este email não estiver cadastrado, você receberá um código de verificação."
-            : "Se este email não estiver cadastrado, sua conta foi criada."
+          requiresEmailConfirmation: false,
+          emailAlreadyExists: true, // Internal flag for generic handling
+          message: "Se este email não estiver cadastrado, você receberá instruções por email."
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

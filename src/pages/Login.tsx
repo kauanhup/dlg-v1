@@ -488,6 +488,21 @@ const Login = () => {
         // Clear rate limit on success
         clearRateLimit(email);
 
+        // Handle generic response (email may or may not exist - for security)
+        if (data.emailAlreadyExists) {
+          toast.success("Solicitação enviada", data.message || "Verifique seu email para continuar.");
+          setIsLogin(true);
+          setEmail("");
+          setPassword("");
+          setName("");
+          setWhatsapp("");
+          setHoneypot("");
+          recaptchaRef.current?.reset();
+          setRecaptchaToken(null);
+          setIsSubmitting(false);
+          return;
+        }
+
         // Check if email confirmation is required (code verification)
         if (data.requiresEmailConfirmation) {
           // Store pending data for verification step
