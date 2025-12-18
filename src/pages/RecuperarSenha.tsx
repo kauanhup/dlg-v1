@@ -48,26 +48,19 @@ const RecuperarSenha = () => {
           }
         });
 
-        // Check if password recovery is enabled via forgot-password function
-        const { data } = await supabase.functions.invoke('forgot-password', {
-          body: { action: 'check_enabled' }
+        // Check if password recovery is enabled via pixup function (also gets reCAPTCHA settings)
+        const { data: publicSettings } = await supabase.functions.invoke('pixup', {
+          body: { action: 'get_public_settings' }
         });
         
-        if (data?.success && data?.enabled) {
-          setIsEnabled(true);
-        }
-
-        // Check reCAPTCHA settings
-        const { data: gatewayData } = await supabase
-          .from('gateway_settings')
-          .select('recaptcha_enabled, recaptcha_site_key')
-          .eq('provider', 'pixup')
-          .limit(1)
-          .maybeSingle();
-        
-        if (gatewayData?.recaptcha_enabled && gatewayData?.recaptcha_site_key) {
-          setRecaptchaEnabled(true);
-          setRecaptchaSiteKey(gatewayData.recaptcha_site_key);
+        if (publicSettings?.success && publicSettings?.data) {
+          if (publicSettings.data.password_recovery_enabled) {
+            setIsEnabled(true);
+          }
+          if (publicSettings.data.recaptcha_enabled && publicSettings.data.recaptcha_site_key) {
+            setRecaptchaEnabled(true);
+            setRecaptchaSiteKey(publicSettings.data.recaptcha_site_key);
+          }
         }
       } catch (err) {
         console.error('Error checking settings:', err);

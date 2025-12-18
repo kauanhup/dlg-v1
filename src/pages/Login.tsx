@@ -107,18 +107,10 @@ const Login = () => {
         });
         
         if (!error && data?.success && data?.data) {
-          // Get site key from gateway_settings
-          const { data: gatewayData } = await supabase
-            .from('gateway_settings')
-            .select('recaptcha_enabled, recaptcha_site_key')
-            .eq('provider', 'pixup')
-            .limit(1)
-            .maybeSingle();
-          
-          if (gatewayData?.recaptcha_enabled && gatewayData?.recaptcha_site_key) {
+          if (data.data.recaptcha_enabled && data.data.recaptcha_site_key) {
             setRecaptchaSettings({
               enabled: true,
-              siteKey: gatewayData.recaptcha_site_key,
+              siteKey: data.data.recaptcha_site_key,
             });
           }
         }
