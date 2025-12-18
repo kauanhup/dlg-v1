@@ -165,11 +165,13 @@ serve(async (req) => {
 });
 
 async function getSettings(supabase: any) {
-  // FIXED: Remove is_active filter so admin can always see saved credentials
+  // Use limit(1) to handle potential duplicates gracefully
   const { data, error } = await supabase
     .from('gateway_settings')
     .select('*')
     .eq('provider', 'pixup')
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) {
@@ -206,6 +208,8 @@ async function getPublicSettings(supabase: any) {
     .from('gateway_settings')
     .select('password_recovery_enabled, email_verification_enabled, email_enabled')
     .eq('provider', 'pixup')
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) {
@@ -238,6 +242,8 @@ async function saveFeatureToggles(supabase: any, params: {
     .from('gateway_settings')
     .select('id')
     .eq('provider', 'pixup')
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (!existing) {
@@ -287,6 +293,8 @@ async function saveCredentials(supabase: any, params: { client_id: string; clien
     .from('gateway_settings')
     .select('id, client_secret')
     .eq('provider', 'pixup')
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   // If no existing settings and no secret provided, error
@@ -362,6 +370,8 @@ async function saveEmailSettings(supabase: any, params: {
     .from('gateway_settings')
     .select('id, resend_api_key')
     .eq('provider', 'pixup')
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   // If no existing settings and no key provided, error
@@ -427,6 +437,8 @@ async function testConnection(supabase: any) {
     .from('gateway_settings')
     .select('client_id, client_secret')
     .eq('provider', 'pixup')
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error || !settings?.client_id || !settings?.client_secret) {
