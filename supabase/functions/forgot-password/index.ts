@@ -123,7 +123,7 @@ serve(async (req: Request): Promise<Response> => {
     // ==========================================
     const { data: gatewayData } = await supabaseAdmin
       .from('gateway_settings')
-      .select('password_recovery_enabled, resend_api_key, resend_from_email, resend_from_name, recaptcha_enabled, recaptcha_secret_key')
+      .select('password_recovery_enabled, resend_api_key, resend_from_email, resend_from_name, recaptcha_enabled, recaptcha_secret_key, email_template_title, email_template_greeting, email_template_message, email_template_expiry_text, email_template_footer, email_template_bg_color, email_template_accent_color')
       .limit(1)
       .single();
 
@@ -276,24 +276,34 @@ serve(async (req: Request): Promise<Response> => {
           used: false,
         });
 
-        // Send email
+        // Send email using template settings
         try {
+          // Get template settings with defaults
+          const bgColor = gatewayData.email_template_bg_color || '#0a0a0a';
+          const accentColor = gatewayData.email_template_accent_color || '#4ade80';
+          const title = '🔐 Recuperação de Senha';
+          const greeting = (gatewayData.email_template_greeting || 'Olá!').replace('{name}', '');
+          const message = 'Seu código de recuperação é:';
+          const expiryText = gatewayData.email_template_expiry_text || 'Este código expira em 15 minutos.';
+          const footer = gatewayData.email_template_footer || 'SWEXTRACTOR - Sistema de Gestão';
+          
           const html = `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0a0a0a; color: #fff;">
-              <h1 style="color: #4ade80;">🔐 Recuperação de Senha</h1>
-              <p>Seu código de verificação é:</p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: ${bgColor}; color: #fff;">
+              <h1 style="color: ${accentColor}; font-size: 24px; font-weight: bold; margin-bottom: 16px;">${title}</h1>
+              <p style="margin-bottom: 8px;">${greeting}</p>
+              <p style="margin-bottom: 16px;">${message}</p>
               <div style="text-align: center; margin: 30px 0;">
                 <div style="background: #111; padding: 20px 40px; border-radius: 12px; display: inline-block;">
-                  <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4ade80;">${verificationCode}</span>
+                  <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: ${accentColor};">${verificationCode}</span>
                 </div>
               </div>
-              <p style="color: #888; font-size: 14px;">Este código expira em 15 minutos.</p>
+              <p style="color: #888; font-size: 14px;">${expiryText}</p>
               <p style="color: #888; font-size: 14px;">Se você não solicitou este código, ignore este email.</p>
               <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
-              <p style="color: #666; font-size: 12px;">SWEXTRACTOR - Sistema de Gestão</p>
+              <p style="color: #666; font-size: 12px;">${footer}</p>
             </div>
           `;
-          await sendEmail(gatewayData.resend_api_key, fromEmail, emailClean, "🔐 Código de Recuperação - SWEXTRACTOR", html);
+          await sendEmail(gatewayData.resend_api_key, fromEmail, emailClean, "🔐 Código de Recuperação", html);
           console.log(`Password reset code sent to: ${emailClean}`);
         } catch (emailError) {
           console.error('Error sending email:', emailError);
