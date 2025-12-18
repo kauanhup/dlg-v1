@@ -2505,6 +2505,8 @@ const SessionsSection = () => {
 
 // API Section - PixUp + Resend + reCAPTCHA
 const ApiSection = () => {
+  const [activeApiTab, setActiveApiTab] = useState<"gateway" | "email" | "security" | "template">("gateway");
+  
   // PixUp state
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
@@ -2787,569 +2789,514 @@ const ApiSection = () => {
     }
   };
 
+  const apiTabs = [
+    { id: "gateway" as const, label: "Gateway PIX", icon: CreditCard },
+    { id: "email" as const, label: "Email", icon: Zap },
+    { id: "security" as const, label: "Segurança", icon: Shield },
+    { id: "template" as const, label: "Template", icon: Edit },
+  ];
+
   return (
     <motion.div {...fadeIn} className="space-y-6">
       <div>
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">Configurações de API</h2>
-        <p className="text-sm text-muted-foreground">Gerencie integrações externas</p>
+        <p className="text-sm text-muted-foreground">Gerencie integrações e segurança</p>
       </div>
 
-      {/* PixUp Configuration */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-              <CreditCard className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground">PixUp (Gateway PIX)</h3>
-              <p className="text-sm text-muted-foreground">Credenciais de acesso ao BSPAY</p>
-            </div>
-          </div>
-          <div className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium",
-            isConnected ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
-          )}>
-            <div className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-yellow-500")} />
-            {isConnected ? "Conectado" : "Desconectado"}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">Client ID</label>
-            <input
-              type="text"
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              placeholder="Seu client_id do BSPAY"
-              className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">Client Secret</label>
-            <div className="relative">
-              <input
-                type={showSecret ? "text" : "password"}
-                value={clientSecret}
-                onChange={(e) => setClientSecret(e.target.value)}
-                placeholder={hasSecret ? "••••••••• (secret já configurado)" : "Seu client_secret do BSPAY"}
-                className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-              <button
-                type="button"
-                onClick={() => setShowSecret(!showSecret)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {hasSecret 
-                ? "Secret já configurado. Digite um novo apenas se quiser alterar."
-                : "Obtenha suas credenciais no painel do BSPAY"}
-            </p>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">URL do Webhook (opcional)</label>
-            <input
-              type="text"
-              value={webhookUrl}
-              onChange={(e) => setWebhookUrl(e.target.value)}
-              placeholder="https://seu-dominio.com/webhook/pixup"
-              className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <Button 
-              onClick={handleSave}
-              disabled={isLoading}
-              className="gap-2"
-            >
-              {isLoading ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
-              {isLoading ? "Salvando..." : "Salvar"}
-            </Button>
-            <Button 
-              variant="outline" 
-              className="gap-2"
-              onClick={handleTestConnection}
-              disabled={isTesting}
-            >
-              {isTesting ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
-              {isTesting ? "Testando..." : "Testar Conexão"}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Resend Email Configuration */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
-              <Zap className="w-5 h-5 text-blue-500" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground">Resend (Email)</h3>
-              <p className="text-sm text-muted-foreground">Configuração para envio de emails</p>
-            </div>
-          </div>
-          <div className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium",
-            emailEnabled && hasResendKey ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
-          )}>
-            <div className={cn("w-2 h-2 rounded-full", emailEnabled && hasResendKey ? "bg-green-500" : "bg-yellow-500")} />
-            {emailEnabled && hasResendKey ? "Ativo" : "Inativo"}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">API Key</label>
-            <div className="relative">
-              <input
-                type={showResendKey ? "text" : "password"}
-                value={resendApiKey}
-                onChange={(e) => setResendApiKey(e.target.value)}
-                placeholder={hasResendKey ? "••••••••• (key já configurada)" : "re_xxxxxxxx..."}
-                className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-              <button
-                type="button"
-                onClick={() => setShowResendKey(!showResendKey)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showResendKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Obtenha em <a href="https://resend.com/api-keys" target="_blank" rel="noopener" className="text-primary hover:underline">resend.com/api-keys</a>
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Email de Envio</label>
-              <input
-                type="email"
-                value={resendFromEmail}
-                onChange={(e) => setResendFromEmail(e.target.value)}
-                placeholder="suporte@dlgconnect.com"
-                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Nome do Remetente</label>
-              <input
-                type="text"
-                value={resendFromName}
-                onChange={(e) => setResendFromName(e.target.value)}
-                placeholder="SWEXTRACTOR"
-                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <Button 
-              onClick={handleSaveEmail}
-              disabled={isSavingEmail}
-              className="gap-2"
-            >
-              {isSavingEmail ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
-              {isSavingEmail ? "Salvando..." : "Salvar"}
-            </Button>
-            <Button 
-              variant="outline" 
-              className="gap-2"
-              onClick={handleTestEmail}
-              disabled={isTestingEmail || !hasResendKey}
-            >
-              {isTestingEmail ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
-              {isTestingEmail ? "Enviando..." : "Enviar Teste"}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Feature Toggles */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-foreground">Funcionalidades de Email</h3>
-          {!(hasResendKey && emailEnabled) && (
-            <span className="text-xs text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded">
-              Configure o Resend acima para ativar
-            </span>
-          )}
-        </div>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className={!(hasResendKey && emailEnabled) ? "opacity-50" : ""}>
-              <p className="font-medium text-foreground">Recuperação de Senha</p>
-              <p className="text-sm text-muted-foreground">Permite usuários recuperarem senha via código por email</p>
-            </div>
-            <button
-              onClick={() => handleSaveToggles('password_recovery_enabled', !passwordRecoveryEnabled)}
-              disabled={isSavingToggles || !(hasResendKey && emailEnabled)}
-              className={cn(
-                "w-12 h-6 rounded-full transition-colors",
-                passwordRecoveryEnabled && hasResendKey && emailEnabled ? 'bg-primary' : 'bg-muted',
-                !(hasResendKey && emailEnabled) && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <div className={cn(
-                "w-5 h-5 bg-white rounded-full transition-transform shadow-sm",
-                passwordRecoveryEnabled && hasResendKey && emailEnabled ? 'translate-x-6' : 'translate-x-0.5'
-              )} />
-            </button>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className={!(hasResendKey && emailEnabled) ? "opacity-50" : ""}>
-              <p className="font-medium text-foreground">Verificação de Email no Cadastro</p>
-              <p className="text-sm text-muted-foreground">Requer confirmação de email para criar conta</p>
-            </div>
-            <button
-              onClick={() => handleSaveToggles('email_verification_enabled', !emailVerificationEnabled)}
-              disabled={isSavingToggles || !(hasResendKey && emailEnabled)}
-              className={cn(
-                "w-12 h-6 rounded-full transition-colors",
-                emailVerificationEnabled && hasResendKey && emailEnabled ? 'bg-primary' : 'bg-muted',
-                !(hasResendKey && emailEnabled) && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <div className={cn(
-                "w-5 h-5 bg-white rounded-full transition-transform shadow-sm",
-                emailVerificationEnabled && hasResendKey && emailEnabled ? 'translate-x-6' : 'translate-x-0.5'
-              )} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* reCAPTCHA Configuration */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
-              <Shield className="w-5 h-5 text-green-500" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground">reCAPTCHA v2</h3>
-              <p className="text-sm text-muted-foreground">Proteção contra bots no login e cadastro</p>
-            </div>
-          </div>
+      {/* Tabs Navigation */}
+      <div className="flex flex-wrap gap-2 p-1 bg-muted/30 rounded-lg">
+        {apiTabs.map((tab) => (
           <button
-            onClick={async () => {
-              setIsSavingRecaptcha(true);
-              try {
-                const { data, error } = await supabase.functions.invoke('pixup', {
-                  body: { 
-                    action: 'save_recaptcha_settings',
-                    recaptcha_enabled: !recaptchaEnabled
-                  }
-                });
-                if (data?.success) {
-                  setRecaptchaEnabled(!recaptchaEnabled);
-                  toast.success(recaptchaEnabled ? "reCAPTCHA desativado" : "reCAPTCHA ativado");
-                } else {
-                  toast.error(data?.error || "Erro ao salvar");
-                }
-              } catch (error) {
-                toast.error("Erro ao salvar configuração");
-              } finally {
-                setIsSavingRecaptcha(false);
-              }
-            }}
-            disabled={isSavingRecaptcha || (!hasRecaptchaSecret && !recaptchaEnabled)}
+            key={tab.id}
+            onClick={() => setActiveApiTab(tab.id)}
             className={cn(
-              "w-12 h-6 rounded-full transition-colors",
-              recaptchaEnabled ? 'bg-green-500' : 'bg-muted',
-              (!hasRecaptchaSecret && !recaptchaEnabled) && "opacity-50 cursor-not-allowed"
+              "flex items-center gap-2 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all flex-1 sm:flex-none justify-center",
+              activeApiTab === tab.id
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
             )}
           >
-            <div className={cn(
-              "w-5 h-5 bg-white rounded-full transition-transform shadow-sm",
-              recaptchaEnabled ? 'translate-x-6' : 'translate-x-0.5'
-            )} />
+            <tab.icon className="w-4 h-4" />
+            <span className="hidden sm:inline">{tab.label}</span>
           </button>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">Site Key (Chave do Site)</label>
-            <input
-              type="text"
-              value={recaptchaSiteKey}
-              onChange={(e) => setRecaptchaSiteKey(e.target.value)}
-              placeholder="6Lc..."
-              className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Chave pública do reCAPTCHA v2
-            </p>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">Secret Key (Chave Secreta)</label>
-            <div className="relative">
-              <input
-                type={showRecaptchaSecret ? "text" : "password"}
-                value={recaptchaSecretKey}
-                onChange={(e) => setRecaptchaSecretKey(e.target.value)}
-                placeholder={hasRecaptchaSecret ? "••••••••• (secret já configurado)" : "6Lc..."}
-                className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-              <button
-                type="button"
-                onClick={() => setShowRecaptchaSecret(!showRecaptchaSecret)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showRecaptchaSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Obtenha em <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener" className="text-primary hover:underline">google.com/recaptcha/admin</a>
-            </p>
-          </div>
-
-          <Button 
-            onClick={async () => {
-              if (!recaptchaSiteKey.trim()) {
-                toast.error("Preencha a Site Key");
-                return;
-              }
-              if (!hasRecaptchaSecret && !recaptchaSecretKey.trim()) {
-                toast.error("Preencha a Secret Key");
-                return;
-              }
-              
-              setIsSavingRecaptcha(true);
-              try {
-                const payload: any = { 
-                  action: 'save_recaptcha_settings',
-                  recaptcha_site_key: recaptchaSiteKey.trim()
-                };
-                if (recaptchaSecretKey.trim()) {
-                  payload.recaptcha_secret_key = recaptchaSecretKey.trim();
-                }
-                
-                const { data, error } = await supabase.functions.invoke('pixup', {
-                  body: payload
-                });
-                
-                if (data?.success) {
-                  toast.success("Configurações do reCAPTCHA salvas!");
-                  setHasRecaptchaSecret(true);
-                  setRecaptchaSecretKey("");
-                } else {
-                  toast.error(data?.error || "Erro ao salvar");
-                }
-              } catch (error) {
-                toast.error("Erro ao salvar configurações");
-              } finally {
-                setIsSavingRecaptcha(false);
-              }
-            }}
-            disabled={isSavingRecaptcha}
-            className="gap-2"
-          >
-            {isSavingRecaptcha ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
-            {isSavingRecaptcha ? "Salvando..." : "Salvar"}
-          </Button>
-        </div>
+        ))}
       </div>
 
-      {/* Email Template Editor */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
-            <Edit className="w-5 h-5 text-purple-500" />
+      {/* Gateway PIX Tab */}
+      {activeApiTab === "gateway" && (
+        <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">PixUp (Gateway PIX)</h3>
+                <p className="text-sm text-muted-foreground">Credenciais BSPAY</p>
+              </div>
+            </div>
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit",
+              isConnected ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
+            )}>
+              <div className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-yellow-500")} />
+              {isConnected ? "Conectado" : "Desconectado"}
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold text-foreground">Template de Email</h3>
-            <p className="text-sm text-muted-foreground">Personalize o email de verificação</p>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Editor */}
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Título</label>
+              <label className="text-sm font-medium text-foreground mb-2 block">Client ID</label>
               <input
                 type="text"
-                value={templateTitle}
-                onChange={(e) => setTemplateTitle(e.target.value)}
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                placeholder="Seu client_id do BSPAY"
                 className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
+
             <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Saudação</label>
-              <input
-                type="text"
-                value={templateGreeting}
-                onChange={(e) => setTemplateGreeting(e.target.value)}
-                placeholder="Use {name} para o nome do usuário"
-                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Use {"{name}"} para incluir o nome do usuário</p>
+              <label className="text-sm font-medium text-foreground mb-2 block">Client Secret</label>
+              <div className="relative">
+                <input
+                  type={showSecret ? "text" : "password"}
+                  value={clientSecret}
+                  onChange={(e) => setClientSecret(e.target.value)}
+                  placeholder={hasSecret ? "••••••••• (já configurado)" : "Seu client_secret"}
+                  className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSecret(!showSecret)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
+
             <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Mensagem</label>
+              <label className="text-sm font-medium text-foreground mb-2 block">URL do Webhook</label>
               <input
                 type="text"
-                value={templateMessage}
-                onChange={(e) => setTemplateMessage(e.target.value)}
+                value={webhookUrl}
+                onChange={(e) => setWebhookUrl(e.target.value)}
+                placeholder="https://seu-dominio.com/webhook"
                 className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Texto de Expiração</label>
-              <input
-                type="text"
-                value={templateExpiryText}
-                onChange={(e) => setTemplateExpiryText(e.target.value)}
-                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Button onClick={handleSave} disabled={isLoading} className="gap-2">
+                {isLoading ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
+                Salvar
+              </Button>
+              <Button variant="outline" onClick={handleTestConnection} disabled={isTesting} className="gap-2">
+                {isTesting ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+                Testar
+              </Button>
             </div>
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Rodapé</label>
-              <input
-                type="text"
-                value={templateFooter}
-                onChange={(e) => setTemplateFooter(e.target.value)}
-                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
+          </div>
+        </div>
+      )}
+
+      {/* Email Tab */}
+      {activeApiTab === "email" && (
+        <div className="space-y-6">
+          {/* Resend Configuration */}
+          <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-blue-500" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Resend (Email)</h3>
+                  <p className="text-sm text-muted-foreground">Serviço de envio de emails</p>
+                </div>
+              </div>
+              <div className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit",
+                emailEnabled && hasResendKey ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
+              )}>
+                <div className={cn("w-2 h-2 rounded-full", emailEnabled && hasResendKey ? "bg-green-500" : "bg-yellow-500")} />
+                {emailEnabled && hasResendKey ? "Ativo" : "Inativo"}
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+
+            <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Cor de Fundo</label>
-                <div className="flex gap-2">
+                <label className="text-sm font-medium text-foreground mb-2 block">API Key</label>
+                <div className="relative">
                   <input
-                    type="color"
-                    value={templateBgColor}
-                    onChange={(e) => setTemplateBgColor(e.target.value)}
-                    className="w-10 h-10 rounded cursor-pointer border border-border"
+                    type={showResendKey ? "text" : "password"}
+                    value={resendApiKey}
+                    onChange={(e) => setResendApiKey(e.target.value)}
+                    placeholder={hasResendKey ? "••••••••• (já configurada)" : "re_xxxxxxxx..."}
+                    className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowResendKey(!showResendKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showResendKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Obtenha em <a href="https://resend.com/api-keys" target="_blank" rel="noopener" className="text-primary hover:underline">resend.com</a>
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Email de Envio</label>
+                  <input
+                    type="email"
+                    value={resendFromEmail}
+                    onChange={(e) => setResendFromEmail(e.target.value)}
+                    placeholder="suporte@seudominio.com"
+                    className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Nome do Remetente</label>
                   <input
                     type="text"
-                    value={templateBgColor}
-                    onChange={(e) => setTemplateBgColor(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-background border border-border rounded-md text-foreground font-mono text-sm"
+                    value={resendFromName}
+                    onChange={(e) => setResendFromName(e.target.value)}
+                    placeholder="SWEXTRACTOR"
+                    className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
               </div>
-              <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Cor de Destaque</label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={templateAccentColor}
-                    onChange={(e) => setTemplateAccentColor(e.target.value)}
-                    className="w-10 h-10 rounded cursor-pointer border border-border"
-                  />
-                  <input
-                    type="text"
-                    value={templateAccentColor}
-                    onChange={(e) => setTemplateAccentColor(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-background border border-border rounded-md text-foreground font-mono text-sm"
-                  />
-                </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <Button onClick={handleSaveEmail} disabled={isSavingEmail} className="gap-2">
+                  {isSavingEmail ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
+                  Salvar
+                </Button>
+                <Button variant="outline" onClick={handleTestEmail} disabled={isTestingEmail || !hasResendKey} className="gap-2">
+                  {isTestingEmail ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+                  Enviar Teste
+                </Button>
               </div>
             </div>
-            <Button 
-              onClick={async () => {
-                setIsSavingTemplate(true);
-                try {
-                  const { data, error } = await supabase.functions.invoke('pixup', {
-                    body: { 
-                      action: 'save_email_template',
-                      email_template_title: templateTitle,
-                      email_template_greeting: templateGreeting,
-                      email_template_message: templateMessage,
-                      email_template_expiry_text: templateExpiryText,
-                      email_template_footer: templateFooter,
-                      email_template_bg_color: templateBgColor,
-                      email_template_accent_color: templateAccentColor
-                    }
-                  });
-                  if (data?.success) {
-                    toast.success("Template salvo com sucesso!");
-                  } else {
-                    toast.error(data?.error || "Erro ao salvar template");
-                  }
-                } catch (error) {
-                  toast.error("Erro ao salvar template");
-                } finally {
-                  setIsSavingTemplate(false);
-                }
-              }}
-              disabled={isSavingTemplate}
-              className="w-full gap-2"
-            >
-              {isSavingTemplate ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
-              {isSavingTemplate ? "Salvando..." : "Salvar Template"}
-            </Button>
           </div>
 
-          {/* Preview */}
-          <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">Preview</label>
-            <div 
-              className="rounded-lg overflow-hidden border border-border"
-              style={{ maxHeight: '500px', overflowY: 'auto' }}
-            >
-              <div 
-                style={{ 
-                  fontFamily: 'Arial, sans-serif',
-                  maxWidth: '100%',
-                  padding: '20px',
-                  backgroundColor: templateBgColor,
-                  color: '#fff'
-                }}
-              >
-                <h1 style={{ color: templateAccentColor, fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>
-                  {templateTitle}
-                </h1>
-                <p style={{ marginBottom: '8px' }}>
-                  {templateGreeting.replace('{name}', 'João')}
-                </p>
-                <p style={{ marginBottom: '16px' }}>{templateMessage}</p>
-                <div style={{ textAlign: 'center', margin: '24px 0' }}>
-                  <div style={{ 
-                    background: '#111', 
-                    padding: '16px 32px', 
-                    borderRadius: '12px', 
-                    display: 'inline-block' 
-                  }}>
-                    <span style={{ 
-                      fontSize: '28px', 
-                      fontWeight: 'bold', 
-                      letterSpacing: '6px', 
-                      color: templateAccentColor 
-                    }}>
-                      123456
-                    </span>
-                  </div>
+          {/* Feature Toggles */}
+          <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-foreground">Funcionalidades</h3>
+              {!(hasResendKey && emailEnabled) && (
+                <span className="text-xs text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded">
+                  Configure o Resend primeiro
+                </span>
+              )}
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className={cn("flex-1", !(hasResendKey && emailEnabled) && "opacity-50")}>
+                  <p className="font-medium text-foreground">Recuperação de Senha</p>
+                  <p className="text-sm text-muted-foreground">Envio de código por email</p>
                 </div>
-                <p style={{ color: '#888', fontSize: '12px', marginBottom: '8px' }}>
-                  {templateExpiryText}
-                </p>
-                <p style={{ color: '#888', fontSize: '12px' }}>
-                  Se você não solicitou este cadastro, ignore este email.
-                </p>
-                <hr style={{ border: 'none', borderTop: '1px solid #333', margin: '16px 0' }} />
-                <p style={{ color: '#666', fontSize: '11px' }}>
-                  {templateFooter}
-                </p>
+                <button
+                  onClick={() => handleSaveToggles('password_recovery_enabled', !passwordRecoveryEnabled)}
+                  disabled={isSavingToggles || !(hasResendKey && emailEnabled)}
+                  className={cn(
+                    "w-12 h-6 rounded-full transition-colors flex-shrink-0",
+                    passwordRecoveryEnabled && hasResendKey && emailEnabled ? 'bg-primary' : 'bg-muted',
+                    !(hasResendKey && emailEnabled) && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  <div className={cn(
+                    "w-5 h-5 bg-white rounded-full transition-transform shadow-sm",
+                    passwordRecoveryEnabled && hasResendKey && emailEnabled ? 'translate-x-6' : 'translate-x-0.5'
+                  )} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className={cn("flex-1", !(hasResendKey && emailEnabled) && "opacity-50")}>
+                  <p className="font-medium text-foreground">Verificação no Cadastro</p>
+                  <p className="text-sm text-muted-foreground">Código obrigatório para criar conta</p>
+                </div>
+                <button
+                  onClick={() => handleSaveToggles('email_verification_enabled', !emailVerificationEnabled)}
+                  disabled={isSavingToggles || !(hasResendKey && emailEnabled)}
+                  className={cn(
+                    "w-12 h-6 rounded-full transition-colors flex-shrink-0",
+                    emailVerificationEnabled && hasResendKey && emailEnabled ? 'bg-primary' : 'bg-muted',
+                    !(hasResendKey && emailEnabled) && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  <div className={cn(
+                    "w-5 h-5 bg-white rounded-full transition-transform shadow-sm",
+                    emailVerificationEnabled && hasResendKey && emailEnabled ? 'translate-x-6' : 'translate-x-0.5'
+                  )} />
+                </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Security Tab */}
+      {activeApiTab === "security" && (
+        <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
+                <Shield className="w-5 h-5 text-green-500" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">reCAPTCHA v2</h3>
+                <p className="text-sm text-muted-foreground">Proteção contra bots</p>
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                setIsSavingRecaptcha(true);
+                try {
+                  const { data } = await supabase.functions.invoke('pixup', {
+                    body: { action: 'save_recaptcha_settings', recaptcha_enabled: !recaptchaEnabled }
+                  });
+                  if (data?.success) {
+                    setRecaptchaEnabled(!recaptchaEnabled);
+                    toast.success(recaptchaEnabled ? "Desativado" : "Ativado");
+                  } else {
+                    toast.error(data?.error || "Erro");
+                  }
+                } catch { toast.error("Erro ao salvar"); }
+                finally { setIsSavingRecaptcha(false); }
+              }}
+              disabled={isSavingRecaptcha || (!hasRecaptchaSecret && !recaptchaEnabled)}
+              className={cn(
+                "w-12 h-6 rounded-full transition-colors flex-shrink-0",
+                recaptchaEnabled ? 'bg-green-500' : 'bg-muted',
+                (!hasRecaptchaSecret && !recaptchaEnabled) && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <div className={cn(
+                "w-5 h-5 bg-white rounded-full transition-transform shadow-sm",
+                recaptchaEnabled ? 'translate-x-6' : 'translate-x-0.5'
+              )} />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Site Key</label>
+              <input
+                type="text"
+                value={recaptchaSiteKey}
+                onChange={(e) => setRecaptchaSiteKey(e.target.value)}
+                placeholder="6Lc..."
+                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Secret Key</label>
+              <div className="relative">
+                <input
+                  type={showRecaptchaSecret ? "text" : "password"}
+                  value={recaptchaSecretKey}
+                  onChange={(e) => setRecaptchaSecretKey(e.target.value)}
+                  placeholder={hasRecaptchaSecret ? "••••••••• (já configurado)" : "6Lc..."}
+                  className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRecaptchaSecret(!showRecaptchaSecret)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showRecaptchaSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Obtenha em <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener" className="text-primary hover:underline">google.com/recaptcha</a>
+              </p>
+            </div>
+
+            <Button 
+              onClick={async () => {
+                if (!recaptchaSiteKey.trim()) { toast.error("Preencha a Site Key"); return; }
+                if (!hasRecaptchaSecret && !recaptchaSecretKey.trim()) { toast.error("Preencha a Secret Key"); return; }
+                setIsSavingRecaptcha(true);
+                try {
+                  const payload: any = { action: 'save_recaptcha_settings', recaptcha_site_key: recaptchaSiteKey.trim() };
+                  if (recaptchaSecretKey.trim()) payload.recaptcha_secret_key = recaptchaSecretKey.trim();
+                  const { data } = await supabase.functions.invoke('pixup', { body: payload });
+                  if (data?.success) {
+                    toast.success("Salvo!");
+                    setHasRecaptchaSecret(true);
+                    setRecaptchaSecretKey("");
+                  } else { toast.error(data?.error || "Erro"); }
+                } catch { toast.error("Erro ao salvar"); }
+                finally { setIsSavingRecaptcha(false); }
+              }}
+              disabled={isSavingRecaptcha}
+              className="gap-2"
+            >
+              {isSavingRecaptcha ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
+              Salvar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Template Tab */}
+      {activeApiTab === "template" && (
+        <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
+              <Edit className="w-5 h-5 text-purple-500" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Template de Email</h3>
+              <p className="text-sm text-muted-foreground">Usado em cadastro e recuperação de senha</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Editor */}
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Título</label>
+                <input
+                  type="text"
+                  value={templateTitle}
+                  onChange={(e) => setTemplateTitle(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Saudação</label>
+                <input
+                  type="text"
+                  value={templateGreeting}
+                  onChange={(e) => setTemplateGreeting(e.target.value)}
+                  placeholder="Use {name} para o nome"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Use {"{name}"} para nome do usuário</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Mensagem</label>
+                <input
+                  type="text"
+                  value={templateMessage}
+                  onChange={(e) => setTemplateMessage(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Texto de Expiração</label>
+                <input
+                  type="text"
+                  value={templateExpiryText}
+                  onChange={(e) => setTemplateExpiryText(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Rodapé</label>
+                <input
+                  type="text"
+                  value={templateFooter}
+                  onChange={(e) => setTemplateFooter(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Cor de Fundo</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={templateBgColor}
+                      onChange={(e) => setTemplateBgColor(e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer border border-border flex-shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={templateBgColor}
+                      onChange={(e) => setTemplateBgColor(e.target.value)}
+                      className="flex-1 min-w-0 px-2 py-2 bg-background border border-border rounded-md text-foreground font-mono text-xs"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Cor de Destaque</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={templateAccentColor}
+                      onChange={(e) => setTemplateAccentColor(e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer border border-border flex-shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={templateAccentColor}
+                      onChange={(e) => setTemplateAccentColor(e.target.value)}
+                      className="flex-1 min-w-0 px-2 py-2 bg-background border border-border rounded-md text-foreground font-mono text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+              <Button 
+                onClick={async () => {
+                  setIsSavingTemplate(true);
+                  try {
+                    const { data } = await supabase.functions.invoke('pixup', {
+                      body: { 
+                        action: 'save_email_template',
+                        email_template_title: templateTitle,
+                        email_template_greeting: templateGreeting,
+                        email_template_message: templateMessage,
+                        email_template_expiry_text: templateExpiryText,
+                        email_template_footer: templateFooter,
+                        email_template_bg_color: templateBgColor,
+                        email_template_accent_color: templateAccentColor
+                      }
+                    });
+                    if (data?.success) { toast.success("Template salvo!"); }
+                    else { toast.error(data?.error || "Erro ao salvar"); }
+                  } catch { toast.error("Erro ao salvar"); }
+                  finally { setIsSavingTemplate(false); }
+                }}
+                disabled={isSavingTemplate}
+                className="w-full gap-2"
+              >
+                {isSavingTemplate ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
+                Salvar Template
+              </Button>
+            </div>
+
+            {/* Preview */}
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Preview</label>
+              <div className="rounded-lg overflow-hidden border border-border" style={{ maxHeight: '450px', overflowY: 'auto' }}>
+                <div style={{ fontFamily: 'Arial, sans-serif', padding: '16px', backgroundColor: templateBgColor, color: '#fff' }}>
+                  <h1 style={{ color: templateAccentColor, fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>{templateTitle}</h1>
+                  <p style={{ marginBottom: '8px', fontSize: '14px' }}>{templateGreeting.replace('{name}', 'João')}</p>
+                  <p style={{ marginBottom: '12px', fontSize: '14px' }}>{templateMessage}</p>
+                  <div style={{ textAlign: 'center', margin: '20px 0' }}>
+                    <div style={{ background: '#111', padding: '12px 24px', borderRadius: '8px', display: 'inline-block' }}>
+                      <span style={{ fontSize: '24px', fontWeight: 'bold', letterSpacing: '4px', color: templateAccentColor }}>123456</span>
+                    </div>
+                  </div>
+                  <p style={{ color: '#888', fontSize: '11px', marginBottom: '6px' }}>{templateExpiryText}</p>
+                  <p style={{ color: '#888', fontSize: '11px' }}>Se você não solicitou, ignore este email.</p>
+                  <hr style={{ border: 'none', borderTop: '1px solid #333', margin: '12px 0' }} />
+                  <p style={{ color: '#666', fontSize: '10px' }}>{templateFooter}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };
