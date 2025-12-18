@@ -91,10 +91,8 @@ const Login = () => {
 
           setSystemSettings(settings);
 
-          // Show maintenance modal if in maintenance mode
-          if (settings.maintenanceMode) {
-            setShowMaintenanceModal(true);
-          }
+          // NOTE: Don't show maintenance modal here - let backend decide
+          // Backend will allow admins to bypass maintenance mode
         }
       } catch (err) {
         console.error('Error fetching system settings:', err);
@@ -416,11 +414,8 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Block all access if in maintenance mode
-    if (systemSettings.maintenanceMode) {
-      setShowMaintenanceModal(true);
-      return;
-    }
+    // NOTE: Maintenance mode is checked by backend, not frontend
+    // This allows admins to bypass maintenance mode
 
     // Block signup if registrations are disabled
     if (!isLogin && !systemSettings.allowRegistration) {
