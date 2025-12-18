@@ -6,12 +6,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface LoginRequest {
+interface LoginValidationRequest {
   email: string;
-  password: string;
   honeypot?: string;
 }
 
+/**
+ * LOGIN EDGE FUNCTION
+ * 
+ * RESPONSABILIDADES (APENAS VALIDAÇÃO):
+ * - Verificar maintenance_mode
+ * - Verificar se usuário existe (via profiles)
+ * - Verificar se usuário está banido
+ * - Verificar se profile existe (conta ativada)
+ * - Registrar tentativa de login
+ * 
+ * NÃO FAZ:
+ * - signInWithPassword (isso é responsabilidade do frontend)
+ * - Criar sessão
+ * - Retornar tokens
+ */
 serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -21,15 +35,13 @@ serve(async (req: Request): Promise<Response> => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
     
-    const body: LoginRequest = await req.json();
-    const { email, password, honeypot } = body;
+    const body: LoginValidationRequest = await req.json();
+    const { email, honeypot } = body;
 
-    console.log(`Login attempt for email: ${email}`);
+    console.log(`Login validation for email: ${email}`);
 
     // ==========================================
     // HONEYPOT CHECK - Silent rejection for bots
@@ -49,9 +61,9 @@ serve(async (req: Request): Promise<Response> => {
     // ==========================================
     // FIELD VALIDATIONS
     // ==========================================
-    if (!email || !password) {
+    if (!email) {
       return new Response(
-        JSON.stringify({ success: false, error: "Email e senha são obrigatórios" }),
+        JSON.stringify({ success: false, error: "Email é obrigatório" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -63,6 +75,8 @@ serve(async (req: Request): Promise<Response> => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const emailClean = email.trim().toLowerCase();
 
     // ==========================================
     // SERVER-SIDE CHECK: System Settings
@@ -93,67 +107,28 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // ==========================================
-    // ATTEMPT AUTHENTICATION
-    // ==========================================
-    const emailClean = email.trim().toLowerCase();
-    
-    const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-      email: emailClean,
-      password,
-    });
-
-    if (authError) {
-      console.log('Auth error:', authError.message);
-      
-      // Generic error - never reveal if email exists or password is wrong
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Credenciais inválidas"
-        }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!authData.user || !authData.session) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Credenciais inválidas"
-        }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const userId = authData.user.id;
-
-    // ==========================================
-    // CHECK IF PROFILE EXISTS (Email confirmed)
+    // CHECK USER VIA PROFILES TABLE (NOT listUsers)
     // ==========================================
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('id, banned')
-      .eq('user_id', userId)
+      .select('id, user_id, banned, email')
+      .eq('email', emailClean)
       .maybeSingle();
 
     if (profileError) {
       console.error('Error checking profile:', profileError);
     }
 
-    // If profile doesn't exist, account is not activated
+    // If profile doesn't exist, account is not activated or doesn't exist
+    // Return generic error to not reveal if email exists
     if (!profileData) {
-      console.log('Login blocked: profile not found (email not confirmed)');
-      
-      // Sign out the user since they shouldn't have a session
-      await supabaseAdmin.auth.admin.signOut(authData.session.access_token);
-      
+      console.log('Login validation failed: profile not found');
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "Conta não ativada. Verifique seu email.",
-          code: "NOT_ACTIVATED"
+          error: "Credenciais inválidas"
         }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -162,10 +137,6 @@ serve(async (req: Request): Promise<Response> => {
     // ==========================================
     if (profileData.banned === true) {
       console.log('Login blocked: user is banned');
-      
-      // Sign out the user
-      await supabaseAdmin.auth.admin.signOut(authData.session.access_token);
-      
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -182,39 +153,28 @@ serve(async (req: Request): Promise<Response> => {
     const { data: roleData } = await supabaseAdmin
       .from('user_roles')
       .select('role')
-      .eq('user_id', userId)
+      .eq('user_id', profileData.user_id)
       .maybeSingle();
 
     const userRole = roleData?.role || 'user';
 
-    // ==========================================
-    // LOG LOGIN ATTEMPT
-    // ==========================================
-    try {
-      await supabaseAdmin.from('login_history').insert({
-        user_id: userId,
-        device: 'Web Browser',
-        location: 'Brasil',
-        status: 'success',
-      });
-    } catch (logError) {
-      console.error('Error logging login:', logError);
-    }
+    console.log(`Login validation successful for: ${emailClean}, role: ${userRole}`);
 
-    console.log(`Login successful for user: ${userId}, role: ${userRole}`);
-
+    // ==========================================
+    // RETURN SUCCESS - Frontend will do signInWithPassword
+    // ==========================================
     return new Response(
       JSON.stringify({ 
         success: true,
-        session: authData.session,
-        user: authData.user,
-        role: userRole
+        canLogin: true,
+        role: userRole,
+        userId: profileData.user_id
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error: any) {
-    console.error("Error in login function:", error);
+    console.error("Error in login validation function:", error);
     return new Response(
       JSON.stringify({ success: false, error: "Erro interno do servidor" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

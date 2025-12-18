@@ -11,6 +11,7 @@ interface ForgotPasswordRequest {
   email?: string;
   code?: string;
   newPassword?: string;
+  honeypot?: string;
 }
 
 async function sendEmail(apiKey: string, from: string, to: string, subject: string, html: string) {
@@ -31,6 +32,22 @@ async function sendEmail(apiKey: string, from: string, to: string, subject: stri
   return result;
 }
 
+/**
+ * FORGOT PASSWORD EDGE FUNCTION
+ * 
+ * RESPONSABILIDADES:
+ * - Verificar maintenance_mode
+ * - Verificar password_recovery_enabled
+ * - Validar usuário via profiles (NÃO listUsers)
+ * - Gerar/verificar códigos
+ * - Redefinir senha
+ * - Invalidar sessões com signOut(userId, 'global')
+ * 
+ * SEGURANÇA:
+ * - Honeypot para bots
+ * - Mensagens genéricas (não revelar se email existe)
+ * - Validação completa antes do reset
+ */
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -43,9 +60,23 @@ serve(async (req: Request): Promise<Response> => {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     
     const body: ForgotPasswordRequest = await req.json();
-    const { action, email, code, newPassword } = body;
+    const { action, email, code, newPassword, honeypot } = body;
 
     console.log(`Forgot password action: ${action}`);
+
+    // ==========================================
+    // HONEYPOT CHECK - Silent rejection for bots
+    // ==========================================
+    if (honeypot && honeypot.length > 0) {
+      console.log('Bot detected via honeypot in password recovery');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Se este email estiver cadastrado, você receberá um código de recuperação."
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // ==========================================
     // CHECK SYSTEM SETTINGS
@@ -127,61 +158,56 @@ serve(async (req: Request): Promise<Response> => {
 
       const emailClean = email.trim().toLowerCase();
 
-      // Check if user exists in auth.users
-      const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-      const userExists = authUsers?.users?.find(u => u.email?.toLowerCase() === emailClean);
+      // Check user via PROFILES table (NOT listUsers)
+      const { data: profileData } = await supabaseAdmin
+        .from('profiles')
+        .select('id, user_id, banned')
+        .eq('email', emailClean)
+        .maybeSingle();
 
-      if (userExists) {
-        // Check if profile exists (email confirmed) and not banned
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('id, banned')
-          .eq('user_id', userExists.id)
-          .maybeSingle();
+      // Only send email if profile exists and user is not banned
+      if (profileData && !profileData.banned) {
+        // Generate 6-digit code
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-        if (profile && !profile.banned) {
-          // Generate 6-digit code
-          const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-          const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+        // Delete any existing codes for this email
+        await supabaseAdmin
+          .from('verification_codes')
+          .delete()
+          .eq('user_email', emailClean)
+          .eq('type', 'password_reset');
 
-          // Delete any existing codes for this email
-          await supabaseAdmin
-            .from('verification_codes')
-            .delete()
-            .eq('user_email', emailClean)
-            .eq('type', 'password_reset');
+        // Insert new code
+        await supabaseAdmin.from('verification_codes').insert({
+          user_email: emailClean,
+          code: verificationCode,
+          type: 'password_reset',
+          expires_at: expiresAt.toISOString(),
+          used: false,
+        });
 
-          // Insert new code
-          await supabaseAdmin.from('verification_codes').insert({
-            user_email: emailClean,
-            code: verificationCode,
-            type: 'password_reset',
-            expires_at: expiresAt.toISOString(),
-            used: false,
-          });
-
-          // Send email
-          try {
-            const html = `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0a0a0a; color: #fff;">
-                <h1 style="color: #4ade80;">🔐 Recuperação de Senha</h1>
-                <p>Seu código de verificação é:</p>
-                <div style="text-align: center; margin: 30px 0;">
-                  <div style="background: #111; padding: 20px 40px; border-radius: 12px; display: inline-block;">
-                    <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4ade80;">${verificationCode}</span>
-                  </div>
+        // Send email
+        try {
+          const html = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0a0a0a; color: #fff;">
+              <h1 style="color: #4ade80;">🔐 Recuperação de Senha</h1>
+              <p>Seu código de verificação é:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <div style="background: #111; padding: 20px 40px; border-radius: 12px; display: inline-block;">
+                  <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4ade80;">${verificationCode}</span>
                 </div>
-                <p style="color: #888; font-size: 14px;">Este código expira em 15 minutos.</p>
-                <p style="color: #888; font-size: 14px;">Se você não solicitou este código, ignore este email.</p>
-                <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
-                <p style="color: #666; font-size: 12px;">SWEXTRACTOR - Sistema de Gestão</p>
               </div>
-            `;
-            await sendEmail(gatewayData.resend_api_key, fromEmail, emailClean, "🔐 Código de Recuperação - SWEXTRACTOR", html);
-            console.log(`Password reset code sent to: ${emailClean}`);
-          } catch (emailError) {
-            console.error('Error sending email:', emailError);
-          }
+              <p style="color: #888; font-size: 14px;">Este código expira em 15 minutos.</p>
+              <p style="color: #888; font-size: 14px;">Se você não solicitou este código, ignore este email.</p>
+              <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
+              <p style="color: #666; font-size: 12px;">SWEXTRACTOR - Sistema de Gestão</p>
+            </div>
+          `;
+          await sendEmail(gatewayData.resend_api_key, fromEmail, emailClean, "🔐 Código de Recuperação - SWEXTRACTOR", html);
+          console.log(`Password reset code sent to: ${emailClean}`);
+        } catch (emailError) {
+          console.error('Error sending email:', emailError);
         }
       }
 
@@ -252,7 +278,7 @@ serve(async (req: Request): Promise<Response> => {
 
       const emailClean = email.trim().toLowerCase();
 
-      // Verify code again
+      // Verify code again (prevent reuse)
       const { data: codeData } = await supabaseAdmin
         .from('verification_codes')
         .select('*')
@@ -270,19 +296,35 @@ serve(async (req: Request): Promise<Response> => {
         );
       }
 
-      // Find user by email
-      const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-      const user = authUsers?.users?.find(u => u.email?.toLowerCase() === emailClean);
+      // ==========================================
+      // FULL VALIDATION BEFORE RESET (via profiles, NOT listUsers)
+      // ==========================================
+      const { data: profileData } = await supabaseAdmin
+        .from('profiles')
+        .select('id, user_id, banned')
+        .eq('email', emailClean)
+        .maybeSingle();
 
-      if (!user) {
+      // Profile must exist (account activated)
+      if (!profileData) {
+        console.log('Password reset blocked: profile not found');
         return new Response(
-          JSON.stringify({ success: false, error: "Usuário não encontrado" }),
+          JSON.stringify({ success: false, error: "Não foi possível alterar a senha" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Update password
-      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+      // User must not be banned
+      if (profileData.banned) {
+        console.log('Password reset blocked: user is banned');
+        return new Response(
+          JSON.stringify({ success: false, error: "Não foi possível alterar a senha" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Update password using user_id from profile
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(profileData.user_id, {
         password: newPassword,
       });
 
@@ -300,9 +342,10 @@ serve(async (req: Request): Promise<Response> => {
         .update({ used: true })
         .eq('id', codeData.id);
 
-      // Invalidate all sessions for this user
+      // Invalidate all sessions using userId with 'global' scope
       try {
-        await supabaseAdmin.auth.admin.signOut(user.id, 'global');
+        await supabaseAdmin.auth.admin.signOut(profileData.user_id, 'global');
+        console.log(`All sessions invalidated for user: ${profileData.user_id}`);
       } catch (signOutError) {
         console.error('Error signing out user:', signOutError);
       }
