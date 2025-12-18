@@ -128,6 +128,27 @@ export type Database = {
         }
         Relationships: []
       }
+      ip_login_attempts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          ip_address: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          ip_address: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          ip_address?: string
+        }
+        Relationships: []
+      }
       licenses: {
         Row: {
           auto_renew: boolean

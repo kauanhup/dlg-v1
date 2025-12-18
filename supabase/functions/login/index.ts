@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-forwarded-for, x-real-ip",
 };
 
 interface LoginValidationRequest {
@@ -13,18 +13,21 @@ interface LoginValidationRequest {
 }
 
 // Rate limit configuration
-const MAX_FAILED_ATTEMPTS = 5;
+const MAX_FAILED_ATTEMPTS_USER = 5;    // Por usuário (via login_history)
+const MAX_FAILED_ATTEMPTS_IP = 10;     // Por IP (inclui emails desconhecidos)
 const RATE_LIMIT_WINDOW_MINUTES = 15;
 
 /**
  * LOGIN EDGE FUNCTION
  * 
  * RESPONSABILIDADES (APENAS VALIDAÇÃO):
+ * - Verificar rate limiting por IP (PRIMEIRO - antes de tudo)
+ * - Verificar honeypot
+ * - Verificar reCAPTCHA
  * - Verificar maintenance_mode
  * - Verificar se usuário existe (via profiles)
  * - Verificar se usuário está banido
- * - Verificar se profile existe (conta ativada)
- * - Rate limiting no backend
+ * - Rate limiting por usuário
  * - Registrar tentativa de login (login_history)
  * 
  * NÃO FAZ:
@@ -47,14 +50,44 @@ serve(async (req: Request): Promise<Response> => {
     const body: LoginValidationRequest = await req.json();
     const { email, honeypot, recaptchaToken } = body;
 
-    console.log(`Login validation for email: ${email}`);
+    // Get client IP from headers
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
+                  || req.headers.get('x-real-ip') 
+                  || 'unknown';
+
+    console.log(`Login validation for email: ${email}, IP: ${clientIp}`);
+
+    // ==========================================
+    // IP-BASED RATE LIMITING (PRIMEIRO CHECK)
+    // Protege contra ataques de força bruta com emails aleatórios
+    // ==========================================
+    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
+    
+    const { count: ipAttemptCount } = await supabaseAdmin
+      .from('ip_login_attempts')
+      .select('*', { count: 'exact', head: true })
+      .eq('ip_address', clientIp)
+      .gte('created_at', windowStart);
+
+    if (ipAttemptCount && ipAttemptCount >= MAX_FAILED_ATTEMPTS_IP) {
+      console.log(`IP rate limit exceeded: ${clientIp} (${ipAttemptCount} attempts)`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Muitas tentativas deste endereço. Aguarde ${RATE_LIMIT_WINDOW_MINUTES} minutos.`,
+          code: "IP_RATE_LIMITED"
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // ==========================================
     // HONEYPOT CHECK - Silent rejection for bots
     // ==========================================
     if (honeypot && honeypot.length > 0) {
       console.log('Bot detected via honeypot');
-      // Return generic error to not reveal the trap
+      // Log IP attempt (bot detected)
+      await logIpAttempt(supabaseAdmin, clientIp, email);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -99,6 +132,7 @@ serve(async (req: Request): Promise<Response> => {
 
       if (!recaptchaResult.success) {
         console.log('reCAPTCHA verification failed');
+        await logIpAttempt(supabaseAdmin, clientIp, email);
         return new Response(
           JSON.stringify({ 
             success: false, 
@@ -123,46 +157,12 @@ serve(async (req: Request): Promise<Response> => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return new Response(
-        JSON.stringify({ success: false, error: "Email inválido" }),
+        JSON.stringify({ success: false, error: "Formato de email inválido" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const emailClean = email.trim().toLowerCase();
-
-    // ==========================================
-    // BACKEND RATE LIMITING (via login_history)
-    // ==========================================
-    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
-    
-    // First, get user_id from profiles (if exists)
-    const { data: profileForRate } = await supabaseAdmin
-      .from('profiles')
-      .select('user_id')
-      .eq('email', emailClean)
-      .maybeSingle();
-    
-    if (profileForRate) {
-      // Count recent failed attempts for this user
-      const { count } = await supabaseAdmin
-        .from('login_history')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', profileForRate.user_id)
-        .eq('status', 'failed')
-        .gte('created_at', windowStart);
-      
-      if (count && count >= MAX_FAILED_ATTEMPTS) {
-        console.log(`Rate limit exceeded for user: ${profileForRate.user_id}`);
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: `Muitas tentativas. Aguarde ${RATE_LIMIT_WINDOW_MINUTES} minutos.`,
-            code: "RATE_LIMITED"
-          }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
 
     // ==========================================
     // SERVER-SIDE CHECK: System Settings
@@ -185,7 +185,7 @@ serve(async (req: Request): Promise<Response> => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "Sistema em manutenção",
+          error: "Sistema em manutenção. Tente novamente mais tarde.",
           code: "MAINTENANCE"
         }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -193,7 +193,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // ==========================================
-    // CHECK USER VIA PROFILES TABLE (NOT listUsers)
+    // CHECK USER VIA PROFILES TABLE
     // ==========================================
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -206,16 +206,39 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // If profile doesn't exist, account is not activated or doesn't exist
-    // Return generic error to not reveal if email exists
+    // Log IP attempt and return generic error
     if (!profileData) {
       console.log('Login validation failed: profile not found');
+      await logIpAttempt(supabaseAdmin, clientIp, emailClean);
       
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "Credenciais inválidas"
+          error: "Email ou senha incorretos"
         }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ==========================================
+    // USER-BASED RATE LIMITING (via login_history)
+    // ==========================================
+    const { count: userFailedCount } = await supabaseAdmin
+      .from('login_history')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', profileData.user_id)
+      .eq('status', 'failed')
+      .gte('created_at', windowStart);
+
+    if (userFailedCount && userFailedCount >= MAX_FAILED_ATTEMPTS_USER) {
+      console.log(`User rate limit exceeded: ${profileData.user_id}`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Conta temporariamente bloqueada. Aguarde ${RATE_LIMIT_WINDOW_MINUTES} minutos.`,
+          code: "USER_RATE_LIMITED"
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -231,7 +254,7 @@ serve(async (req: Request): Promise<Response> => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "Conta suspensa",
+          error: "Sua conta foi suspensa. Entre em contato com o suporte.",
           code: "BANNED"
         }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -253,7 +276,6 @@ serve(async (req: Request): Promise<Response> => {
 
     // ==========================================
     // RETURN SUCCESS - Frontend will do signInWithPassword
-    // Note: login_history will be logged after successful auth in frontend
     // ==========================================
     return new Response(
       JSON.stringify({ 
@@ -268,13 +290,13 @@ serve(async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in login validation function:", error);
     return new Response(
-      JSON.stringify({ success: false, error: "Erro interno do servidor" }),
+      JSON.stringify({ success: false, error: "Erro interno. Tente novamente." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
 
-// Helper function to log login attempts
+// Helper function to log login attempts (for known users)
 async function logLoginAttempt(
   supabaseAdmin: any, 
   userId: string, 
@@ -291,5 +313,21 @@ async function logLoginAttempt(
     });
   } catch (error) {
     console.error('Error logging login attempt:', error);
+  }
+}
+
+// Helper function to log IP attempts (for unknown emails or failed attempts)
+async function logIpAttempt(
+  supabaseAdmin: any,
+  ipAddress: string,
+  email: string
+) {
+  try {
+    await supabaseAdmin.from('ip_login_attempts').insert({
+      ip_address: ipAddress,
+      email: email,
+    });
+  } catch (error) {
+    console.error('Error logging IP attempt:', error);
   }
 }
