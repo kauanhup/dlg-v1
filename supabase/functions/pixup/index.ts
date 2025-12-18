@@ -96,7 +96,7 @@ serve(async (req) => {
     const { userId, isAuthenticated } = await getUserFromRequest(req, supabaseAuth);
 
     // SECURITY: Define which actions require authentication and admin role
-    const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection', 'save_email_settings', 'save_feature_toggles', 'save_recaptcha_settings'];
+    const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection', 'save_email_settings', 'save_feature_toggles', 'save_recaptcha_settings', 'save_email_template'];
     const authRequiredActions = ['create_pix'];
 
     if (adminOnlyActions.includes(action)) {
@@ -147,6 +147,9 @@ serve(async (req) => {
       
       case 'save_recaptcha_settings':
         return await saveRecaptchaSettings(supabaseAdmin, params);
+      
+      case 'save_email_template':
+        return await saveEmailTemplate(supabaseAdmin, params);
       
       case 'create_pix':
         return await createPixCharge(supabaseAdmin, params, userId!);
@@ -202,7 +205,15 @@ async function getSettings(supabase: any) {
         has_recaptcha_secret: !!data.recaptcha_secret_key,
         // Feature toggles
         password_recovery_enabled: data.password_recovery_enabled,
-        email_verification_enabled: data.email_verification_enabled
+        email_verification_enabled: data.email_verification_enabled,
+        // Email template settings
+        email_template_title: data.email_template_title || '✉️ Verificação de Email',
+        email_template_greeting: data.email_template_greeting || 'Olá {name}!',
+        email_template_message: data.email_template_message || 'Seu código de verificação é:',
+        email_template_expiry_text: data.email_template_expiry_text || 'Este código expira em 15 minutos.',
+        email_template_footer: data.email_template_footer || 'SWEXTRACTOR - Sistema de Gestão',
+        email_template_bg_color: data.email_template_bg_color || '#0a0a0a',
+        email_template_accent_color: data.email_template_accent_color || '#4ade80'
       } : null 
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -335,6 +346,70 @@ async function saveRecaptchaSettings(supabase: any, params: {
   }
 
   console.log('reCAPTCHA settings saved successfully');
+  return new Response(
+    JSON.stringify({ success: true }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+async function saveEmailTemplate(supabase: any, params: { 
+  email_template_title?: string;
+  email_template_greeting?: string;
+  email_template_message?: string;
+  email_template_expiry_text?: string;
+  email_template_footer?: string;
+  email_template_bg_color?: string;
+  email_template_accent_color?: string;
+}) {
+  const { 
+    email_template_title,
+    email_template_greeting,
+    email_template_message,
+    email_template_expiry_text,
+    email_template_footer,
+    email_template_bg_color,
+    email_template_accent_color
+  } = params;
+
+  const { data: existing } = await supabase
+    .from('gateway_settings')
+    .select('id')
+    .eq('provider', 'pixup')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const updateData: any = { updated_at: new Date().toISOString() };
+  
+  if (email_template_title !== undefined) updateData.email_template_title = email_template_title;
+  if (email_template_greeting !== undefined) updateData.email_template_greeting = email_template_greeting;
+  if (email_template_message !== undefined) updateData.email_template_message = email_template_message;
+  if (email_template_expiry_text !== undefined) updateData.email_template_expiry_text = email_template_expiry_text;
+  if (email_template_footer !== undefined) updateData.email_template_footer = email_template_footer;
+  if (email_template_bg_color !== undefined) updateData.email_template_bg_color = email_template_bg_color;
+  if (email_template_accent_color !== undefined) updateData.email_template_accent_color = email_template_accent_color;
+
+  let result;
+  if (existing) {
+    result = await supabase
+      .from('gateway_settings')
+      .update(updateData)
+      .eq('id', existing.id);
+  } else {
+    result = await supabase
+      .from('gateway_settings')
+      .insert({
+        provider: 'pixup',
+        ...updateData
+      });
+  }
+
+  if (result.error) {
+    console.error('Error saving email template:', result.error);
+    throw new Error('Failed to save email template');
+  }
+
+  console.log('Email template saved successfully');
   return new Response(
     JSON.stringify({ success: true }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

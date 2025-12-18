@@ -53,6 +53,13 @@ export type Database = {
           client_secret: string | null
           created_at: string
           email_enabled: boolean | null
+          email_template_accent_color: string | null
+          email_template_bg_color: string | null
+          email_template_expiry_text: string | null
+          email_template_footer: string | null
+          email_template_greeting: string | null
+          email_template_message: string | null
+          email_template_title: string | null
           email_verification_enabled: boolean | null
           id: string
           is_active: boolean
@@ -72,6 +79,13 @@ export type Database = {
           client_secret?: string | null
           created_at?: string
           email_enabled?: boolean | null
+          email_template_accent_color?: string | null
+          email_template_bg_color?: string | null
+          email_template_expiry_text?: string | null
+          email_template_footer?: string | null
+          email_template_greeting?: string | null
+          email_template_message?: string | null
+          email_template_title?: string | null
           email_verification_enabled?: boolean | null
           id?: string
           is_active?: boolean
@@ -91,6 +105,13 @@ export type Database = {
           client_secret?: string | null
           created_at?: string
           email_enabled?: boolean | null
+          email_template_accent_color?: string | null
+          email_template_bg_color?: string | null
+          email_template_expiry_text?: string | null
+          email_template_footer?: string | null
+          email_template_greeting?: string | null
+          email_template_message?: string | null
+          email_template_title?: string | null
           email_verification_enabled?: boolean | null
           id?: string
           is_active?: boolean
