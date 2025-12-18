@@ -283,17 +283,26 @@ serve(async (req: Request): Promise<Response> => {
       // ==========================================
       const userId = signUpData.user?.id;
       if (userId) {
-        // Wait a moment for trigger to execute
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait for trigger to execute with retry logic
+        let profileCreated = false;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          const { data: profileCheck } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .eq('user_id', userId)
+            .maybeSingle();
+          
+          if (profileCheck) {
+            profileCreated = true;
+            break;
+          }
+          console.log(`Profile check attempt ${attempt + 1} failed (verify_code), retrying...`);
+        }
         
-        const { data: profileCheck } = await supabaseAdmin
-          .from('profiles')
-          .select('id')
-          .eq('user_id', userId)
-          .maybeSingle();
-        
-        if (!profileCheck) {
-          console.error('Profile not created by trigger, rolling back user creation');
+        if (!profileCreated) {
+          console.error('Profile not created by trigger after retries, rolling back user creation');
           // Delete the orphan user from auth.users
           await supabaseAdmin.auth.admin.deleteUser(userId);
           return new Response(
@@ -484,15 +493,16 @@ serve(async (req: Request): Promise<Response> => {
     if (signUpError) {
       console.error('SignUp error:', signUpError.message);
       
+      // Email already exists - should have been caught earlier, but handle it
       if (signUpError.message.includes('already been registered') || 
           signUpError.message.includes('already exists')) {
         return new Response(
           JSON.stringify({ 
-            success: true, 
-            requiresEmailConfirmation: false,
-            message: "Se este email não estiver cadastrado, sua conta foi criada."
+            success: false, 
+            error: "Este email já está cadastrado",
+            code: "EMAIL_EXISTS"
           }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
@@ -508,17 +518,26 @@ serve(async (req: Request): Promise<Response> => {
     // ==========================================
     const userId = signUpData.user?.id;
     if (userId) {
-      // Wait a moment for trigger to execute
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait for trigger to execute with retry logic
+      let profileCreated = false;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const { data: profileCheck } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+        
+        if (profileCheck) {
+          profileCreated = true;
+          break;
+        }
+        console.log(`Profile check attempt ${attempt + 1} failed, retrying...`);
+      }
       
-      const { data: profileCheck } = await supabaseAdmin
-        .from('profiles')
-        .select('id')
-        .eq('user_id', userId)
-        .maybeSingle();
-      
-      if (!profileCheck) {
-        console.error('Profile not created by trigger, rolling back user creation');
+      if (!profileCreated) {
+        console.error('Profile not created by trigger after retries, rolling back user creation');
         // Delete the orphan user from auth.users
         await supabaseAdmin.auth.admin.deleteUser(userId);
         return new Response(
