@@ -2517,6 +2517,7 @@ const ApiSection = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Resend state
   const [resendApiKey, setResendApiKey] = useState("");
@@ -2527,6 +2528,7 @@ const ApiSection = () => {
   const [showResendKey, setShowResendKey] = useState(false);
   const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [isTestingEmail, setIsTestingEmail] = useState(false);
+  const [emailSaveSuccess, setEmailSaveSuccess] = useState(false);
 
   // reCAPTCHA state
   const [recaptchaEnabled, setRecaptchaEnabled] = useState(false);
@@ -2535,6 +2537,7 @@ const ApiSection = () => {
   const [hasRecaptchaSecret, setHasRecaptchaSecret] = useState(false);
   const [showRecaptchaSecret, setShowRecaptchaSecret] = useState(false);
   const [isSavingRecaptcha, setIsSavingRecaptcha] = useState(false);
+  const [recaptchaSaveSuccess, setRecaptchaSaveSuccess] = useState(false);
 
   // Feature toggles
   const [passwordRecoveryEnabled, setPasswordRecoveryEnabled] = useState(false);
@@ -2550,6 +2553,7 @@ const ApiSection = () => {
   const [templateBgColor, setTemplateBgColor] = useState("#0a0a0a");
   const [templateAccentColor, setTemplateAccentColor] = useState("#4ade80");
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [templateSaveSuccess, setTemplateSaveSuccess] = useState(false);
 
   // Load settings on mount
   useEffect(() => {
@@ -2621,6 +2625,7 @@ const ApiSection = () => {
     }
 
     setIsLoading(true);
+    setSaveSuccess(false);
     try {
       const payload: any = { 
         action: 'save_credentials',
@@ -2649,7 +2654,8 @@ const ApiSection = () => {
         toast.success("Credenciais salvas com sucesso!");
         setHasSecret(true);
         setClientSecret(""); // Clear secret input after save
-        // Don't set connected here - user needs to test connection
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
       } else {
         toast.error(data?.error || "Erro ao salvar credenciais");
       }
@@ -2705,6 +2711,7 @@ const ApiSection = () => {
     }
 
     setIsSavingEmail(true);
+    setEmailSaveSuccess(false);
     try {
       const payload: any = { 
         action: 'save_email_settings',
@@ -2728,6 +2735,8 @@ const ApiSection = () => {
         setHasResendKey(true);
         setEmailEnabled(true);
         setResendApiKey("");
+        setEmailSaveSuccess(true);
+        setTimeout(() => setEmailSaveSuccess(false), 2000);
       } else {
         toast.error(data?.error || "Erro ao salvar configurações");
       }
@@ -2888,9 +2897,9 @@ const ApiSection = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button onClick={handleSave} disabled={isLoading} className="gap-2">
-                {isLoading ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
-                Salvar
+              <Button onClick={handleSave} disabled={isLoading} className={cn("gap-2 transition-colors", saveSuccess && "bg-green-600 hover:bg-green-600")}>
+                {isLoading ? <Spinner size="sm" /> : saveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                {saveSuccess ? "Salvo!" : "Salvar"}
               </Button>
               <Button variant="outline" onClick={handleTestConnection} disabled={isTesting} className="gap-2">
                 {isTesting ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
@@ -2973,9 +2982,9 @@ const ApiSection = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <Button onClick={handleSaveEmail} disabled={isSavingEmail} className="gap-2">
-                  {isSavingEmail ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
-                  Salvar
+                <Button onClick={handleSaveEmail} disabled={isSavingEmail} className={cn("gap-2 transition-colors", emailSaveSuccess && "bg-green-600 hover:bg-green-600")}>
+                  {isSavingEmail ? <Spinner size="sm" /> : emailSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                  {emailSaveSuccess ? "Salvo!" : "Salvar"}
                 </Button>
                 <Button variant="outline" onClick={handleTestEmail} disabled={isTestingEmail || !hasResendKey} className="gap-2">
                   {isTestingEmail ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
@@ -3124,6 +3133,7 @@ const ApiSection = () => {
                 if (!recaptchaSiteKey.trim()) { toast.error("Preencha a Site Key"); return; }
                 if (!hasRecaptchaSecret && !recaptchaSecretKey.trim()) { toast.error("Preencha a Secret Key"); return; }
                 setIsSavingRecaptcha(true);
+                setRecaptchaSaveSuccess(false);
                 try {
                   const payload: any = { action: 'save_recaptcha_settings', recaptcha_site_key: recaptchaSiteKey.trim() };
                   if (recaptchaSecretKey.trim()) payload.recaptcha_secret_key = recaptchaSecretKey.trim();
@@ -3132,15 +3142,17 @@ const ApiSection = () => {
                     toast.success("Salvo!");
                     setHasRecaptchaSecret(true);
                     setRecaptchaSecretKey("");
+                    setRecaptchaSaveSuccess(true);
+                    setTimeout(() => setRecaptchaSaveSuccess(false), 2000);
                   } else { toast.error(data?.error || "Erro"); }
                 } catch { toast.error("Erro ao salvar"); }
                 finally { setIsSavingRecaptcha(false); }
               }}
               disabled={isSavingRecaptcha}
-              className="gap-2"
+              className={cn("gap-2 transition-colors", recaptchaSaveSuccess && "bg-green-600 hover:bg-green-600")}
             >
-              {isSavingRecaptcha ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
-              Salvar
+              {isSavingRecaptcha ? <Spinner size="sm" /> : recaptchaSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+              {recaptchaSaveSuccess ? "Salvo!" : "Salvar"}
             </Button>
           </div>
         </div>
@@ -3248,6 +3260,7 @@ const ApiSection = () => {
               <Button 
                 onClick={async () => {
                   setIsSavingTemplate(true);
+                  setTemplateSaveSuccess(false);
                   try {
                     const { data } = await supabase.functions.invoke('pixup', {
                       body: { 
@@ -3261,16 +3274,20 @@ const ApiSection = () => {
                         email_template_accent_color: templateAccentColor
                       }
                     });
-                    if (data?.success) { toast.success("Template salvo!"); }
+                    if (data?.success) { 
+                      toast.success("Template salvo!"); 
+                      setTemplateSaveSuccess(true);
+                      setTimeout(() => setTemplateSaveSuccess(false), 2000);
+                    }
                     else { toast.error(data?.error || "Erro ao salvar"); }
                   } catch { toast.error("Erro ao salvar"); }
                   finally { setIsSavingTemplate(false); }
                 }}
                 disabled={isSavingTemplate}
-                className="w-full gap-2"
+                className={cn("w-full gap-2 transition-colors", templateSaveSuccess && "bg-green-600 hover:bg-green-600")}
               >
-                {isSavingTemplate ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
-                Salvar Template
+                {isSavingTemplate ? <Spinner size="sm" /> : templateSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                {templateSaveSuccess ? "Salvo!" : "Salvar Template"}
               </Button>
             </div>
 
