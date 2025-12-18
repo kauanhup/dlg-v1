@@ -404,13 +404,32 @@ serve(async (req: Request): Promise<Response> => {
       .maybeSingle();
 
     if (existingProfile) {
-      // Explicit error - email already registered
-      console.log('Email already registered');
+      console.log(`[EMAIL_EXISTS] Email encontrado em profiles: ${emailClean}`);
       return jsonResponse({ 
         success: false, 
-        error: "Este email já está cadastrado",
+        error: "Este email já está cadastrado. Faça login.",
         code: "EMAIL_EXISTS"
       });
+    }
+
+    // Also check auth.users for orphan users (user exists but profile not created)
+    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const existingAuthUser = authUsers?.users?.find(u => u.email?.toLowerCase() === emailClean);
+    
+    if (existingAuthUser) {
+      // Check if user has confirmed email
+      if (existingAuthUser.email_confirmed_at) {
+        console.log(`[EMAIL_EXISTS] Email encontrado em auth.users (confirmado, sem profile): ${emailClean}`);
+        // User exists with confirmed email but no profile - this is an orphan state
+        // Clean it up by deleting the orphan user so they can re-register
+        await supabaseAdmin.auth.admin.deleteUser(existingAuthUser.id);
+        console.log(`[CLEANUP] Usuário órfão removido: ${existingAuthUser.id}`);
+      } else {
+        console.log(`[EMAIL_EXISTS] Email encontrado em auth.users (não confirmado): ${emailClean}`);
+        // User exists but not confirmed - delete and allow re-registration
+        await supabaseAdmin.auth.admin.deleteUser(existingAuthUser.id);
+        console.log(`[CLEANUP] Usuário não confirmado removido: ${existingAuthUser.id}`);
+      }
     }
 
     // ==========================================
