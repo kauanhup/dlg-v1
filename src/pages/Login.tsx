@@ -614,6 +614,10 @@ const Login = () => {
     setRateLimitError("");
     setHoneypot("");
     
+    // Reset reCAPTCHA when switching modes
+    recaptchaRef.current?.reset();
+    setRecaptchaToken(null);
+    
     setTimeout(() => {
       setIsLogin(!isLogin);
       setIsTransitioning(false);
