@@ -52,9 +52,13 @@ export type Database = {
           client_id: string | null
           client_secret: string | null
           created_at: string
+          email_enabled: boolean | null
           id: string
           is_active: boolean
           provider: string
+          resend_api_key: string | null
+          resend_from_email: string | null
+          resend_from_name: string | null
           updated_at: string
           webhook_url: string | null
         }
@@ -62,9 +66,13 @@ export type Database = {
           client_id?: string | null
           client_secret?: string | null
           created_at?: string
+          email_enabled?: boolean | null
           id?: string
           is_active?: boolean
           provider?: string
+          resend_api_key?: string | null
+          resend_from_email?: string | null
+          resend_from_name?: string | null
           updated_at?: string
           webhook_url?: string | null
         }
@@ -72,9 +80,13 @@ export type Database = {
           client_id?: string | null
           client_secret?: string | null
           created_at?: string
+          email_enabled?: boolean | null
           id?: string
           is_active?: boolean
           provider?: string
+          resend_api_key?: string | null
+          resend_from_email?: string | null
+          resend_from_name?: string | null
           updated_at?: string
           webhook_url?: string | null
         }

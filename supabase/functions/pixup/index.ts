@@ -96,7 +96,7 @@ serve(async (req) => {
     const { userId, isAuthenticated } = await getUserFromRequest(req, supabaseAuth);
 
     // SECURITY: Define which actions require authentication and admin role
-    const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection'];
+    const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection', 'save_email_settings'];
     const authRequiredActions = ['create_pix'];
 
     if (adminOnlyActions.includes(action)) {
@@ -136,6 +136,9 @@ serve(async (req) => {
       case 'get_settings':
         return await getSettings(supabaseAdmin);
       
+      case 'save_email_settings':
+        return await saveEmailSettings(supabaseAdmin, params);
+      
       case 'create_pix':
         return await createPixCharge(supabaseAdmin, params, userId!);
       
@@ -168,7 +171,7 @@ async function getSettings(supabase: any) {
     throw new Error('Failed to fetch gateway settings');
   }
 
-  // SECURITY: Never return client_secret in the response
+  // SECURITY: Never return client_secret or resend_api_key in the response
   return new Response(
     JSON.stringify({ 
       success: true, 
@@ -176,7 +179,12 @@ async function getSettings(supabase: any) {
         client_id: data.client_id,
         webhook_url: data.webhook_url,
         is_active: data.is_active,
-        has_secret: !!data.client_secret // Only indicate if secret exists, never expose it
+        has_secret: !!data.client_secret,
+        // Email settings
+        resend_from_email: data.resend_from_email,
+        resend_from_name: data.resend_from_name,
+        email_enabled: data.email_enabled,
+        has_resend_key: !!data.resend_api_key
       } : null 
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -249,6 +257,85 @@ async function saveCredentials(supabase: any, params: { client_id: string; clien
   console.log('Credentials saved successfully');
   return new Response(
     JSON.stringify({ success: true, message: 'Credentials saved successfully' }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+async function saveEmailSettings(supabase: any, params: { 
+  resend_api_key?: string; 
+  resend_from_email: string; 
+  resend_from_name?: string;
+  email_enabled?: boolean;
+}) {
+  const { resend_api_key, resend_from_email, resend_from_name, email_enabled } = params;
+
+  if (!resend_from_email) {
+    return new Response(
+      JSON.stringify({ error: 'resend_from_email is required' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Check if settings exist
+  const { data: existing } = await supabase
+    .from('gateway_settings')
+    .select('id, resend_api_key')
+    .eq('provider', 'pixup')
+    .maybeSingle();
+
+  // If no existing settings and no key provided, error
+  if (!existing && !resend_api_key) {
+    return new Response(
+      JSON.stringify({ error: 'resend_api_key is required for new configuration' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // If existing but no key saved and no new key provided
+  if (existing && !existing.resend_api_key && !resend_api_key) {
+    return new Response(
+      JSON.stringify({ error: 'resend_api_key is required' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  let result;
+  if (existing) {
+    const updateData: any = {
+      resend_from_email,
+      resend_from_name: resend_from_name || 'SWEXTRACTOR',
+      email_enabled: email_enabled !== false,
+      updated_at: new Date().toISOString()
+    };
+    
+    if (resend_api_key) {
+      updateData.resend_api_key = resend_api_key;
+    }
+    
+    result = await supabase
+      .from('gateway_settings')
+      .update(updateData)
+      .eq('id', existing.id);
+  } else {
+    result = await supabase
+      .from('gateway_settings')
+      .insert({
+        provider: 'pixup',
+        resend_api_key,
+        resend_from_email,
+        resend_from_name: resend_from_name || 'SWEXTRACTOR',
+        email_enabled: email_enabled !== false
+      });
+  }
+
+  if (result.error) {
+    console.error('Error saving email settings:', result.error);
+    throw new Error('Failed to save email settings');
+  }
+
+  console.log('Email settings saved successfully');
+  return new Response(
+    JSON.stringify({ success: true, message: 'Email settings saved successfully' }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }

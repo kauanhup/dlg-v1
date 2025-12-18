@@ -2503,8 +2503,9 @@ const SessionsSection = () => {
   );
 };
 
-// Gateway Section - PixUp
-const GatewaySection = () => {
+// API Section - PixUp + Resend
+const ApiSection = () => {
+  // PixUp state
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
@@ -2515,6 +2516,16 @@ const GatewaySection = () => {
   const [isTesting, setIsTesting] = useState(false);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
+  // Resend state
+  const [resendApiKey, setResendApiKey] = useState("");
+  const [resendFromEmail, setResendFromEmail] = useState("");
+  const [resendFromName, setResendFromName] = useState("SWEXTRACTOR");
+  const [emailEnabled, setEmailEnabled] = useState(false);
+  const [hasResendKey, setHasResendKey] = useState(false);
+  const [showResendKey, setShowResendKey] = useState(false);
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
+  const [isTestingEmail, setIsTestingEmail] = useState(false);
+
   // Load settings on mount
   useEffect(() => {
     const loadSettings = async () => {
@@ -2524,13 +2535,18 @@ const GatewaySection = () => {
           body: { action: 'get_settings' }
         });
 
-        console.log('Gateway settings loaded:', data);
+        console.log('API settings loaded:', data);
 
         if (data?.success && data?.data) {
           setClientId(data.data.client_id || "");
           setWebhookUrl(data.data.webhook_url || "");
           setIsConnected(data.data.is_active === true);
           setHasSecret(data.data.has_secret === true);
+          // Resend settings
+          setResendFromEmail(data.data.resend_from_email || "");
+          setResendFromName(data.data.resend_from_name || "SWEXTRACTOR");
+          setEmailEnabled(data.data.email_enabled === true);
+          setHasResendKey(data.data.has_resend_key === true);
         } else {
           // No settings yet
           setClientId("");
@@ -2539,7 +2555,7 @@ const GatewaySection = () => {
           setHasSecret(false);
         }
       } catch (error) {
-        console.error('Error loading gateway settings:', error);
+        console.error('Error loading API settings:', error);
         toast.error("Erro ao carregar configurações");
       } finally {
         setIsLoadingSettings(false);
@@ -2633,31 +2649,106 @@ const GatewaySection = () => {
       setIsTesting(false);
     }
   };
+
+  const handleSaveEmail = async () => {
+    const trimmedApiKey = resendApiKey.trim();
+    const trimmedFromEmail = resendFromEmail.trim();
+    
+    if (!hasResendKey && !trimmedApiKey) {
+      toast.error("Preencha a API Key do Resend");
+      return;
+    }
+    
+    if (!trimmedFromEmail) {
+      toast.error("Preencha o email de envio");
+      return;
+    }
+
+    setIsSavingEmail(true);
+    try {
+      const payload: any = { 
+        action: 'save_email_settings',
+        resend_from_email: trimmedFromEmail,
+        resend_from_name: resendFromName.trim() || "SWEXTRACTOR",
+        email_enabled: true
+      };
+      
+      if (trimmedApiKey) {
+        payload.resend_api_key = trimmedApiKey;
+      }
+
+      const { data, error } = await supabase.functions.invoke('pixup', {
+        body: payload
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success("Configurações de email salvas!");
+        setHasResendKey(true);
+        setEmailEnabled(true);
+        setResendApiKey("");
+      } else {
+        toast.error(data?.error || "Erro ao salvar configurações");
+      }
+    } catch (error) {
+      console.error('Error saving email settings:', error);
+      toast.error("Erro ao salvar configurações de email");
+    } finally {
+      setIsSavingEmail(false);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    setIsTestingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-email', {
+        body: { 
+          action: 'test',
+          to: resendFromEmail
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success("Email de teste enviado!");
+      } else {
+        toast.error(data?.error || "Falha ao enviar email");
+      }
+    } catch (error) {
+      console.error('Error testing email:', error);
+      toast.error("Erro ao testar email");
+    } finally {
+      setIsTestingEmail(false);
+    }
+  };
+
   return (
     <motion.div {...fadeIn} className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Gateway de Pagamento</h2>
-          <p className="text-sm text-muted-foreground">Configurações do PixUp (BSPAY)</p>
-        </div>
-        <div className={cn(
-          "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium",
-          isConnected ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
-        )}>
-          <div className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-yellow-500")} />
-          {isConnected ? "Conectado" : "Desconectado"}
-        </div>
+      <div>
+        <h2 className="text-xl sm:text-2xl font-bold text-foreground">Configurações de API</h2>
+        <p className="text-sm text-muted-foreground">Gerencie integrações externas</p>
       </div>
 
-      {/* API Configuration */}
+      {/* PixUp Configuration */}
       <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-            <Zap className="w-5 h-5 text-primary" />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+              <CreditCard className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">PixUp (Gateway PIX)</h3>
+              <p className="text-sm text-muted-foreground">Credenciais de acesso ao BSPAY</p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold text-foreground">Configuração da API</h3>
-            <p className="text-sm text-muted-foreground">Credenciais de acesso ao PixUp/BSPAY</p>
+          <div className={cn(
+            "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium",
+            isConnected ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
+          )}>
+            <div className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-yellow-500")} />
+            {isConnected ? "Conectado" : "Desconectado"}
           </div>
         </div>
 
@@ -2716,7 +2807,7 @@ const GatewaySection = () => {
               className="gap-2"
             >
               {isLoading ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
-              {isLoading ? "Salvando..." : "Salvar Configurações"}
+              {isLoading ? "Salvando..." : "Salvar"}
             </Button>
             <Button 
               variant="outline" 
@@ -2726,6 +2817,96 @@ const GatewaySection = () => {
             >
               {isTesting ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
               {isTesting ? "Testando..." : "Testar Conexão"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Resend Email Configuration */}
+      <div className="bg-card border border-border rounded-lg p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
+              <Zap className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Resend (Email)</h3>
+              <p className="text-sm text-muted-foreground">Configuração para envio de emails</p>
+            </div>
+          </div>
+          <div className={cn(
+            "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium",
+            emailEnabled && hasResendKey ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
+          )}>
+            <div className={cn("w-2 h-2 rounded-full", emailEnabled && hasResendKey ? "bg-green-500" : "bg-yellow-500")} />
+            {emailEnabled && hasResendKey ? "Ativo" : "Inativo"}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-foreground mb-2 block">API Key</label>
+            <div className="relative">
+              <input
+                type={showResendKey ? "text" : "password"}
+                value={resendApiKey}
+                onChange={(e) => setResendApiKey(e.target.value)}
+                placeholder={hasResendKey ? "••••••••• (key já configurada)" : "re_xxxxxxxx..."}
+                className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+              <button
+                type="button"
+                onClick={() => setShowResendKey(!showResendKey)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showResendKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Obtenha em <a href="https://resend.com/api-keys" target="_blank" rel="noopener" className="text-primary hover:underline">resend.com/api-keys</a>
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Email de Envio</label>
+              <input
+                type="email"
+                value={resendFromEmail}
+                onChange={(e) => setResendFromEmail(e.target.value)}
+                placeholder="suporte@dlgconnect.com"
+                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Nome do Remetente</label>
+              <input
+                type="text"
+                value={resendFromName}
+                onChange={(e) => setResendFromName(e.target.value)}
+                placeholder="SWEXTRACTOR"
+                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button 
+              onClick={handleSaveEmail}
+              disabled={isSavingEmail}
+              className="gap-2"
+            >
+              {isSavingEmail ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
+              {isSavingEmail ? "Salvando..." : "Salvar"}
+            </Button>
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={handleTestEmail}
+              disabled={isTestingEmail || !hasResendKey}
+            >
+              {isTestingEmail ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+              {isTestingEmail ? "Enviando..." : "Enviar Teste"}
             </Button>
           </div>
         </div>
@@ -3159,7 +3340,7 @@ const Admin = () => {
     initials: (user?.user_metadata?.name || "AD").slice(0, 2).toUpperCase(),
   };
 
-  const sidebarTabs = ["dashboard", "orders", "users", "sessions", "bot", "gateway"];
+  const sidebarTabs = ["dashboard", "orders", "users", "sessions", "bot", "api"];
 
   const profileNavItems = [
     { label: "Dashboard", icon: <LayoutDashboard className="h-full w-full" />, onClick: () => setActiveTab("dashboard") },
@@ -3167,7 +3348,7 @@ const Admin = () => {
     { label: "Usuários", icon: <Users className="h-full w-full" />, onClick: () => setActiveTab("users") },
     { label: "Sessions", icon: <Globe className="h-full w-full" />, onClick: () => setActiveTab("sessions") },
     { label: "Bot", icon: <HardDrive className="h-full w-full" />, onClick: () => setActiveTab("bot") },
-    { label: "Gateway", icon: <Zap className="h-full w-full" />, onClick: () => setActiveTab("gateway") },
+    { label: "API", icon: <Zap className="h-full w-full" />, onClick: () => setActiveTab("api") },
   ];
 
   const toggleItems = [
@@ -3212,8 +3393,8 @@ const Admin = () => {
         return <SessionsSection />;
       case "bot":
         return <BotManagementSection />;
-      case "gateway":
-        return <GatewaySection />;
+      case "api":
+        return <ApiSection />;
       default:
         return <DashboardSection />;
     }
