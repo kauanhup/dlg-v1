@@ -11,11 +11,40 @@ interface RegisterRequest {
   password: string;
   name: string;
   whatsapp: string;
-  honeypot?: string; // Bot trap field - should be empty
+  honeypot?: string;
+  verificationCode?: string; // For step 2: verify code
+  action?: 'register' | 'verify_code'; // Default is 'register'
 }
 
+async function sendEmail(apiKey: string, from: string, to: string, subject: string, html: string) {
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ from, to: [to], subject, html }),
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    console.error("Resend API error:", result);
+    throw new Error(result.message || 'Failed to send email');
+  }
+  return result;
+}
+
+/**
+ * REGISTER EDGE FUNCTION
+ * 
+ * FLUXO COM VERIFICAÇÃO DE EMAIL:
+ * 1. action='register': Valida dados, gera código 6 dígitos, envia por email
+ * 2. action='verify_code': Verifica código, cria usuário no auth.users
+ * 
+ * FLUXO SEM VERIFICAÇÃO:
+ * 1. action='register': Cria usuário diretamente (email_confirm=true)
+ */
 serve(async (req: Request): Promise<Response> => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -23,23 +52,19 @@ serve(async (req: Request): Promise<Response> => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     
-    // Create admin client for checking settings and admin operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Parse request body
     const body: RegisterRequest = await req.json();
-    const { email, password, name, whatsapp, honeypot } = body;
+    const { email, password, name, whatsapp, honeypot, verificationCode, action = 'register' } = body;
 
-    console.log(`Register attempt for email: ${email}`);
+    console.log(`Register action: ${action} for email: ${email}`);
 
     // ==========================================
     // HONEYPOT CHECK - Silent rejection for bots
     // ==========================================
     if (honeypot && honeypot.length > 0) {
       console.log('Bot detected via honeypot');
-      // Return fake success to not reveal the trap
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -51,77 +76,15 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // ==========================================
-    // FIELD VALIDATIONS
-    // ==========================================
-    
-    // Validate required fields
-    if (!email || !password || !name || !whatsapp) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Todos os campos são obrigatórios" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Email inválido" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Validate password length
-    if (password.length < 8) {
-      return new Response(
-        JSON.stringify({ success: false, error: "A senha deve ter pelo menos 8 caracteres" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Validate name
-    if (name.trim().length < 2) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Nome inválido" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Validate WhatsApp format (10-15 digits)
-    const whatsappClean = whatsapp.replace(/\D/g, ''); // Remove all non-digits
-    if (whatsappClean.length < 10 || whatsappClean.length > 15) {
-      return new Response(
-        JSON.stringify({ success: false, error: "WhatsApp inválido" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // ==========================================
     // SERVER-SIDE CHECK: System Settings
     // ==========================================
-    const { data: settingsData, error: settingsError } = await supabaseAdmin
+    const { data: settingsData } = await supabaseAdmin
       .from('system_settings')
       .select('key, value')
       .in('key', ['allow_registrations', 'maintenance_mode']);
 
-    if (settingsError) {
-      console.error('Error fetching system settings:', settingsError);
-      return new Response(
-        JSON.stringify({ success: false, error: "Erro interno do servidor" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Get email verification setting from gateway_settings (Admin API section)
-    const { data: gatewayData, error: gatewayError } = await supabaseAdmin
-      .from('gateway_settings')
-      .select('email_verification_enabled')
-      .limit(1)
-      .single();
-
     let allowRegistration = true;
     let maintenanceMode = false;
-    let requireEmailConfirmation = gatewayData?.email_verification_enabled ?? false;
 
     settingsData?.forEach((setting) => {
       if (setting.key === 'allow_registrations') {
@@ -132,35 +95,279 @@ serve(async (req: Request): Promise<Response> => {
       }
     });
 
-    // Block if maintenance mode is active
     if (maintenanceMode) {
-      console.log('Registration blocked: maintenance mode');
       return new Response(
         JSON.stringify({ success: false, error: "Sistema temporariamente indisponível" }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Block if registration is disabled (generic error to not reveal config)
     if (!allowRegistration) {
-      console.log('Registration blocked: registrations disabled');
       return new Response(
         JSON.stringify({ success: false, error: "Não foi possível criar a conta no momento" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Get email verification setting from gateway_settings
+    const { data: gatewayData } = await supabaseAdmin
+      .from('gateway_settings')
+      .select('email_verification_enabled, resend_api_key, resend_from_email, resend_from_name')
+      .limit(1)
+      .single();
+
+    const requireEmailConfirmation = gatewayData?.email_verification_enabled ?? false;
+
     // ==========================================
-    // CREATE USER via Supabase Auth Admin API
+    // ACTION: VERIFY CODE (Step 2)
+    // ==========================================
+    if (action === 'verify_code') {
+      if (!email || !verificationCode) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Email e código são obrigatórios" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const emailClean = email.trim().toLowerCase();
+
+      // Verify the code
+      const { data: codeData } = await supabaseAdmin
+        .from('verification_codes')
+        .select('*')
+        .eq('user_email', emailClean)
+        .eq('code', verificationCode)
+        .eq('type', 'email_verification')
+        .eq('used', false)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+
+      if (!codeData) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Código inválido ou expirado" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Get pending registration data
+      const { data: pendingData } = await supabaseAdmin
+        .from('verification_codes')
+        .select('*')
+        .eq('id', codeData.id)
+        .single();
+
+      // Parse stored metadata (name, whatsapp, password are stored in code metadata)
+      // We need to get this from a separate pending_registrations or from the request
+      // For security, we'll require password again in verify_code
+
+      if (!password || !name || !whatsapp) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Dados de cadastro incompletos" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const whatsappClean = whatsapp.replace(/\D/g, '');
+
+      // Create the user now that email is verified
+      const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
+        email: emailClean,
+        password,
+        email_confirm: true, // Already verified via code
+        user_metadata: {
+          name: name.trim(),
+          whatsapp: whatsappClean,
+        },
+      });
+
+      if (signUpError) {
+        console.error('SignUp error after verification:', signUpError.message);
+        
+        if (signUpError.message.includes('already been registered') || 
+            signUpError.message.includes('already exists')) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Este email já está cadastrado" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
+        return new Response(
+          JSON.stringify({ success: false, error: "Erro ao criar conta" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Mark code as used
+      await supabaseAdmin
+        .from('verification_codes')
+        .update({ used: true })
+        .eq('id', codeData.id);
+
+      // Delete all codes for this email
+      await supabaseAdmin
+        .from('verification_codes')
+        .delete()
+        .eq('user_email', emailClean)
+        .eq('type', 'email_verification');
+
+      console.log(`User created after email verification: ${signUpData.user?.id}`);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          verified: true,
+          message: "Conta criada com sucesso! Faça login para continuar."
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ==========================================
+    // ACTION: REGISTER (Step 1)
     // ==========================================
     
+    // Field validations
+    if (!email || !password || !name || !whatsapp) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Todos os campos são obrigatórios" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Email inválido" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (password.length < 8) {
+      return new Response(
+        JSON.stringify({ success: false, error: "A senha deve ter pelo menos 8 caracteres" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (name.trim().length < 2) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Nome inválido" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const whatsappClean = whatsapp.replace(/\D/g, '');
+    if (whatsappClean.length < 10 || whatsappClean.length > 15) {
+      return new Response(
+        JSON.stringify({ success: false, error: "WhatsApp inválido" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const emailClean = email.trim().toLowerCase();
-    
-    // Use admin API to have full control over user creation
+
+    // Check if email already exists in profiles (already registered and confirmed)
+    const { data: existingProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('email', emailClean)
+      .maybeSingle();
+
+    if (existingProfile) {
+      // Return generic message to not reveal email exists
+      console.log('Email already registered, returning generic message');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          requiresEmailConfirmation: requireEmailConfirmation,
+          message: requireEmailConfirmation 
+            ? "Se este email não estiver cadastrado, você receberá um código de verificação."
+            : "Se este email não estiver cadastrado, sua conta foi criada."
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ==========================================
+    // WITH EMAIL VERIFICATION: Send code via Resend
+    // ==========================================
+    if (requireEmailConfirmation) {
+      if (!gatewayData?.resend_api_key) {
+        console.error('Resend API key not configured');
+        return new Response(
+          JSON.stringify({ success: false, error: "Serviço de email não configurado" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Generate 6-digit code
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      // Delete any existing codes for this email
+      await supabaseAdmin
+        .from('verification_codes')
+        .delete()
+        .eq('user_email', emailClean)
+        .eq('type', 'email_verification');
+
+      // Insert new code
+      await supabaseAdmin.from('verification_codes').insert({
+        user_email: emailClean,
+        code: verificationCode,
+        type: 'email_verification',
+        expires_at: expiresAt.toISOString(),
+        used: false,
+      });
+
+      // Send verification email
+      const fromEmail = `${gatewayData.resend_from_name || 'SWEXTRACTOR'} <${gatewayData.resend_from_email || 'noreply@resend.dev'}>`;
+      
+      try {
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0a0a0a; color: #fff;">
+            <h1 style="color: #4ade80;">✉️ Verificação de Email</h1>
+            <p>Olá ${name.trim()}!</p>
+            <p>Seu código de verificação é:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <div style="background: #111; padding: 20px 40px; border-radius: 12px; display: inline-block;">
+                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4ade80;">${verificationCode}</span>
+              </div>
+            </div>
+            <p style="color: #888; font-size: 14px;">Este código expira em 15 minutos.</p>
+            <p style="color: #888; font-size: 14px;">Se você não solicitou este cadastro, ignore este email.</p>
+            <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
+            <p style="color: #666; font-size: 12px;">SWEXTRACTOR - Sistema de Gestão</p>
+          </div>
+        `;
+        
+        await sendEmail(gatewayData.resend_api_key, fromEmail, emailClean, "✉️ Código de Verificação - SWEXTRACTOR", html);
+        console.log(`Verification code sent to: ${emailClean}`);
+      } catch (emailError) {
+        console.error('Error sending verification email:', emailError);
+        return new Response(
+          JSON.stringify({ success: false, error: "Erro ao enviar email de verificação" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          requiresEmailConfirmation: true,
+          message: "Enviamos um código de verificação para seu email."
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ==========================================
+    // WITHOUT EMAIL VERIFICATION: Create user directly
+    // ==========================================
     const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
       email: emailClean,
       password,
-      email_confirm: !requireEmailConfirmation, // Auto-confirm if not requiring email confirmation
+      email_confirm: true, // Auto-confirm
       user_metadata: {
         name: name.trim(),
         whatsapp: whatsappClean,
@@ -170,19 +377,13 @@ serve(async (req: Request): Promise<Response> => {
     if (signUpError) {
       console.error('SignUp error:', signUpError.message);
       
-      // Handle specific errors with generic messages to not reveal user existence
       if (signUpError.message.includes('already been registered') || 
-          signUpError.message.includes('User already registered') ||
           signUpError.message.includes('already exists')) {
-        console.log('Email already exists, returning generic message');
-        // Return same response as success to not reveal if email exists
         return new Response(
           JSON.stringify({ 
             success: true, 
-            requiresEmailConfirmation: requireEmailConfirmation,
-            message: requireEmailConfirmation 
-              ? "Se este email não estiver cadastrado, você receberá um link de confirmação."
-              : "Se este email não estiver cadastrado, sua conta foi criada."
+            requiresEmailConfirmation: false,
+            message: "Se este email não estiver cadastrado, sua conta foi criada."
           }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
@@ -194,36 +395,13 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // If email confirmation is required, send the invite email
-    if (requireEmailConfirmation && signUpData.user) {
-      const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(emailClean, {
-        redirectTo: `${req.headers.get('origin') || supabaseUrl}/login`,
-        data: {
-          name: name.trim(),
-          whatsapp: whatsappClean,
-        },
-      });
-
-      if (inviteError) {
-        console.error('Error sending invite email:', inviteError);
-        // User was created but email failed - delete the user to maintain consistency
-        await supabaseAdmin.auth.admin.deleteUser(signUpData.user.id);
-        return new Response(
-          JSON.stringify({ success: false, error: "Erro ao enviar email de confirmação. Tente novamente." }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
-
-    console.log(`User created: ${signUpData.user?.id}, requires confirmation: ${requireEmailConfirmation}`);
+    console.log(`User created: ${signUpData.user?.id}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        requiresEmailConfirmation: requireEmailConfirmation,
-        message: requireEmailConfirmation 
-          ? "Verifique seu email para confirmar o cadastro." 
-          : "Conta criada com sucesso!"
+        requiresEmailConfirmation: false,
+        message: "Conta criada com sucesso!"
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
