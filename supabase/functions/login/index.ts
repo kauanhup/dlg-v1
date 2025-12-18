@@ -77,7 +77,7 @@ serve(async (req: Request): Promise<Response> => {
           error: `Muitas tentativas deste endereço. Aguarde ${RATE_LIMIT_WINDOW_MINUTES} minutos.`,
           code: "IP_RATE_LIMITED"
         }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -91,9 +91,10 @@ serve(async (req: Request): Promise<Response> => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "Credenciais inválidas"
+          error: "Credenciais inválidas",
+          code: "BOT_DETECTED"
         }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -116,7 +117,7 @@ serve(async (req: Request): Promise<Response> => {
             error: "Verificação de segurança necessária",
             code: "RECAPTCHA_REQUIRED"
           }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
@@ -139,7 +140,7 @@ serve(async (req: Request): Promise<Response> => {
             error: "Verificação de segurança falhou. Tente novamente.",
             code: "RECAPTCHA_FAILED"
           }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     }
@@ -149,16 +150,16 @@ serve(async (req: Request): Promise<Response> => {
     // ==========================================
     if (!email) {
       return new Response(
-        JSON.stringify({ success: false, error: "Email é obrigatório" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: "Email é obrigatório", code: "VALIDATION_ERROR" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return new Response(
-        JSON.stringify({ success: false, error: "Formato de email inválido" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: "Formato de email inválido", code: "VALIDATION_ERROR" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -188,7 +189,7 @@ serve(async (req: Request): Promise<Response> => {
           error: "Sistema em manutenção. Tente novamente mais tarde.",
           code: "MAINTENANCE"
         }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -214,9 +215,10 @@ serve(async (req: Request): Promise<Response> => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "Email ou senha incorretos"
+          error: "Email ou senha incorretos",
+          code: "INVALID_CREDENTIALS"
         }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -238,7 +240,7 @@ serve(async (req: Request): Promise<Response> => {
           error: `Conta temporariamente bloqueada. Aguarde ${RATE_LIMIT_WINDOW_MINUTES} minutos.`,
           code: "USER_RATE_LIMITED"
         }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -257,7 +259,7 @@ serve(async (req: Request): Promise<Response> => {
           error: "Sua conta foi suspensa. Entre em contato com o suporte.",
           code: "BANNED"
         }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
