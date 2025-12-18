@@ -749,43 +749,43 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex">
-      {/* Left Side - Branding & Visual (hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-primary/10 via-background to-background overflow-hidden">
+    <div className="min-h-screen min-h-[100dvh] w-full flex flex-col lg:flex-row overflow-hidden">
+      {/* Left Side - Branding & Visual (hidden on mobile/tablet) */}
+      <div className="hidden lg:flex lg:w-[45%] xl:w-1/2 relative bg-gradient-to-br from-primary/10 via-background to-background overflow-hidden">
         {/* Background Effects */}
         <div className="absolute inset-0">
           <div className="absolute top-0 left-0 w-full h-full">
-            <div className="absolute top-[20%] left-[20%] w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute bottom-[30%] right-[10%] w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse delay-1000" />
+            <div className="absolute top-[20%] left-[20%] w-48 xl:w-72 h-48 xl:h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-[30%] right-[10%] w-64 xl:w-96 h-64 xl:h-96 bg-primary/10 rounded-full blur-3xl animate-pulse delay-1000" />
           </div>
           {/* Grid Pattern */}
           <div className="absolute inset-0 opacity-[0.03]" 
             style={{
               backgroundImage: `linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)`,
-              backgroundSize: '60px 60px'
+              backgroundSize: '50px 50px'
             }}
           />
         </div>
         
         {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20">
+        <div className="relative z-10 flex flex-col justify-center px-8 lg:px-10 xl:px-16 2xl:px-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
             {/* Logo */}
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-                <svg viewBox="0 0 24 24" className="w-7 h-7 text-primary-foreground" fill="currentColor">
+            <div className="flex items-center gap-2 lg:gap-3 mb-6 lg:mb-8">
+              <div className="w-10 lg:w-12 h-10 lg:h-12 rounded-xl bg-primary flex items-center justify-center">
+                <svg viewBox="0 0 24 24" className="w-5 lg:w-7 h-5 lg:h-7 text-primary-foreground" fill="currentColor">
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <span className="text-2xl font-display font-bold text-foreground">DLG Connect</span>
+              <span className="text-xl lg:text-2xl font-display font-bold text-foreground">DLG Connect</span>
             </div>
             
             {/* Title */}
-            <h1 className="text-4xl xl:text-5xl font-display font-bold text-foreground mb-4 leading-tight">
+            <h1 className="text-3xl lg:text-4xl xl:text-5xl font-display font-bold text-foreground mb-3 lg:mb-4 leading-tight">
               {isLogin ? (
                 <>Bem-vindo<br />de volta</>
               ) : (
@@ -793,14 +793,14 @@ const Login = () => {
               )}
             </h1>
             
-            <p className="text-lg text-muted-foreground max-w-md mb-8">
+            <p className="text-base lg:text-lg text-muted-foreground max-w-sm lg:max-w-md mb-6 lg:mb-8">
               {isLogin 
                 ? "Acesse sua conta para gerenciar suas sessões e acompanhar suas licenças."
                 : "Crie sua conta e tenha acesso a todas as funcionalidades da plataforma."}
             </p>
 
             {/* Features */}
-            <div className="space-y-4">
+            <div className="space-y-3 lg:space-y-4">
               {[
                 { icon: "✓", text: "Painel completo de gerenciamento" },
                 { icon: "✓", text: "Acesso às suas sessões 24/7" },
@@ -811,12 +811,12 @@ const Login = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.4, delay: 0.2 + i * 0.1 }}
-                  className="flex items-center gap-3"
+                  className="flex items-center gap-2 lg:gap-3"
                 >
-                  <span className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-medium">
+                  <span className="w-5 lg:w-6 h-5 lg:h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs lg:text-sm font-medium shrink-0">
                     {feature.icon}
                   </span>
-                  <span className="text-muted-foreground">{feature.text}</span>
+                  <span className="text-sm lg:text-base text-muted-foreground">{feature.text}</span>
                 </motion.div>
               ))}
             </div>
@@ -825,52 +825,52 @@ const Login = () => {
       </div>
 
       {/* Right Side - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-background relative">
-        {/* Mobile Background */}
+      <div className="flex-1 lg:w-[55%] xl:w-1/2 flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12 bg-background relative min-h-screen lg:min-h-0">
+        {/* Mobile/Tablet Background */}
         <div className="absolute inset-0 lg:hidden">
-          <AnimatedShaderBackground className="w-full h-full opacity-30" />
+          <AnimatedShaderBackground className="w-full h-full opacity-20" />
         </div>
 
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md relative z-10"
+          className="w-full max-w-[400px] sm:max-w-[420px] relative z-10"
         >
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-              <svg viewBox="0 0 24 24" className="w-6 h-6 text-primary-foreground" fill="currentColor">
+          {/* Mobile/Tablet Logo */}
+          <div className="lg:hidden flex items-center justify-center gap-2 mb-6 sm:mb-8">
+            <div className="w-9 sm:w-10 h-9 sm:h-10 rounded-xl bg-primary flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-5 sm:w-6 h-5 sm:h-6 text-primary-foreground" fill="currentColor">
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <span className="text-xl font-display font-bold text-foreground">DLG Connect</span>
+            <span className="text-lg sm:text-xl font-display font-bold text-foreground">DLG Connect</span>
           </div>
 
           {/* Form Card */}
-          <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl p-6 sm:p-8 shadow-xl">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-display font-bold text-foreground">
+          <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl sm:rounded-2xl p-5 sm:p-6 md:p-8 shadow-xl">
+            <div className="text-center mb-5 sm:mb-6">
+              <h2 className="text-xl sm:text-2xl font-display font-bold text-foreground">
                 {isLogin ? "Entrar" : "Criar Conta"}
               </h2>
-              <p className="text-muted-foreground text-sm mt-2">
+              <p className="text-muted-foreground text-xs sm:text-sm mt-1.5 sm:mt-2">
                 {isLogin 
                   ? "Digite suas credenciais para acessar" 
                   : "Preencha os dados para criar sua conta"}
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
               {!isLogin && (
-                <div className="space-y-1.5">
-                  <label htmlFor="name" className="text-sm font-medium text-foreground">
+                <div className="space-y-1 sm:space-y-1.5">
+                  <label htmlFor="name" className="text-xs sm:text-sm font-medium text-foreground">
                     Nome completo
                   </label>
                   <input
                     id="name"
                     type="text"
                     placeholder="Seu nome"
-                    className={`text-sm w-full py-2.5 px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
+                    className={`text-sm w-full py-2 sm:py-2.5 px-3 sm:px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
                       nameError ? "border-destructive" : "border-border"
                     }`}
                     value={name}
@@ -883,15 +883,15 @@ const Login = () => {
                 </div>
               )}
 
-              <div className="space-y-1.5">
-                <label htmlFor="email" className="text-sm font-medium text-foreground">
+              <div className="space-y-1 sm:space-y-1.5">
+                <label htmlFor="email" className="text-xs sm:text-sm font-medium text-foreground">
                   Email
                 </label>
                 <input
                   id="email"
                   type="email"
                   placeholder="seu@email.com"
-                  className={`text-sm w-full py-2.5 px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
+                  className={`text-sm w-full py-2 sm:py-2.5 px-3 sm:px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
                     emailError ? "border-destructive" : "border-border"
                   }`}
                   value={email}
@@ -907,15 +907,15 @@ const Login = () => {
                 )}
               </div>
 
-              <div className="space-y-1.5">
-                <label htmlFor="password" className="text-sm font-medium text-foreground">
+              <div className="space-y-1 sm:space-y-1.5">
+                <label htmlFor="password" className="text-xs sm:text-sm font-medium text-foreground">
                   {isLogin ? "Senha" : "Criar senha"}
                 </label>
                 <input
                   id="password"
                   type="password"
                   placeholder="••••••••"
-                  className={`text-sm w-full py-2.5 px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
+                  className={`text-sm w-full py-2 sm:py-2.5 px-3 sm:px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
                     passwordError ? "border-destructive" : "border-border"
                   }`}
                   value={password}
@@ -940,15 +940,15 @@ const Login = () => {
               </div>
 
               {!isLogin && (
-                <div className="space-y-1.5">
-                  <label htmlFor="whatsapp" className="text-sm font-medium text-foreground">
+                <div className="space-y-1 sm:space-y-1.5">
+                  <label htmlFor="whatsapp" className="text-xs sm:text-sm font-medium text-foreground">
                     WhatsApp
                   </label>
                   <input
                     id="whatsapp"
                     type="tel"
                     placeholder="+55 11 99999-9999"
-                    className={`text-sm w-full py-2.5 px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
+                    className={`text-sm w-full py-2 sm:py-2.5 px-3 sm:px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
                       whatsappError ? "border-destructive" : "border-border"
                     }`}
                     value={whatsapp}
@@ -980,12 +980,12 @@ const Login = () => {
               </div>
 
               {rateLimitError && (
-                <p className="text-sm text-destructive text-center">{rateLimitError}</p>
+                <p className="text-xs sm:text-sm text-destructive text-center">{rateLimitError}</p>
               )}
 
               {/* reCAPTCHA Widget */}
               {recaptchaSettings.enabled && recaptchaSettings.siteKey && (
-                <div className="flex justify-center">
+                <div className="flex justify-center transform scale-90 sm:scale-100 origin-center">
                   <ReCAPTCHA
                     ref={recaptchaRef}
                     sitekey={recaptchaSettings.siteKey}
@@ -999,7 +999,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={isSubmitting || (recaptchaSettings.enabled && !recaptchaToken)}
-                className="w-full py-2.5 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-2 sm:py-2.5 px-4 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   "Aguarde..."
@@ -1015,7 +1015,7 @@ const Login = () => {
               </button>
 
               {/* Divider */}
-              <div className="relative my-4">
+              <div className="relative my-3 sm:my-4">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-border"></div>
                 </div>
@@ -1026,7 +1026,7 @@ const Login = () => {
 
               {isLogin ? (
                 systemSettings.allowRegistration ? (
-                  <p className="text-center text-sm text-muted-foreground">
+                  <p className="text-center text-xs sm:text-sm text-muted-foreground">
                     Não tem uma conta?{" "}
                     <button
                       type="button"
@@ -1039,7 +1039,7 @@ const Login = () => {
                   </p>
                 ) : null
               ) : (
-                <p className="text-center text-sm text-muted-foreground">
+                <p className="text-center text-xs sm:text-sm text-muted-foreground">
                   Já tem uma conta?{" "}
                   <button
                     type="button"
@@ -1053,12 +1053,12 @@ const Login = () => {
               )}
             </form>
 
-            <div className="mt-6 text-center">
+            <div className="mt-4 sm:mt-6 text-center">
               <Link
                 to="/"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+                className="text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
               >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-3.5 sm:w-4 h-3.5 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="19" y1="12" x2="5" y2="12" />
                   <polyline points="12,19 5,12 12,5" />
                 </svg>
@@ -1069,6 +1069,7 @@ const Login = () => {
         </motion.div>
       </div>
 
+
       {/* Banned User Modal */}
       <AnimatePresence>
         {showBannedModal && (
@@ -1076,37 +1077,37 @@ const Login = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl"
+              className="bg-card border border-border rounded-xl sm:rounded-2xl p-4 sm:p-6 max-w-[90%] sm:max-w-md w-full shadow-2xl"
             >
               <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-destructive/20 flex items-center justify-center">
-                  <Ban className="w-8 h-8 text-destructive" />
+                <div className="w-12 sm:w-16 h-12 sm:h-16 mx-auto mb-3 sm:mb-4 rounded-full bg-destructive/20 flex items-center justify-center">
+                  <Ban className="w-6 sm:w-8 h-6 sm:h-8 text-destructive" />
                 </div>
-                <h2 className="text-xl font-bold text-foreground mb-2">
+                <h2 className="text-lg sm:text-xl font-bold text-foreground mb-2">
                   Conta Suspensa
                 </h2>
-                <p className="text-muted-foreground mb-6">
+                <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
                   Sua conta foi suspensa. Se você acredita que isso foi um erro, entre em contato com o suporte.
                 </p>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2 sm:gap-3">
                   <a
                     href="https://wa.me/5565996498222?text=Olá! Minha conta foi suspensa e gostaria de entender o motivo."
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 py-3 px-4 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-all"
+                    className="flex items-center justify-center gap-2 py-2.5 sm:py-3 px-4 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-all"
                   >
-                    <MessageCircle className="w-5 h-5" />
+                    <MessageCircle className="w-4 sm:w-5 h-4 sm:h-5" />
                     Contatar Suporte
                   </a>
                   <button
                     onClick={() => setShowBannedModal(false)}
-                    className="py-2 px-4 text-muted-foreground hover:text-foreground transition-colors"
+                    className="py-2 px-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Fechar
                   </button>
@@ -1124,37 +1125,37 @@ const Login = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl"
+              className="bg-card border border-border rounded-xl sm:rounded-2xl p-4 sm:p-6 max-w-[90%] sm:max-w-md w-full shadow-2xl"
             >
               <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                  <Wrench className="w-8 h-8 text-yellow-500" />
+                <div className="w-12 sm:w-16 h-12 sm:h-16 mx-auto mb-3 sm:mb-4 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                  <Wrench className="w-6 sm:w-8 h-6 sm:h-8 text-yellow-500" />
                 </div>
-                <h2 className="text-xl font-bold text-foreground mb-2">
+                <h2 className="text-lg sm:text-xl font-bold text-foreground mb-2">
                   Sistema em Manutenção
                 </h2>
-                <p className="text-muted-foreground mb-6">
+                <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
                   O sistema está temporariamente em manutenção. Por favor, tente novamente mais tarde.
                 </p>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2 sm:gap-3">
                   <a
                     href="https://wa.me/5565996498222?text=Olá! O sistema está em manutenção. Gostaria de saber quando estará disponível."
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 py-3 px-4 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-all"
+                    className="flex items-center justify-center gap-2 py-2.5 sm:py-3 px-4 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-all"
                   >
-                    <MessageCircle className="w-5 h-5" />
+                    <MessageCircle className="w-4 sm:w-5 h-4 sm:h-5" />
                     Contatar Suporte
                   </a>
                   <button
                     onClick={() => setShowMaintenanceModal(false)}
-                    className="py-2 px-4 text-muted-foreground hover:text-foreground transition-colors"
+                    className="py-2 px-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Fechar
                   </button>
@@ -1172,31 +1173,31 @@ const Login = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl"
+              className="bg-card border border-border rounded-xl sm:rounded-2xl p-4 sm:p-6 max-w-[90%] sm:max-w-md w-full shadow-2xl my-4"
             >
               <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Mail className="w-8 h-8 text-primary" />
+                <div className="w-12 sm:w-16 h-12 sm:h-16 mx-auto mb-3 sm:mb-4 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Mail className="w-6 sm:w-8 h-6 sm:h-8 text-primary" />
                 </div>
-                <h2 className="text-xl font-bold text-foreground mb-2">
+                <h2 className="text-lg sm:text-xl font-bold text-foreground mb-2">
                   Verificar Email
                 </h2>
-                <p className="text-muted-foreground mb-2">
+                <p className="text-sm sm:text-base text-muted-foreground mb-1 sm:mb-2">
                   Enviamos um código de verificação para:
                 </p>
-                <p className="text-primary font-medium mb-4">
+                <p className="text-sm sm:text-base text-primary font-medium mb-3 sm:mb-4 break-all">
                   {pendingEmail}
                 </p>
-                <p className="text-sm text-muted-foreground mb-2">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-1 sm:mb-2">
                   Digite o código de 6 dígitos:
                 </p>
-                <p className="text-xs text-muted-foreground/70 mb-4">
+                <p className="text-xs text-muted-foreground/70 mb-3 sm:mb-4">
                   O código expira em 15 minutos
                 </p>
                 <input
@@ -1205,21 +1206,20 @@ const Login = () => {
                   onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="000000"
                   maxLength={6}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground text-center text-2xl tracking-widest placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 mb-4"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-background border border-border rounded-lg text-foreground text-center text-xl sm:text-2xl tracking-widest placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 mb-3 sm:mb-4"
                   disabled={isVerifying || isResendingCode}
                 />
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2 sm:gap-3">
                   <button
                     onClick={handleVerifyCode}
                     disabled={isVerifying || isResendingCode || verificationCode.length !== 6}
-                    className="py-3 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50"
+                    className="py-2.5 sm:py-3 px-4 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50"
                   >
                     {isVerifying ? "Verificando..." : "Verificar Código"}
                   </button>
                   
-                  {/* Always show reCAPTCHA for resend (prevents refresh bypass) */}
                   {recaptchaSettings.enabled && recaptchaSettings.siteKey && resendCooldown === 0 && (
-                    <div className="flex justify-center py-2">
+                    <div className="flex justify-center py-2 transform scale-90 sm:scale-100 origin-center">
                       <ReCAPTCHA
                         ref={resendRecaptchaRef}
                         sitekey={recaptchaSettings.siteKey}
@@ -1239,7 +1239,7 @@ const Login = () => {
                       resendCooldown > 0 || 
                       (recaptchaSettings.enabled && !resendRecaptchaToken)
                     }
-                    className="py-2 px-4 text-primary hover:text-primary/80 transition-colors text-sm disabled:opacity-50"
+                    className="py-2 px-4 text-primary hover:text-primary/80 transition-colors text-xs sm:text-sm disabled:opacity-50"
                   >
                     {isResendingCode 
                       ? "Reenviando..." 
@@ -1262,7 +1262,7 @@ const Login = () => {
                       setResendRecaptchaToken(null);
                       resendRecaptchaRef.current?.reset();
                     }}
-                    className="py-2 px-4 text-muted-foreground hover:text-foreground transition-colors"
+                    className="py-2 px-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
                     disabled={isVerifying || isResendingCode}
                   >
                     Cancelar
