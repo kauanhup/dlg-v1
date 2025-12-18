@@ -5,7 +5,7 @@ import AnimatedShaderBackground from "@/components/ui/animated-shader-background
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import { supabase } from "@/integrations/supabase/client";
-import { Ban, MessageCircle, X, AlertTriangle, Wrench, Mail, CheckCircle } from "lucide-react";
+import { Ban, MessageCircle, Wrench, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SystemSettings {
@@ -39,7 +39,7 @@ const Login = () => {
   const [showBannedModal, setShowBannedModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
-  const [showAccountNotActivatedModal, setShowAccountNotActivatedModal] = useState(false);
+  const [isResendingCode, setIsResendingCode] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [pendingPassword, setPendingPassword] = useState("");
@@ -600,6 +600,43 @@ const Login = () => {
     }
   };
 
+  // Handle resend verification code
+  const handleResendCode = async () => {
+    if (!pendingEmail || !pendingName || !pendingWhatsapp) {
+      toast.error("Erro", "Dados incompletos para reenvio.");
+      return;
+    }
+
+    setIsResendingCode(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('register', {
+        body: {
+          action: 'register',
+          email: pendingEmail,
+          password: pendingPassword,
+          name: pendingName,
+          whatsapp: pendingWhatsapp,
+        },
+      });
+
+      if (error) {
+        toast.error("Erro", "Não foi possível reenviar o código.");
+        return;
+      }
+
+      if (data?.success && data?.requiresEmailConfirmation) {
+        toast.success("Código reenviado!", "Verifique seu email.");
+        setVerificationCode("");
+      } else {
+        toast.error("Erro", data?.error || "Não foi possível reenviar o código.");
+      }
+    } catch (err) {
+      toast.error("Erro", "Erro ao reenviar código.");
+    } finally {
+      setIsResendingCode(false);
+    }
+  };
+
   if (isLoading || isTransitioning) {
     return (
       <div className="min-h-screen w-full relative flex items-center justify-center overflow-hidden">
@@ -983,8 +1020,11 @@ const Login = () => {
                 <p className="text-primary font-medium mb-4">
                   {pendingEmail}
                 </p>
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className="text-sm text-muted-foreground mb-2">
                   Digite o código de 6 dígitos:
+                </p>
+                <p className="text-xs text-muted-foreground/70 mb-4">
+                  O código expira em 15 minutos
                 </p>
                 <input
                   type="text"
@@ -993,15 +1033,22 @@ const Login = () => {
                   placeholder="000000"
                   maxLength={6}
                   className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground text-center text-2xl tracking-widest placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 mb-4"
-                  disabled={isVerifying}
+                  disabled={isVerifying || isResendingCode}
                 />
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={handleVerifyCode}
-                    disabled={isVerifying || verificationCode.length !== 6}
+                    disabled={isVerifying || isResendingCode || verificationCode.length !== 6}
                     className="py-3 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50"
                   >
                     {isVerifying ? "Verificando..." : "Verificar Código"}
+                  </button>
+                  <button
+                    onClick={handleResendCode}
+                    disabled={isVerifying || isResendingCode}
+                    className="py-2 px-4 text-primary hover:text-primary/80 transition-colors text-sm disabled:opacity-50"
+                  >
+                    {isResendingCode ? "Reenviando..." : "Reenviar código"}
                   </button>
                   <button
                     onClick={() => {
@@ -1013,7 +1060,7 @@ const Login = () => {
                       setPendingWhatsapp("");
                     }}
                     className="py-2 px-4 text-muted-foreground hover:text-foreground transition-colors"
-                    disabled={isVerifying}
+                    disabled={isVerifying || isResendingCode}
                   >
                     Cancelar
                   </button>
@@ -1024,44 +1071,6 @@ const Login = () => {
         )}
       </AnimatePresence>
 
-      {/* Account Not Activated Modal */}
-      <AnimatePresence>
-        {showAccountNotActivatedModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl"
-            >
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                  <AlertTriangle className="w-8 h-8 text-yellow-500" />
-                </div>
-                <h2 className="text-xl font-bold text-foreground mb-2">
-                  Conta não Ativada
-                </h2>
-                <p className="text-muted-foreground mb-6">
-                  Sua conta ainda não foi ativada. Verifique seu email e clique no link de confirmação para ativar sua conta.
-                </p>
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={() => setShowAccountNotActivatedModal(false)}
-                    className="py-3 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all"
-                  >
-                    Entendido
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
