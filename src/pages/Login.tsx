@@ -597,6 +597,9 @@ const Login = () => {
       setPendingPassword("");
       setPendingName("");
       setPendingWhatsapp("");
+      setResendCount(0);
+      setResendCooldown(0);
+      setResendRecaptchaToken(null);
       setIsLogin(true);
     } catch (err: any) {
       toast.error("Erro", "Erro ao verificar código.");
