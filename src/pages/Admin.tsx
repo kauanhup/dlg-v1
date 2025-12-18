@@ -2539,6 +2539,16 @@ const ApiSection = () => {
   const [emailVerificationEnabled, setEmailVerificationEnabled] = useState(false);
   const [isSavingToggles, setIsSavingToggles] = useState(false);
 
+  // Email template state
+  const [templateTitle, setTemplateTitle] = useState("✉️ Verificação de Email");
+  const [templateGreeting, setTemplateGreeting] = useState("Olá {name}!");
+  const [templateMessage, setTemplateMessage] = useState("Seu código de verificação é:");
+  const [templateExpiryText, setTemplateExpiryText] = useState("Este código expira em 15 minutos.");
+  const [templateFooter, setTemplateFooter] = useState("SWEXTRACTOR - Sistema de Gestão");
+  const [templateBgColor, setTemplateBgColor] = useState("#0a0a0a");
+  const [templateAccentColor, setTemplateAccentColor] = useState("#4ade80");
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+
   // Load settings on mount
   useEffect(() => {
     const loadSettings = async () => {
@@ -2567,6 +2577,14 @@ const ApiSection = () => {
           // Feature toggles
           setPasswordRecoveryEnabled(data.data.password_recovery_enabled === true);
           setEmailVerificationEnabled(data.data.email_verification_enabled === true);
+          // Email template settings
+          setTemplateTitle(data.data.email_template_title || "✉️ Verificação de Email");
+          setTemplateGreeting(data.data.email_template_greeting || "Olá {name}!");
+          setTemplateMessage(data.data.email_template_message || "Seu código de verificação é:");
+          setTemplateExpiryText(data.data.email_template_expiry_text || "Este código expira em 15 minutos.");
+          setTemplateFooter(data.data.email_template_footer || "SWEXTRACTOR - Sistema de Gestão");
+          setTemplateBgColor(data.data.email_template_bg_color || "#0a0a0a");
+          setTemplateAccentColor(data.data.email_template_accent_color || "#4ade80");
         } else {
           // No settings yet
           setClientId("");
@@ -3141,6 +3159,195 @@ const ApiSection = () => {
             {isSavingRecaptcha ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
             {isSavingRecaptcha ? "Salvando..." : "Salvar"}
           </Button>
+        </div>
+      </div>
+
+      {/* Email Template Editor */}
+      <div className="bg-card border border-border rounded-lg p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
+            <Edit className="w-5 h-5 text-purple-500" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">Template de Email</h3>
+            <p className="text-sm text-muted-foreground">Personalize o email de verificação</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Editor */}
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Título</label>
+              <input
+                type="text"
+                value={templateTitle}
+                onChange={(e) => setTemplateTitle(e.target.value)}
+                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Saudação</label>
+              <input
+                type="text"
+                value={templateGreeting}
+                onChange={(e) => setTemplateGreeting(e.target.value)}
+                placeholder="Use {name} para o nome do usuário"
+                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Use {"{name}"} para incluir o nome do usuário</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Mensagem</label>
+              <input
+                type="text"
+                value={templateMessage}
+                onChange={(e) => setTemplateMessage(e.target.value)}
+                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Texto de Expiração</label>
+              <input
+                type="text"
+                value={templateExpiryText}
+                onChange={(e) => setTemplateExpiryText(e.target.value)}
+                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Rodapé</label>
+              <input
+                type="text"
+                value={templateFooter}
+                onChange={(e) => setTemplateFooter(e.target.value)}
+                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Cor de Fundo</label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={templateBgColor}
+                    onChange={(e) => setTemplateBgColor(e.target.value)}
+                    className="w-10 h-10 rounded cursor-pointer border border-border"
+                  />
+                  <input
+                    type="text"
+                    value={templateBgColor}
+                    onChange={(e) => setTemplateBgColor(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-background border border-border rounded-md text-foreground font-mono text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Cor de Destaque</label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={templateAccentColor}
+                    onChange={(e) => setTemplateAccentColor(e.target.value)}
+                    className="w-10 h-10 rounded cursor-pointer border border-border"
+                  />
+                  <input
+                    type="text"
+                    value={templateAccentColor}
+                    onChange={(e) => setTemplateAccentColor(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-background border border-border rounded-md text-foreground font-mono text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+            <Button 
+              onClick={async () => {
+                setIsSavingTemplate(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke('pixup', {
+                    body: { 
+                      action: 'save_email_template',
+                      email_template_title: templateTitle,
+                      email_template_greeting: templateGreeting,
+                      email_template_message: templateMessage,
+                      email_template_expiry_text: templateExpiryText,
+                      email_template_footer: templateFooter,
+                      email_template_bg_color: templateBgColor,
+                      email_template_accent_color: templateAccentColor
+                    }
+                  });
+                  if (data?.success) {
+                    toast.success("Template salvo com sucesso!");
+                  } else {
+                    toast.error(data?.error || "Erro ao salvar template");
+                  }
+                } catch (error) {
+                  toast.error("Erro ao salvar template");
+                } finally {
+                  setIsSavingTemplate(false);
+                }
+              }}
+              disabled={isSavingTemplate}
+              className="w-full gap-2"
+            >
+              {isSavingTemplate ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
+              {isSavingTemplate ? "Salvando..." : "Salvar Template"}
+            </Button>
+          </div>
+
+          {/* Preview */}
+          <div>
+            <label className="text-sm font-medium text-foreground mb-2 block">Preview</label>
+            <div 
+              className="rounded-lg overflow-hidden border border-border"
+              style={{ maxHeight: '500px', overflowY: 'auto' }}
+            >
+              <div 
+                style={{ 
+                  fontFamily: 'Arial, sans-serif',
+                  maxWidth: '100%',
+                  padding: '20px',
+                  backgroundColor: templateBgColor,
+                  color: '#fff'
+                }}
+              >
+                <h1 style={{ color: templateAccentColor, fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>
+                  {templateTitle}
+                </h1>
+                <p style={{ marginBottom: '8px' }}>
+                  {templateGreeting.replace('{name}', 'João')}
+                </p>
+                <p style={{ marginBottom: '16px' }}>{templateMessage}</p>
+                <div style={{ textAlign: 'center', margin: '24px 0' }}>
+                  <div style={{ 
+                    background: '#111', 
+                    padding: '16px 32px', 
+                    borderRadius: '12px', 
+                    display: 'inline-block' 
+                  }}>
+                    <span style={{ 
+                      fontSize: '28px', 
+                      fontWeight: 'bold', 
+                      letterSpacing: '6px', 
+                      color: templateAccentColor 
+                    }}>
+                      123456
+                    </span>
+                  </div>
+                </div>
+                <p style={{ color: '#888', fontSize: '12px', marginBottom: '8px' }}>
+                  {templateExpiryText}
+                </p>
+                <p style={{ color: '#888', fontSize: '12px' }}>
+                  Se você não solicitou este cadastro, ignore este email.
+                </p>
+                <hr style={{ border: 'none', borderTop: '1px solid #333', margin: '16px 0' }} />
+                <p style={{ color: '#666', fontSize: '11px' }}>
+                  {templateFooter}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </motion.div>
