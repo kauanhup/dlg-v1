@@ -480,7 +480,25 @@ const Login = () => {
 
         if (!data?.success) {
           recordFailedAttempt(email);
-          toast.error("Erro no cadastro", data?.error || "Não foi possível criar a conta.");
+          
+          // Handle specific error codes with appropriate messages
+          if (data?.code === "EMAIL_EXISTS") {
+            toast.error("Email já cadastrado", "Este email já possui uma conta.");
+            // Auto-switch to login and keep email
+            setTimeout(() => {
+              setIsLogin(true);
+              setEmail(email.trim().toLowerCase());
+              setPassword("");
+              setName("");
+              setWhatsapp("");
+              setHoneypot("");
+              recaptchaRef.current?.reset();
+              setRecaptchaToken(null);
+            }, 1500);
+          } else {
+            toast.error("Erro no cadastro", data?.error || "Não foi possível criar a conta.");
+          }
+          
           setIsSubmitting(false);
           return;
         }
