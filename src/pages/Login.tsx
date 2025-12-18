@@ -617,9 +617,8 @@ const Login = () => {
       return;
     }
 
-    // After 3 resends, require reCAPTCHA
-    const requiresResendCaptcha = resendCount >= 3 && recaptchaSettings.enabled;
-    if (requiresResendCaptcha && !resendRecaptchaToken) {
+    // Always require reCAPTCHA on resends (prevents refresh bypass)
+    if (recaptchaSettings.enabled && !resendRecaptchaToken) {
       toast.error("Verificação necessária", "Complete o reCAPTCHA para reenviar.");
       return;
     }
@@ -633,7 +632,7 @@ const Login = () => {
           password: pendingPassword,
           name: pendingName,
           whatsapp: pendingWhatsapp,
-          recaptchaToken: requiresResendCaptcha ? resendRecaptchaToken : undefined,
+          recaptchaToken: recaptchaSettings.enabled ? resendRecaptchaToken : undefined,
         },
       });
 
@@ -1082,8 +1081,8 @@ const Login = () => {
                     {isVerifying ? "Verificando..." : "Verificar Código"}
                   </button>
                   
-                  {/* Show reCAPTCHA for resend after 3 attempts */}
-                  {resendCount >= 3 && recaptchaSettings.enabled && recaptchaSettings.siteKey && resendCooldown === 0 && (
+                  {/* Always show reCAPTCHA for resend (prevents refresh bypass) */}
+                  {recaptchaSettings.enabled && recaptchaSettings.siteKey && resendCooldown === 0 && (
                     <div className="flex justify-center py-2">
                       <ReCAPTCHA
                         ref={resendRecaptchaRef}
@@ -1102,7 +1101,7 @@ const Login = () => {
                       isVerifying || 
                       isResendingCode || 
                       resendCooldown > 0 || 
-                      (resendCount >= 3 && recaptchaSettings.enabled && !resendRecaptchaToken)
+                      (recaptchaSettings.enabled && !resendRecaptchaToken)
                     }
                     className="py-2 px-4 text-primary hover:text-primary/80 transition-colors text-sm disabled:opacity-50"
                   >
@@ -1110,7 +1109,7 @@ const Login = () => {
                       ? "Reenviando..." 
                       : resendCooldown > 0 
                         ? `Reenviar código (${resendCooldown}s)` 
-                        : resendCount >= 3 && recaptchaSettings.enabled && !resendRecaptchaToken
+                        : recaptchaSettings.enabled && !resendRecaptchaToken
                           ? "Complete o captcha"
                           : "Reenviar código"}
                   </button>
