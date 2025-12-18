@@ -110,24 +110,18 @@ const Login = () => {
 
     checkSession();
 
-    // Listen for auth changes (for signup email confirmation flow)
+    // Listen for auth changes (for signup email confirmation flow ONLY)
+    // Note: Login flow does NOT use this - login validation happens in edge function
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        // Only handle email confirmation events
+        // Only handle email confirmation events for signup flow
         if (event === 'USER_UPDATED' && session) {
           // Defer Supabase calls with setTimeout to avoid deadlock
           setTimeout(async () => {
             // Check if profile exists (email confirmed)
             const profileExists = await checkProfileExists(session.user.id);
             if (profileExists) {
-              // Check if user is banned
-              const isBanned = await checkIfBanned(session.user.id);
-              if (isBanned) {
-                await supabase.auth.signOut();
-                setShowBannedModal(true);
-                return;
-              }
-              
+              // Get role and redirect
               const role = await getUserRole(session.user.id);
               if (role === 'admin') {
                 navigate("/admin");
@@ -363,46 +357,55 @@ const Login = () => {
 
     try {
       if (isLogin) {
-        // Login via secure edge function
-        const { data, error } = await supabase.functions.invoke('login', {
+        // STEP 1: Validate login via edge function (NOT authentication)
+        // Edge function only validates: maintenance, banned, profile exists
+        const { data: validationData, error: validationError } = await supabase.functions.invoke('login', {
           body: {
             email: email.trim().toLowerCase(),
-            password,
             honeypot,
           },
         });
 
-        if (error) {
+        if (validationError) {
           recordFailedAttempt(email);
           toast.error("Erro no login", "Ocorreu um erro inesperado. Tente novamente.");
           setIsSubmitting(false);
           return;
         }
 
-        if (!data?.success) {
+        if (!validationData?.success) {
           recordFailedAttempt(email);
           
-          // Handle specific error codes
-          if (data?.code === 'MAINTENANCE') {
+          // Handle specific error codes from validation
+          if (validationData?.code === 'MAINTENANCE') {
             setShowMaintenanceModal(true);
-          } else if (data?.code === 'NOT_ACTIVATED') {
-            setShowAccountNotActivatedModal(true);
-          } else if (data?.code === 'BANNED') {
+          } else if (validationData?.code === 'BANNED') {
             setShowBannedModal(true);
           } else {
-            // Generic error - don't reveal specifics
-            toast.error("Erro no login", data?.error || "Credenciais inválidas");
+            // Generic error - could be profile not found (not activated) or invalid email
+            // Check if it's a "not activated" scenario
+            if (validationData?.error === "Credenciais inválidas") {
+              // Could be profile doesn't exist - show generic error
+              toast.error("Erro no login", "Credenciais inválidas");
+            } else {
+              toast.error("Erro no login", validationData?.error || "Credenciais inválidas");
+            }
           }
           setIsSubmitting(false);
           return;
         }
 
-        // Set the session manually
-        if (data.session) {
-          await supabase.auth.setSession({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-          });
+        // STEP 2: Now authenticate in frontend (session created here, NOT in edge function)
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password,
+        });
+
+        if (authError || !authData.session) {
+          recordFailedAttempt(email);
+          toast.error("Erro no login", "Credenciais inválidas");
+          setIsSubmitting(false);
+          return;
         }
 
         // Clear rate limit on success
@@ -411,8 +414,8 @@ const Login = () => {
         toast.success("Login realizado!", "Bem-vindo de volta.");
         setIsSubmitting(false);
 
-        // Redirect based on role
-        if (data.role === 'admin') {
+        // Redirect based on role (from validation response)
+        if (validationData.role === 'admin') {
           navigate("/admin");
         } else {
           navigate(redirectUrl);

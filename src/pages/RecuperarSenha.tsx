@@ -17,6 +17,7 @@ const RecuperarSenha = () => {
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [honeypot, setHoneypot] = useState(""); // Honeypot for bot detection
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSettings, setIsCheckingSettings] = useState(true);
   const [isEnabled, setIsEnabled] = useState(false);
@@ -66,12 +67,20 @@ const RecuperarSenha = () => {
       return;
     }
 
+    // Honeypot check - if filled, silently reject (bot detected)
+    if (honeypot) {
+      toast.success("Solicitação enviada!", "Se o email existir, você receberá um código.");
+      setStep('code');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('forgot-password', {
         body: { 
           action: 'request_code',
-          email: email.trim().toLowerCase()
+          email: email.trim().toLowerCase(),
+          honeypot
         }
       });
 
@@ -108,13 +117,20 @@ const RecuperarSenha = () => {
       return;
     }
 
+    // Honeypot check for code verification
+    if (honeypot) {
+      toast.error("Código inválido", "O código está incorreto ou expirado.");
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('forgot-password', {
         body: { 
           action: 'verify_code',
           email: email.trim().toLowerCase(),
-          code 
+          code,
+          honeypot
         }
       });
 
@@ -145,6 +161,12 @@ const RecuperarSenha = () => {
       return;
     }
 
+    // Honeypot check
+    if (honeypot) {
+      toast.error("Erro", "Não foi possível alterar a senha.");
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('forgot-password', {
@@ -152,7 +174,8 @@ const RecuperarSenha = () => {
           action: 'reset_password',
           email: email.trim().toLowerCase(),
           code,
-          newPassword: password 
+          newPassword: password,
+          honeypot
         }
       });
 
@@ -299,6 +322,19 @@ const RecuperarSenha = () => {
                   placeholder="seu@email.com"
                   className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   disabled={isLoading}
+                />
+              </div>
+              {/* Honeypot field - hidden from users, bots will fill it */}
+              <div className="absolute -left-[9999px] opacity-0 h-0 overflow-hidden" aria-hidden="true">
+                <label htmlFor="website-recovery">Website</label>
+                <input
+                  type="text"
+                  id="website-recovery"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
                 />
               </div>
               <Button 
