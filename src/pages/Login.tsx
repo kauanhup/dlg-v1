@@ -588,6 +588,7 @@ const Login = () => {
         if (data?.code === 'CODE_INVALIDATED') {
           toast.error("Código invalidado", "Muitas tentativas incorretas. Solicite um novo código.");
           setVerificationCode("");
+          setIsVerifying(false); // BUG FIX: Faltava resetar isVerifying
           return;
         }
         toast.error("Código inválido", data?.error || "O código está incorreto ou expirado.");
