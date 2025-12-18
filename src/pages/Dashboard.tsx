@@ -6,6 +6,7 @@ import { UserProfileSidebar } from "@/components/ui/menu";
 import { avatars } from "@/components/ui/avatar-picker";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserDashboard } from "@/hooks/useUserDashboard";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import { Spinner } from "@/components/ui/spinner";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,7 +63,8 @@ import {
   Monitor,
   Clock,
   Eye,
-  EyeOff
+  EyeOff,
+  Wrench
 } from "lucide-react";
 
 const fadeIn = {
@@ -578,8 +580,10 @@ const LojaSection = ({
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, profile, isLoading, signOut, updateProfile } = useAuth();
+  const { user, profile, isLoading, signOut, updateProfile, isAdmin } = useAuth();
   const { license, sessionFiles, orders, combos, inventory, loginHistory, isLoading: dashboardLoading, downloadSessionFile } = useUserDashboard(user?.id);
+  const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [activeTab, setActiveTab] = useState("licencas");
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -666,6 +670,12 @@ const Dashboard = () => {
     }
   }, [profile]);
 
+  // SECURITY: Check maintenance mode and redirect non-admin users
+  useEffect(() => {
+    if (!settingsLoading && systemSettings.maintenanceMode && !isAdmin) {
+      setShowMaintenanceModal(true);
+    }
+  }, [settingsLoading, systemSettings.maintenanceMode, isAdmin]);
   const handleAvatarChange = async (avatar: typeof avatars[0]) => {
     setSelectedAvatarId(avatar.id);
     await updateProfile({ avatar: avatar.alt });
@@ -743,6 +753,46 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col lg:flex-row">
+      {/* Maintenance Mode Modal */}
+      {showMaintenanceModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card border border-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl"
+          >
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center">
+                <Wrench className="w-8 h-8 text-warning" />
+              </div>
+              <h2 className="text-xl font-bold text-foreground">Sistema em Manutenção</h2>
+              <p className="text-muted-foreground text-sm">
+                O sistema está temporariamente indisponível para manutenção. Por favor, tente novamente mais tarde.
+              </p>
+              <div className="flex flex-col gap-2 w-full pt-2">
+                <Button 
+                  onClick={async () => {
+                    await signOut();
+                    navigate('/login');
+                  }}
+                  className="w-full"
+                >
+                  Sair
+                </Button>
+                <a
+                  href="https://wa.me/5565996498222?text=Olá! O sistema está em manutenção e preciso de suporte."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Falar com suporte
+                </a>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
       {/* Sidebar Desktop */}
       <aside className="hidden lg:flex flex-col w-[256px] sticky top-0 h-screen flex-shrink-0 border-r border-border">
         <UserProfileSidebar 

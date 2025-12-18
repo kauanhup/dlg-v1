@@ -65,23 +65,28 @@ Deno.serve(async (req) => {
       .eq('is_active', true)
       .maybeSingle()
 
-    // SECURITY: Verify webhook signature if secret is configured
+    // SECURITY: CRITICAL - Always verify webhook signature
     // This prevents attackers from forging payment confirmations
-    if (settings?.client_secret) {
-      const isValid = await verifyWebhookSignature(rawBody, signature, settings.client_secret)
-      
-      if (!isValid) {
-        console.error('Invalid webhook signature - potential spoofing attempt')
-        return new Response(
-          JSON.stringify({ success: false, error: 'Invalid signature' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-        )
-      }
-      console.log('Webhook signature verified successfully')
-    } else {
-      // If no secret configured, log warning but still validate order exists
-      console.warn('WARNING: Webhook secret not configured - signature verification skipped')
+    if (!settings?.client_secret) {
+      // SECURITY FIX: Block webhook processing if secret not configured
+      // This prevents attackers from sending fake payment confirmations
+      console.error('SECURITY: Webhook secret not configured - rejecting webhook')
+      return new Response(
+        JSON.stringify({ success: false, error: 'Webhook secret not configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      )
     }
+
+    const isValid = await verifyWebhookSignature(rawBody, signature, settings.client_secret)
+    
+    if (!isValid) {
+      console.error('Invalid webhook signature - potential spoofing attempt')
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid signature' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      )
+    }
+    console.log('Webhook signature verified successfully')
 
     // PixUp/BSPAY webhook payload structure
     const {

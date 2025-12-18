@@ -213,13 +213,16 @@ async function saveCredentials(supabase: any, params: { client_id: string; clien
     const updateData: any = {
       client_id,
       webhook_url: webhook_url || null,
-      is_active: true,
+      // SECURITY FIX: Do NOT set is_active = true when saving credentials
+      // Status should only be updated via test_connection to ensure credentials are valid
+      // is_active: false, // Reset status - requires test connection to activate
       updated_at: new Date().toISOString()
     };
     
-    // Only update secret if provided
+    // Only update secret if provided - and reset is_active when secret changes
     if (client_secret) {
       updateData.client_secret = client_secret;
+      updateData.is_active = false; // Force re-test when secret changes
     }
     
     result = await supabase
@@ -234,7 +237,7 @@ async function saveCredentials(supabase: any, params: { client_id: string; clien
         client_id,
         client_secret,
         webhook_url: webhook_url || null,
-        is_active: true
+        is_active: false // SECURITY FIX: New configs start as inactive until tested
       });
   }
 
