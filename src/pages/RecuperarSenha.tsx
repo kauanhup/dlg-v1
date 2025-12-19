@@ -357,12 +357,6 @@ const RecuperarSenha = () => {
           <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl sm:rounded-2xl p-5 sm:p-6 md:p-8 shadow-xl">
             {/* Header */}
             <div className="text-center mb-5 sm:mb-6">
-              <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                {step === 'email' && <Mail className="w-7 h-7 text-primary" />}
-                {step === 'code' && <Key className="w-7 h-7 text-primary" />}
-                {step === 'password' && <Lock className="w-7 h-7 text-primary" />}
-                {step === 'success' && <CheckCircle className="w-7 h-7 text-green-500" />}
-              </div>
               <h2 className="text-xl sm:text-2xl font-display font-bold text-foreground">
                 {step === 'email' && "Recuperar Senha"}
                 {step === 'code' && "Verificar Código"}
