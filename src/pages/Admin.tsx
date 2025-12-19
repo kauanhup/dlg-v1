@@ -3191,10 +3191,6 @@ const ApiSection = () => {
                 </Button>
               </div>
 
-              <p className="text-xs text-muted-foreground mt-4 p-3 bg-muted/20 rounded-lg">
-                💡 <strong>Dica:</strong> O Mercado Pago aceita cartões de crédito, débito, boleto e Pix. 
-                O checkout do Mercado Pago será aberto em nova aba.
-              </p>
             </div>
           </div>
 
@@ -3286,10 +3282,6 @@ const ApiSection = () => {
                 </Button>
               </div>
 
-              <p className="text-xs text-muted-foreground mt-4 p-3 bg-muted/20 rounded-lg">
-                💡 <strong>Dica:</strong> O EvoPay é um gateway PIX alternativo. 
-                Configure a API Key e teste a conexão para começar a receber pagamentos.
-              </p>
             </div>
           </div>
         </div>
