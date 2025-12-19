@@ -771,10 +771,7 @@ const Dashboard = () => {
               </p>
               <div className="flex flex-col gap-2 w-full pt-2">
                 <Button 
-                  onClick={async () => {
-                    await signOut();
-                    navigate('/login');
-                  }}
+                  onClick={() => signOut()}
                   className="w-full"
                 >
                   Sair
