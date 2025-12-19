@@ -96,7 +96,7 @@ serve(async (req) => {
     const { userId, isAuthenticated } = await getUserFromRequest(req, supabaseAuth);
 
     // SECURITY: Define which actions require authentication and admin role
-    const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection', 'save_email_settings', 'save_feature_toggles', 'save_recaptcha_settings', 'save_email_template', 'save_mercadopago_settings'];
+    const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection', 'save_email_settings', 'save_feature_toggles', 'save_recaptcha_settings', 'save_email_template', 'save_mercadopago_settings', 'save_evopay_settings'];
     const authRequiredActions = ['create_pix'];
 
     if (adminOnlyActions.includes(action)) {
@@ -154,6 +154,8 @@ serve(async (req) => {
       case 'save_mercadopago_settings':
         return await saveMercadoPagoSettings(supabaseAdmin, params);
       
+      case 'save_evopay_settings':
+        return await saveEvopaySettings(supabaseAdmin, params);
       
       case 'create_pix':
         return await createPixCharge(supabaseAdmin, params, userId!);
@@ -221,7 +223,10 @@ async function getSettings(supabase: any) {
         // Mercado Pago settings
         mercadopago_enabled: data.mercadopago_enabled || false,
         mercadopago_public_key: data.mercadopago_public_key || '',
-        has_mercadopago_token: !!data.mercadopago_access_token
+        has_mercadopago_token: !!data.mercadopago_access_token,
+        // EvoPay settings
+        evopay_enabled: data.evopay_enabled || false,
+        has_evopay_key: !!data.evopay_api_key
       } : null 
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -437,6 +442,40 @@ async function saveMercadoPagoSettings(supabase: any, params: {
   }
 
   console.log('Mercado Pago settings saved successfully');
+  return new Response(
+    JSON.stringify({ success: true }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+async function saveEvopaySettings(supabase: any, params: { 
+  evopay_enabled?: boolean; 
+  evopay_api_key?: string | null;
+}) {
+  const { evopay_enabled, evopay_api_key } = params;
+
+  const settingsId = await getOrCreateSettingsId(supabase);
+
+  const updateData: any = { updated_at: new Date().toISOString() };
+  
+  if (evopay_enabled !== undefined) {
+    updateData.evopay_enabled = evopay_enabled;
+  }
+  if (evopay_api_key) {
+    updateData.evopay_api_key = evopay_api_key;
+  }
+
+  const { error } = await supabase
+    .from('gateway_settings')
+    .update(updateData)
+    .eq('id', settingsId);
+
+  if (error) {
+    console.error('Error saving EvoPay settings:', error);
+    throw new Error('Failed to save EvoPay settings');
+  }
+
+  console.log('EvoPay settings saved successfully');
   return new Response(
     JSON.stringify({ success: true }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

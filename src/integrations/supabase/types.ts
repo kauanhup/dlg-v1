@@ -61,6 +61,8 @@ export type Database = {
           email_template_message: string | null
           email_template_title: string | null
           email_verification_enabled: boolean | null
+          evopay_api_key: string | null
+          evopay_enabled: boolean | null
           id: string
           is_active: boolean
           mercadopago_access_token: string | null
@@ -90,6 +92,8 @@ export type Database = {
           email_template_message?: string | null
           email_template_title?: string | null
           email_verification_enabled?: boolean | null
+          evopay_api_key?: string | null
+          evopay_enabled?: boolean | null
           id?: string
           is_active?: boolean
           mercadopago_access_token?: string | null
@@ -119,6 +123,8 @@ export type Database = {
           email_template_message?: string | null
           email_template_title?: string | null
           email_verification_enabled?: boolean | null
+          evopay_api_key?: string | null
+          evopay_enabled?: boolean | null
           id?: string
           is_active?: boolean
           mercadopago_access_token?: string | null

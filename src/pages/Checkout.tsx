@@ -30,9 +30,10 @@ interface Plan {
 interface PaymentSettings {
   pixEnabled: boolean;
   mercadoPagoEnabled: boolean;
+  evoPayEnabled: boolean;
 }
 
-type PaymentMethod = 'pix' | 'mercadopago';
+type PaymentMethod = 'pix' | 'mercadopago' | 'evopay';
 
 const PIX_EXPIRATION_MINUTES = 30;
 
@@ -51,7 +52,7 @@ const Checkout = () => {
   const [expirationTime, setExpirationTime] = useState<Date | null>(null);
   const [timeLeft, setTimeLeft] = useState<{ minutes: number; seconds: number } | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
-  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({ pixEnabled: true, mercadoPagoEnabled: false });
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({ pixEnabled: true, mercadoPagoEnabled: false, evoPayEnabled: false });
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('pix');
   const [mpRedirectUrl, setMpRedirectUrl] = useState<string | null>(null);
 
@@ -163,15 +164,21 @@ const Checkout = () => {
   useEffect(() => {
     const fetchPaymentSettings = async () => {
       try {
-        const { data } = await supabase.functions.invoke('mercadopago', {
+        // Fetch Mercado Pago settings
+        const { data: mpData } = await supabase.functions.invoke('mercadopago', {
           body: { action: 'get_public_settings' }
         });
-        if (data?.data) {
-          setPaymentSettings({
-            pixEnabled: true, // PIX always available
-            mercadoPagoEnabled: data.data.mercadopago_enabled || false
-          });
-        }
+        
+        // Fetch EvoPay settings
+        const { data: evoData } = await supabase.functions.invoke('evopay', {
+          body: { action: 'get_public_settings' }
+        });
+        
+        setPaymentSettings({
+          pixEnabled: true, // PIX always available
+          mercadoPagoEnabled: mpData?.data?.mercadopago_enabled || false,
+          evoPayEnabled: evoData?.data?.evopay_enabled || false
+        });
       } catch (error) {
         console.log('Could not fetch payment settings');
       }
@@ -407,7 +414,44 @@ const Checkout = () => {
         return;
       }
 
-      // Handle PIX payment
+      // Handle EvoPay PIX payment
+      if (selectedPaymentMethod === 'evopay') {
+        const { data: evoResponse, error: evoError } = await supabase.functions.invoke('evopay', {
+          body: {
+            action: 'create_pix',
+            amount: amount,
+            external_id: orderData.id,
+            description: isPlanPurchase ? `Licença: ${productName}` : `${quantity}x ${productName}`,
+          },
+        });
+
+        const expTime = new Date();
+        expTime.setMinutes(expTime.getMinutes() + PIX_EXPIRATION_MINUTES);
+        setExpirationTime(expTime);
+
+        if (evoError) {
+          console.error('EvoPay PIX generation error:', evoError);
+          toast.error("Gateway indisponível", "Pedido criado. Configure o gateway PIX ou aguarde aprovação manual.");
+        } else if (evoResponse?.data?.pixCode) {
+          setPixData({
+            pixCode: evoResponse.data.pixCode,
+            qrCodeBase64: undefined,
+            transactionId: evoResponse.data.transactionId,
+            expiresAt: undefined,
+          });
+
+          await supabase.from('payments').update({
+            pix_code: evoResponse.data.pixCode,
+          }).eq('order_id', orderData.id);
+
+          toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
+        } else {
+          toast.warning("Gateway não configurado", "Pedido criado. Aguarde aprovação manual do admin.");
+        }
+        return;
+      }
+
+      // Handle PIX payment (PixUp)
       const { data: pixResponse, error: pixError } = await supabase.functions.invoke('pixup', {
         body: {
           action: 'create_pix',
@@ -629,10 +673,10 @@ const Checkout = () => {
                     ) : (
                       <>
                         {/* Payment Method Selection */}
-                        {paymentSettings.mercadoPagoEnabled && (
+                        {(paymentSettings.mercadoPagoEnabled || paymentSettings.evoPayEnabled) && (
                           <div className="space-y-3">
                             <p className="text-sm font-medium text-foreground">Forma de pagamento</p>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className={cn("grid gap-3", paymentSettings.mercadoPagoEnabled && paymentSettings.evoPayEnabled ? "grid-cols-3" : "grid-cols-2")}>
                               <button
                                 onClick={() => setSelectedPaymentMethod('pix')}
                                 className={cn(
@@ -645,18 +689,34 @@ const Checkout = () => {
                                 <CreditCard className="w-6 h-6" />
                                 <span className="text-sm font-medium">PIX</span>
                               </button>
-                              <button
-                                onClick={() => setSelectedPaymentMethod('mercadopago')}
-                                className={cn(
-                                  "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
-                                  selectedPaymentMethod === 'mercadopago' 
-                                    ? "border-primary bg-primary/5" 
-                                    : "border-border hover:border-primary/50"
-                                )}
-                              >
-                                <Wallet className="w-6 h-6" />
-                                <span className="text-sm font-medium">Mercado Pago</span>
-                              </button>
+                              {paymentSettings.evoPayEnabled && (
+                                <button
+                                  onClick={() => setSelectedPaymentMethod('evopay')}
+                                  className={cn(
+                                    "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
+                                    selectedPaymentMethod === 'evopay' 
+                                      ? "border-primary bg-primary/5" 
+                                      : "border-border hover:border-primary/50"
+                                  )}
+                                >
+                                  <Wallet className="w-6 h-6" />
+                                  <span className="text-sm font-medium">EvoPay</span>
+                                </button>
+                              )}
+                              {paymentSettings.mercadoPagoEnabled && (
+                                <button
+                                  onClick={() => setSelectedPaymentMethod('mercadopago')}
+                                  className={cn(
+                                    "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
+                                    selectedPaymentMethod === 'mercadopago' 
+                                      ? "border-primary bg-primary/5" 
+                                      : "border-border hover:border-primary/50"
+                                  )}
+                                >
+                                  <ExternalLink className="w-6 h-6" />
+                                  <span className="text-sm font-medium">Mercado Pago</span>
+                                </button>
+                              )}
                             </div>
                           </div>
                         )}
