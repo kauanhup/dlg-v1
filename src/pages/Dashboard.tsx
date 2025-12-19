@@ -734,7 +734,10 @@ const Dashboard = () => {
   const logoutItem = {
     label: "Sair",
     icon: <LogOut className="h-full w-full" />,
-    onClick: signOut,
+    onClick: () => {
+      console.log('[Dashboard] Logout button clicked');
+      signOut();
+    },
   };
 
   // Loading state
