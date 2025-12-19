@@ -96,7 +96,7 @@ serve(async (req) => {
     const { userId, isAuthenticated } = await getUserFromRequest(req, supabaseAuth);
 
     // SECURITY: Define which actions require authentication and admin role
-    const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection', 'save_email_settings', 'save_feature_toggles', 'save_recaptcha_settings', 'save_email_template'];
+    const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection', 'save_email_settings', 'save_feature_toggles', 'save_recaptcha_settings', 'save_email_template', 'save_mercadopago_settings'];
     const authRequiredActions = ['create_pix'];
 
     if (adminOnlyActions.includes(action)) {
@@ -150,6 +150,10 @@ serve(async (req) => {
       
       case 'save_email_template':
         return await saveEmailTemplate(supabaseAdmin, params);
+      
+      case 'save_mercadopago_settings':
+        return await saveMercadoPagoSettings(supabaseAdmin, params);
+      
       
       case 'create_pix':
         return await createPixCharge(supabaseAdmin, params, userId!);
@@ -213,7 +217,11 @@ async function getSettings(supabase: any) {
         email_template_expiry_text: data.email_template_expiry_text || 'Este código expira em 15 minutos.',
         email_template_footer: data.email_template_footer || 'DLG Connect - Sistema de Gestão',
         email_template_bg_color: data.email_template_bg_color || '#0a0a0a',
-        email_template_accent_color: data.email_template_accent_color || '#4ade80'
+        email_template_accent_color: data.email_template_accent_color || '#4ade80',
+        // Mercado Pago settings
+        mercadopago_enabled: data.mercadopago_enabled || false,
+        mercadopago_public_key: data.mercadopago_public_key || '',
+        has_mercadopago_token: !!data.mercadopago_access_token
       } : null 
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -391,6 +399,44 @@ async function saveEmailTemplate(supabase: any, params: {
   }
 
   console.log('Email template saved successfully');
+  return new Response(
+    JSON.stringify({ success: true }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+async function saveMercadoPagoSettings(supabase: any, params: { 
+  mercadopago_enabled?: boolean; 
+  mercadopago_public_key?: string | null;
+  mercadopago_access_token?: string | null;
+}) {
+  const { mercadopago_enabled, mercadopago_public_key, mercadopago_access_token } = params;
+
+  const settingsId = await getOrCreateSettingsId(supabase);
+
+  const updateData: any = { updated_at: new Date().toISOString() };
+  
+  if (mercadopago_enabled !== undefined) {
+    updateData.mercadopago_enabled = mercadopago_enabled;
+  }
+  if (mercadopago_public_key !== undefined) {
+    updateData.mercadopago_public_key = mercadopago_public_key;
+  }
+  if (mercadopago_access_token) {
+    updateData.mercadopago_access_token = mercadopago_access_token;
+  }
+
+  const { error } = await supabase
+    .from('gateway_settings')
+    .update(updateData)
+    .eq('id', settingsId);
+
+  if (error) {
+    console.error('Error saving Mercado Pago settings:', error);
+    throw new Error('Failed to save Mercado Pago settings');
+  }
+
+  console.log('Mercado Pago settings saved successfully');
   return new Response(
     JSON.stringify({ success: true }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

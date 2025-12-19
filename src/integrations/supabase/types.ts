@@ -63,6 +63,9 @@ export type Database = {
           email_verification_enabled: boolean | null
           id: string
           is_active: boolean
+          mercadopago_access_token: string | null
+          mercadopago_enabled: boolean | null
+          mercadopago_public_key: string | null
           password_recovery_enabled: boolean | null
           provider: string
           recaptcha_enabled: boolean | null
@@ -89,6 +92,9 @@ export type Database = {
           email_verification_enabled?: boolean | null
           id?: string
           is_active?: boolean
+          mercadopago_access_token?: string | null
+          mercadopago_enabled?: boolean | null
+          mercadopago_public_key?: string | null
           password_recovery_enabled?: boolean | null
           provider?: string
           recaptcha_enabled?: boolean | null
@@ -115,6 +121,9 @@ export type Database = {
           email_verification_enabled?: boolean | null
           id?: string
           is_active?: boolean
+          mercadopago_access_token?: string | null
+          mercadopago_enabled?: boolean | null
+          mercadopago_public_key?: string | null
           password_recovery_enabled?: boolean | null
           provider?: string
           recaptcha_enabled?: boolean | null

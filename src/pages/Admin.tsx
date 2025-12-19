@@ -2519,6 +2519,15 @@ const ApiSection = () => {
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  // Mercado Pago state (para futura integração)
+  const [mpEnabled, setMpEnabled] = useState(false);
+  const [mpAccessToken, setMpAccessToken] = useState("");
+  const [mpPublicKey, setMpPublicKey] = useState("");
+  const [hasMpToken, setHasMpToken] = useState(false);
+  const [showMpToken, setShowMpToken] = useState(false);
+  const [isSavingMp, setIsSavingMp] = useState(false);
+  const [mpSaveSuccess, setMpSaveSuccess] = useState(false);
+
   // Resend state
   const [resendApiKey, setResendApiKey] = useState("");
   const [resendFromEmail, setResendFromEmail] = useState("");
@@ -2591,12 +2600,19 @@ const ApiSection = () => {
           setTemplateFooter(data.data.email_template_footer || "DLG Connect - Sistema de Gestão");
           setTemplateBgColor(data.data.email_template_bg_color || "#0a0a0a");
           setTemplateAccentColor(data.data.email_template_accent_color || "#4ade80");
+          // Mercado Pago settings
+          setMpEnabled(data.data.mercadopago_enabled === true);
+          setMpPublicKey(data.data.mercadopago_public_key || "");
+          setHasMpToken(data.data.has_mercadopago_token === true);
         } else {
           // No settings yet
           setClientId("");
           setWebhookUrl("");
           setIsConnected(false);
           setHasSecret(false);
+          setMpEnabled(false);
+          setMpPublicKey("");
+          setHasMpToken(false);
         }
       } catch (error) {
         console.error('Error loading API settings:', error);
@@ -2692,7 +2708,41 @@ const ApiSection = () => {
       toast.error("Erro ao testar conexão");
       setIsConnected(false);
     } finally {
-      setIsTesting(false);
+    setIsTesting(false);
+    }
+  };
+
+  // Mercado Pago save handler
+  const handleSaveMercadoPago = async () => {
+    setIsSavingMp(true);
+    setMpSaveSuccess(false);
+    try {
+      // Save directly to database via RPC or edge function
+      const { data, error } = await supabase.functions.invoke('pixup', {
+        body: { 
+          action: 'save_mercadopago_settings',
+          mercadopago_enabled: mpEnabled,
+          mercadopago_public_key: mpPublicKey.trim() || null,
+          mercadopago_access_token: mpAccessToken.trim() || null
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success("Configurações do Mercado Pago salvas!");
+        setMpSaveSuccess(true);
+        setHasMpToken(!!mpAccessToken.trim() || hasMpToken);
+        setMpAccessToken(""); // Clear after save
+        setTimeout(() => setMpSaveSuccess(false), 2000);
+      } else {
+        toast.error(data?.error || "Erro ao salvar configurações");
+      }
+    } catch (error) {
+      console.error('Error saving Mercado Pago settings:', error);
+      toast.error("Erro ao salvar configurações");
+    } finally {
+      setIsSavingMp(false);
     }
   };
 
@@ -2833,7 +2883,8 @@ const ApiSection = () => {
 
       {/* Gateway PIX Tab */}
       {activeApiTab === "gateway" && (
-        <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+        <div className="space-y-6">
+          <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -2905,6 +2956,96 @@ const ApiSection = () => {
                 {isTesting ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
                 Testar
               </Button>
+            </div>
+          </div>
+          </div>
+
+          {/* Mercado Pago Configuration - Para Futura Integração */}
+          <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-cyan-500" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Mercado Pago</h3>
+                  <p className="text-sm text-muted-foreground">Preparado para integração futura</p>
+                </div>
+              </div>
+              <div className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit",
+                mpEnabled && hasMpToken ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
+              )}>
+                <div className={cn("w-2 h-2 rounded-full", mpEnabled && hasMpToken ? "bg-green-500" : "bg-yellow-500")} />
+                {mpEnabled && hasMpToken ? "Configurado" : "Pendente"}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Info className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Habilitar Mercado Pago</span>
+                </div>
+                <button
+                  onClick={() => setMpEnabled(!mpEnabled)}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                    mpEnabled ? "bg-primary" : "bg-muted"
+                  )}
+                >
+                  <span className={cn(
+                    "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                    mpEnabled ? "translate-x-6" : "translate-x-1"
+                  )} />
+                </button>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Public Key</label>
+                <input
+                  type="text"
+                  value={mpPublicKey}
+                  onChange={(e) => setMpPublicKey(e.target.value)}
+                  placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Access Token</label>
+                <div className="relative">
+                  <input
+                    type={showMpToken ? "text" : "password"}
+                    value={mpAccessToken}
+                    onChange={(e) => setMpAccessToken(e.target.value)}
+                    placeholder={hasMpToken ? "••••••••• (já configurado)" : "APP_USR-xxxxxxxx-xxxx-xxxx-xxxx"}
+                    className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowMpToken(!showMpToken)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showMpToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Obtenha em <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" rel="noopener" className="text-primary hover:underline">Mercado Pago Developers</a>
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <Button onClick={handleSaveMercadoPago} disabled={isSavingMp} className={cn("gap-2 transition-colors", mpSaveSuccess && "bg-green-600 hover:bg-green-600")}>
+                  {isSavingMp ? <Spinner size="sm" /> : mpSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                  {mpSaveSuccess ? "Salvo!" : "Salvar"}
+                </Button>
+              </div>
+
+              <p className="text-xs text-muted-foreground mt-4 p-3 bg-muted/20 rounded-lg">
+                ⚠️ <strong>Integração futura:</strong> O Mercado Pago ainda não está integrado ao fluxo de pagamento. 
+                Configure suas credenciais agora para facilitar a integração quando disponível.
+              </p>
             </div>
           </div>
         </div>
