@@ -78,6 +78,11 @@ const Footer = () => {
                   Recuperar Senha
                 </Link>
               </li>
+              <li>
+                <Link to="/politica-privacidade" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                  Política de Privacidade
+                </Link>
+              </li>
             </ul>
           </div>
 
