@@ -3265,14 +3265,32 @@ const ApiSection = () => {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Webhook URL</label>
-                <input
-                  type="text"
-                  value={evoWebhookUrl}
-                  onChange={(e) => setEvoWebhookUrl(e.target.value)}
-                  placeholder="URL para receber notificações de pagamento"
-                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
+                <label className="text-sm font-medium text-foreground mb-2 block">Webhook URL (Callback)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={evoWebhookUrl}
+                    onChange={(e) => setEvoWebhookUrl(e.target.value)}
+                    placeholder="https://dlgconnect.com/api/webhook-evopay.php"
+                    className="flex-1 px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setEvoWebhookUrl("https://dlgconnect.com/api/webhook-evopay.php");
+                      navigator.clipboard.writeText("https://dlgconnect.com/api/webhook-evopay.php");
+                      toast.success("URL copiada!");
+                    }}
+                    title="Usar URL padrão da Hostinger"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Esta URL é enviada para o EvoPay em cada PIX criado. Use o proxy da Hostinger para manter a URL fixa.
+                </p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
