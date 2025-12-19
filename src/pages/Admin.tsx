@@ -3778,10 +3778,7 @@ const Admin = () => {
   const logoutItem = {
     label: "Sair",
     icon: <LogOut className="h-full w-full" />,
-    onClick: async () => {
-      await signOut();
-      navigate("/login");
-    },
+    onClick: () => signOut(),
   };
 
   const renderContent = () => {
