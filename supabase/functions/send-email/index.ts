@@ -24,7 +24,7 @@ interface EmailRequest {
 async function getEmailSettings(supabase: any) {
   const { data, error } = await supabase
     .from('gateway_settings')
-    .select('resend_api_key, resend_from_email, resend_from_name, email_enabled, password_recovery_enabled, email_verification_enabled')
+    .select('resend_api_key, resend_from_email, resend_from_name, email_enabled, password_recovery_enabled, email_verification_enabled, email_template_title, email_template_greeting, email_template_message, email_template_expiry_text, email_template_footer, email_template_bg_color, email_template_accent_color')
     .eq('provider', 'pixup')
     .maybeSingle();
 
@@ -143,23 +143,33 @@ serve(async (req: Request): Promise<Response> => {
           throw new Error('Failed to create verification code');
         }
 
+        // Use custom template settings or defaults
+        const bgColor = settings.email_template_bg_color || '#0a0a0a';
+        const accentColor = settings.email_template_accent_color || '#4ade80';
+        const templateTitle = settings.email_template_title || (type === 'password_reset' ? '🔐 Recuperação de Senha' : '📧 Confirme seu Email');
+        const templateGreeting = settings.email_template_greeting || 'Olá!';
+        const templateMessage = settings.email_template_message || 'Seu código de verificação é:';
+        const templateExpiryText = settings.email_template_expiry_text || 'Este código expira em 15 minutos.';
+        const templateFooter = settings.email_template_footer || 'DLG Connect - Sistema de Gestão';
+
         const subject = type === 'password_reset' 
-          ? "🔐 Código de Recuperação - DLG Connect"
-          : "📧 Confirme seu Email - DLG Connect";
+          ? "🔐 Código de Recuperação"
+          : "📧 Confirme seu Email";
 
         const html = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0a0a0a; color: #fff;">
-            <h1 style="color: #4ade80;">${type === 'password_reset' ? '🔐 Recuperação de Senha' : '📧 Confirme seu Email'}</h1>
-            <p>Seu código de verificação é:</p>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: ${bgColor}; color: #fff;">
+            <h1 style="color: ${accentColor};">${templateTitle}</h1>
+            <p>${templateGreeting.replace('{name}', name || 'Usuário')}</p>
+            <p>${templateMessage}</p>
             <div style="text-align: center; margin: 30px 0;">
               <div style="background: #111; padding: 20px 40px; border-radius: 12px; display: inline-block;">
-                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4ade80;">${verificationCode}</span>
+                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: ${accentColor};">${verificationCode}</span>
               </div>
             </div>
-            <p style="color: #888; font-size: 14px;">Este código expira em 15 minutos.</p>
+            <p style="color: #888; font-size: 14px;">${templateExpiryText}</p>
             <p style="color: #888; font-size: 14px;">Se você não solicitou este código, ignore este email.</p>
             <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
-            <p style="color: #666; font-size: 12px;">DLG Connect - Sistema de Gestão</p>
+            <p style="color: #666; font-size: 12px;">${templateFooter}</p>
           </div>
         `;
 
