@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AlertToastProvider } from "@/hooks/use-alert-toast";
+import CookieConsent from "@/components/CookieConsent";
 import Index from "./pages/Index";
 import Buy from "./pages/Buy";
 import Checkout from "./pages/Checkout";
@@ -11,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import Pagamentos from "./pages/Pagamentos";
 import RecuperarSenha from "./pages/RecuperarSenha";
+import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,8 +32,10 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/pagamentos" element={<Pagamentos />} />
+              <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <CookieConsent />
           </BrowserRouter>
         </AlertToastProvider>
       </TooltipProvider>
