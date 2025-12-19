@@ -123,28 +123,27 @@ export const useAuth = (requiredRole?: 'admin' | 'user') => {
 
   const signOut = async () => {
     console.log('[useAuth] signOut called');
+    
+    // Clear local state first
+    setAuthState({
+      user: null,
+      session: null,
+      role: null,
+      profile: null,
+      isLoading: false,
+    });
+    
+    // Clear localStorage to ensure complete logout
+    localStorage.removeItem('sb-nydtfckvvslkbyolipsf-auth-token');
+    
     try {
-      const { error } = await supabase.auth.signOut();
-      
-      // Even if session is already missing, clear local state and redirect
-      if (error?.message === 'Auth session missing!' || !error) {
-        console.log('[useAuth] Clearing local state and redirecting');
-        setAuthState({
-          user: null,
-          session: null,
-          role: null,
-          profile: null,
-          isLoading: false,
-        });
-        navigate('/login');
-      } else {
-        console.error('[useAuth] signOut error:', error);
-      }
+      await supabase.auth.signOut();
     } catch (err) {
       console.error('[useAuth] signOut exception:', err);
-      // Force redirect on any error
-      navigate('/login');
     }
+    
+    // Always navigate to login
+    navigate('/login');
   };
 
   const updateProfile = async (updates: Partial<{ name: string; whatsapp: string; avatar: string }>) => {
