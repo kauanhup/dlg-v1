@@ -64,7 +64,8 @@ import {
   Upload,
   FileDown,
   HardDrive,
-  History
+  History,
+  Wallet
 } from "lucide-react";
 
 
@@ -2530,6 +2531,16 @@ const ApiSection = () => {
   const [isTestingMp, setIsTestingMp] = useState(false);
   const [mpConnected, setMpConnected] = useState(false);
 
+  // EvoPay state
+  const [evoEnabled, setEvoEnabled] = useState(false);
+  const [evoApiKey, setEvoApiKey] = useState("");
+  const [hasEvoKey, setHasEvoKey] = useState(false);
+  const [showEvoKey, setShowEvoKey] = useState(false);
+  const [isSavingEvo, setIsSavingEvo] = useState(false);
+  const [evoSaveSuccess, setEvoSaveSuccess] = useState(false);
+  const [isTestingEvo, setIsTestingEvo] = useState(false);
+  const [evoConnected, setEvoConnected] = useState(false);
+
   // Resend state
   const [resendApiKey, setResendApiKey] = useState("");
   const [resendFromEmail, setResendFromEmail] = useState("");
@@ -2606,6 +2617,9 @@ const ApiSection = () => {
           setMpEnabled(data.data.mercadopago_enabled === true);
           setMpPublicKey(data.data.mercadopago_public_key || "");
           setHasMpToken(data.data.has_mercadopago_token === true);
+          // EvoPay settings
+          setEvoEnabled(data.data.evopay_enabled === true);
+          setHasEvoKey(data.data.has_evopay_key === true);
         } else {
           // No settings yet
           setClientId("");
@@ -2615,6 +2629,8 @@ const ApiSection = () => {
           setMpEnabled(false);
           setMpPublicKey("");
           setHasMpToken(false);
+          setEvoEnabled(false);
+          setHasEvoKey(false);
         }
       } catch (error) {
         console.error('Error loading API settings:', error);
@@ -2771,6 +2787,64 @@ const ApiSection = () => {
       setMpConnected(false);
     } finally {
       setIsTestingMp(false);
+    }
+  };
+
+  // EvoPay save handler
+  const handleSaveEvoPay = async () => {
+    setIsSavingEvo(true);
+    setEvoSaveSuccess(false);
+    try {
+      const { data, error } = await supabase.functions.invoke('pixup', {
+        body: { 
+          action: 'save_evopay_settings',
+          evopay_enabled: evoEnabled,
+          evopay_api_key: evoApiKey.trim() || null
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success("Configurações do EvoPay salvas!");
+        setEvoSaveSuccess(true);
+        setHasEvoKey(!!evoApiKey.trim() || hasEvoKey);
+        setEvoApiKey(""); // Clear after save
+        setTimeout(() => setEvoSaveSuccess(false), 2000);
+      } else {
+        toast.error(data?.error || "Erro ao salvar configurações");
+      }
+    } catch (error) {
+      console.error('Error saving EvoPay settings:', error);
+      toast.error("Erro ao salvar configurações");
+    } finally {
+      setIsSavingEvo(false);
+    }
+  };
+
+  // EvoPay test connection handler
+  const handleTestEvoPay = async () => {
+    setIsTestingEvo(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('evopay', {
+        body: { action: 'test_connection' }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success(`Conexão estabelecida! Saldo: R$ ${data.data?.balance?.toFixed(2) || '0.00'}`);
+        setEvoConnected(true);
+      } else {
+        toast.error(data?.error || "Falha na conexão");
+        setEvoConnected(false);
+      }
+    } catch (error) {
+      console.error('Error testing EvoPay connection:', error);
+      toast.error("Erro ao testar conexão");
+      setEvoConnected(false);
+    } finally {
+      setIsTestingEvo(false);
     }
   };
 
@@ -3090,6 +3164,101 @@ const ApiSection = () => {
               <p className="text-xs text-muted-foreground mt-4 p-3 bg-muted/20 rounded-lg">
                 💡 <strong>Dica:</strong> O Mercado Pago aceita cartões de crédito, débito, boleto e Pix. 
                 O checkout do Mercado Pago será aberto em nova aba.
+              </p>
+            </div>
+          </div>
+
+          {/* EvoPay Configuration */}
+          <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                  <Wallet className="w-5 h-5 text-emerald-500" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">EvoPay</h3>
+                  <p className="text-sm text-muted-foreground">Gateway PIX alternativo</p>
+                </div>
+              </div>
+              <div className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit",
+                evoEnabled && hasEvoKey && evoConnected ? "bg-green-500/10 text-green-500" : 
+                evoEnabled && hasEvoKey ? "bg-yellow-500/10 text-yellow-500" : 
+                "bg-muted text-muted-foreground"
+              )}>
+                <div className={cn(
+                  "w-2 h-2 rounded-full", 
+                  evoEnabled && hasEvoKey && evoConnected ? "bg-green-500" : 
+                  evoEnabled && hasEvoKey ? "bg-yellow-500" : 
+                  "bg-muted-foreground"
+                )} />
+                {evoEnabled && hasEvoKey && evoConnected ? "Conectado" : 
+                 evoEnabled && hasEvoKey ? "Configurado" : "Desativado"}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Info className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Habilitar EvoPay</span>
+                </div>
+                <button
+                  onClick={() => setEvoEnabled(!evoEnabled)}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                    evoEnabled ? "bg-primary" : "bg-muted"
+                  )}
+                >
+                  <span className={cn(
+                    "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                    evoEnabled ? "translate-x-6" : "translate-x-1"
+                  )} />
+                </button>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">API Key</label>
+                <div className="relative">
+                  <input
+                    type={showEvoKey ? "text" : "password"}
+                    value={evoApiKey}
+                    onChange={(e) => setEvoApiKey(e.target.value)}
+                    placeholder={hasEvoKey ? "••••••••• (já configurado)" : "Sua API Key do EvoPay"}
+                    className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEvoKey(!showEvoKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showEvoKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Obtenha em <a href="https://evopay.cash" target="_blank" rel="noopener" className="text-primary hover:underline">evopay.cash</a>
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <Button onClick={handleSaveEvoPay} disabled={isSavingEvo} className={cn("gap-2 transition-colors", evoSaveSuccess && "bg-green-600 hover:bg-green-600")}>
+                  {isSavingEvo ? <Spinner size="sm" /> : evoSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                  {evoSaveSuccess ? "Salvo!" : "Salvar"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleTestEvoPay} 
+                  disabled={isTestingEvo || !hasEvoKey}
+                  className={cn("gap-2", evoConnected && "border-green-500 text-green-500")}
+                >
+                  {isTestingEvo ? <Spinner size="sm" /> : evoConnected ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                  {evoConnected ? "Conectado" : "Testar Conexão"}
+                </Button>
+              </div>
+
+              <p className="text-xs text-muted-foreground mt-4 p-3 bg-muted/20 rounded-lg">
+                💡 <strong>Dica:</strong> O EvoPay é um gateway PIX alternativo. 
+                Configure a API Key e teste a conexão para começar a receber pagamentos.
               </p>
             </div>
           </div>

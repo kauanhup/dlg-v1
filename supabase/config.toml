@@ -12,6 +12,12 @@ verify_jwt = false
 [functions.mercadopago-webhook]
 verify_jwt = false
 
+[functions.evopay]
+verify_jwt = false
+
+[functions.evopay-webhook]
+verify_jwt = false
+
 [functions.register]
 verify_jwt = false
 
