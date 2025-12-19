@@ -2612,6 +2612,8 @@ const ApiSection = () => {
           setEvoEnabled(data.data.evopay_enabled === true);
           setHasEvoKey(data.data.has_evopay_key === true);
           setEvoWebhookUrl(data.data.evopay_webhook_url || "");
+          // Set evoConnected based on enabled + has key (same logic as PixUp)
+          setEvoConnected(data.data.evopay_enabled === true && data.data.has_evopay_key === true);
         } else {
           // No settings yet
           setClientId("");
@@ -2623,6 +2625,7 @@ const ApiSection = () => {
           setEvoEnabled(false);
           setHasEvoKey(false);
           setEvoWebhookUrl("");
+          setEvoConnected(false);
         }
       } catch (error) {
         console.error('Error loading API settings:', error);
