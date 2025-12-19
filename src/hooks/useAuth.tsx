@@ -95,12 +95,18 @@ export const useAuth = (requiredRole?: 'admin' | 'user') => {
         .eq('user_id', userId)
         .maybeSingle();
 
-      // Fetch profile
+      // Fetch profile (includes banned check)
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
+
+      // Check if user was banned - force logout immediately
+      if (profileData?.banned === true) {
+        await signOut();
+        return;
+      }
 
       setAuthState(prev => ({
         ...prev,
@@ -116,14 +122,11 @@ export const useAuth = (requiredRole?: 'admin' | 'user') => {
         isLoading: false,
       }));
     } catch (error) {
-      console.error('Error fetching user data:', error);
       setAuthState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
   const signOut = async () => {
-    console.log('[useAuth] signOut called');
-    
     // Clear local state first
     setAuthState({
       user: null,
@@ -133,13 +136,10 @@ export const useAuth = (requiredRole?: 'admin' | 'user') => {
       isLoading: false,
     });
     
-    // Clear localStorage to ensure complete logout
-    localStorage.removeItem('sb-nydtfckvvslkbyolipsf-auth-token');
-    
     try {
       await supabase.auth.signOut();
-    } catch (err) {
-      console.error('[useAuth] signOut exception:', err);
+    } catch {
+      // Silent fail - navigation will handle redirect
     }
     
     // Always navigate to login

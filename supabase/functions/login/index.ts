@@ -55,7 +55,7 @@ serve(async (req: Request): Promise<Response> => {
                   || req.headers.get('x-real-ip') 
                   || 'unknown';
 
-    console.log(`Login validation for email: ${email}, IP: ${clientIp}`);
+    // Log without sensitive data
 
     // ==========================================
     // IP-BASED RATE LIMITING (PRIMEIRO CHECK)
@@ -70,7 +70,7 @@ serve(async (req: Request): Promise<Response> => {
       .gte('created_at', windowStart);
 
     if (ipAttemptCount && ipAttemptCount >= MAX_FAILED_ATTEMPTS_IP) {
-      console.log(`IP rate limit exceeded: ${clientIp} (${ipAttemptCount} attempts)`);
+      // IP rate limit exceeded
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -85,7 +85,7 @@ serve(async (req: Request): Promise<Response> => {
     // HONEYPOT CHECK - Silent rejection for bots
     // ==========================================
     if (honeypot && honeypot.length > 0) {
-      console.log('Bot detected via honeypot');
+      // Bot detected via honeypot
       // Log IP attempt (bot detected)
       await logIpAttempt(supabaseAdmin, clientIp, email);
       return new Response(
@@ -110,7 +110,7 @@ serve(async (req: Request): Promise<Response> => {
 
     if (gatewayData?.recaptcha_enabled && gatewayData?.recaptcha_secret_key) {
       if (!recaptchaToken) {
-        console.log('reCAPTCHA token missing');
+        // reCAPTCHA token missing
         return new Response(
           JSON.stringify({ 
             success: false, 
@@ -129,10 +129,8 @@ serve(async (req: Request): Promise<Response> => {
       });
 
       const recaptchaResult = await recaptchaResponse.json();
-      console.log('reCAPTCHA verification result:', recaptchaResult.success);
 
       if (!recaptchaResult.success) {
-        console.log('reCAPTCHA verification failed');
         await logIpAttempt(supabaseAdmin, clientIp, email);
         return new Response(
           JSON.stringify({ 
@@ -189,14 +187,8 @@ serve(async (req: Request): Promise<Response> => {
       .eq('email', emailClean)
       .maybeSingle();
 
-    if (profileError) {
-      console.error('Error checking profile:', profileError);
-    }
-
     // If profile doesn't exist, account is not activated or doesn't exist
-    // Log IP attempt and return generic error
     if (!profileData) {
-      console.log('Login validation failed: profile not found');
       await logIpAttempt(supabaseAdmin, clientIp, emailClean);
       
       return new Response(
@@ -225,7 +217,7 @@ serve(async (req: Request): Promise<Response> => {
     // MAINTENANCE MODE CHECK (admins can bypass)
     // ==========================================
     if (maintenanceMode && !isAdmin) {
-      console.log('Login blocked: maintenance mode (non-admin user)');
+      // Login blocked: maintenance mode
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -236,9 +228,7 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    if (maintenanceMode && isAdmin) {
-      console.log('Maintenance mode active, but allowing admin login');
-    }
+    // Maintenance mode active, allowing admin login
 
     // ==========================================
     // USER-BASED RATE LIMITING (via login_history)
@@ -251,7 +241,7 @@ serve(async (req: Request): Promise<Response> => {
       .gte('created_at', windowStart);
 
     if (userFailedCount && userFailedCount >= MAX_FAILED_ATTEMPTS_USER) {
-      console.log(`User rate limit exceeded: ${profileData.user_id}`);
+      // User rate limit exceeded
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -266,7 +256,7 @@ serve(async (req: Request): Promise<Response> => {
     // CHECK IF USER IS BANNED
     // ==========================================
     if (profileData.banned === true) {
-      console.log('Login blocked: user is banned');
+      // Login blocked: user is banned
       
       // Log failed login attempt
       await logLoginAttempt(supabaseAdmin, profileData.user_id, 'failed', 'Conta suspensa');
@@ -281,23 +271,20 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`Login validation successful for: ${emailClean}, role: ${userRole}`);
-
     // ==========================================
     // RETURN SUCCESS - Frontend will do signInWithPassword
+    // (userId removed from response for security)
     // ==========================================
     return new Response(
       JSON.stringify({ 
         success: true,
         canLogin: true,
-        role: userRole,
-        userId: profileData.user_id
+        role: userRole
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
-  } catch (error: any) {
-    console.error("Error in login validation function:", error);
+  } catch {
     return new Response(
       JSON.stringify({ success: false, error: "Erro interno. Tente novamente." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -320,8 +307,8 @@ async function logLoginAttempt(
       status,
       failure_reason: failureReason || null,
     });
-  } catch (error) {
-    console.error('Error logging login attempt:', error);
+  } catch {
+    // Silent fail
   }
 }
 
@@ -336,7 +323,7 @@ async function logIpAttempt(
       ip_address: ipAddress,
       email: email,
     });
-  } catch (error) {
-    console.error('Error logging IP attempt:', error);
+  } catch {
+    // Silent fail
   }
 }

@@ -68,7 +68,7 @@ serve(async (req: Request): Promise<Response> => {
     const body: ForgotPasswordRequest = await req.json();
     const { action, email, code, newPassword, honeypot, recaptchaToken } = body;
 
-    console.log(`Forgot password action: ${action}`);
+    // Forgot password action received
 
     // ==========================================
     // CLEANUP EXPIRED VERIFICATION CODES
@@ -78,8 +78,8 @@ serve(async (req: Request): Promise<Response> => {
         .from('verification_codes')
         .delete()
         .lt('expires_at', new Date().toISOString());
-    } catch (cleanupErr) {
-      console.error('Error cleaning up codes:', cleanupErr);
+    } catch {
+      // Silent fail for cleanup
     }
 
     // ==========================================
@@ -192,7 +192,7 @@ serve(async (req: Request): Promise<Response> => {
       // ==========================================
       if (gatewayData?.recaptcha_enabled && gatewayData?.recaptcha_secret_key) {
         if (!recaptchaToken) {
-          console.log('reCAPTCHA token missing for password recovery');
+          // reCAPTCHA token missing
           return new Response(
             JSON.stringify({ 
               success: false, 
@@ -210,10 +210,9 @@ serve(async (req: Request): Promise<Response> => {
         });
 
         const recaptchaResult = await recaptchaResponse.json();
-        console.log('reCAPTCHA verification result:', recaptchaResult.success);
 
         if (!recaptchaResult.success) {
-          console.log('reCAPTCHA verification failed');
+          // reCAPTCHA verification failed
           return new Response(
             JSON.stringify({ 
               success: false, 
@@ -240,8 +239,7 @@ serve(async (req: Request): Promise<Response> => {
         .gte('created_at', windowStart);
       
       if (count && count >= MAX_ATTEMPTS_PER_EMAIL) {
-        console.log(`Rate limit exceeded for password recovery: ${emailClean}`);
-        // Return generic message to not reveal rate limit (could reveal email exists)
+        // Rate limit exceeded - return generic message
         return new Response(
           JSON.stringify({ 
             success: true, 
@@ -426,12 +424,11 @@ serve(async (req: Request): Promise<Response> => {
 
       const emailClean = email.trim().toLowerCase();
 
-      // Verify code again (prevent reuse)
+      // Verify code exists and check failed attempts (same logic as verify_code)
       const { data: codeData } = await supabaseAdmin
         .from('verification_codes')
         .select('*')
         .eq('user_email', emailClean)
-        .eq('code', code)
         .eq('type', 'password_reset')
         .eq('used', false)
         .gt('expires_at', new Date().toISOString())
@@ -440,6 +437,44 @@ serve(async (req: Request): Promise<Response> => {
       if (!codeData) {
         return new Response(
           JSON.stringify({ success: false, error: "Código inválido ou expirado" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check if max attempts exceeded
+      if (codeData.failed_attempts && codeData.failed_attempts >= MAX_CODE_VERIFICATION_ATTEMPTS) {
+        await supabaseAdmin
+          .from('verification_codes')
+          .update({ used: true })
+          .eq('id', codeData.id);
+
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: "Código bloqueado por excesso de tentativas. Solicite um novo código.",
+            code: "CODE_BLOCKED"
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check if the code matches - increment failed_attempts if not
+      if (codeData.code !== code) {
+        await supabaseAdmin
+          .from('verification_codes')
+          .update({ failed_attempts: (codeData.failed_attempts || 0) + 1 })
+          .eq('id', codeData.id);
+
+        const attemptsLeft = MAX_CODE_VERIFICATION_ATTEMPTS - (codeData.failed_attempts || 0) - 1;
+        
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: attemptsLeft > 0 
+              ? `Código incorreto. ${attemptsLeft} tentativa(s) restante(s).`
+              : "Código incorreto. Solicite um novo código.",
+            attemptsLeft
+          }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

@@ -32,6 +32,9 @@ const MAX_ATTEMPTS_PER_IP = 20;
 const MAX_VERIFICATION_ATTEMPTS = 5; // Max wrong code attempts before invalidating
 const RATE_LIMIT_WINDOW_MINUTES = 30;
 
+// Strong password validation regex - MUST match forgot-password for consistency
+const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
 async function sendEmail(apiKey: string, from: string, to: string, subject: string, html: string) {
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -73,13 +76,13 @@ serve(async (req: Request): Promise<Response> => {
     const body: RegisterRequest = await req.json();
     const { email, password, name, whatsapp, honeypot, verificationCode, action = 'register', recaptchaToken } = body;
 
-    console.log(`Register action: ${action} for email: ${email}`);
+    // Register action received
 
     // ==========================================
     // HONEYPOT CHECK - Silent rejection for bots
     // ==========================================
     if (honeypot && honeypot.length > 0) {
-      console.log('Bot detected via honeypot');
+      // Bot detected via honeypot
       return jsonResponse({ 
         success: true, 
         requiresEmailConfirmation: true,
@@ -100,7 +103,7 @@ serve(async (req: Request): Promise<Response> => {
 
       if (gatewayData?.recaptcha_enabled && gatewayData?.recaptcha_secret_key) {
         if (!recaptchaToken) {
-          console.log('reCAPTCHA token missing for registration');
+          // reCAPTCHA token missing
           return jsonResponse({ 
             success: false, 
             error: "Verificação de segurança necessária",
@@ -145,10 +148,8 @@ serve(async (req: Request): Promise<Response> => {
       
       // For IP limiting, we need to track IP separately - using a simple approach
       // by checking total codes in window and applying stricter limit
-      console.log(`IP: ${clientIP}, Total codes in window: ${ipCount}`);
-      
+      // IP-based rate limiting check
       if (ipCount && ipCount >= MAX_ATTEMPTS_PER_IP) {
-        console.log(`Global rate limit approached, may affect IP: ${clientIP}`);
         return jsonResponse({ 
           success: false, 
           error: "Sistema ocupado. Aguarde alguns minutos.",
@@ -165,9 +166,8 @@ serve(async (req: Request): Promise<Response> => {
         .from('verification_codes')
         .delete()
         .lt('expires_at', new Date().toISOString());
-      console.log('Cleaned up expired verification codes');
-    } catch (cleanupErr) {
-      console.error('Error cleaning up codes:', cleanupErr);
+    } catch {
+      // Silent fail for cleanup
     }
 
     // ==========================================
@@ -222,7 +222,7 @@ serve(async (req: Request): Promise<Response> => {
         .gte('created_at', windowStart);
       
       if (count && count >= MAX_ATTEMPTS_PER_EMAIL) {
-        console.log(`Rate limit exceeded for email: ${emailClean}`);
+        // Rate limit exceeded
         return jsonResponse({ 
           success: false, 
           error: "Muitas tentativas. Aguarde alguns minutos.",
@@ -260,7 +260,7 @@ serve(async (req: Request): Promise<Response> => {
         const failedAttempts = (codeData as any).failed_attempts || 0;
         const newFailedAttempts = failedAttempts + 1;
         
-        console.log(`Failed verification attempt ${newFailedAttempts}/${MAX_VERIFICATION_ATTEMPTS} for ${emailClean}`);
+        // Failed verification attempt
         
         if (newFailedAttempts >= MAX_VERIFICATION_ATTEMPTS) {
           // Invalidate the code - too many failed attempts
@@ -269,8 +269,6 @@ serve(async (req: Request): Promise<Response> => {
             .delete()
             .eq('user_email', emailClean)
             .eq('type', 'email_verification');
-          
-          console.log(`Code invalidated after ${MAX_VERIFICATION_ATTEMPTS} failed attempts for ${emailClean}`);
           
           return jsonResponse({ 
             success: false, 
@@ -309,7 +307,6 @@ serve(async (req: Request): Promise<Response> => {
       });
 
       if (signUpError) {
-        console.error('SignUp error after verification:', signUpError.message);
         
         if (signUpError.message.includes('already been registered') || 
             signUpError.message.includes('already exists')) {
@@ -340,12 +337,11 @@ serve(async (req: Request): Promise<Response> => {
             profileCreated = true;
             break;
           }
-          console.log(`Profile check attempt ${attempt + 1} failed (verify_code), retrying...`);
+          // Retry profile check
         }
         
         if (!profileCreated) {
-          console.error('Profile not created by trigger after retries, rolling back user creation');
-          // Delete the orphan user from auth.users
+          // Profile not created by trigger, rolling back
           await supabaseAdmin.auth.admin.deleteUser(userId);
           return jsonResponse({ success: false, error: "Erro ao criar conta. Tente novamente." });
         }
@@ -358,8 +354,7 @@ serve(async (req: Request): Promise<Response> => {
         .eq('user_email', emailClean)
         .eq('type', 'email_verification');
 
-      console.log(`User created after email verification: ${signUpData.user?.id}`);
-
+      // User created after email verification
       return jsonResponse({ 
         success: true, 
         verified: true,
@@ -389,17 +384,16 @@ serve(async (req: Request): Promise<Response> => {
       return jsonResponse({ success: false, error: "Emails temporários não são permitidos" });
     }
 
-    // Password validation - enhanced requirements
-    if (password.length < 8 || password.length > 128) {
-      return jsonResponse({ success: false, error: "A senha deve ter entre 8 e 128 caracteres" });
+    // Password validation - use same regex as forgot-password
+    if (!STRONG_PASSWORD_REGEX.test(password)) {
+      return jsonResponse({ 
+        success: false, 
+        error: "A senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula, número e caractere especial (!@#$%^&*)" 
+      });
     }
 
-    // Check password complexity
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasLowercase = /[a-z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    if (!hasUppercase || !hasLowercase || !hasNumber) {
-      return jsonResponse({ success: false, error: "Senha deve ter letras maiúsculas, minúsculas e números" });
+    if (password.length > 128) {
+      return jsonResponse({ success: false, error: "A senha deve ter no máximo 128 caracteres" });
     }
 
     // Check for common weak passwords
@@ -447,7 +441,7 @@ serve(async (req: Request): Promise<Response> => {
       .maybeSingle();
 
     if (existingProfile) {
-      console.log(`[EMAIL_EXISTS] Email encontrado em profiles: ${emailClean}`);
+      // Email already registered
       return jsonResponse({ 
         success: false, 
         error: "Este email já está cadastrado. Faça login.",
@@ -455,32 +449,16 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    // Also check auth.users for orphan users (user exists but profile not created)
-    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const existingAuthUser = authUsers?.users?.find(u => u.email?.toLowerCase() === emailClean);
-    
-    if (existingAuthUser) {
-      // Check if user has confirmed email
-      if (existingAuthUser.email_confirmed_at) {
-        console.log(`[EMAIL_EXISTS] Email encontrado em auth.users (confirmado, sem profile): ${emailClean}`);
-        // User exists with confirmed email but no profile - this is an orphan state
-        // Clean it up by deleting the orphan user so they can re-register
-        await supabaseAdmin.auth.admin.deleteUser(existingAuthUser.id);
-        console.log(`[CLEANUP] Usuário órfão removido: ${existingAuthUser.id}`);
-      } else {
-        console.log(`[EMAIL_EXISTS] Email encontrado em auth.users (não confirmado): ${emailClean}`);
-        // User exists but not confirmed - delete and allow re-registration
-        await supabaseAdmin.auth.admin.deleteUser(existingAuthUser.id);
-        console.log(`[CLEANUP] Usuário não confirmado removido: ${existingAuthUser.id}`);
-      }
-    }
+    // Note: We no longer use listUsers to check auth.users
+    // Profile existence is the single source of truth
+    // Orphan auth.users entries (without profile) will be handled during user creation
+    // when Supabase returns "already exists" error
 
     // ==========================================
     // WITH EMAIL VERIFICATION: Send code via Resend
     // ==========================================
     if (requireEmailConfirmation) {
       if (!gatewayData?.resend_api_key) {
-        console.error('Resend API key not configured');
         return jsonResponse({ success: false, error: "Serviço de email não configurado" });
       }
 
@@ -535,9 +513,8 @@ serve(async (req: Request): Promise<Response> => {
         `;
         
         await sendEmail(gatewayData.resend_api_key, fromEmail, emailClean, `${templateTitle.replace(/✉️\s*/, '')} - ${gatewayData.resend_from_name || 'DLG Connect'}`, html);
-        console.log(`Verification code sent to: ${emailClean}`);
-      } catch (emailError) {
-        console.error('Error sending verification email:', emailError);
+        // Email sent successfully
+      } catch {
         return jsonResponse({ success: false, error: "Erro ao enviar email de verificação" });
       }
 
@@ -562,7 +539,6 @@ serve(async (req: Request): Promise<Response> => {
     });
 
     if (signUpError) {
-      console.error('SignUp error:', signUpError.message);
       
       // Email already exists - should have been caught earlier, but handle it
       if (signUpError.message.includes('already been registered') || 
@@ -598,27 +574,24 @@ serve(async (req: Request): Promise<Response> => {
           profileCreated = true;
           break;
         }
-        console.log(`Profile check attempt ${attempt + 1} failed, retrying...`);
+        // Retry profile check
       }
       
       if (!profileCreated) {
-        console.error('Profile not created by trigger after retries, rolling back user creation');
-        // Delete the orphan user from auth.users
+        // Profile not created, rolling back
         await supabaseAdmin.auth.admin.deleteUser(userId);
         return jsonResponse({ success: false, error: "Erro ao criar conta. Tente novamente." });
       }
     }
 
-    console.log(`User created: ${signUpData.user?.id}`);
-
+    // User created successfully
     return jsonResponse({ 
       success: true, 
       requiresEmailConfirmation: false,
       message: "Conta criada com sucesso!"
     });
 
-  } catch (error: any) {
-    console.error("Error in register function:", error);
+  } catch {
     return jsonResponse({ success: false, error: "Erro interno do servidor" });
   }
 });
