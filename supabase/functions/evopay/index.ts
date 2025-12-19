@@ -302,12 +302,20 @@ async function createPixCharge(supabase: any, params: { amount: number; external
 
   try {
     // Get webhook URL from settings or use default
+    const { data: settings } = await supabase
+      .from('gateway_settings')
+      .select('evopay_webhook_url')
+      .eq('provider', 'pixup')
+      .limit(1)
+      .maybeSingle();
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const webhookUrl = `${supabaseUrl}/functions/v1/evopay-webhook`;
+    const webhookUrl = settings?.evopay_webhook_url || `${supabaseUrl}/functions/v1/evopay-webhook`;
 
     console.log('Creating EvoPay PIX charge:', { amount, external_id, webhookUrl });
 
-    const response = await fetch(`${EVOPAY_BASE_URL}/deposit`, {
+    // According to EvoPay docs: POST /pix with amount, callbackUrl
+    const response = await fetch(`${EVOPAY_BASE_URL}/pix`, {
       method: 'POST',
       headers: {
         'API-Key': apiKey,
@@ -316,7 +324,6 @@ async function createPixCharge(supabase: any, params: { amount: number; external
       body: JSON.stringify({
         amount: amount,
         callbackUrl: webhookUrl,
-        externalId: external_id,
       }),
     });
 
@@ -331,14 +338,26 @@ async function createPixCharge(supabase: any, params: { amount: number; external
       );
     }
 
+    // Store transaction ID in payments table for webhook matching
+    await supabase
+      .from('payments')
+      .update({ 
+        pix_code: data.id, // Store EvoPay transaction ID for webhook matching
+        payment_method: 'evopay_pix'
+      })
+      .eq('order_id', external_id);
+
     return new Response(
       JSON.stringify({
         success: true,
         data: {
           pixCode: data.qrCodeText,
+          qrCodeBase64: data.qrCodeBase64,
           qrCodeUrl: data.qrCodeUrl,
           transactionId: data.id,
           amount: data.amount,
+          taxAmount: data.taxAmount,
+          amountWithTax: data.amountWithTax,
           status: data.status,
         }
       }),
