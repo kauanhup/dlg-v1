@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Header, Hero, Features, Pricing, FAQ, CTA, Footer } from "@/components/landing";
+import SEO from "@/components/SEO";
 
 const Index = () => {
   // Força tema escuro na página inicial
@@ -16,17 +17,24 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main>
-        <Hero />
-        <Features />
-        <Pricing />
-        <FAQ />
-        <CTA />
-      </main>
-      <Footer />
-    </div>
+    <>
+      <SEO 
+        title="Automação Profissional para Telegram"
+        description="Sistema de automação avançado para crescimento de grupos Telegram. Extração e transferência de membros com segurança. Gerencie múltiplas contas."
+        canonical="/"
+      />
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main>
+          <Hero />
+          <Features />
+          <Pricing />
+          <FAQ />
+          <CTA />
+        </main>
+        <Footer />
+      </div>
+    </>
   );
 };
 
