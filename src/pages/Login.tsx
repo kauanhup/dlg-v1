@@ -338,14 +338,13 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // NOTE: Maintenance mode is checked by backend, not frontend
-    // This allows admins to bypass maintenance mode
-
-    // Block signup if registrations are disabled
-    if (!isLogin && !systemSettings.allowRegistration) {
-      toast.error("Cadastro desabilitado", "Novos registros estão temporariamente desabilitados.");
-      return;
-    }
+    // NOTE: All security checks are handled by backend:
+    // - Maintenance mode (allows admin bypass)
+    // - Registration disabled
+    // - Rate limiting (IP + user based)
+    // - Honeypot detection
+    // - Disposable emails
+    // - Weak passwords
 
     let valid = true;
 
@@ -740,11 +739,8 @@ const Login = () => {
   }
 
   const handleToggleMode = () => {
-    // Block switching to signup if registrations are disabled
-    if (isLogin && !systemSettings.allowRegistration) {
-      toast.error("Cadastro desabilitado", "Novos registros estão temporariamente desabilitados.");
-      return;
-    }
+    // Registration disabled check is handled by backend
+    // Frontend hides the button but doesn't block the action
 
     setIsTransitioning(true);
     
