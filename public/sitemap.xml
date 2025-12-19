@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Página Inicial -->
   <url>
-    <loc>https://swextrator.lovable.app/</loc>
+    <loc>https://dlgconnect.com/</loc>
     <lastmod>2025-01-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
@@ -10,7 +10,7 @@
   
   <!-- Login / Cadastro -->
   <url>
-    <loc>https://swextrator.lovable.app/login</loc>
+    <loc>https://dlgconnect.com/login</loc>
     <lastmod>2025-01-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -18,7 +18,7 @@
   
   <!-- Comprar -->
   <url>
-    <loc>https://swextrator.lovable.app/comprar</loc>
+    <loc>https://dlgconnect.com/comprar</loc>
     <lastmod>2025-01-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
@@ -26,7 +26,7 @@
   
   <!-- Recuperar Senha -->
   <url>
-    <loc>https://swextrator.lovable.app/recuperar-senha</loc>
+    <loc>https://dlgconnect.com/recuperar-senha</loc>
     <lastmod>2025-01-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
@@ -34,7 +34,7 @@
   
   <!-- Dashboard -->
   <url>
-    <loc>https://swextrator.lovable.app/dashboard</loc>
+    <loc>https://dlgconnect.com/dashboard</loc>
     <lastmod>2025-01-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -42,7 +42,7 @@
   
   <!-- Checkout -->
   <url>
-    <loc>https://swextrator.lovable.app/checkout</loc>
+    <loc>https://dlgconnect.com/checkout</loc>
     <lastmod>2025-01-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -50,7 +50,7 @@
   
   <!-- Pagamentos -->
   <url>
-    <loc>https://swextrator.lovable.app/pagamentos</loc>
+    <loc>https://dlgconnect.com/pagamentos</loc>
     <lastmod>2025-01-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>

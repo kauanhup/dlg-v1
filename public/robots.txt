@@ -20,4 +20,4 @@ Allow: /
 Disallow: /admin
 
 # Sitemap
-Sitemap: https://swextrator.lovable.app/sitemap.xml
+Sitemap: https://dlgconnect.com/sitemap.xml
