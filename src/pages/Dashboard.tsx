@@ -851,7 +851,7 @@ const Dashboard = () => {
                 Ajuda
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/")} className="px-3 py-2 cursor-pointer text-destructive focus:text-destructive">
+              <DropdownMenuItem onClick={() => signOut()} className="px-3 py-2 cursor-pointer text-destructive focus:text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sair
               </DropdownMenuItem>
