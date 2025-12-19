@@ -482,8 +482,8 @@ async function saveEvopaySettings(supabase: any, params: {
   );
 }
 
-async function saveCredentials(supabase: any, params: { client_id: string; client_secret?: string; webhook_url?: string }) {
-  const { client_id, client_secret, webhook_url } = params;
+async function saveCredentials(supabase: any, params: { client_id: string; client_secret?: string; webhook_url?: string; is_active?: boolean }) {
+  const { client_id, client_secret, webhook_url, is_active } = params;
 
   if (!client_id) {
     return new Response(
@@ -514,6 +514,11 @@ async function saveCredentials(supabase: any, params: { client_id: string; clien
     webhook_url: webhook_url || null,
     updated_at: new Date().toISOString()
   };
+  
+  // Update is_active if provided
+  if (is_active !== undefined) {
+    updateData.is_active = is_active;
+  }
   
   // Only update secret if provided - and reset is_active when secret changes
   if (client_secret) {
