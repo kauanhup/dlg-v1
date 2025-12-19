@@ -84,7 +84,31 @@ export const useSystemSettings = () => {
     }
   };
 
-  const setMaintenanceMode = (value: boolean) => updateSetting('maintenance_mode', value);
+  // Maintenance mode uses edge function to also invalidate non-admin sessions
+  const setMaintenanceMode = async (value: boolean) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-actions', {
+        body: {
+          action: 'enable_maintenance',
+          enabled: value,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setSettings(prev => ({ ...prev, maintenanceMode: value }));
+        return { success: true, message: data.message };
+      } else {
+        throw new Error(data?.error || 'Erro desconhecido');
+      }
+    } catch (err: any) {
+      console.error('Error setting maintenance mode:', err);
+      return { success: false, error: err.message || 'Erro ao atualizar manutenção' };
+    }
+  };
+
+  // Allow registration can update directly (no session invalidation needed)
   const setAllowRegistration = (value: boolean) => updateSetting('allow_registrations', value);
 
   useEffect(() => {
