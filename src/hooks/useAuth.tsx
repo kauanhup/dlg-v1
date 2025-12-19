@@ -2,6 +2,19 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
+import { z } from "zod";
+
+// Profile update validation schema
+const profileUpdateSchema = z.object({
+  name: z.string()
+    .min(2, 'Nome muito curto')
+    .max(100, 'Nome muito longo')
+    .optional(),
+  whatsapp: z.string()
+    .regex(/^\+?[0-9]{10,15}$/, 'WhatsApp inválido')
+    .optional(),
+  avatar: z.string().max(50, 'Avatar inválido').optional(),
+});
 
 interface AuthState {
   user: User | null;
@@ -149,19 +162,29 @@ export const useAuth = (requiredRole?: 'admin' | 'user') => {
   const updateProfile = async (updates: Partial<{ name: string; whatsapp: string; avatar: string }>) => {
     if (!authState.user) return { error: 'Not authenticated' };
 
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('user_id', authState.user.id);
+    try {
+      // Validate input data with Zod
+      const validated = profileUpdateSchema.parse(updates);
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update(validated)
+        .eq('user_id', authState.user.id);
 
-    if (!error && authState.profile) {
-      setAuthState(prev => ({
-        ...prev,
-        profile: prev.profile ? { ...prev.profile, ...updates } : null,
-      }));
+      if (!error && authState.profile) {
+        setAuthState(prev => ({
+          ...prev,
+          profile: prev.profile ? { ...prev.profile, ...validated } : null,
+        }));
+      }
+
+      return { error };
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return { error: err.errors[0].message };
+      }
+      return { error: 'Erro ao atualizar perfil' };
     }
-
-    return { error };
   };
 
   return {

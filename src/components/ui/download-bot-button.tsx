@@ -12,6 +12,8 @@ const DownloadBotButton = ({ className }: DownloadBotButtonProps) => {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [filePath, setFilePath] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchBotFile = async () => {
       try {
@@ -26,13 +28,10 @@ const DownloadBotButton = ({ className }: DownloadBotButtonProps) => {
         if (error) throw error;
 
         if (data) {
-          const { data: urlData } = supabase.storage
-            .from('bot-files')
-            .getPublicUrl(data.file_path);
-          setDownloadUrl(urlData.publicUrl);
+          setFilePath(data.file_path);
         }
-      } catch (error) {
-        console.error('Error fetching bot file:', error);
+      } catch {
+        // Silent fail - button will show unavailable state
       } finally {
         setIsLoading(false);
       }
@@ -41,12 +40,30 @@ const DownloadBotButton = ({ className }: DownloadBotButtonProps) => {
     fetchBotFile();
   }, []);
 
-  const handleDownload = () => {
-    if (!downloadUrl) {
+  const fetchSignedUrl = async () => {
+    if (!filePath) return null;
+    
+    const { data, error } = await supabase.storage
+      .from('bot-files')
+      .createSignedUrl(filePath, 3600); // 1 hour expiry
+    
+    if (error) return null;
+    return data.signedUrl;
+  };
+
+  const handleDownload = async () => {
+    if (!filePath) {
       toast.error("Bot não disponível no momento");
       return;
     }
-    window.open(downloadUrl, '_blank');
+    
+    const signedUrl = await fetchSignedUrl();
+    if (!signedUrl) {
+      toast.error("Erro ao gerar link de download. Faça login primeiro.");
+      return;
+    }
+    
+    window.open(signedUrl, '_blank');
   };
 
   return (

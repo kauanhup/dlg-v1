@@ -1,5 +1,21 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+// Profile update validation schema
+const profileUpdateSchema = z.object({
+  name: z.string()
+    .min(2, 'Nome muito curto')
+    .max(100, 'Nome muito longo')
+    .optional(),
+  email: z.string()
+    .email('Email inválido')
+    .max(255, 'Email muito longo')
+    .optional(),
+  whatsapp: z.string()
+    .regex(/^\+?[0-9]{10,15}$/, 'WhatsApp inválido')
+    .optional(),
+});
 
 export interface AdminUser {
   id: string;
@@ -113,21 +129,26 @@ export const useAdminUsers = () => {
 
   const updateUserProfile = async (userId: string, data: { name?: string; email?: string; whatsapp?: string }) => {
     try {
+      // Validate input data with Zod
+      const validated = profileUpdateSchema.parse(data);
+      
       const { error } = await supabase
         .from('profiles')
-        .update(data)
+        .update(validated)
         .eq('user_id', userId);
 
       if (error) throw error;
 
       // Update local state
       setUsers(prev => prev.map(user => 
-        user.user_id === userId ? { ...user, ...data } : user
+        user.user_id === userId ? { ...user, ...validated } : user
       ));
 
       return { success: true };
     } catch (err) {
-      console.error('Error updating profile:', err);
+      if (err instanceof z.ZodError) {
+        return { success: false, error: err.errors[0].message };
+      }
       return { success: false, error: 'Erro ao atualizar perfil' };
     }
   };

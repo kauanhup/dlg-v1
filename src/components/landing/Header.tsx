@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const Header = () => {
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [filePath, setFilePath] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBotFile = async () => {
@@ -21,25 +21,32 @@ const Header = () => {
         if (error) throw error;
 
         if (data) {
-          const { data: urlData } = supabase.storage
-            .from('bot-files')
-            .getPublicUrl(data.file_path);
-          setDownloadUrl(urlData.publicUrl);
+          setFilePath(data.file_path);
         }
-      } catch (error) {
-        console.error('Error fetching bot file:', error);
+      } catch {
+        // Silent fail
       }
     };
 
     fetchBotFile();
   }, []);
 
-  const handleDownload = () => {
-    if (!downloadUrl) {
+  const handleDownload = async () => {
+    if (!filePath) {
       toast.error("Bot não disponível no momento");
       return;
     }
-    window.location.href = downloadUrl;
+    
+    const { data, error } = await supabase.storage
+      .from('bot-files')
+      .createSignedUrl(filePath, 3600); // 1 hour expiry
+    
+    if (error || !data?.signedUrl) {
+      toast.error("Erro ao gerar link de download. Faça login primeiro.");
+      return;
+    }
+    
+    window.location.href = data.signedUrl;
   };
 
   const navItems = [
