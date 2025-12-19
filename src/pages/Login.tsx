@@ -5,7 +5,7 @@ import AnimatedShaderBackground from "@/components/ui/animated-shader-background
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import { supabase } from "@/integrations/supabase/client";
-import { Ban, MessageCircle, Wrench, Mail } from "lucide-react";
+import { Ban, MessageCircle, Wrench, Mail, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SystemSettings {
@@ -31,6 +31,7 @@ const Login = () => {
   const [nameError, setNameError] = useState("");
   const [honeypot, setHoneypot] = useState(""); // Honeypot field - backend validates
   const [isLogin, setIsLogin] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -909,19 +910,29 @@ const Login = () => {
                 <label htmlFor="password" className="text-xs sm:text-sm font-medium text-foreground">
                   {isLogin ? "Senha" : "Criar senha"}
                 </label>
-                <input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  className={`text-sm w-full py-2 sm:py-2.5 px-3 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
-                    passwordError ? "border-destructive" : "border-border"
-                  }`}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  aria-invalid={!!passwordError}
-                  aria-describedby="password-error"
-                  disabled={isSubmitting}
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className={`text-sm w-full py-2 sm:py-2.5 px-3 pr-10 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground focus:ring-primary/50 transition-all ${
+                      passwordError ? "border-destructive" : "border-border"
+                    }`}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    aria-invalid={!!passwordError}
+                    aria-describedby="password-error"
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
                 {passwordError && (
                   <p id="password-error" className="text-xs text-destructive">
                     {passwordError}
