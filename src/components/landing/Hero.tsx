@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { AnimatedText } from "@/components/ui/animated-shiny-text";
 import { motion } from "framer-motion";
+import logo from "@/assets/logo.png";
 
 const Hero = () => {
   return (
@@ -15,6 +16,27 @@ const Hero = () => {
       
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <div className="max-w-3xl mx-auto text-center">
+
+          {/* Logo */}
+          <motion.div
+            className="flex justify-center mb-8"
+            initial={{ opacity: 0, scale: 0.8, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+          >
+            <div className="relative group">
+              <motion.div
+                className="absolute inset-0 bg-primary/30 blur-3xl rounded-full scale-150"
+                animate={{ opacity: [0.3, 0.6, 0.3] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              />
+              <img 
+                src={logo} 
+                alt="DLG Connect Logo" 
+                className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 relative z-10 drop-shadow-2xl invert transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
+          </motion.div>
 
           {/* Title */}
           <motion.h1
