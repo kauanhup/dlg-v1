@@ -3519,7 +3519,15 @@ const ApiSection = () => {
                 <p className="text-sm text-muted-foreground">Proteção contra bots</p>
               </div>
             </div>
-            <button
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium",
+                recaptchaEnabled && hasRecaptchaSecret ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
+              )}>
+                <div className={cn("w-2 h-2 rounded-full", recaptchaEnabled && hasRecaptchaSecret ? "bg-green-500" : "bg-yellow-500")} />
+                {recaptchaEnabled && hasRecaptchaSecret ? "Ativo" : "Inativo"}
+              </div>
+              <button
               onClick={async () => {
                 setIsSavingRecaptcha(true);
                 try {
@@ -3546,7 +3554,8 @@ const ApiSection = () => {
                 "w-5 h-5 bg-white rounded-full transition-transform shadow-sm",
                 recaptchaEnabled ? 'translate-x-6' : 'translate-x-0.5'
               )} />
-            </button>
+              </button>
+            </div>
           </div>
 
           <div className="space-y-4">
