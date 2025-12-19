@@ -20,29 +20,47 @@ serve(async (req) => {
     const body = await req.json();
     console.log('EvoPay webhook received:', JSON.stringify(body, null, 2));
 
-    // EvoPay webhook payload structure
-    // { id, amount, status, type, externalId, qrCodeText, qrCodeUrl, payerDocument, payerName, createdAt, updatedAt }
-    const { id: transactionId, externalId, status, amount, payerDocument, payerName } = body;
+    // EvoPay webhook payload structure from docs:
+    // { id, status, amount, type, qrCodeText, qrCodeUrl, payerDocument, payerName }
+    const { id: transactionId, status, amount, payerDocument, payerName } = body;
 
-    if (!externalId) {
-      console.log('No externalId in webhook, ignoring');
+    if (!transactionId) {
+      console.log('No transaction ID in webhook, ignoring');
       return new Response(
-        JSON.stringify({ success: true, message: 'No externalId' }),
+        JSON.stringify({ success: true, message: 'No transaction ID' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Processing EvoPay webhook for order: ${externalId}, status: ${status}`);
+    console.log(`Processing EvoPay webhook for transaction: ${transactionId}, status: ${status}`);
+
+    // Find payment by transaction ID stored in pix_code field
+    const { data: payment, error: paymentError } = await supabase
+      .from('payments')
+      .select('id, order_id, status')
+      .eq('pix_code', transactionId)
+      .eq('payment_method', 'evopay_pix')
+      .single();
+
+    if (paymentError || !payment) {
+      console.error('Payment not found for transaction:', transactionId);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Payment not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const orderId = payment.order_id;
 
     // Check if order exists
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select('id, user_id, status, product_type, quantity')
-      .eq('id', externalId)
+      .eq('id', orderId)
       .single();
 
     if (orderError || !order) {
-      console.error('Order not found for externalId:', externalId);
+      console.error('Order not found:', orderId);
       return new Response(
         JSON.stringify({ success: false, error: 'Order not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -74,7 +92,7 @@ serve(async (req) => {
       newPaymentStatus = 'pending';
     }
 
-    console.log(`Updating order ${externalId} to status: ${newOrderStatus}`);
+    console.log(`Updating order ${orderId} to status: ${newOrderStatus}`);
 
     // Update order status
     const { error: updateOrderError } = await supabase
@@ -83,7 +101,7 @@ serve(async (req) => {
         status: newOrderStatus,
         updated_at: new Date().toISOString()
       })
-      .eq('id', externalId);
+      .eq('id', orderId);
 
     if (updateOrderError) {
       console.error('Error updating order:', updateOrderError);
@@ -101,7 +119,7 @@ serve(async (req) => {
     const { error: updatePaymentError } = await supabase
       .from('payments')
       .update(paymentUpdate)
-      .eq('order_id', externalId);
+      .eq('order_id', orderId);
 
     if (updatePaymentError) {
       console.error('Error updating payment:', updatePaymentError);
@@ -112,7 +130,7 @@ serve(async (req) => {
       console.log('Payment completed, processing order fulfillment...');
       
       const { data: rpcResult, error: rpcError } = await supabase.rpc('complete_order_atomic', {
-        _order_id: externalId,
+        _order_id: orderId,
         _user_id: order.user_id,
         _product_type: order.product_type,
         _quantity: order.quantity
