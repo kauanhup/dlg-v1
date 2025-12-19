@@ -2931,7 +2931,7 @@ const ApiSection = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground">PixUp</h3>
-                  <p className="text-sm text-muted-foreground">Gateway PIX (BSPAY)</p>
+                  <p className="text-sm text-muted-foreground">Gateway de Pagamentos PIX</p>
                 </div>
               </div>
               <div className={cn(
@@ -2987,7 +2987,7 @@ const ApiSection = () => {
                     type="text"
                     value={clientId}
                     onChange={(e) => setClientId(e.target.value)}
-                    placeholder="Seu client_id do BSPAY"
+                    placeholder="Seu Client ID do PixUp"
                     className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                   />
                 </div>
@@ -3038,7 +3038,7 @@ const ApiSection = () => {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Configure no painel BSPAY para receber notificações de pagamento.
+                  URL para receber notificações automáticas de pagamento.
                 </p>
               </div>
 

@@ -54,7 +54,6 @@ Deno.serve(async (req) => {
 
     // Get the webhook signature from headers
     const signature = req.headers.get('x-webhook-signature') || 
-                      req.headers.get('x-bspay-signature') ||
                       req.headers.get('x-pixup-signature')
 
     // Fetch webhook secret from gateway settings
@@ -88,7 +87,7 @@ Deno.serve(async (req) => {
     }
     console.log('Webhook signature verified successfully')
 
-    // PixUp/BSPAY webhook payload structure
+    // PixUp webhook payload structure
     const {
       transactionId,
       externalId, // This is our order_id
