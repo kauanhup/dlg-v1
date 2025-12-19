@@ -2636,6 +2636,7 @@ const ApiSection = () => {
           setHasMpToken(false);
           setEvoEnabled(false);
           setHasEvoKey(false);
+          setEvoWebhookUrl("");
         }
       } catch (error) {
         console.error('Error loading API settings:', error);
