@@ -5,7 +5,7 @@ import AnimatedShaderBackground from "@/components/ui/animated-shader-background
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Mail, Key, Lock, CheckCircle } from "lucide-react";
+import { ArrowLeft, Mail, Key, Lock, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -19,6 +19,8 @@ const RecuperarSenha = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [honeypot, setHoneypot] = useState(""); // Honeypot for bot detection
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSettings, setIsCheckingSettings] = useState(true);
   const [isEnabled, setIsEnabled] = useState(false);
@@ -502,25 +504,45 @@ const RecuperarSenha = () => {
                 >
                   <div className="space-y-1 sm:space-y-1.5">
                     <label className="text-xs sm:text-sm font-medium text-foreground">Nova Senha</label>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="text-sm w-full py-2 sm:py-2.5 px-3 sm:px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground border-border focus:ring-primary/50 transition-all"
-                      disabled={isLoading}
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="text-sm w-full py-2 sm:py-2.5 px-3 sm:px-4 pr-10 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground border-border focus:ring-primary/50 transition-all"
+                        disabled={isLoading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-1 sm:space-y-1.5">
                     <label className="text-xs sm:text-sm font-medium text-foreground">Confirmar Senha</label>
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="text-sm w-full py-2 sm:py-2.5 px-3 sm:px-4 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground border-border focus:ring-primary/50 transition-all"
-                      disabled={isLoading}
-                    />
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="text-sm w-full py-2 sm:py-2.5 px-3 sm:px-4 pr-10 border rounded-lg focus:outline-none focus:ring-2 bg-background text-foreground border-border focus:ring-primary/50 transition-all"
+                        disabled={isLoading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                   <Button 
                     onClick={handleResetPassword} 
