@@ -176,10 +176,10 @@ serve(async (req: Request): Promise<Response> => {
                 <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: ${accentColor};">${verificationCode}</span>
               </div>
             </div>
-            <p style="color: #888; font-size: 14px;">${templateExpiryText}</p>
-            <p style="color: #888; font-size: 14px;">Se você não solicitou este código, ignore este email.</p>
+            <p style="font-size: 14px;">${templateExpiryText}</p>
+            <p style="font-size: 14px;">Se você não solicitou este código, ignore este email.</p>
             <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
-            <p style="color: #666; font-size: 12px;">${templateFooter}</p>
+            <p style="font-size: 12px;">${templateFooter}</p>
           </div>
         `;
 
