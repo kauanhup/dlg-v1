@@ -120,15 +120,16 @@ export const useAdminBot = () => {
     }
   };
 
-  const getDownloadUrl = (filePath?: string) => {
+  const getDownloadUrl = async (filePath?: string): Promise<string | null> => {
     const path = filePath || botFile?.file_path;
     if (!path) return null;
     
-    const { data } = supabase.storage
+    const { data, error } = await supabase.storage
       .from('bot-files')
-      .getPublicUrl(path);
+      .createSignedUrl(path, 3600); // 1 hour expiry
     
-    return data.publicUrl;
+    if (error) return null;
+    return data.signedUrl;
   };
 
   const setActiveVersion = async (id: string) => {
