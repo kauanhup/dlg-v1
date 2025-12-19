@@ -43,7 +43,46 @@ async function getUserFromRequest(req: Request, supabase: any): Promise<{ userId
   }
 }
 
-// Call proxy with secret authentication
+// IMPROVEMENT 1: Timeout wrapper for fetch requests
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number = 30000): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// IMPROVEMENT 2: Audit logging helper
+async function logAudit(supabase: any, userId: string, action: string, resource: string, details: any = {}, req?: Request) {
+  try {
+    const ip = req?.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+               req?.headers.get('x-real-ip') || 
+               'unknown';
+    const userAgent = req?.headers.get('user-agent') || 'unknown';
+    
+    await supabase.from('audit_logs').insert({
+      user_id: userId,
+      action,
+      resource,
+      details,
+      ip_address: ip,
+      user_agent: userAgent
+    });
+    console.log(`Audit log: ${action} on ${resource} by ${userId}`);
+  } catch (error) {
+    console.error('Failed to create audit log:', error);
+    // Don't throw - audit logging should not break the main flow
+  }
+}
+
+// Call proxy with secret authentication and TIMEOUT
 async function callProxy(action: string, params: any): Promise<any> {
   if (!PROXY_URL || !PROXY_SECRET) {
     throw new Error('Proxy not configured');
@@ -51,7 +90,8 @@ async function callProxy(action: string, params: any): Promise<any> {
 
   console.log(`Calling proxy for action: ${action}`);
   
-  const response = await fetch(PROXY_URL, {
+  // IMPROVEMENT: 30 second timeout to prevent hanging requests
+  const response = await fetchWithTimeout(PROXY_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -61,7 +101,7 @@ async function callProxy(action: string, params: any): Promise<any> {
       action,
       ...params
     })
-  });
+  }, 30000);
 
   const data = await response.json();
   
@@ -126,11 +166,15 @@ serve(async (req) => {
       }
     }
 
+    // Actions that modify settings - add audit logging
+    const auditableActions = ['save_credentials', 'save_email_settings', 'save_feature_toggles', 'save_recaptcha_settings', 'save_email_template', 'save_evopay_settings'];
+
     switch (action) {
       case 'test_connection':
         return await testConnection(supabaseAdmin);
       
       case 'save_credentials':
+        await logAudit(supabaseAdmin, userId!, 'UPDATE', 'gateway_credentials', { action: 'save_credentials' }, req);
         return await saveCredentials(supabaseAdmin, params);
       
       case 'get_settings':
@@ -140,19 +184,27 @@ serve(async (req) => {
         return await getPublicSettings(supabaseAdmin);
       
       case 'save_email_settings':
+        await logAudit(supabaseAdmin, userId!, 'UPDATE', 'email_settings', { action: 'save_email_settings' }, req);
         return await saveEmailSettings(supabaseAdmin, params);
       
       case 'save_feature_toggles':
+        await logAudit(supabaseAdmin, userId!, 'UPDATE', 'feature_toggles', { 
+          password_recovery: params.password_recovery_enabled,
+          email_verification: params.email_verification_enabled 
+        }, req);
         return await saveFeatureToggles(supabaseAdmin, params);
       
       case 'save_recaptcha_settings':
+        await logAudit(supabaseAdmin, userId!, 'UPDATE', 'recaptcha_settings', { enabled: params.recaptcha_enabled }, req);
         return await saveRecaptchaSettings(supabaseAdmin, params);
       
       case 'save_email_template':
+        await logAudit(supabaseAdmin, userId!, 'UPDATE', 'email_template', { action: 'save_email_template' }, req);
         return await saveEmailTemplate(supabaseAdmin, params);
       
       
       case 'save_evopay_settings':
+        await logAudit(supabaseAdmin, userId!, 'UPDATE', 'evopay_settings', { enabled: params.evopay_enabled }, req);
         return await saveEvopaySettings(supabaseAdmin, params);
       
       case 'create_pix':
