@@ -18,6 +18,10 @@ interface ForgotPasswordRequest {
 // Rate limit configuration
 const MAX_ATTEMPTS_PER_EMAIL = 5;
 const RATE_LIMIT_WINDOW_MINUTES = 15;
+const MAX_CODE_VERIFICATION_ATTEMPTS = 5;
+
+// Strong password validation regex
+const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
 
 async function sendEmail(apiKey: string, from: string, to: string, subject: string, html: string) {
   const response = await fetch('https://api.resend.com/emails', {
@@ -334,19 +338,61 @@ serve(async (req: Request): Promise<Response> => {
 
       const emailClean = email.trim().toLowerCase();
 
-      const { data: codeData } = await supabaseAdmin
+      // First, check if there's any valid code for this email (to increment attempts if wrong)
+      const { data: existingCode } = await supabaseAdmin
         .from('verification_codes')
         .select('*')
         .eq('user_email', emailClean)
-        .eq('code', code)
         .eq('type', 'password_reset')
         .eq('used', false)
         .gt('expires_at', new Date().toISOString())
         .maybeSingle();
 
-      if (!codeData) {
+      if (!existingCode) {
         return new Response(
           JSON.stringify({ success: false, error: "Código inválido ou expirado" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check if max attempts exceeded
+      if (existingCode.failed_attempts && existingCode.failed_attempts >= MAX_CODE_VERIFICATION_ATTEMPTS) {
+        // Invalidate the code
+        await supabaseAdmin
+          .from('verification_codes')
+          .update({ used: true })
+          .eq('id', existingCode.id);
+
+        console.log(`Code blocked due to too many failed attempts: ${emailClean}`);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: "Código bloqueado por excesso de tentativas. Solicite um novo código.",
+            code: "CODE_BLOCKED"
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check if the code matches
+      if (existingCode.code !== code) {
+        // Increment failed attempts
+        await supabaseAdmin
+          .from('verification_codes')
+          .update({ failed_attempts: (existingCode.failed_attempts || 0) + 1 })
+          .eq('id', existingCode.id);
+
+        const attemptsLeft = MAX_CODE_VERIFICATION_ATTEMPTS - (existingCode.failed_attempts || 0) - 1;
+        console.log(`Wrong code attempt for: ${emailClean}, attempts left: ${attemptsLeft}`);
+        
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: attemptsLeft > 0 
+              ? `Código incorreto. ${attemptsLeft} tentativa(s) restante(s).`
+              : "Código incorreto. Solicite um novo código.",
+            attemptsLeft
+          }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -368,9 +414,12 @@ serve(async (req: Request): Promise<Response> => {
         );
       }
 
-      if (newPassword.length < 8) {
+      if (!STRONG_PASSWORD_REGEX.test(newPassword)) {
         return new Response(
-          JSON.stringify({ success: false, error: "A senha deve ter pelo menos 8 caracteres" }),
+          JSON.stringify({ 
+            success: false, 
+            error: "A senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula, número e caractere especial (!@#$%^&*)" 
+          }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
