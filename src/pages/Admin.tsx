@@ -66,7 +66,8 @@ import {
   HardDrive,
   History,
   Wallet,
-  ChevronDown
+  ChevronDown,
+  ImageIcon
 } from "lucide-react";
 
 
@@ -2569,6 +2570,8 @@ const ApiSection = () => {
   const [templateFooter, setTemplateFooter] = useState("DLG Connect - Sistema de Gestão");
   const [templateBgColor, setTemplateBgColor] = useState("#0a0a0a");
   const [templateAccentColor, setTemplateAccentColor] = useState("#4ade80");
+  const [templateShowLogo, setTemplateShowLogo] = useState(true);
+  const [templateLogoUrl, setTemplateLogoUrl] = useState("");
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [templateSaveSuccess, setTemplateSaveSuccess] = useState(false);
 
@@ -2609,6 +2612,8 @@ const ApiSection = () => {
           setTemplateFooter(data.data.email_template_footer || "DLG Connect - Sistema de Gestão");
           setTemplateBgColor(data.data.email_template_bg_color || "#0a0a0a");
           setTemplateAccentColor(data.data.email_template_accent_color || "#4ade80");
+          setTemplateShowLogo(data.data.email_template_show_logo !== false);
+          setTemplateLogoUrl(data.data.email_template_logo_url || "");
           // (Mercado Pago removido)
           // EvoPay settings
           setEvoEnabled(data.data.evopay_enabled === true);
@@ -3445,6 +3450,44 @@ const ApiSection = () => {
                         </div>
                       </div>
                     </div>
+
+                    {/* Logo Settings */}
+                    <div className="p-3 bg-muted/30 rounded-lg border border-border/50 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
+                            <ImageIcon className="w-4 h-4 text-primary" />
+                          </div>
+                          <span className="text-sm font-medium text-foreground">Exibir Logo</span>
+                        </div>
+                        <button
+                          onClick={() => setTemplateShowLogo(!templateShowLogo)}
+                          className={cn(
+                            "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
+                            templateShowLogo ? "bg-primary" : "bg-muted"
+                          )}
+                        >
+                          <span className={cn(
+                            "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200",
+                            templateShowLogo ? "translate-x-6" : "translate-x-1"
+                          )} />
+                        </button>
+                      </div>
+                      {templateShowLogo && (
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground mb-1 block">URL da Logo</label>
+                          <input
+                            type="url"
+                            value={templateLogoUrl}
+                            onChange={(e) => setTemplateLogoUrl(e.target.value)}
+                            placeholder="https://seusite.com/logo.png"
+                            className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">Use a URL pública da sua logo ou favicon</p>
+                        </div>
+                      )}
+                    </div>
+
                     <Button 
                       onClick={async () => {
                         setIsSavingTemplate(true);
@@ -3459,7 +3502,9 @@ const ApiSection = () => {
                               email_template_expiry_text: templateExpiryText,
                               email_template_footer: templateFooter,
                               email_template_bg_color: templateBgColor,
-                              email_template_accent_color: templateAccentColor
+                              email_template_accent_color: templateAccentColor,
+                              email_template_show_logo: templateShowLogo,
+                              email_template_logo_url: templateLogoUrl
                             }
                           });
                           if (data?.success) { 
@@ -3484,6 +3529,11 @@ const ApiSection = () => {
                     <label className="text-sm font-medium text-foreground mb-2 block">Preview</label>
                     <div className="rounded-lg overflow-hidden border border-border" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                       <div style={{ fontFamily: 'Arial, sans-serif', padding: '16px', backgroundColor: templateBgColor, color: '#fff' }}>
+                        {templateShowLogo && templateLogoUrl && (
+                          <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                            <img src={templateLogoUrl} alt="Logo" style={{ maxWidth: '120px', maxHeight: '50px', objectFit: 'contain' }} />
+                          </div>
+                        )}
                         <h1 style={{ color: templateAccentColor, fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>{templateTitle}</h1>
                         <p style={{ marginBottom: '8px', fontSize: '14px' }}>{templateGreeting.replace('{name}', 'João')}</p>
                         <p style={{ marginBottom: '12px', fontSize: '14px' }}>{templateMessage}</p>
