@@ -2994,109 +2994,149 @@ const ApiSection = () => {
       {/* Gateway PIX Tab */}
       {activeApiTab === "gateway" && (
         <div className="space-y-6">
+          {/* PixUp Card */}
           <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <CreditCard className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground">PixUp (Gateway PIX)</h3>
-                <p className="text-sm text-muted-foreground">Credenciais BSPAY</p>
-              </div>
-            </div>
-            <div className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit",
-              pixupEnabled && isConnected ? "bg-green-500/10 text-green-500" : 
-              pixupEnabled && hasSecret ? "bg-yellow-500/10 text-yellow-500" :
-              "bg-muted text-muted-foreground"
-            )}>
-              <div className={cn(
-                "w-2 h-2 rounded-full", 
-                pixupEnabled && isConnected ? "bg-green-500" : 
-                pixupEnabled && hasSecret ? "bg-yellow-500" :
-                "bg-muted-foreground"
-              )} />
-              {pixupEnabled && isConnected ? "Conectado" : 
-               pixupEnabled && hasSecret ? "Configurado" : "Desativado"}
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-3">
-                <Info className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Habilitar PixUp</span>
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">PixUp</h3>
+                  <p className="text-sm text-muted-foreground">Gateway PIX (BSPAY)</p>
+                </div>
               </div>
-              <button
-                onClick={() => setPixupEnabled(!pixupEnabled)}
-                className={cn(
-                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                  pixupEnabled ? "bg-primary" : "bg-muted"
-                )}
-              >
-                <span className={cn(
-                  "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                  pixupEnabled ? "translate-x-6" : "translate-x-1"
+              <div className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit border",
+                pixupEnabled && isConnected 
+                  ? "bg-green-500/10 text-green-500 border-green-500/30" 
+                  : pixupEnabled && hasSecret 
+                    ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" 
+                    : "bg-muted/50 text-muted-foreground border-border"
+              )}>
+                <div className={cn(
+                  "w-2 h-2 rounded-full animate-pulse", 
+                  pixupEnabled && isConnected 
+                    ? "bg-green-500" 
+                    : pixupEnabled && hasSecret 
+                      ? "bg-yellow-500" 
+                      : "bg-muted-foreground"
                 )} />
-              </button>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Client ID</label>
-              <input
-                type="text"
-                value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
-                placeholder="Seu client_id do BSPAY"
-                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
+                {pixupEnabled && isConnected ? "Conectado" : 
+                 pixupEnabled && hasSecret ? "Configurado" : "Desativado"}
+              </div>
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Client Secret</label>
-              <div className="relative">
-                <input
-                  type={showSecret ? "text" : "password"}
-                  value={clientSecret}
-                  onChange={(e) => setClientSecret(e.target.value)}
-                  placeholder={hasSecret ? "••••••••• (já configurado)" : "Seu client_secret"}
-                  className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-8 h-8 rounded-md flex items-center justify-center",
+                    pixupEnabled ? "bg-primary/10" : "bg-muted"
+                  )}>
+                    <CreditCard className={cn("w-4 h-4", pixupEnabled ? "text-primary" : "text-muted-foreground")} />
+                  </div>
+                  <span className="text-sm font-medium text-foreground">Habilitar PixUp</span>
+                </div>
                 <button
-                  type="button"
-                  onClick={() => setShowSecret(!showSecret)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setPixupEnabled(!pixupEnabled)}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
+                    pixupEnabled ? "bg-primary" : "bg-muted"
+                  )}
                 >
-                  {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  <span className={cn(
+                    "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200",
+                    pixupEnabled ? "translate-x-6" : "translate-x-1"
+                  )} />
                 </button>
               </div>
-            </div>
 
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">URL do Webhook</label>
-              <input
-                type="text"
-                value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
-                placeholder="https://seu-dominio.com/webhook"
-                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Client ID</label>
+                  <input
+                    type="text"
+                    value={clientId}
+                    onChange={(e) => setClientId(e.target.value)}
+                    placeholder="Seu client_id do BSPAY"
+                    className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  />
+                </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button onClick={handleSave} disabled={isLoading} className={cn("gap-2 transition-colors", saveSuccess && "bg-green-600 hover:bg-green-600")}>
-                {isLoading ? <Spinner size="sm" /> : saveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                {saveSuccess ? "Salvo!" : "Salvar"}
-              </Button>
-              <Button variant="outline" onClick={handleTestConnection} disabled={isTesting} className="gap-2">
-                {isTesting ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
-                Testar
-              </Button>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Client Secret</label>
+                  <div className="relative">
+                    <input
+                      type={showSecret ? "text" : "password"}
+                      value={clientSecret}
+                      onChange={(e) => setClientSecret(e.target.value)}
+                      placeholder={hasSecret ? "••••••••• (configurado)" : "Seu client_secret"}
+                      className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSecret(!showSecret)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">URL do Webhook</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={webhookUrl}
+                    onChange={(e) => setWebhookUrl(e.target.value)}
+                    placeholder="https://dlgconnect.com/api/webhook-pixup.php"
+                    className="flex-1 px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setWebhookUrl("https://dlgconnect.com/api/webhook-pixup.php");
+                      navigator.clipboard.writeText("https://dlgconnect.com/api/webhook-pixup.php");
+                      toast.success("URL copiada!");
+                    }}
+                    title="Usar URL padrão da Hostinger"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Configure no painel BSPAY para receber notificações de pagamento.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-border/50">
+                <Button 
+                  onClick={handleSave} 
+                  disabled={isLoading} 
+                  className={cn("gap-2 transition-all", saveSuccess && "bg-green-600 hover:bg-green-600")}
+                >
+                  {isLoading ? <Spinner size="sm" /> : saveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                  {saveSuccess ? "Salvo!" : "Salvar Configurações"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleTestConnection} 
+                  disabled={isTesting || !hasSecret}
+                  className={cn("gap-2", isConnected && "border-green-500/50 text-green-500")}
+                >
+                  {isTesting ? <Spinner size="sm" /> : isConnected ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                  {isConnected ? "Conectado" : "Testar Conexão"}
+                </Button>
+              </div>
             </div>
           </div>
-          </div>
 
-          {/* Mercado Pago Configuration */}
+          {/* Mercado Pago Card */}
           <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-3">
@@ -3105,20 +3145,24 @@ const ApiSection = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground">Mercado Pago</h3>
-                  <p className="text-sm text-muted-foreground">Gateway de pagamento</p>
+                  <p className="text-sm text-muted-foreground">Gateway de pagamento PIX</p>
                 </div>
               </div>
               <div className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit",
-                mpEnabled && hasMpToken && mpConnected ? "bg-green-500/10 text-green-500" : 
-                mpEnabled && hasMpToken ? "bg-yellow-500/10 text-yellow-500" : 
-                "bg-muted text-muted-foreground"
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit border",
+                mpEnabled && hasMpToken && mpConnected 
+                  ? "bg-green-500/10 text-green-500 border-green-500/30" 
+                  : mpEnabled && hasMpToken 
+                    ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" 
+                    : "bg-muted/50 text-muted-foreground border-border"
               )}>
                 <div className={cn(
-                  "w-2 h-2 rounded-full", 
-                  mpEnabled && hasMpToken && mpConnected ? "bg-green-500" : 
-                  mpEnabled && hasMpToken ? "bg-yellow-500" : 
-                  "bg-muted-foreground"
+                  "w-2 h-2 rounded-full animate-pulse", 
+                  mpEnabled && hasMpToken && mpConnected 
+                    ? "bg-green-500" 
+                    : mpEnabled && hasMpToken 
+                      ? "bg-yellow-500" 
+                      : "bg-muted-foreground"
                 )} />
                 {mpEnabled && hasMpToken && mpConnected ? "Conectado" : 
                  mpEnabled && hasMpToken ? "Configurado" : "Desativado"}
@@ -3126,76 +3170,86 @@ const ApiSection = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50">
                 <div className="flex items-center gap-3">
-                  <Info className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Habilitar Mercado Pago</span>
+                  <div className={cn(
+                    "w-8 h-8 rounded-md flex items-center justify-center",
+                    mpEnabled ? "bg-cyan-500/10" : "bg-muted"
+                  )}>
+                    <DollarSign className={cn("w-4 h-4", mpEnabled ? "text-cyan-500" : "text-muted-foreground")} />
+                  </div>
+                  <span className="text-sm font-medium text-foreground">Habilitar Mercado Pago</span>
                 </div>
                 <button
                   onClick={() => setMpEnabled(!mpEnabled)}
                   className={cn(
-                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                    mpEnabled ? "bg-primary" : "bg-muted"
+                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
+                    mpEnabled ? "bg-cyan-500" : "bg-muted"
                   )}
                 >
                   <span className={cn(
-                    "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                    "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200",
                     mpEnabled ? "translate-x-6" : "translate-x-1"
                   )} />
                 </button>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Public Key</label>
-                <input
-                  type="text"
-                  value={mpPublicKey}
-                  onChange={(e) => setMpPublicKey(e.target.value)}
-                  placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx"
-                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Access Token</label>
-                <div className="relative">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Public Key</label>
                   <input
-                    type={showMpToken ? "text" : "password"}
-                    value={mpAccessToken}
-                    onChange={(e) => setMpAccessToken(e.target.value)}
-                    placeholder={hasMpToken ? "••••••••• (já configurado)" : "APP_USR-xxxxxxxx-xxxx-xxxx-xxxx"}
-                    className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    type="text"
+                    value={mpPublicKey}
+                    onChange={(e) => setMpPublicKey(e.target.value)}
+                    placeholder="APP_USR-xxxxxxxx..."
+                    className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowMpToken(!showMpToken)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showMpToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Access Token</label>
+                  <div className="relative">
+                    <input
+                      type={showMpToken ? "text" : "password"}
+                      value={mpAccessToken}
+                      onChange={(e) => setMpAccessToken(e.target.value)}
+                      placeholder={hasMpToken ? "••••••••• (configurado)" : "APP_USR-xxxxxxxx..."}
+                      className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowMpToken(!showMpToken)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showMpToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <Button onClick={handleSaveMercadoPago} disabled={isSavingMp} className={cn("gap-2 transition-colors", mpSaveSuccess && "bg-green-600 hover:bg-green-600")}>
+              <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-border/50">
+                <Button 
+                  onClick={handleSaveMercadoPago} 
+                  disabled={isSavingMp} 
+                  className={cn("gap-2 transition-all", mpSaveSuccess && "bg-green-600 hover:bg-green-600")}
+                >
                   {isSavingMp ? <Spinner size="sm" /> : mpSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                  {mpSaveSuccess ? "Salvo!" : "Salvar"}
+                  {mpSaveSuccess ? "Salvo!" : "Salvar Configurações"}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={handleTestMercadoPago} 
                   disabled={isTestingMp || !hasMpToken}
-                  className={cn("gap-2", mpConnected && "border-green-500 text-green-500")}
+                  className={cn("gap-2", mpConnected && "border-green-500/50 text-green-500")}
                 >
                   {isTestingMp ? <Spinner size="sm" /> : mpConnected ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
                   {mpConnected ? "Conectado" : "Testar Conexão"}
                 </Button>
               </div>
-
             </div>
           </div>
 
-          {/* EvoPay Configuration */}
+          {/* EvoPay Card */}
           <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-3">
@@ -3208,16 +3262,20 @@ const ApiSection = () => {
                 </div>
               </div>
               <div className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit",
-                evoEnabled && hasEvoKey && evoConnected ? "bg-green-500/10 text-green-500" : 
-                evoEnabled && hasEvoKey ? "bg-yellow-500/10 text-yellow-500" : 
-                "bg-muted text-muted-foreground"
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit border",
+                evoEnabled && hasEvoKey && evoConnected 
+                  ? "bg-green-500/10 text-green-500 border-green-500/30" 
+                  : evoEnabled && hasEvoKey 
+                    ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" 
+                    : "bg-muted/50 text-muted-foreground border-border"
               )}>
                 <div className={cn(
-                  "w-2 h-2 rounded-full", 
-                  evoEnabled && hasEvoKey && evoConnected ? "bg-green-500" : 
-                  evoEnabled && hasEvoKey ? "bg-yellow-500" : 
-                  "bg-muted-foreground"
+                  "w-2 h-2 rounded-full animate-pulse", 
+                  evoEnabled && hasEvoKey && evoConnected 
+                    ? "bg-green-500" 
+                    : evoEnabled && hasEvoKey 
+                      ? "bg-yellow-500" 
+                      : "bg-muted-foreground"
                 )} />
                 {evoEnabled && hasEvoKey && evoConnected ? "Conectado" : 
                  evoEnabled && hasEvoKey ? "Configurado" : "Desativado"}
@@ -3225,20 +3283,25 @@ const ApiSection = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50">
                 <div className="flex items-center gap-3">
-                  <Info className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Habilitar EvoPay</span>
+                  <div className={cn(
+                    "w-8 h-8 rounded-md flex items-center justify-center",
+                    evoEnabled ? "bg-emerald-500/10" : "bg-muted"
+                  )}>
+                    <Wallet className={cn("w-4 h-4", evoEnabled ? "text-emerald-500" : "text-muted-foreground")} />
+                  </div>
+                  <span className="text-sm font-medium text-foreground">Habilitar EvoPay</span>
                 </div>
                 <button
                   onClick={() => setEvoEnabled(!evoEnabled)}
                   className={cn(
-                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                    evoEnabled ? "bg-primary" : "bg-muted"
+                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
+                    evoEnabled ? "bg-emerald-500" : "bg-muted"
                   )}
                 >
                   <span className={cn(
-                    "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                    "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200",
                     evoEnabled ? "translate-x-6" : "translate-x-1"
                   )} />
                 </button>
@@ -3251,13 +3314,13 @@ const ApiSection = () => {
                     type={showEvoKey ? "text" : "password"}
                     value={evoApiKey}
                     onChange={(e) => setEvoApiKey(e.target.value)}
-                    placeholder={hasEvoKey ? "••••••••• (já configurado)" : "Sua API Key do EvoPay"}
-                    className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder={hasEvoKey ? "••••••••• (configurado)" : "Sua API Key do EvoPay"}
+                    className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowEvoKey(!showEvoKey)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {showEvoKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -3272,7 +3335,7 @@ const ApiSection = () => {
                     value={evoWebhookUrl}
                     onChange={(e) => setEvoWebhookUrl(e.target.value)}
                     placeholder="https://dlgconnect.com/api/webhook-evopay.php"
-                    className="flex-1 px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="flex-1 px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
                   />
                   <Button
                     type="button"
@@ -3289,26 +3352,29 @@ const ApiSection = () => {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Esta URL é enviada para o EvoPay em cada PIX criado. Use o proxy da Hostinger para manter a URL fixa.
+                  URL enviada ao EvoPay em cada PIX. Use o proxy da Hostinger para manter a URL fixa.
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <Button onClick={handleSaveEvoPay} disabled={isSavingEvo} className={cn("gap-2 transition-colors", evoSaveSuccess && "bg-green-600 hover:bg-green-600")}>
+              <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-border/50">
+                <Button 
+                  onClick={handleSaveEvoPay} 
+                  disabled={isSavingEvo} 
+                  className={cn("gap-2 transition-all", evoSaveSuccess && "bg-green-600 hover:bg-green-600")}
+                >
                   {isSavingEvo ? <Spinner size="sm" /> : evoSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                  {evoSaveSuccess ? "Salvo!" : "Salvar"}
+                  {evoSaveSuccess ? "Salvo!" : "Salvar Configurações"}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={handleTestEvoPay} 
                   disabled={isTestingEvo || !hasEvoKey}
-                  className={cn("gap-2", evoConnected && "border-green-500 text-green-500")}
+                  className={cn("gap-2", evoConnected && "border-green-500/50 text-green-500")}
                 >
                   {isTestingEvo ? <Spinner size="sm" /> : evoConnected ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
                   {evoConnected ? "Conectado" : "Testar Conexão"}
                 </Button>
               </div>
-
             </div>
           </div>
         </div>
