@@ -7,6 +7,7 @@ import { MorphingSquare } from "@/components/ui/morphing-square";
 import { supabase } from "@/integrations/supabase/client";
 import { Ban, MessageCircle, Wrench, Mail, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import SEO from "@/components/SEO";
 
 interface SystemSettings {
   maintenanceMode: boolean;
@@ -768,7 +769,16 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen min-h-[100dvh] w-full flex flex-col lg:flex-row overflow-hidden">
+    <>
+      <SEO 
+        title={isLogin ? "Entrar" : "Criar Conta"}
+        description={isLogin 
+          ? "Faça login na sua conta DLG Connect para acessar o painel de automação Telegram. Gerencie suas sessões e assinaturas."
+          : "Crie sua conta DLG Connect e comece a automatizar seus grupos Telegram. Cadastro rápido e seguro."
+        }
+        canonical={"/login"}
+      />
+      <div className="min-h-screen min-h-[100dvh] w-full flex flex-col lg:flex-row overflow-hidden">
       {/* Left Side - Branding & Visual (hidden on mobile/tablet) */}
       <div className="hidden lg:flex lg:w-[40%] xl:w-[45%] relative bg-gradient-to-br from-primary/10 via-background to-background overflow-hidden">
         {/* Background Effects */}
@@ -1282,6 +1292,7 @@ const Login = () => {
       </AnimatePresence>
 
     </div>
+    </>
   );
 };
 

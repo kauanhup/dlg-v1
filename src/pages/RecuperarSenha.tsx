@@ -9,6 +9,7 @@ import { ArrowLeft, Mail, Key, Lock, CheckCircle, Eye, EyeOff } from "lucide-rea
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import SEO from "@/components/SEO";
 
 type Step = 'email' | 'code' | 'password' | 'success';
 
@@ -309,7 +310,13 @@ const RecuperarSenha = () => {
   }
 
   return (
-    <div className="min-h-screen min-h-[100dvh] w-full flex flex-col lg:flex-row overflow-hidden">
+    <>
+      <SEO 
+        title="Recuperar Senha"
+        description="Recupere sua senha da conta DLG Connect de forma segura. Receba um código de verificação no seu email e crie uma nova senha."
+        canonical="/recuperar-senha"
+      />
+      <div className="min-h-screen min-h-[100dvh] w-full flex flex-col lg:flex-row overflow-hidden">
       {/* Left Side - Branding & Visual (hidden on mobile/tablet) */}
       <div className="hidden lg:flex lg:w-[45%] xl:w-1/2 relative bg-gradient-to-br from-primary/10 via-background to-background overflow-hidden">
         {/* Background Effects */}
@@ -624,6 +631,7 @@ const RecuperarSenha = () => {
         </motion.div>
       </div>
     </div>
+    </>
   );
 };
 
