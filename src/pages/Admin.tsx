@@ -2519,7 +2519,7 @@ const ApiSection = () => {
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Mercado Pago state (para futura integração)
+  // Mercado Pago state
   const [mpEnabled, setMpEnabled] = useState(false);
   const [mpAccessToken, setMpAccessToken] = useState("");
   const [mpPublicKey, setMpPublicKey] = useState("");
@@ -2527,6 +2527,8 @@ const ApiSection = () => {
   const [showMpToken, setShowMpToken] = useState(false);
   const [isSavingMp, setIsSavingMp] = useState(false);
   const [mpSaveSuccess, setMpSaveSuccess] = useState(false);
+  const [isTestingMp, setIsTestingMp] = useState(false);
+  const [mpConnected, setMpConnected] = useState(false);
 
   // Resend state
   const [resendApiKey, setResendApiKey] = useState("");
@@ -2746,6 +2748,32 @@ const ApiSection = () => {
     }
   };
 
+  // Mercado Pago test connection handler
+  const handleTestMercadoPago = async () => {
+    setIsTestingMp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('mercadopago', {
+        body: { action: 'test_connection' }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success(`Conexão estabelecida! Conta: ${data.data?.email || 'OK'}`);
+        setMpConnected(true);
+      } else {
+        toast.error(data?.error || "Falha na conexão");
+        setMpConnected(false);
+      }
+    } catch (error) {
+      console.error('Error testing Mercado Pago connection:', error);
+      toast.error("Erro ao testar conexão");
+      setMpConnected(false);
+    } finally {
+      setIsTestingMp(false);
+    }
+  };
+
   const handleSaveEmail = async () => {
     const trimmedApiKey = resendApiKey.trim();
     const trimmedFromEmail = resendFromEmail.trim();
@@ -2960,7 +2988,7 @@ const ApiSection = () => {
           </div>
           </div>
 
-          {/* Mercado Pago Configuration - Para Futura Integração */}
+          {/* Mercado Pago Configuration */}
           <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-3">
@@ -2969,15 +2997,23 @@ const ApiSection = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground">Mercado Pago</h3>
-                  <p className="text-sm text-muted-foreground">Preparado para integração futura</p>
+                  <p className="text-sm text-muted-foreground">Gateway de pagamento</p>
                 </div>
               </div>
               <div className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit",
-                mpEnabled && hasMpToken ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
+                mpEnabled && hasMpToken && mpConnected ? "bg-green-500/10 text-green-500" : 
+                mpEnabled && hasMpToken ? "bg-yellow-500/10 text-yellow-500" : 
+                "bg-muted text-muted-foreground"
               )}>
-                <div className={cn("w-2 h-2 rounded-full", mpEnabled && hasMpToken ? "bg-green-500" : "bg-yellow-500")} />
-                {mpEnabled && hasMpToken ? "Configurado" : "Pendente"}
+                <div className={cn(
+                  "w-2 h-2 rounded-full", 
+                  mpEnabled && hasMpToken && mpConnected ? "bg-green-500" : 
+                  mpEnabled && hasMpToken ? "bg-yellow-500" : 
+                  "bg-muted-foreground"
+                )} />
+                {mpEnabled && hasMpToken && mpConnected ? "Conectado" : 
+                 mpEnabled && hasMpToken ? "Configurado" : "Desativado"}
               </div>
             </div>
 
@@ -3040,11 +3076,20 @@ const ApiSection = () => {
                   {isSavingMp ? <Spinner size="sm" /> : mpSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                   {mpSaveSuccess ? "Salvo!" : "Salvar"}
                 </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleTestMercadoPago} 
+                  disabled={isTestingMp || !hasMpToken}
+                  className={cn("gap-2", mpConnected && "border-green-500 text-green-500")}
+                >
+                  {isTestingMp ? <Spinner size="sm" /> : mpConnected ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                  {mpConnected ? "Conectado" : "Testar Conexão"}
+                </Button>
               </div>
 
               <p className="text-xs text-muted-foreground mt-4 p-3 bg-muted/20 rounded-lg">
-                ⚠️ <strong>Integração futura:</strong> O Mercado Pago ainda não está integrado ao fluxo de pagamento. 
-                Configure suas credenciais agora para facilitar a integração quando disponível.
+                💡 <strong>Dica:</strong> O Mercado Pago aceita cartões de crédito, débito, boleto e Pix. 
+                O checkout do Mercado Pago será aberto em nova aba.
               </p>
             </div>
           </div>

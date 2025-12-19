@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { Check, CreditCard, ArrowLeft, Copy, CheckCircle2, Loader2, Clock, Crown, Sparkles, ShieldCheck } from "lucide-react";
+import { Check, CreditCard, ArrowLeft, Copy, CheckCircle2, Loader2, Clock, Crown, Sparkles, ShieldCheck, Wallet, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { MorphingSquare } from "@/components/ui/morphing-square";
@@ -8,6 +8,7 @@ import AnimatedShaderBackground from "@/components/ui/animated-shader-background
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
+import { cn } from "@/lib/utils";
 
 interface PixData {
   pixCode: string;
@@ -26,6 +27,13 @@ interface Plan {
   max_subscriptions_per_user: number | null;
 }
 
+interface PaymentSettings {
+  pixEnabled: boolean;
+  mercadoPagoEnabled: boolean;
+}
+
+type PaymentMethod = 'pix' | 'mercadopago';
+
 const PIX_EXPIRATION_MINUTES = 30;
 
 const Checkout = () => {
@@ -43,6 +51,9 @@ const Checkout = () => {
   const [expirationTime, setExpirationTime] = useState<Date | null>(null);
   const [timeLeft, setTimeLeft] = useState<{ minutes: number; seconds: number } | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({ pixEnabled: true, mercadoPagoEnabled: false });
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('pix');
+  const [mpRedirectUrl, setMpRedirectUrl] = useState<string | null>(null);
 
   // Force dark theme
   useEffect(() => {
@@ -147,6 +158,26 @@ const Checkout = () => {
 
     return () => clearInterval(interval);
   }, [expirationTime, paymentStatus, toast]);
+
+  // Fetch payment settings
+  useEffect(() => {
+    const fetchPaymentSettings = async () => {
+      try {
+        const { data } = await supabase.functions.invoke('mercadopago', {
+          body: { action: 'get_public_settings' }
+        });
+        if (data?.data) {
+          setPaymentSettings({
+            pixEnabled: true, // PIX always available
+            mercadoPagoEnabled: data.data.mercadopago_enabled || false
+          });
+        }
+      } catch (error) {
+        console.log('Could not fetch payment settings');
+      }
+    };
+    fetchPaymentSettings();
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -322,7 +353,7 @@ const Checkout = () => {
         quantity: quantity,
         amount: amount,
         status: 'pending',
-        payment_method: 'pix',
+        payment_method: selectedPaymentMethod,
       }).select().single();
 
       if (orderError) throw orderError;
@@ -333,13 +364,50 @@ const Checkout = () => {
         user_id: user.id,
         order_id: orderData.id,
         amount: amount,
-        payment_method: 'pix',
+        payment_method: selectedPaymentMethod,
         status: 'pending',
       });
 
       if (paymentError) console.error('Payment record error:', paymentError);
 
-      // Generate PIX via gateway
+      // Handle Mercado Pago payment
+      if (selectedPaymentMethod === 'mercadopago') {
+        const { data: mpResponse, error: mpError } = await supabase.functions.invoke('mercadopago', {
+          body: {
+            action: 'create_preference',
+            order_id: orderData.id,
+            title: productName,
+            description: isPlanPurchase ? `Licença: ${productName}` : `${quantity}x ${productName}`,
+            amount: amount,
+            quantity: 1,
+            payer_email: user.email,
+            back_urls: {
+              success: `${window.location.origin}/dashboard?payment=success`,
+              failure: `${window.location.origin}/checkout?payment=failure`,
+              pending: `${window.location.origin}/dashboard?payment=pending`
+            }
+          },
+        });
+
+        if (mpError || !mpResponse?.success) {
+          console.error('MP preference error:', mpError || mpResponse?.error);
+          toast.error("Erro", "Não foi possível criar o pagamento. Tente novamente.");
+          return;
+        }
+
+        // Redirect to Mercado Pago checkout
+        const redirectUrl = mpResponse.data?.init_point;
+        if (redirectUrl) {
+          setMpRedirectUrl(redirectUrl);
+          toast.success("Redirecionando...", "Você será redirecionado para o Mercado Pago.");
+          setTimeout(() => {
+            window.open(redirectUrl, '_blank');
+          }, 1000);
+        }
+        return;
+      }
+
+      // Handle PIX payment
       const { data: pixResponse, error: pixError } = await supabase.functions.invoke('pixup', {
         body: {
           action: 'create_pix',
@@ -550,7 +618,7 @@ const Checkout = () => {
                 transition={{ duration: 0.4, delay: 0.2 }}
                 className="glass rounded-2xl p-6"
               >
-                {!pixData && !orderId ? (
+                {!pixData && !orderId && !mpRedirectUrl ? (
                   <div className="space-y-4">
                     {isFreeProduct ? (
                       <div className="text-center py-2">
@@ -559,11 +627,49 @@ const Checkout = () => {
                         </p>
                       </div>
                     ) : (
-                      <div className="text-center py-2">
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Pagamento instantâneo via PIX. {isPlanPurchase ? "Sua licença será" : "Suas sessions serão"} liberada{isPlanPurchase ? "" : "s"} automaticamente.
-                        </p>
-                      </div>
+                      <>
+                        {/* Payment Method Selection */}
+                        {paymentSettings.mercadoPagoEnabled && (
+                          <div className="space-y-3">
+                            <p className="text-sm font-medium text-foreground">Forma de pagamento</p>
+                            <div className="grid grid-cols-2 gap-3">
+                              <button
+                                onClick={() => setSelectedPaymentMethod('pix')}
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
+                                  selectedPaymentMethod === 'pix' 
+                                    ? "border-primary bg-primary/5" 
+                                    : "border-border hover:border-primary/50"
+                                )}
+                              >
+                                <CreditCard className="w-6 h-6" />
+                                <span className="text-sm font-medium">PIX</span>
+                              </button>
+                              <button
+                                onClick={() => setSelectedPaymentMethod('mercadopago')}
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
+                                  selectedPaymentMethod === 'mercadopago' 
+                                    ? "border-primary bg-primary/5" 
+                                    : "border-border hover:border-primary/50"
+                                )}
+                              >
+                                <Wallet className="w-6 h-6" />
+                                <span className="text-sm font-medium">Mercado Pago</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="text-center py-2">
+                          <p className="text-sm text-muted-foreground">
+                            {selectedPaymentMethod === 'mercadopago' 
+                              ? "Pague com cartão, boleto ou Pix pelo Mercado Pago."
+                              : `Pagamento instantâneo via PIX. ${isPlanPurchase ? "Sua licença será" : "Suas sessions serão"} liberada${isPlanPurchase ? "" : "s"} automaticamente.`
+                            }
+                          </p>
+                        </div>
+                      </>
                     )}
 
                     <Button 
@@ -579,10 +685,12 @@ const Checkout = () => {
                       {isProcessing ? (
                         <span className="flex items-center gap-2">
                           <Loader2 className="w-5 h-5 animate-spin" />
-                          {isFreeProduct ? "Ativando..." : "Gerando PIX..."}
+                          {isFreeProduct ? "Ativando..." : selectedPaymentMethod === 'mercadopago' ? "Processando..." : "Gerando PIX..."}
                         </span>
                       ) : isFreeProduct ? (
                         "Ativar Agora"
+                      ) : selectedPaymentMethod === 'mercadopago' ? (
+                        <span className="flex items-center gap-2">Pagar com Mercado Pago <ExternalLink className="w-4 h-4" /></span>
                       ) : (
                         "Gerar código PIX"
                       )}
