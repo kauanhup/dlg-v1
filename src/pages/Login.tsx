@@ -18,8 +18,7 @@ interface RecaptchaSettings {
   siteKey: string;
 }
 
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_MINUTES = 15;
+// Rate limiting is handled by backend only for security
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -30,8 +29,7 @@ const Login = () => {
   const [passwordError, setPasswordError] = useState("");
   const [whatsappError, setWhatsappError] = useState("");
   const [nameError, setNameError] = useState("");
-  const [honeypot, setHoneypot] = useState(""); // Honeypot field - should stay empty
-  const [rateLimitError, setRateLimitError] = useState("");
+  const [honeypot, setHoneypot] = useState(""); // Honeypot field - backend validates
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -250,13 +248,7 @@ const Login = () => {
       return { valid: false, error: "Formato de email inválido" };
     }
     
-    // Check for common disposable email domains
-    const disposableDomains = ['tempmail.com', 'throwaway.com', 'mailinator.com', 'guerrillamail.com', 'fakeinbox.com', '10minutemail.com'];
-    const domain = trimmed.split('@')[1];
-    if (disposableDomains.includes(domain)) {
-      return { valid: false, error: "Emails temporários não são permitidos" };
-    }
-    
+    // Backend validates disposable domains with complete list
     return { valid: true };
   };
 
@@ -282,12 +274,7 @@ const Login = () => {
       return { valid: false, error: "Use letras maiúsculas, minúsculas e números" };
     }
     
-    // Check for common weak passwords
-    const weakPasswords = ['12345678', 'password', 'qwerty123', 'abc12345', 'password1', 'Password1'];
-    if (weakPasswords.some(weak => value.toLowerCase().includes(weak.toLowerCase()))) {
-      return { valid: false, error: "Senha muito comum, escolha outra" };
-    }
-    
+    // Backend validates weak passwords with complete list
     return { valid: true };
   };
 
@@ -345,71 +332,8 @@ const Login = () => {
     return { valid: true };
   };
 
-  // Rate limiting using localStorage (works without auth)
-  const getRateLimitKey = (emailToCheck: string) => `rate_limit_${emailToCheck.toLowerCase()}`;
-  
-  const checkRateLimit = (emailToCheck: string): boolean => {
-    try {
-      const key = getRateLimitKey(emailToCheck);
-      const data = localStorage.getItem(key);
-      
-      if (!data) return true;
-      
-      const { attempts, lockedUntil } = JSON.parse(data);
-      
-      // Check if still locked
-      if (lockedUntil && Date.now() < lockedUntil) {
-        return false;
-      }
-      
-      // Reset if lockout expired
-      if (lockedUntil && Date.now() >= lockedUntil) {
-        localStorage.removeItem(key);
-        return true;
-      }
-      
-      return attempts < MAX_ATTEMPTS;
-    } catch {
-      return true;
-    }
-  };
-  
-  const recordFailedAttempt = (emailToCheck: string) => {
-    try {
-      const key = getRateLimitKey(emailToCheck);
-      const data = localStorage.getItem(key);
-      
-      let attempts = 1;
-      let lockedUntil = null;
-      
-      if (data) {
-        const parsed = JSON.parse(data);
-        // Reset if lockout expired
-        if (parsed.lockedUntil && Date.now() >= parsed.lockedUntil) {
-          attempts = 1;
-        } else {
-          attempts = (parsed.attempts || 0) + 1;
-        }
-      }
-      
-      // Lock if max attempts reached
-      if (attempts >= MAX_ATTEMPTS) {
-        lockedUntil = Date.now() + LOCKOUT_MINUTES * 60 * 1000;
-      }
-      
-      localStorage.setItem(key, JSON.stringify({ attempts, lockedUntil }));
-    } catch {
-      // Ignore localStorage errors
-    }
-  };
-  
-  const clearRateLimit = (emailToCheck: string) => {
-    try {
-      localStorage.removeItem(getRateLimitKey(emailToCheck));
-    } catch {
-      // Ignore
-    }
-  };
+  // Rate limiting is handled by backend (IP + user based)
+  // No localStorage rate limiting - can be bypassed by attackers
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -430,7 +354,6 @@ const Login = () => {
     setPasswordError("");
     setWhatsappError("");
     setNameError("");
-    setRateLimitError("");
 
     const emailValidation = validateEmail(email);
     if (!emailValidation.valid) {
@@ -458,20 +381,8 @@ const Login = () => {
       }
     }
 
-    // Honeypot check - if filled, it's a bot
-    if (honeypot) {
-      // Silently reject - don't reveal it's a bot trap
-      toast.error("Erro", "Ocorreu um erro inesperado. Tente novamente.");
-      return;
-    }
-
-    // Rate limiting check (for both login AND signup)
-    const allowed = checkRateLimit(email);
-    if (!allowed) {
-      setRateLimitError(`Muitas tentativas. Aguarde ${LOCKOUT_MINUTES} minutos.`);
-      toast.error("Muitas tentativas", `Por segurança, aguarde ${LOCKOUT_MINUTES} minutos antes de tentar novamente.`);
-      return;
-    }
+    // Honeypot is sent to backend for validation
+    // Backend handles rate limiting (IP + user based)
 
     if (!valid) {
       toast.error("Erro de validação", "Verifique os campos e tente novamente.");
@@ -518,14 +429,12 @@ const Login = () => {
         
         // True network error - no data at all
         if (!parsedResponse && validationError) {
-          recordFailedAttempt(email);
           toast.error("Erro de conexão", "Não foi possível conectar ao servidor. Tente novamente.");
           setIsSubmitting(false);
           return;
         }
 
         if (!parsedResponse?.success) {
-          recordFailedAttempt(email);
           
           const errorCode = parsedResponse?.code || '';
           const errorMessage = parsedResponse?.error || 'Credenciais inválidas';
@@ -556,7 +465,6 @@ const Login = () => {
         });
 
         if (authError || !authData.session) {
-          recordFailedAttempt(email);
           
           // Log failed login attempt on backend (password was wrong)
           if (parsedResponse?.userId) {
@@ -572,9 +480,6 @@ const Login = () => {
         if (parsedResponse?.userId) {
           await logLoginAttempt(parsedResponse.userId, 'success');
         }
-
-        // Clear rate limit on success
-        clearRateLimit(email);
 
         toast.success("Login realizado!", "Bem-vindo de volta.");
         setIsSubmitting(false);
@@ -600,14 +505,12 @@ const Login = () => {
 
         // Edge function now always returns 200, so data contains the response
         if (error) {
-          recordFailedAttempt(email);
           toast.error("Erro no cadastro", "Ocorreu um erro ao criar sua conta. Tente novamente.");
           setIsSubmitting(false);
           return;
         }
 
         if (!data?.success) {
-          recordFailedAttempt(email);
           
           const errorCode = data?.code || '';
           const errorMessage = data?.error || '';
@@ -645,8 +548,7 @@ const Login = () => {
           return;
         }
 
-        // Clear rate limit on success
-        clearRateLimit(email);
+        // Backend handles rate limiting
 
         // Check if email confirmation is required (code verification)
         if (data.requiresEmailConfirmation) {
@@ -684,7 +586,6 @@ const Login = () => {
         setIsSubmitting(false);
       }
     } catch (error: any) {
-      recordFailedAttempt(email);
       toast.error("Erro", error.message || "Ocorreu um erro inesperado.");
       setIsSubmitting(false);
       // Reset reCAPTCHA on error
@@ -856,7 +757,7 @@ const Login = () => {
     setPasswordError("");
     setWhatsappError("");
     setNameError("");
-    setRateLimitError("");
+    
     setHoneypot("");
     
     // Reset reCAPTCHA when switching modes
@@ -1080,9 +981,7 @@ const Login = () => {
                 />
               </div>
 
-              {rateLimitError && (
-                <p className="text-xs sm:text-sm text-destructive text-center">{rateLimitError}</p>
-              )}
+              {/* Rate limiting errors are shown via toast from backend */}
 
               {/* reCAPTCHA Widget */}
               {recaptchaSettings.enabled && recaptchaSettings.siteKey && (
