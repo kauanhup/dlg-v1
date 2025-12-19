@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { AnimatedText } from "@/components/ui/animated-shiny-text";
 import { motion } from "framer-motion";
-import logo from "@/assets/logo.png";
 
 const Hero = () => {
   return (
@@ -15,36 +14,22 @@ const Hero = () => {
       </div>
       
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-3xl mx-auto text-center">
 
-          {/* Title with Logo */}
-          <motion.div
-            className="flex items-center justify-center gap-4 sm:gap-6 mb-6"
+          {/* Title */}
+          <motion.h1
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold tracking-tight mb-6 leading-tight"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            <div className="relative shrink-0">
-              <motion.div
-                className="absolute inset-0 bg-primary/30 blur-2xl rounded-full scale-150"
-                animate={{ opacity: [0.3, 0.5, 0.3] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              />
-              <img 
-                src={logo} 
-                alt="DLG Connect Logo" 
-                className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 relative z-10 drop-shadow-2xl invert"
-              />
-            </div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold tracking-tight leading-tight text-left">
-              Escale seus grupos com{" "}
-              <AnimatedText 
-                text="automação inteligente"
-                textClassName="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold leading-tight"
-                gradientColors="linear-gradient(90deg, hsl(var(--primary)), hsl(var(--foreground)), hsl(var(--primary)))"
-              />
-            </h1>
-          </motion.div>
+            Escale seus grupos com{" "}
+            <AnimatedText 
+              text="automação inteligente"
+              textClassName="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold leading-tight"
+              gradientColors="linear-gradient(90deg, hsl(var(--primary)), hsl(var(--foreground)), hsl(var(--primary)))"
+            />
+          </motion.h1>
 
           {/* Description */}
           <motion.p 
