@@ -58,7 +58,9 @@ export type Database = {
           email_template_expiry_text: string | null
           email_template_footer: string | null
           email_template_greeting: string | null
+          email_template_logo_url: string | null
           email_template_message: string | null
+          email_template_show_logo: boolean | null
           email_template_title: string | null
           email_verification_enabled: boolean | null
           evopay_api_key: string | null
@@ -90,7 +92,9 @@ export type Database = {
           email_template_expiry_text?: string | null
           email_template_footer?: string | null
           email_template_greeting?: string | null
+          email_template_logo_url?: string | null
           email_template_message?: string | null
+          email_template_show_logo?: boolean | null
           email_template_title?: string | null
           email_verification_enabled?: boolean | null
           evopay_api_key?: string | null
@@ -122,7 +126,9 @@ export type Database = {
           email_template_expiry_text?: string | null
           email_template_footer?: string | null
           email_template_greeting?: string | null
+          email_template_logo_url?: string | null
           email_template_message?: string | null
+          email_template_show_logo?: boolean | null
           email_template_title?: string | null
           email_verification_enabled?: boolean | null
           evopay_api_key?: string | null

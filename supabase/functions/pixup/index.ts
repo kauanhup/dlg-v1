@@ -218,6 +218,8 @@ async function getSettings(supabase: any) {
         email_template_footer: data.email_template_footer || 'DLG Connect - Sistema de Gestão',
         email_template_bg_color: data.email_template_bg_color || '#0a0a0a',
         email_template_accent_color: data.email_template_accent_color || '#4ade80',
+        email_template_show_logo: data.email_template_show_logo !== false,
+        email_template_logo_url: data.email_template_logo_url || '',
         // EvoPay settings
         evopay_enabled: data.evopay_enabled || false,
         has_evopay_key: !!data.evopay_api_key,
@@ -357,6 +359,23 @@ async function saveRecaptchaSettings(supabase: any, params: {
   );
 }
 
+// SECURITY: Sanitize HTML to prevent XSS in email templates
+function sanitizeHtml(input: string): string {
+  if (!input) return '';
+  return input
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+}
+
+// SECURITY: Validate input length to prevent DoS
+function validateLength(value: string | undefined, maxLength: number): boolean {
+  if (!value) return true;
+  return value.length <= maxLength;
+}
+
 async function saveEmailTemplate(supabase: any, params: { 
   email_template_title?: string;
   email_template_greeting?: string;
@@ -365,6 +384,8 @@ async function saveEmailTemplate(supabase: any, params: {
   email_template_footer?: string;
   email_template_bg_color?: string;
   email_template_accent_color?: string;
+  email_template_show_logo?: boolean;
+  email_template_logo_url?: string;
 }) {
   const { 
     email_template_title,
@@ -373,20 +394,61 @@ async function saveEmailTemplate(supabase: any, params: {
     email_template_expiry_text,
     email_template_footer,
     email_template_bg_color,
-    email_template_accent_color
+    email_template_accent_color,
+    email_template_show_logo,
+    email_template_logo_url
   } = params;
+
+  // SECURITY: Validate input lengths
+  const maxLengths: { [key: string]: number } = {
+    email_template_title: 100,
+    email_template_greeting: 200,
+    email_template_message: 500,
+    email_template_expiry_text: 200,
+    email_template_footer: 200,
+    email_template_bg_color: 20,
+    email_template_accent_color: 20,
+    email_template_logo_url: 500
+  };
+
+  for (const [key, maxLen] of Object.entries(maxLengths)) {
+    const value = params[key as keyof typeof params];
+    if (typeof value === 'string' && !validateLength(value, maxLen)) {
+      return new Response(
+        JSON.stringify({ error: `${key} exceeds maximum length of ${maxLen} characters` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+  }
 
   const settingsId = await getOrCreateSettingsId(supabase);
 
   const updateData: any = { updated_at: new Date().toISOString() };
   
-  if (email_template_title !== undefined) updateData.email_template_title = email_template_title;
-  if (email_template_greeting !== undefined) updateData.email_template_greeting = email_template_greeting;
-  if (email_template_message !== undefined) updateData.email_template_message = email_template_message;
-  if (email_template_expiry_text !== undefined) updateData.email_template_expiry_text = email_template_expiry_text;
-  if (email_template_footer !== undefined) updateData.email_template_footer = email_template_footer;
-  if (email_template_bg_color !== undefined) updateData.email_template_bg_color = email_template_bg_color;
-  if (email_template_accent_color !== undefined) updateData.email_template_accent_color = email_template_accent_color;
+  // SECURITY: Sanitize text inputs to prevent XSS
+  if (email_template_title !== undefined) updateData.email_template_title = sanitizeHtml(email_template_title);
+  if (email_template_greeting !== undefined) updateData.email_template_greeting = sanitizeHtml(email_template_greeting);
+  if (email_template_message !== undefined) updateData.email_template_message = sanitizeHtml(email_template_message);
+  if (email_template_expiry_text !== undefined) updateData.email_template_expiry_text = sanitizeHtml(email_template_expiry_text);
+  if (email_template_footer !== undefined) updateData.email_template_footer = sanitizeHtml(email_template_footer);
+  
+  // Colors don't need sanitization but validate format
+  if (email_template_bg_color !== undefined) {
+    const colorRegex = /^#[0-9A-Fa-f]{6}$/;
+    updateData.email_template_bg_color = colorRegex.test(email_template_bg_color) ? email_template_bg_color : '#0a0a0a';
+  }
+  if (email_template_accent_color !== undefined) {
+    const colorRegex = /^#[0-9A-Fa-f]{6}$/;
+    updateData.email_template_accent_color = colorRegex.test(email_template_accent_color) ? email_template_accent_color : '#4ade80';
+  }
+  
+  // Logo settings
+  if (email_template_show_logo !== undefined) updateData.email_template_show_logo = email_template_show_logo;
+  if (email_template_logo_url !== undefined) {
+    // Validate URL format
+    const urlRegex = /^https?:\/\/.+/;
+    updateData.email_template_logo_url = urlRegex.test(email_template_logo_url) ? email_template_logo_url : null;
+  }
 
   const { error } = await supabase
     .from('gateway_settings')

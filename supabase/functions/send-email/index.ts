@@ -24,7 +24,7 @@ interface EmailRequest {
 async function getEmailSettings(supabase: any) {
   const { data, error } = await supabase
     .from('gateway_settings')
-    .select('resend_api_key, resend_from_email, resend_from_name, email_enabled, password_recovery_enabled, email_verification_enabled, email_template_title, email_template_greeting, email_template_message, email_template_expiry_text, email_template_footer, email_template_bg_color, email_template_accent_color')
+    .select('resend_api_key, resend_from_email, resend_from_name, email_enabled, password_recovery_enabled, email_verification_enabled, email_template_title, email_template_greeting, email_template_message, email_template_expiry_text, email_template_footer, email_template_bg_color, email_template_accent_color, email_template_show_logo, email_template_logo_url')
     .eq('provider', 'pixup')
     .maybeSingle();
 
@@ -151,6 +151,15 @@ serve(async (req: Request): Promise<Response> => {
         const templateMessage = settings.email_template_message || 'Seu código de verificação é:';
         const templateExpiryText = settings.email_template_expiry_text || 'Este código expira em 15 minutos.';
         const templateFooter = settings.email_template_footer || 'DLG Connect - Sistema de Gestão';
+        const showLogo = settings.email_template_show_logo !== false;
+        const logoUrl = settings.email_template_logo_url || '';
+
+        // Build logo HTML if enabled and URL provided
+        const logoHtml = showLogo && logoUrl 
+          ? `<div style="text-align: center; margin-bottom: 20px;">
+              <img src="${logoUrl}" alt="Logo" style="max-width: 150px; max-height: 60px; object-fit: contain;" />
+            </div>`
+          : '';
 
         const subject = type === 'password_reset' 
           ? "🔐 Código de Recuperação"
@@ -158,6 +167,7 @@ serve(async (req: Request): Promise<Response> => {
 
         const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: ${bgColor}; color: #fff;">
+            ${logoHtml}
             <h1 style="color: ${accentColor};">${templateTitle}</h1>
             <p>${templateGreeting.replace('{name}', name || 'Usuário')}</p>
             <p>${templateMessage}</p>
