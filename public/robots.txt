@@ -1,8 +1,19 @@
+# robots.txt - DLG Connect
+# https://www.robotstxt.org/
+
 User-agent: Googlebot
 Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /checkout
+Disallow: /pagamentos
 
 User-agent: Bingbot
 Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /checkout
+Disallow: /pagamentos
 
 User-agent: Twitterbot
 Allow: /
@@ -12,3 +23,13 @@ Allow: /
 
 User-agent: *
 Allow: /
+Allow: /login
+Allow: /comprar
+Allow: /recuperar-senha
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /checkout
+Disallow: /pagamentos
+
+# Sitemap
+Sitemap: https://swextrator.lovable.app/sitemap.xml
