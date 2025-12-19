@@ -28,6 +28,8 @@ const RecuperarSenha = () => {
   const [recaptchaEnabled, setRecaptchaEnabled] = useState(false);
   const [recaptchaSiteKey, setRecaptchaSiteKey] = useState("");
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0); // Cooldown timer in seconds
+  const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null); // Code verification attempts left
   const recaptchaRef = useRef<ReCAPTCHA>(null);
   const navigate = useNavigate();
   const toast = useAlertToast();
@@ -73,6 +75,14 @@ const RecuperarSenha = () => {
 
     checkSettings();
   }, []);
+
+  // Cooldown timer effect
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   const handleRequestCode = async () => {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -123,6 +133,7 @@ const RecuperarSenha = () => {
       // Always show success message (generic - never reveal if email exists)
       toast.success("Solicitação enviada!", data?.message || "Se o email existir, você receberá um código.");
       setStep('code');
+      setResendCooldown(60); // Start 60 second cooldown
       // Reset reCAPTCHA
       recaptchaRef.current?.reset();
       setRecaptchaToken(null);
@@ -164,8 +175,20 @@ const RecuperarSenha = () => {
       if (data?.success) {
         toast.success("Código verificado!", "Agora defina sua nova senha.");
         setStep('password');
+        setAttemptsLeft(null);
       } else {
-        toast.error("Código inválido", data?.error || "O código está incorreto ou expirado.");
+        // Handle code blocked
+        if (data?.code === 'CODE_BLOCKED') {
+          toast.error("Código bloqueado", data?.error || "Solicite um novo código.");
+          setStep('email');
+          setCode("");
+        } else {
+          // Update attempts left if provided
+          if (typeof data?.attemptsLeft === 'number') {
+            setAttemptsLeft(data.attemptsLeft);
+          }
+          toast.error("Código inválido", data?.error || "O código está incorreto ou expirado.");
+        }
       }
     } catch (err: any) {
       console.error('Error verifying code:', err);
@@ -175,9 +198,14 @@ const RecuperarSenha = () => {
     }
   };
 
+  // Strong password validation
+  const validateStrongPassword = (pwd: string) => {
+    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/.test(pwd);
+  };
+
   const handleResetPassword = async () => {
-    if (password.length < 8) {
-      toast.error("Senha fraca", "A senha deve ter pelo menos 8 caracteres.");
+    if (!validateStrongPassword(password)) {
+      toast.error("Senha fraca", "A senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula, número e caractere especial (!@#$%^&*).");
       return;
     }
 
@@ -465,6 +493,11 @@ const RecuperarSenha = () => {
                     <p className="text-xs text-muted-foreground text-center">
                       Enviado para {email}
                     </p>
+                    {attemptsLeft !== null && attemptsLeft <= 3 && (
+                      <p className="text-xs text-yellow-500 text-center mt-1">
+                        {attemptsLeft} tentativa(s) restante(s)
+                      </p>
+                    )}
                   </div>
                   <Button 
                     onClick={handleVerifyCode} 
@@ -474,16 +507,23 @@ const RecuperarSenha = () => {
                     {isLoading ? <Spinner size="sm" className="mr-2" /> : null}
                     {isLoading ? "Verificando..." : "Verificar Código"}
                   </Button>
-                  <button 
-                    onClick={() => {
-                      setStep('email');
-                      setCode("");
-                    }}
-                    className="w-full text-xs text-muted-foreground hover:text-foreground"
-                    disabled={isLoading}
-                  >
-                    Usar outro email
-                  </button>
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      onClick={() => {
+                        if (resendCooldown === 0) {
+                          setStep('email');
+                          setCode("");
+                          setAttemptsLeft(null);
+                        }
+                      }}
+                      className={`w-full text-xs ${resendCooldown > 0 ? 'text-muted-foreground/50 cursor-not-allowed' : 'text-muted-foreground hover:text-foreground'}`}
+                      disabled={isLoading || resendCooldown > 0}
+                    >
+                      {resendCooldown > 0 
+                        ? `Reenviar código em ${resendCooldown}s`
+                        : "Reenviar código"}
+                    </button>
+                  </div>
                 </motion.div>
               )}
 
