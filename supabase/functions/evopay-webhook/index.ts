@@ -36,6 +36,52 @@ async function verifyWebhookSignature(payload: string, signature: string | null,
   }
 }
 
+// IMPROVEMENT 3: Rate limiting helper
+async function checkRateLimit(supabase: any, ip: string, endpoint: string, maxRequests: number = 60, windowMinutes: number = 1): Promise<{ allowed: boolean; remaining: number }> {
+  const windowStart = new Date(Date.now() - windowMinutes * 60 * 1000).toISOString();
+  
+  // Count requests in current window
+  const { data: existing, error: countError } = await supabase
+    .from('rate_limits')
+    .select('id, request_count')
+    .eq('ip_address', ip)
+    .eq('endpoint', endpoint)
+    .gte('window_start', windowStart)
+    .maybeSingle();
+  
+  if (countError) {
+    console.error('Rate limit check error:', countError);
+    // On error, allow request but log
+    return { allowed: true, remaining: maxRequests };
+  }
+  
+  const currentCount = existing?.request_count || 0;
+  
+  if (currentCount >= maxRequests) {
+    console.warn(`Rate limit exceeded for IP ${ip} on ${endpoint}: ${currentCount}/${maxRequests}`);
+    return { allowed: false, remaining: 0 };
+  }
+  
+  // Update or insert rate limit record
+  if (existing) {
+    await supabase
+      .from('rate_limits')
+      .update({ request_count: currentCount + 1 })
+      .eq('id', existing.id);
+  } else {
+    await supabase
+      .from('rate_limits')
+      .insert({
+        ip_address: ip,
+        endpoint: endpoint,
+        request_count: 1,
+        window_start: new Date().toISOString()
+      });
+  }
+  
+  return { allowed: true, remaining: maxRequests - currentCount - 1 };
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -46,6 +92,28 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get client IP for rate limiting
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown';
+
+    // IMPROVEMENT: Rate limit - 60 requests per minute per IP
+    const rateLimit = await checkRateLimit(supabase, clientIp, 'evopay-webhook', 60, 1);
+    if (!rateLimit.allowed) {
+      console.error(`Rate limit exceeded for IP: ${clientIp}`);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Rate limit exceeded' }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'Retry-After': '60'
+          } 
+        }
+      );
+    }
 
     // Get raw body for signature verification
     const rawBody = await req.text();

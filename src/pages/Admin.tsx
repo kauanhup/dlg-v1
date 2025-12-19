@@ -67,7 +67,8 @@ import {
   History,
   Wallet,
   ChevronDown,
-  ImageIcon
+  ImageIcon,
+  FileText
 } from "lucide-react";
 
 
@@ -2508,8 +2509,12 @@ const SessionsSection = () => {
 
 // API Section - PixUp + Resend + reCAPTCHA
 const ApiSection = () => {
-  const [activeApiTab, setActiveApiTab] = useState<"gateway" | "email" | "security">("gateway");
+  const [activeApiTab, setActiveApiTab] = useState<"gateway" | "email" | "security" | "audit">("gateway");
   const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  
+  // Audit logs state
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [isLoadingAudit, setIsLoadingAudit] = useState(false);
   
   // PixUp state
   const [pixupEnabled, setPixupEnabled] = useState(false);
@@ -2900,7 +2905,34 @@ const ApiSection = () => {
     { id: "gateway" as const, label: "Gateway PIX", icon: CreditCard },
     { id: "email" as const, label: "Email", icon: Zap },
     { id: "security" as const, label: "Segurança", icon: Shield },
+    { id: "audit" as const, label: "Auditoria", icon: FileText },
   ];
+
+  // Load audit logs when audit tab is active
+  const loadAuditLogs = async () => {
+    setIsLoadingAudit(true);
+    try {
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (!error && data) {
+        setAuditLogs(data);
+      }
+    } catch (err) {
+      console.error('Error loading audit logs:', err);
+    } finally {
+      setIsLoadingAudit(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeApiTab === 'audit') {
+      loadAuditLogs();
+    }
+  }, [activeApiTab]);
 
   return (
     <motion.div {...fadeIn} className="space-y-6">
@@ -3711,6 +3743,93 @@ const ApiSection = () => {
               </Button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Audit Tab */}
+      {activeApiTab === "audit" && (
+        <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                <FileText className="w-5 h-5 text-blue-500" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Logs de Auditoria</h3>
+                <p className="text-sm text-muted-foreground">Histórico de alterações nas configurações</p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={loadAuditLogs}
+              disabled={isLoadingAudit}
+              className="gap-2"
+            >
+              {isLoadingAudit ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+              Atualizar
+            </Button>
+          </div>
+
+          {isLoadingAudit ? (
+            <div className="flex items-center justify-center py-12">
+              <Spinner size="lg" />
+            </div>
+          ) : auditLogs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <FileText className="w-12 h-12 mb-4 opacity-50" />
+              <p className="text-sm">Nenhum log de auditoria encontrado</p>
+              <p className="text-xs">Os logs aparecerão aqui quando houver alterações</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[500px] overflow-y-auto">
+              {auditLogs.map((log) => (
+                <div 
+                  key={log.id} 
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-muted/30 rounded-lg border border-border/50"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5",
+                      log.action === 'UPDATE' ? "bg-blue-500/10" : 
+                      log.action === 'CREATE' ? "bg-green-500/10" : 
+                      log.action === 'DELETE' ? "bg-red-500/10" : "bg-muted"
+                    )}>
+                      {log.action === 'UPDATE' ? <Edit className="w-4 h-4 text-blue-500" /> :
+                       log.action === 'CREATE' ? <Plus className="w-4 h-4 text-green-500" /> :
+                       log.action === 'DELETE' ? <Trash2 className="w-4 h-4 text-red-500" /> :
+                       <FileText className="w-4 h-4 text-muted-foreground" />}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={cn(
+                          "px-2 py-0.5 rounded text-xs font-medium",
+                          log.action === 'UPDATE' ? "bg-blue-500/10 text-blue-500" : 
+                          log.action === 'CREATE' ? "bg-green-500/10 text-green-500" : 
+                          log.action === 'DELETE' ? "bg-red-500/10 text-red-500" : "bg-muted text-muted-foreground"
+                        )}>
+                          {log.action}
+                        </span>
+                        <span className="text-sm font-medium text-foreground">{log.resource}</span>
+                      </div>
+                      {log.details && Object.keys(log.details).length > 0 && (
+                        <p className="text-xs text-muted-foreground mt-1 truncate max-w-md">
+                          {JSON.stringify(log.details)}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        IP: {log.ip_address || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground sm:flex-shrink-0">
+                    <Clock className="w-3 h-3" />
+                    {new Date(log.created_at).toLocaleString('pt-BR')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </motion.div>
