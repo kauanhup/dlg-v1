@@ -3542,10 +3542,10 @@ const ApiSection = () => {
                             <span style={{ fontSize: '24px', fontWeight: 'bold', letterSpacing: '4px', color: templateAccentColor }}>123456</span>
                           </div>
                         </div>
-                        <p style={{ color: '#888', fontSize: '11px', marginBottom: '6px' }}>{templateExpiryText}</p>
-                        <p style={{ color: '#888', fontSize: '11px' }}>Se você não solicitou, ignore este email.</p>
+                        <p style={{ color: '#fff', fontSize: '11px', marginBottom: '6px' }}>{templateExpiryText}</p>
+                        <p style={{ color: '#fff', fontSize: '11px' }}>Se você não solicitou, ignore este email.</p>
                         <hr style={{ border: 'none', borderTop: '1px solid #333', margin: '12px 0' }} />
-                        <p style={{ color: '#666', fontSize: '10px' }}>{templateFooter}</p>
+                        <p style={{ color: '#fff', fontSize: '10px' }}>{templateFooter}</p>
                       </div>
                     </div>
                   </div>
