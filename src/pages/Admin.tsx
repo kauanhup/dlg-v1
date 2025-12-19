@@ -3519,106 +3519,147 @@ const ApiSection = () => {
                 <p className="text-sm text-muted-foreground">Proteção contra bots</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit border",
+              recaptchaEnabled && hasRecaptchaSecret 
+                ? "bg-green-500/10 text-green-500 border-green-500/30" 
+                : hasRecaptchaSecret 
+                  ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" 
+                  : "bg-muted/50 text-muted-foreground border-border"
+            )}>
               <div className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium",
-                recaptchaEnabled && hasRecaptchaSecret ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
-              )}>
-                <div className={cn("w-2 h-2 rounded-full", recaptchaEnabled && hasRecaptchaSecret ? "bg-green-500" : "bg-yellow-500")} />
-                {recaptchaEnabled && hasRecaptchaSecret ? "Ativo" : "Inativo"}
-              </div>
-              <button
-              onClick={async () => {
-                setIsSavingRecaptcha(true);
-                try {
-                  const { data } = await supabase.functions.invoke('pixup', {
-                    body: { action: 'save_recaptcha_settings', recaptcha_enabled: !recaptchaEnabled }
-                  });
-                  if (data?.success) {
-                    setRecaptchaEnabled(!recaptchaEnabled);
-                    toast.success(recaptchaEnabled ? "Desativado" : "Ativado");
-                  } else {
-                    toast.error(data?.error || "Erro");
-                  }
-                } catch { toast.error("Erro ao salvar"); }
-                finally { setIsSavingRecaptcha(false); }
-              }}
-              disabled={isSavingRecaptcha || (!hasRecaptchaSecret && !recaptchaEnabled)}
-              className={cn(
-                "w-12 h-6 rounded-full transition-colors flex-shrink-0",
-                recaptchaEnabled ? 'bg-green-500' : 'bg-muted',
-                (!hasRecaptchaSecret && !recaptchaEnabled) && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <div className={cn(
-                "w-5 h-5 bg-white rounded-full transition-transform shadow-sm",
-                recaptchaEnabled ? 'translate-x-6' : 'translate-x-0.5'
+                "w-2 h-2 rounded-full animate-pulse", 
+                recaptchaEnabled && hasRecaptchaSecret 
+                  ? "bg-green-500" 
+                  : hasRecaptchaSecret 
+                    ? "bg-yellow-500" 
+                    : "bg-muted-foreground"
               )} />
-              </button>
+              {recaptchaEnabled && hasRecaptchaSecret ? "Conectado" : 
+               hasRecaptchaSecret ? "Configurado" : "Desativado"}
             </div>
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Site Key</label>
-              <input
-                type="text"
-                value={recaptchaSiteKey}
-                onChange={(e) => setRecaptchaSiteKey(e.target.value)}
-                placeholder="6Lc..."
-                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Secret Key</label>
-              <div className="relative">
-                <input
-                  type={showRecaptchaSecret ? "text" : "password"}
-                  value={recaptchaSecretKey}
-                  onChange={(e) => setRecaptchaSecretKey(e.target.value)}
-                  placeholder={hasRecaptchaSecret ? "••••••••• (já configurado)" : "6Lc..."}
-                  className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowRecaptchaSecret(!showRecaptchaSecret)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showRecaptchaSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-8 h-8 rounded-md flex items-center justify-center",
+                  recaptchaEnabled ? "bg-green-500/10" : "bg-muted"
+                )}>
+                  <Shield className={cn("w-4 h-4", recaptchaEnabled ? "text-green-500" : "text-muted-foreground")} />
+                </div>
+                <span className="text-sm font-medium text-foreground">Habilitar reCAPTCHA</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Obtenha em <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener" className="text-primary hover:underline">google.com/recaptcha</a>
-              </p>
+              <button
+                onClick={async () => {
+                  setIsSavingRecaptcha(true);
+                  try {
+                    const { data } = await supabase.functions.invoke('pixup', {
+                      body: { action: 'save_recaptcha_settings', recaptcha_enabled: !recaptchaEnabled }
+                    });
+                    if (data?.success) {
+                      setRecaptchaEnabled(!recaptchaEnabled);
+                      toast.success(recaptchaEnabled ? "Desativado" : "Ativado");
+                    } else {
+                      toast.error(data?.error || "Erro");
+                    }
+                  } catch { toast.error("Erro ao salvar"); }
+                  finally { setIsSavingRecaptcha(false); }
+                }}
+                disabled={isSavingRecaptcha || (!hasRecaptchaSecret && !recaptchaEnabled)}
+                className={cn(
+                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
+                  recaptchaEnabled ? "bg-green-500" : "bg-muted",
+                  (!hasRecaptchaSecret && !recaptchaEnabled) && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <span className={cn(
+                  "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200",
+                  recaptchaEnabled ? "translate-x-6" : "translate-x-1"
+                )} />
+              </button>
             </div>
 
-            <Button 
-              onClick={async () => {
-                if (!recaptchaSiteKey.trim()) { toast.error("Preencha a Site Key"); return; }
-                if (!hasRecaptchaSecret && !recaptchaSecretKey.trim()) { toast.error("Preencha a Secret Key"); return; }
-                setIsSavingRecaptcha(true);
-                setRecaptchaSaveSuccess(false);
-                try {
-                  const payload: any = { action: 'save_recaptcha_settings', recaptcha_site_key: recaptchaSiteKey.trim() };
-                  if (recaptchaSecretKey.trim()) payload.recaptcha_secret_key = recaptchaSecretKey.trim();
-                  const { data } = await supabase.functions.invoke('pixup', { body: payload });
-                  if (data?.success) {
-                    toast.success("Salvo!");
-                    setHasRecaptchaSecret(true);
-                    setRecaptchaSecretKey("");
-                    setRecaptchaSaveSuccess(true);
-                    setTimeout(() => setRecaptchaSaveSuccess(false), 2000);
-                  } else { toast.error(data?.error || "Erro"); }
-                } catch { toast.error("Erro ao salvar"); }
-                finally { setIsSavingRecaptcha(false); }
-              }}
-              disabled={isSavingRecaptcha}
-              className={cn("gap-2 transition-colors", recaptchaSaveSuccess && "bg-green-600 hover:bg-green-600")}
-            >
-              {isSavingRecaptcha ? <Spinner size="sm" /> : recaptchaSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-              {recaptchaSaveSuccess ? "Salvo!" : "Salvar"}
-            </Button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Site Key</label>
+                <input
+                  type="text"
+                  value={recaptchaSiteKey}
+                  onChange={(e) => setRecaptchaSiteKey(e.target.value)}
+                  placeholder="6Lc..."
+                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Secret Key</label>
+                <div className="relative">
+                  <input
+                    type={showRecaptchaSecret ? "text" : "password"}
+                    value={recaptchaSecretKey}
+                    onChange={(e) => setRecaptchaSecretKey(e.target.value)}
+                    placeholder={hasRecaptchaSecret ? "••••••••• (já configurado)" : "6Lc..."}
+                    className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRecaptchaSecret(!showRecaptchaSecret)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showRecaptchaSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Obtenha em <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener" className="text-primary hover:underline">google.com/recaptcha</a>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-border/50">
+              <Button 
+                onClick={async () => {
+                  if (!recaptchaSiteKey.trim()) { toast.error("Preencha a Site Key"); return; }
+                  if (!hasRecaptchaSecret && !recaptchaSecretKey.trim()) { toast.error("Preencha a Secret Key"); return; }
+                  setIsSavingRecaptcha(true);
+                  setRecaptchaSaveSuccess(false);
+                  try {
+                    const payload: any = { action: 'save_recaptcha_settings', recaptcha_site_key: recaptchaSiteKey.trim() };
+                    if (recaptchaSecretKey.trim()) payload.recaptcha_secret_key = recaptchaSecretKey.trim();
+                    const { data } = await supabase.functions.invoke('pixup', { body: payload });
+                    if (data?.success) {
+                      toast.success("Salvo!");
+                      setHasRecaptchaSecret(true);
+                      setRecaptchaSecretKey("");
+                      setRecaptchaSaveSuccess(true);
+                      setTimeout(() => setRecaptchaSaveSuccess(false), 2000);
+                    } else { toast.error(data?.error || "Erro"); }
+                  } catch { toast.error("Erro ao salvar"); }
+                  finally { setIsSavingRecaptcha(false); }
+                }}
+                disabled={isSavingRecaptcha}
+                className={cn("gap-2 transition-colors", recaptchaSaveSuccess && "bg-green-600 hover:bg-green-600")}
+              >
+                {isSavingRecaptcha ? <Spinner size="sm" /> : recaptchaSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                {recaptchaSaveSuccess ? "Salvo!" : "Salvar Configurações"}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={async () => {
+                  if (!hasRecaptchaSecret) {
+                    toast.error("Configure a Secret Key primeiro");
+                    return;
+                  }
+                  toast.success("reCAPTCHA está configurado corretamente!");
+                }}
+                disabled={!hasRecaptchaSecret}
+                className={cn("gap-2", recaptchaEnabled && hasRecaptchaSecret && "border-green-500/50 text-green-500")}
+              >
+                {recaptchaEnabled && hasRecaptchaSecret ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                {recaptchaEnabled && hasRecaptchaSecret ? "Conectado" : "Testar Conexão"}
+              </Button>
+            </div>
           </div>
         </div>
       )}
