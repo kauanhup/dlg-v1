@@ -3426,7 +3426,10 @@ const BotManagementSection = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.open(getDownloadUrl() || '', '_blank')}
+                onClick={async () => {
+                  const url = await getDownloadUrl();
+                  if (url) window.open(url, '_blank');
+                }}
               >
                 <Download className="w-4 h-4 mr-2" />
                 Download
@@ -3558,7 +3561,10 @@ const BotManagementSection = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(getDownloadUrl(file.file_path) || '', '_blank')}
+                    onClick={async () => {
+                      const url = await getDownloadUrl(file.file_path);
+                      if (url) window.open(url, '_blank');
+                    }}
                   >
                     <Download className="w-4 h-4" />
                   </Button>
