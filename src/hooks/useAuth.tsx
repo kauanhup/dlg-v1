@@ -125,12 +125,25 @@ export const useAuth = (requiredRole?: 'admin' | 'user') => {
     console.log('[useAuth] signOut called');
     try {
       const { error } = await supabase.auth.signOut();
-      console.log('[useAuth] signOut result:', error ? error.message : 'success');
-      if (error) {
+      
+      // Even if session is already missing, clear local state and redirect
+      if (error?.message === 'Auth session missing!' || !error) {
+        console.log('[useAuth] Clearing local state and redirecting');
+        setAuthState({
+          user: null,
+          session: null,
+          role: null,
+          profile: null,
+          isLoading: false,
+        });
+        navigate('/login');
+      } else {
         console.error('[useAuth] signOut error:', error);
       }
     } catch (err) {
       console.error('[useAuth] signOut exception:', err);
+      // Force redirect on any error
+      navigate('/login');
     }
   };
 
