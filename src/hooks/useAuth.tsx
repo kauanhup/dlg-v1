@@ -122,7 +122,16 @@ export const useAuth = (requiredRole?: 'admin' | 'user') => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    console.log('[useAuth] signOut called');
+    try {
+      const { error } = await supabase.auth.signOut();
+      console.log('[useAuth] signOut result:', error ? error.message : 'success');
+      if (error) {
+        console.error('[useAuth] signOut error:', error);
+      }
+    } catch (err) {
+      console.error('[useAuth] signOut exception:', err);
+    }
   };
 
   const updateProfile = async (updates: Partial<{ name: string; whatsapp: string; avatar: string }>) => {
