@@ -3,8 +3,38 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-evopay-signature',
 };
+
+// SECURITY: HMAC signature verification for webhook authenticity
+async function verifyWebhookSignature(payload: string, signature: string | null, secret: string): Promise<boolean> {
+  if (!signature || !secret) {
+    console.log('Missing signature or secret for webhook verification');
+    return false;
+  }
+  
+  try {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    
+    const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
+    const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    // Timing-safe comparison
+    return signature.toLowerCase() === expectedSignature.toLowerCase();
+  } catch (error) {
+    console.error('Signature verification error:', error);
+    return false;
+  }
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -17,8 +47,43 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const body = await req.json();
-    console.log('EvoPay webhook received:', JSON.stringify(body, null, 2));
+    // Get raw body for signature verification
+    const rawBody = await req.text();
+    const body = JSON.parse(rawBody);
+    
+    console.log('EvoPay webhook received');
+
+    // Get signature from headers
+    const signature = req.headers.get('x-evopay-signature') || 
+                      req.headers.get('x-webhook-signature');
+
+    // SECURITY: Fetch EvoPay API key from settings to use as webhook secret
+    const { data: settings } = await supabase
+      .from('gateway_settings')
+      .select('evopay_api_key, evopay_enabled')
+      .eq('provider', 'pixup')
+      .eq('evopay_enabled', true)
+      .maybeSingle();
+
+    // SECURITY: CRITICAL - Verify webhook authenticity
+    // If signature verification is configured, enforce it
+    if (settings?.evopay_api_key && signature) {
+      const isValid = await verifyWebhookSignature(rawBody, signature, settings.evopay_api_key);
+      
+      if (!isValid) {
+        console.error('SECURITY: Invalid EvoPay webhook signature - potential spoofing attempt');
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid signature' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.log('EvoPay webhook signature verified successfully');
+    } else if (signature) {
+      // Signature provided but no secret configured - log warning but process
+      console.warn('SECURITY WARNING: Webhook signature provided but API key not configured for verification');
+    }
+
+    // SECURITY: Additional IP validation could be added here if EvoPay provides IP whitelist
 
     // EvoPay webhook payload structure from docs:
     // { id, status, amount, type, qrCodeText, qrCodeUrl, payerDocument, payerName }
@@ -37,7 +102,7 @@ serve(async (req) => {
     // Find payment by transaction ID stored in pix_code field
     const { data: payment, error: paymentError } = await supabase
       .from('payments')
-      .select('id, order_id, status')
+      .select('id, order_id, status, amount')
       .eq('pix_code', transactionId)
       .eq('payment_method', 'evopay_pix')
       .single();
@@ -52,10 +117,19 @@ serve(async (req) => {
 
     const orderId = payment.order_id;
 
+    // SECURITY: Validate amount matches (if provided in webhook)
+    if (amount && payment.amount && Math.abs(Number(amount) - Number(payment.amount)) > 0.01) {
+      console.error(`SECURITY: Amount mismatch detected - webhook=${amount}, payment=${payment.amount}`);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Amount mismatch' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Check if order exists
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, user_id, status, product_type, quantity')
+      .select('id, user_id, status, product_type, quantity, amount')
       .eq('id', orderId)
       .single();
 
@@ -67,12 +141,21 @@ serve(async (req) => {
       );
     }
 
-    // Skip if already completed
+    // SECURITY: Skip if already completed (idempotency)
     if (order.status === 'completed') {
-      console.log('Order already completed, skipping');
+      console.log('Order already completed, skipping - idempotent response');
       return new Response(
         JSON.stringify({ success: true, message: 'Order already completed' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // SECURITY: Validate order amount matches (defense in depth)
+    if (amount && Math.abs(Number(amount) - Number(order.amount)) > 0.01) {
+      console.error(`SECURITY: Order amount mismatch - webhook=${amount}, order=${order.amount}`);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Order amount mismatch' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
