@@ -226,7 +226,8 @@ async function getSettings(supabase: any) {
         has_mercadopago_token: !!data.mercadopago_access_token,
         // EvoPay settings
         evopay_enabled: data.evopay_enabled || false,
-        has_evopay_key: !!data.evopay_api_key
+        has_evopay_key: !!data.evopay_api_key,
+        evopay_webhook_url: data.evopay_webhook_url || ''
       } : null 
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -451,8 +452,9 @@ async function saveMercadoPagoSettings(supabase: any, params: {
 async function saveEvopaySettings(supabase: any, params: { 
   evopay_enabled?: boolean; 
   evopay_api_key?: string | null;
+  evopay_webhook_url?: string | null;
 }) {
-  const { evopay_enabled, evopay_api_key } = params;
+  const { evopay_enabled, evopay_api_key, evopay_webhook_url } = params;
 
   const settingsId = await getOrCreateSettingsId(supabase);
 
@@ -463,6 +465,9 @@ async function saveEvopaySettings(supabase: any, params: {
   }
   if (evopay_api_key) {
     updateData.evopay_api_key = evopay_api_key;
+  }
+  if (evopay_webhook_url !== undefined) {
+    updateData.evopay_webhook_url = evopay_webhook_url || null;
   }
 
   const { error } = await supabase

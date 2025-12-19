@@ -2535,6 +2535,7 @@ const ApiSection = () => {
   // EvoPay state
   const [evoEnabled, setEvoEnabled] = useState(false);
   const [evoApiKey, setEvoApiKey] = useState("");
+  const [evoWebhookUrl, setEvoWebhookUrl] = useState("");
   const [hasEvoKey, setHasEvoKey] = useState(false);
   const [showEvoKey, setShowEvoKey] = useState(false);
   const [isSavingEvo, setIsSavingEvo] = useState(false);
@@ -2622,6 +2623,7 @@ const ApiSection = () => {
           // EvoPay settings
           setEvoEnabled(data.data.evopay_enabled === true);
           setHasEvoKey(data.data.has_evopay_key === true);
+          setEvoWebhookUrl(data.data.evopay_webhook_url || "");
         } else {
           // No settings yet
           setClientId("");
@@ -2803,7 +2805,8 @@ const ApiSection = () => {
         body: { 
           action: 'save_evopay_settings',
           evopay_enabled: evoEnabled,
-          evopay_api_key: evoApiKey.trim() || null
+          evopay_api_key: evoApiKey.trim() || null,
+          evopay_webhook_url: evoWebhookUrl.trim() || null
         }
       });
 
@@ -3263,6 +3266,20 @@ const ApiSection = () => {
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Obtenha em <a href="https://evopay.cash" target="_blank" rel="noopener" className="text-primary hover:underline">evopay.cash</a>
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Webhook URL</label>
+                <input
+                  type="text"
+                  value={evoWebhookUrl}
+                  onChange={(e) => setEvoWebhookUrl(e.target.value)}
+                  placeholder="URL para receber notificações de pagamento"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Configure no painel do EvoPay para receber callbacks de pagamento
                 </p>
               </div>
 
