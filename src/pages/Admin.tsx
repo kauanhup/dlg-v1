@@ -3174,9 +3174,6 @@ const ApiSection = () => {
                     {showMpToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Obtenha em <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" rel="noopener" className="text-primary hover:underline">Mercado Pago Developers</a>
-                </p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
@@ -3265,9 +3262,6 @@ const ApiSection = () => {
                     {showEvoKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Obtenha em <a href="https://evopay.cash" target="_blank" rel="noopener" className="text-primary hover:underline">evopay.cash</a>
-                </p>
               </div>
 
               <div>
@@ -3279,9 +3273,6 @@ const ApiSection = () => {
                   placeholder="URL para receber notificações de pagamento"
                   className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Configure no painel do EvoPay para receber callbacks de pagamento
-                </p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
