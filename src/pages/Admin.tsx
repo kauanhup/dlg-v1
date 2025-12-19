@@ -2509,6 +2509,7 @@ const ApiSection = () => {
   const [activeApiTab, setActiveApiTab] = useState<"gateway" | "email" | "security" | "template">("gateway");
   
   // PixUp state
+  const [pixupEnabled, setPixupEnabled] = useState(false);
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
@@ -2592,6 +2593,7 @@ const ApiSection = () => {
           setClientId(data.data.client_id || "");
           setWebhookUrl(data.data.webhook_url || "");
           setIsConnected(data.data.is_active === true);
+          setPixupEnabled(data.data.is_active === true);
           setHasSecret(data.data.has_secret === true);
           // Resend settings
           setResendFromEmail(data.data.resend_from_email || "");
@@ -2625,6 +2627,7 @@ const ApiSection = () => {
           setClientId("");
           setWebhookUrl("");
           setIsConnected(false);
+          setPixupEnabled(false);
           setHasSecret(false);
           setMpEnabled(false);
           setMpPublicKey("");
@@ -2664,7 +2667,8 @@ const ApiSection = () => {
       const payload: any = { 
         action: 'save_credentials',
         client_id: trimmedClientId,
-        webhook_url: webhookUrl.trim()
+        webhook_url: webhookUrl.trim(),
+        is_active: pixupEnabled
       };
       
       // Include secret if provided (new or update)
@@ -2999,14 +3003,40 @@ const ApiSection = () => {
             </div>
             <div className={cn(
               "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit",
-              isConnected ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
+              pixupEnabled && isConnected ? "bg-green-500/10 text-green-500" : 
+              pixupEnabled && hasSecret ? "bg-yellow-500/10 text-yellow-500" :
+              "bg-muted text-muted-foreground"
             )}>
-              <div className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-yellow-500")} />
-              {isConnected ? "Conectado" : "Desconectado"}
+              <div className={cn(
+                "w-2 h-2 rounded-full", 
+                pixupEnabled && isConnected ? "bg-green-500" : 
+                pixupEnabled && hasSecret ? "bg-yellow-500" :
+                "bg-muted-foreground"
+              )} />
+              {pixupEnabled && isConnected ? "Conectado" : 
+               pixupEnabled && hasSecret ? "Configurado" : "Desativado"}
             </div>
           </div>
 
           <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Info className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Habilitar PixUp</span>
+              </div>
+              <button
+                onClick={() => setPixupEnabled(!pixupEnabled)}
+                className={cn(
+                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                  pixupEnabled ? "bg-primary" : "bg-muted"
+                )}
+              >
+                <span className={cn(
+                  "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                  pixupEnabled ? "translate-x-6" : "translate-x-1"
+                )} />
+              </button>
+            </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">Client ID</label>
               <input
