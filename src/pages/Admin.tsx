@@ -65,7 +65,8 @@ import {
   FileDown,
   HardDrive,
   History,
-  Wallet
+  Wallet,
+  ChevronDown
 } from "lucide-react";
 
 
@@ -2506,7 +2507,8 @@ const SessionsSection = () => {
 
 // API Section - PixUp + Resend + reCAPTCHA
 const ApiSection = () => {
-  const [activeApiTab, setActiveApiTab] = useState<"gateway" | "email" | "security" | "template">("gateway");
+  const [activeApiTab, setActiveApiTab] = useState<"gateway" | "email" | "security">("gateway");
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
   
   // PixUp state
   const [pixupEnabled, setPixupEnabled] = useState(false);
@@ -2893,7 +2895,6 @@ const ApiSection = () => {
     { id: "gateway" as const, label: "Gateway PIX", icon: CreditCard },
     { id: "email" as const, label: "Email", icon: Zap },
     { id: "security" as const, label: "Segurança", icon: Shield },
-    { id: "template" as const, label: "Template", icon: Edit },
   ];
 
   return (
@@ -3337,6 +3338,171 @@ const ApiSection = () => {
               </div>
             </div>
           </div>
+
+          {/* Email Template - Collapsible */}
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
+            <button
+              onClick={() => setShowTemplateEditor(!showTemplateEditor)}
+              className="w-full flex items-center justify-between p-4 sm:p-6 hover:bg-muted/30 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                  <Edit className="w-5 h-5 text-purple-500" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-semibold text-foreground">Template de Email</h3>
+                  <p className="text-sm text-muted-foreground">Personalizar aparência dos emails</p>
+                </div>
+              </div>
+              <ChevronDown className={cn("w-5 h-5 text-muted-foreground transition-transform", showTemplateEditor && "rotate-180")} />
+            </button>
+
+            {showTemplateEditor && (
+              <div className="border-t border-border p-4 sm:p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Editor */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-2 block">Título</label>
+                      <input
+                        type="text"
+                        value={templateTitle}
+                        onChange={(e) => setTemplateTitle(e.target.value)}
+                        className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-2 block">Saudação</label>
+                      <input
+                        type="text"
+                        value={templateGreeting}
+                        onChange={(e) => setTemplateGreeting(e.target.value)}
+                        placeholder="Use {name} para o nome"
+                        className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Use {"{name}"} para nome do usuário</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-2 block">Mensagem</label>
+                      <input
+                        type="text"
+                        value={templateMessage}
+                        onChange={(e) => setTemplateMessage(e.target.value)}
+                        className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-2 block">Texto de Expiração</label>
+                      <input
+                        type="text"
+                        value={templateExpiryText}
+                        onChange={(e) => setTemplateExpiryText(e.target.value)}
+                        className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-2 block">Rodapé</label>
+                      <input
+                        type="text"
+                        value={templateFooter}
+                        onChange={(e) => setTemplateFooter(e.target.value)}
+                        className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-foreground mb-2 block">Cor de Fundo</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="color"
+                            value={templateBgColor}
+                            onChange={(e) => setTemplateBgColor(e.target.value)}
+                            className="w-10 h-10 rounded cursor-pointer border border-border flex-shrink-0"
+                          />
+                          <input
+                            type="text"
+                            value={templateBgColor}
+                            onChange={(e) => setTemplateBgColor(e.target.value)}
+                            className="flex-1 min-w-0 px-2 py-2 bg-background border border-border rounded-md text-foreground font-mono text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-foreground mb-2 block">Cor de Destaque</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="color"
+                            value={templateAccentColor}
+                            onChange={(e) => setTemplateAccentColor(e.target.value)}
+                            className="w-10 h-10 rounded cursor-pointer border border-border flex-shrink-0"
+                          />
+                          <input
+                            type="text"
+                            value={templateAccentColor}
+                            onChange={(e) => setTemplateAccentColor(e.target.value)}
+                            className="flex-1 min-w-0 px-2 py-2 bg-background border border-border rounded-md text-foreground font-mono text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={async () => {
+                        setIsSavingTemplate(true);
+                        setTemplateSaveSuccess(false);
+                        try {
+                          const { data } = await supabase.functions.invoke('pixup', {
+                            body: { 
+                              action: 'save_email_template',
+                              email_template_title: templateTitle,
+                              email_template_greeting: templateGreeting,
+                              email_template_message: templateMessage,
+                              email_template_expiry_text: templateExpiryText,
+                              email_template_footer: templateFooter,
+                              email_template_bg_color: templateBgColor,
+                              email_template_accent_color: templateAccentColor
+                            }
+                          });
+                          if (data?.success) { 
+                            toast.success("Template salvo!"); 
+                            setTemplateSaveSuccess(true);
+                            setTimeout(() => setTemplateSaveSuccess(false), 2000);
+                          }
+                          else { toast.error(data?.error || "Erro ao salvar"); }
+                        } catch { toast.error("Erro ao salvar"); }
+                        finally { setIsSavingTemplate(false); }
+                      }}
+                      disabled={isSavingTemplate}
+                      className={cn("w-full gap-2 transition-colors", templateSaveSuccess && "bg-green-600 hover:bg-green-600")}
+                    >
+                      {isSavingTemplate ? <Spinner size="sm" /> : templateSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                      {templateSaveSuccess ? "Salvo!" : "Salvar Template"}
+                    </Button>
+                  </div>
+
+                  {/* Preview */}
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-2 block">Preview</label>
+                    <div className="rounded-lg overflow-hidden border border-border" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                      <div style={{ fontFamily: 'Arial, sans-serif', padding: '16px', backgroundColor: templateBgColor, color: '#fff' }}>
+                        <h1 style={{ color: templateAccentColor, fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>{templateTitle}</h1>
+                        <p style={{ marginBottom: '8px', fontSize: '14px' }}>{templateGreeting.replace('{name}', 'João')}</p>
+                        <p style={{ marginBottom: '12px', fontSize: '14px' }}>{templateMessage}</p>
+                        <div style={{ textAlign: 'center', margin: '20px 0' }}>
+                          <div style={{ background: '#111', padding: '12px 24px', borderRadius: '8px', display: 'inline-block' }}>
+                            <span style={{ fontSize: '24px', fontWeight: 'bold', letterSpacing: '4px', color: templateAccentColor }}>123456</span>
+                          </div>
+                        </div>
+                        <p style={{ color: '#888', fontSize: '11px', marginBottom: '6px' }}>{templateExpiryText}</p>
+                        <p style={{ color: '#888', fontSize: '11px' }}>Se você não solicitou, ignore este email.</p>
+                        <hr style={{ border: 'none', borderTop: '1px solid #333', margin: '12px 0' }} />
+                        <p style={{ color: '#666', fontSize: '10px' }}>{templateFooter}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -3444,163 +3610,6 @@ const ApiSection = () => {
               {isSavingRecaptcha ? <Spinner size="sm" /> : recaptchaSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
               {recaptchaSaveSuccess ? "Salvo!" : "Salvar"}
             </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Template Tab */}
-      {activeApiTab === "template" && (
-        <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
-              <Edit className="w-5 h-5 text-purple-500" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground">Template de Email</h3>
-              <p className="text-sm text-muted-foreground">Usado em cadastro e recuperação de senha</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Editor */}
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Título</label>
-                <input
-                  type="text"
-                  value={templateTitle}
-                  onChange={(e) => setTemplateTitle(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Saudação</label>
-                <input
-                  type="text"
-                  value={templateGreeting}
-                  onChange={(e) => setTemplateGreeting(e.target.value)}
-                  placeholder="Use {name} para o nome"
-                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-                <p className="text-xs text-muted-foreground mt-1">Use {"{name}"} para nome do usuário</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Mensagem</label>
-                <input
-                  type="text"
-                  value={templateMessage}
-                  onChange={(e) => setTemplateMessage(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Texto de Expiração</label>
-                <input
-                  type="text"
-                  value={templateExpiryText}
-                  onChange={(e) => setTemplateExpiryText(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Rodapé</label>
-                <input
-                  type="text"
-                  value={templateFooter}
-                  onChange={(e) => setTemplateFooter(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">Cor de Fundo</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={templateBgColor}
-                      onChange={(e) => setTemplateBgColor(e.target.value)}
-                      className="w-10 h-10 rounded cursor-pointer border border-border flex-shrink-0"
-                    />
-                    <input
-                      type="text"
-                      value={templateBgColor}
-                      onChange={(e) => setTemplateBgColor(e.target.value)}
-                      className="flex-1 min-w-0 px-2 py-2 bg-background border border-border rounded-md text-foreground font-mono text-xs"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">Cor de Destaque</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={templateAccentColor}
-                      onChange={(e) => setTemplateAccentColor(e.target.value)}
-                      className="w-10 h-10 rounded cursor-pointer border border-border flex-shrink-0"
-                    />
-                    <input
-                      type="text"
-                      value={templateAccentColor}
-                      onChange={(e) => setTemplateAccentColor(e.target.value)}
-                      className="flex-1 min-w-0 px-2 py-2 bg-background border border-border rounded-md text-foreground font-mono text-xs"
-                    />
-                  </div>
-                </div>
-              </div>
-              <Button 
-                onClick={async () => {
-                  setIsSavingTemplate(true);
-                  setTemplateSaveSuccess(false);
-                  try {
-                    const { data } = await supabase.functions.invoke('pixup', {
-                      body: { 
-                        action: 'save_email_template',
-                        email_template_title: templateTitle,
-                        email_template_greeting: templateGreeting,
-                        email_template_message: templateMessage,
-                        email_template_expiry_text: templateExpiryText,
-                        email_template_footer: templateFooter,
-                        email_template_bg_color: templateBgColor,
-                        email_template_accent_color: templateAccentColor
-                      }
-                    });
-                    if (data?.success) { 
-                      toast.success("Template salvo!"); 
-                      setTemplateSaveSuccess(true);
-                      setTimeout(() => setTemplateSaveSuccess(false), 2000);
-                    }
-                    else { toast.error(data?.error || "Erro ao salvar"); }
-                  } catch { toast.error("Erro ao salvar"); }
-                  finally { setIsSavingTemplate(false); }
-                }}
-                disabled={isSavingTemplate}
-                className={cn("w-full gap-2 transition-colors", templateSaveSuccess && "bg-green-600 hover:bg-green-600")}
-              >
-                {isSavingTemplate ? <Spinner size="sm" /> : templateSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                {templateSaveSuccess ? "Salvo!" : "Salvar Template"}
-              </Button>
-            </div>
-
-            {/* Preview */}
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Preview</label>
-              <div className="rounded-lg overflow-hidden border border-border" style={{ maxHeight: '450px', overflowY: 'auto' }}>
-                <div style={{ fontFamily: 'Arial, sans-serif', padding: '16px', backgroundColor: templateBgColor, color: '#fff' }}>
-                  <h1 style={{ color: templateAccentColor, fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>{templateTitle}</h1>
-                  <p style={{ marginBottom: '8px', fontSize: '14px' }}>{templateGreeting.replace('{name}', 'João')}</p>
-                  <p style={{ marginBottom: '12px', fontSize: '14px' }}>{templateMessage}</p>
-                  <div style={{ textAlign: 'center', margin: '20px 0' }}>
-                    <div style={{ background: '#111', padding: '12px 24px', borderRadius: '8px', display: 'inline-block' }}>
-                      <span style={{ fontSize: '24px', fontWeight: 'bold', letterSpacing: '4px', color: templateAccentColor }}>123456</span>
-                    </div>
-                  </div>
-                  <p style={{ color: '#888', fontSize: '11px', marginBottom: '6px' }}>{templateExpiryText}</p>
-                  <p style={{ color: '#888', fontSize: '11px' }}>Se você não solicitou, ignore este email.</p>
-                  <hr style={{ border: 'none', borderTop: '1px solid #333', margin: '12px 0' }} />
-                  <p style={{ color: '#666', fontSize: '10px' }}>{templateFooter}</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       )}
