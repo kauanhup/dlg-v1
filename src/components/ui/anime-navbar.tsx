@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import logo from "@/assets/logo.png"
 
 interface NavItem {
   name: string
@@ -131,6 +132,15 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
             damping: 20,
           }}
         >
+          {/* Logo */}
+          <Link to="/" className="flex items-center mr-1 sm:mr-2">
+            <img 
+              src={logo} 
+              alt="DLG Connect" 
+              className="w-6 h-6 sm:w-7 sm:h-7 invert"
+            />
+          </Link>
+
           {/* Navigation Items */}
           {navItems.map((item) => {
             const Icon = item.icon
