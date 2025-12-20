@@ -247,19 +247,24 @@ const Checkout = () => {
         .maybeSingle();
 
       if (pendingOrder) {
-        // Found pending order, get payment info
+        // Found pending order - ALWAYS set orderId to prevent re-validation
+        setOrderId(pendingOrder.id);
+        setPaymentStatus(pendingOrder.status);
+        console.log('Found pending order:', pendingOrder.id);
+
+        // Get payment info if exists
         const { data: payment } = await supabase
           .from('payments')
           .select('pix_code, payment_method')
           .eq('order_id', pendingOrder.id)
           .maybeSingle();
 
-        if (payment?.pix_code) {
-          setOrderId(pendingOrder.id);
-          setPaymentStatus(pendingOrder.status);
+        if (payment?.payment_method) {
           setSelectedPaymentMethod(payment.payment_method as PaymentMethod || 'pix');
-          
-          // Set expiration based on order creation time
+        }
+
+        // Only restore PIX data if we have a valid pix_code and not expired
+        if (payment?.pix_code) {
           const orderCreated = new Date(pendingOrder.created_at);
           const expTime = new Date(orderCreated.getTime() + PIX_EXPIRATION_MINUTES * 60 * 1000);
           
@@ -269,7 +274,7 @@ const Checkout = () => {
               pixCode: payment.pix_code,
               transactionId: pendingOrder.id,
             });
-            console.log('Recovered pending order:', pendingOrder.id);
+            console.log('Recovered PIX for order:', pendingOrder.id);
           }
         }
       }
