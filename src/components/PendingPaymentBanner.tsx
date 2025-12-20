@@ -57,6 +57,8 @@ export const PendingPaymentBanner = () => {
   const isExcludedRoute = EXCLUDED_ROUTES.includes(location.pathname);
 
   useEffect(() => {
+    let paymentChannel: ReturnType<typeof supabase.channel> | null = null;
+
     const checkPendingPayment = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -89,6 +91,30 @@ export const PendingPaymentBanner = () => {
 
       if (data) {
         setPendingPayment(data);
+        
+        // Subscribe to realtime changes for this payment
+        if (paymentChannel) {
+          supabase.removeChannel(paymentChannel);
+        }
+        
+        paymentChannel = supabase
+          .channel(`payment-banner-${data.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'payments',
+              filter: `id=eq.${data.id}`,
+            },
+            (payload) => {
+              const newStatus = payload.new.status;
+              if (newStatus === 'cancelled' || newStatus === 'paid') {
+                setPendingPayment(null);
+              }
+            }
+          )
+          .subscribe();
       } else {
         setPendingPayment(null);
       }
@@ -111,6 +137,9 @@ export const PendingPaymentBanner = () => {
     return () => {
       clearInterval(interval);
       subscription.unsubscribe();
+      if (paymentChannel) {
+        supabase.removeChannel(paymentChannel);
+      }
     };
   }, []);
 
