@@ -426,8 +426,14 @@ const LojaSection = ({
                       value={brCustomQty}
                       onChange={(e) => {
                         const val = e.target.value;
-                        if (val === '' || parseInt(val) >= 0) {
-                          setBrCustomQty(val);
+                        // SECURITY: Only allow empty or positive integers within stock limit
+                        if (val === '') {
+                          setBrCustomQty('');
+                        } else {
+                          const num = parseInt(val);
+                          if (!isNaN(num) && num >= 0 && num <= brStock) {
+                            setBrCustomQty(String(num));
+                          }
                         }
                       }}
                       onKeyDown={(e) => {
@@ -590,8 +596,14 @@ const LojaSection = ({
                       value={intlCustomQty}
                       onChange={(e) => {
                         const val = e.target.value;
-                        if (val === '' || parseInt(val) >= 0) {
-                          setIntlCustomQty(val);
+                        // SECURITY: Only allow empty or positive integers within stock limit
+                        if (val === '') {
+                          setIntlCustomQty('');
+                        } else {
+                          const num = parseInt(val);
+                          if (!isNaN(num) && num >= 0 && num <= intlStock) {
+                            setIntlCustomQty(String(num));
+                          }
                         }
                       }}
                       onKeyDown={(e) => {
