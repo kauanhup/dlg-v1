@@ -487,7 +487,7 @@ const Checkout = () => {
         });
 
         supabase.from('payments').update({
-          pix_code: transactionId,
+          pix_code: evoResponse.data.pixCode, // Store actual PIX code, not transactionId
         }).eq('order_id', existingOrderId);
 
         toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
@@ -712,9 +712,9 @@ const Checkout = () => {
             expiresAt: undefined,
           });
 
-          // Store transaction ID in background (não bloqueia UI)
+          // Store actual PIX code in background (not transactionId)
           supabase.from('payments').update({
-            pix_code: transactionId,
+            pix_code: evoResponse.data.pixCode,
           }).eq('order_id', orderData.id);
 
           toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
@@ -1240,31 +1240,43 @@ const Checkout = () => {
                   )}
 
                   {/* Generate new PIX button when expired OR when gateway failed - FIX #2: Reset orderId properly */}
-                  {(isExpired || (!pixData?.pixCode && paymentStatus === 'pending')) && (
+                  {/* Generate PIX button when no pixData but order exists - regenerate for existing order */}
+                  {!pixData?.pixCode && orderId && paymentStatus === 'pending' && (
+                    <Button 
+                      onClick={handlePayment}
+                      disabled={isProcessing}
+                      className="w-full"
+                    >
+                      {isProcessing ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Gerando PIX...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <CreditCard className="w-4 h-4" />
+                          Gerar QR Code PIX
+                        </span>
+                      )}
+                    </Button>
+                  )}
+
+                  {/* Generate new PIX button when expired - needs to create new order */}
+                  {isExpired && (
                     <Button 
                       onClick={() => {
-                        // FIX #2: Clear all payment state before retry
+                        // Clear all payment state before retry
                         setPixData(null);
                         setExpirationTime(null);
                         setTimeLeft(null);
-                        setOrderId(null); // This clears orderId so new order can be created
+                        setOrderId(null);
                         setPaymentStatus('pending');
                         setCopied(false);
                       }}
                       disabled={isProcessing}
                       className="w-full"
-                      variant={isExpired ? "default" : "outline"}
                     >
-                      {isProcessing ? (
-                        <span className="flex items-center gap-2">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Processando...
-                        </span>
-                      ) : isExpired ? (
-                        "Gerar novo código PIX"
-                      ) : (
-                        "Tentar novamente"
-                      )}
+                      Gerar novo código PIX
                     </Button>
                   )}
 
