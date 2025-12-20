@@ -36,7 +36,7 @@ interface PaymentSettings {
 
 type PaymentMethod = 'pix' | 'evopay';
 
-const PIX_EXPIRATION_MINUTES = 30;
+const PIX_EXPIRATION_MINUTES = 15;
 
 const Checkout = () => {
   const [searchParams] = useSearchParams();

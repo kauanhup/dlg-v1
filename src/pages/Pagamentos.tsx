@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const PIX_EXPIRATION_MINUTES = 15;
+
 interface Payment {
   id: string;
   user_id: string;
@@ -46,6 +48,13 @@ const Pagamentos = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [now, setNow] = useState(new Date());
+
+  // Update current time every second for countdown
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -84,7 +93,35 @@ const Pagamentos = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPayments(data || []);
+      
+      // Auto-cancel expired pending payments
+      const updatedPayments = await Promise.all((data || []).map(async (payment) => {
+        if (payment.status === 'pending') {
+          const createdAt = new Date(payment.created_at);
+          const expiresAt = new Date(createdAt.getTime() + PIX_EXPIRATION_MINUTES * 60 * 1000);
+          
+          if (new Date() > expiresAt) {
+            // Cancel expired payment
+            await supabase
+              .from('payments')
+              .update({ status: 'cancelled' })
+              .eq('id', payment.id);
+            
+            // Also cancel the order
+            if (payment.order_id) {
+              await supabase
+                .from('orders')
+                .update({ status: 'cancelled' })
+                .eq('id', payment.order_id);
+            }
+            
+            return { ...payment, status: 'cancelled' };
+          }
+        }
+        return payment;
+      }));
+      
+      setPayments(updatedPayments);
     } catch (error) {
       console.error('Error fetching payments:', error);
     } finally {
@@ -106,6 +143,18 @@ const Pagamentos = () => {
     });
   };
 
+  const getTimeLeft = (createdAt: string) => {
+    const created = new Date(createdAt);
+    const expiresAt = new Date(created.getTime() + PIX_EXPIRATION_MINUTES * 60 * 1000);
+    const diff = expiresAt.getTime() - now.getTime();
+    
+    if (diff <= 0) return null;
+    
+    const minutes = Math.floor(diff / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    return { minutes, seconds };
+  };
+
   const getStatusInfo = (status: string) => {
     switch (status) {
       case 'paid':
@@ -120,6 +169,18 @@ const Pagamentos = () => {
         return { label: 'Reembolsado', icon: RefreshCw, color: 'text-muted-foreground', bg: 'bg-muted' };
       default:
         return { label: status, icon: Clock, color: 'text-muted-foreground', bg: 'bg-muted' };
+    }
+  };
+
+  const handlePayNow = (payment: Payment) => {
+    if (payment.order) {
+      navigate('/checkout', {
+        state: {
+          type: payment.order.product_name,
+          qty: payment.order.quantity,
+          price: `R$ ${Number(payment.amount).toFixed(2).replace('.', ',')}`
+        }
+      });
     }
   };
 
@@ -238,6 +299,8 @@ const Pagamentos = () => {
                   {payments.map((payment, index) => {
                     const statusInfo = getStatusInfo(payment.status);
                     const StatusIcon = statusInfo.icon;
+                    const timeLeft = payment.status === 'pending' ? getTimeLeft(payment.created_at) : null;
+                    const isExpired = payment.status === 'pending' && !timeLeft;
                     
                     return (
                       <motion.div
@@ -258,7 +321,7 @@ const Pagamentos = () => {
                                   {payment.order?.product_name || 'Pagamento'}
                                 </span>
                                 <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", statusInfo.bg, statusInfo.color)}>
-                                  {statusInfo.label}
+                                  {isExpired ? 'Expirado' : statusInfo.label}
                                 </span>
                               </div>
                               <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -275,6 +338,28 @@ const Pagamentos = () => {
                                 <p className="text-xs text-success mt-1">
                                   Pago em {formatDate(payment.paid_at)}
                                 </p>
+                              )}
+                              
+                              {/* Pending payment: show countdown and pay button */}
+                              {payment.status === 'pending' && timeLeft && (
+                                <div className="flex items-center gap-3 mt-2">
+                                  <span className={cn(
+                                    "text-xs font-mono font-bold px-2 py-1 rounded bg-warning/10",
+                                    timeLeft.minutes < 5 ? "text-destructive" : "text-warning"
+                                  )}>
+                                    <Clock className="w-3 h-3 inline mr-1" />
+                                    {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+                                  </span>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    className="h-7 text-xs bg-primary/10 border-primary/30 hover:bg-primary/20 text-primary"
+                                    onClick={() => handlePayNow(payment)}
+                                  >
+                                    <CreditCard className="w-3 h-3 mr-1" />
+                                    Pagar Agora
+                                  </Button>
+                                </div>
                               )}
                             </div>
                           </div>

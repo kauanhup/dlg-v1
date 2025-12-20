@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AlertToastProvider } from "@/hooks/use-alert-toast";
 import CookieConsent from "@/components/CookieConsent";
+import PendingPaymentBanner from "@/components/PendingPaymentBanner";
 import Index from "./pages/Index";
 import Buy from "./pages/Buy";
 import Checkout from "./pages/Checkout";
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <PendingPaymentBanner />
             <CookieConsent />
           </BrowserRouter>
         </AlertToastProvider>
