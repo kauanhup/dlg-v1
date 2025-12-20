@@ -13,6 +13,7 @@ import {
   Plus,
   Globe,
   TrendingUp,
+  RotateCcw,
 } from "lucide-react";
 
 // Sub-components
@@ -45,6 +46,7 @@ export const SessionsSection = () => {
     updateCombo: updateDbCombo, 
     addCombo: addDbCombo, 
     deleteCombo,
+    syncInventory,
     getCombosByType,
     getFilesByType,
     stats,
@@ -230,6 +232,22 @@ export const SessionsSection = () => {
     }
   };
 
+  const handleSyncInventory = async () => {
+    setIsRefreshing(true);
+    try {
+      const result = await syncInventory();
+      if (result.success) {
+        toast.success(`Estoque sincronizado! BR: ${result.brasileiras}, EST: ${result.estrangeiras}`);
+      } else {
+        toast.error("Erro ao sincronizar estoque");
+      }
+    } catch (error) {
+      toast.error("Erro ao sincronizar estoque");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const handleAddCombo = async (type: string) => {
     const result = await addDbCombo(type, 10, 49.90);
     if (result.success) {
@@ -293,6 +311,16 @@ export const SessionsSection = () => {
           >
             <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
             Atualizar
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleSyncInventory} 
+            disabled={isRefreshing || isLoading}
+            title="Sincroniza o estoque com os arquivos reais"
+          >
+            <RotateCcw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
+            Sincronizar
           </Button>
           <Button size="sm" disabled={isUploading} onClick={() => setShowTypeSelector(true)}>
             <Plus className="w-4 h-4 mr-2" /> Importar Sessions

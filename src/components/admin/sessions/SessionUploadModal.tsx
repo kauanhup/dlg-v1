@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { X, CheckCircle, XCircle, RefreshCw, Download } from "lucide-react";
+import { X, CheckCircle, XCircle, RefreshCw, Upload } from "lucide-react";
 
 interface SessionUploadModalProps {
   isOpen: boolean;
@@ -102,7 +102,7 @@ export const SessionUploadModal = ({
                         </>
                       ) : (
                         <>
-                          <Download className="w-4 h-4 mr-2" />
+                          <Upload className="w-4 h-4 mr-2" />
                           Fazer Upload
                         </>
                       )}
