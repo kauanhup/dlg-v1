@@ -9,6 +9,7 @@ import { useAlertToast } from "@/hooks/use-alert-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
 import { cn } from "@/lib/utils";
+import SEO from "@/components/SEO";
 
 interface PixData {
   pixCode: string;
@@ -472,7 +473,7 @@ const Checkout = () => {
           <AnimatedShaderBackground className="w-full h-full" />
         </div>
         <div className="relative z-10">
-          <MorphingSquare message="Carregando checkout..." />
+          <MorphingSquare message="Carregando checkout..." className="bg-primary" />
         </div>
       </div>
     );
@@ -516,58 +517,74 @@ const Checkout = () => {
   } : null;
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 z-0">
-        <AnimatedShaderBackground className="w-full h-full" />
-      </div>
-
-      <main className="relative z-10 min-h-screen flex flex-col">
-        {/* Header */}
-        <div className="container mx-auto px-4 sm:px-6 pt-8">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            <Link 
-              to={isPlanPurchase ? "/comprar" : "/dashboard"} 
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              {isPlanPurchase ? "Voltar aos planos" : "Voltar ao dashboard"}
-            </Link>
-          </motion.div>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 flex items-center justify-center py-8 sm:py-12">
-          <div className="container mx-auto px-4 sm:px-6">
+    <>
+      <SEO 
+        title="Checkout"
+        description="Finalize sua compra de forma segura. Pagamento via PIX com confirmação instantânea."
+        canonical="/checkout"
+      />
+      <div className="min-h-screen min-h-[100dvh] w-full flex flex-col lg:flex-row overflow-hidden">
+        {/* Left Side - Branding & Product Info (hidden on mobile/tablet) */}
+        <div className="hidden lg:flex lg:w-[40%] xl:w-[45%] relative bg-gradient-to-br from-primary/10 via-background to-background overflow-hidden">
+          {/* Background Effects */}
+          <div className="absolute inset-0">
+            <div className="absolute top-0 left-0 w-full h-full">
+              <div className="absolute top-[20%] left-[20%] w-48 xl:w-72 h-48 xl:h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+              <div className="absolute bottom-[30%] right-[10%] w-64 xl:w-96 h-64 xl:h-96 bg-primary/10 rounded-full blur-3xl animate-pulse delay-1000" />
+            </div>
+            {/* Grid Pattern */}
+            <div className="absolute inset-0 opacity-[0.03]" 
+              style={{
+                backgroundImage: `linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)`,
+                backgroundSize: '50px 50px'
+              }}
+            />
+          </div>
+          
+          {/* Content */}
+          <div className="relative z-10 flex flex-col justify-start pt-[15vh] lg:pt-[20vh] px-6 lg:px-8 xl:px-12 2xl:px-16">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="max-w-lg mx-auto"
+              transition={{ duration: 0.6 }}
             >
-              {/* Title */}
-              <div className="text-center mb-8">
-                <h1 className="text-2xl sm:text-3xl font-display font-bold mb-2">
-                  {pixData ? "Escaneie o QR Code" : isFreeProduct ? "Ativar Plano" : "Finalizar Compra"}
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                  {pixData ? "Abra o app do seu banco e escaneie" : isFreeProduct ? "Ative seu plano gratuito" : "Pague via PIX de forma segura"}
-                </p>
-              </div>
-
-              {/* Product Card */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, delay: 0.1 }}
-                className="glass rounded-2xl p-5 mb-6"
+              {/* Back Button */}
+              <Link 
+                to={isPlanPurchase ? "/comprar" : "/dashboard"} 
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm mb-8"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <ArrowLeft className="w-4 h-4" />
+                {isPlanPurchase ? "Voltar aos planos" : "Voltar ao dashboard"}
+              </Link>
+
+              {/* Title */}
+              <h1 className="text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-display font-bold text-foreground mb-2 lg:mb-3 xl:mb-4 leading-tight">
+                {pixData ? (
+                  <>Escaneie o<br />QR Code</>
+                ) : isFreeProduct ? (
+                  <>Ativar seu<br />plano grátis</>
+                ) : (
+                  <>Finalizar<br />compra</>
+                )}
+              </h1>
+              
+              <p className="text-sm lg:text-base xl:text-lg text-muted-foreground max-w-xs lg:max-w-sm xl:max-w-md mb-6 lg:mb-8">
+                {pixData 
+                  ? "Abra o app do seu banco e escaneie o código para pagar."
+                  : isFreeProduct 
+                  ? "Ative seu plano gratuito e comece a usar agora mesmo."
+                  : "Pague via PIX de forma rápida e segura."}
+              </p>
+
+              {/* Product Summary */}
+              {displayInfo && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                  className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-5 max-w-sm"
+                >
+                  <div className="flex items-center gap-3 mb-4">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                       displayInfo?.isPlan && displayInfo?.isLifetime 
                         ? 'bg-warning/10' 
@@ -581,251 +598,333 @@ const Checkout = () => {
                         <CreditCard className="w-5 h-5 text-primary" />
                       )}
                     </div>
-                    <div>
-                      <h3 className="font-display font-bold">{displayInfo?.title}</h3>
-                      <p className="text-xs text-muted-foreground">{displayInfo?.subtitle}</p>
+                    <div className="flex-1">
+                      <h3 className="font-display font-bold text-foreground">{displayInfo.title}</h3>
+                      <p className="text-xs text-muted-foreground">{displayInfo.subtitle}</p>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    {displayInfo?.price === 0 ? (
-                      <span className="text-xl font-display font-bold text-success">Grátis</span>
-                    ) : (
-                      <span className="text-xl font-display font-bold">{formatPrice(displayInfo?.price || 0)}</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Features */}
-                {displayInfo && displayInfo.features.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-border/50">
-                    <ul className="space-y-1.5">
-                      {displayInfo.features.slice(0, 3).map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Check className="w-3 h-3 text-primary flex-shrink-0" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </motion.div>
-
-              {/* Payment Section */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, delay: 0.2 }}
-                className="glass rounded-2xl p-6"
-              >
-                {!pixData && !orderId ? (
-                  <div className="space-y-4">
-                    {isFreeProduct ? (
-                      <div className="text-center py-2">
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Clique no botão abaixo para ativar seu plano gratuito instantaneamente.
-                        </p>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Payment Method Selection */}
-                        {paymentSettings.evoPayEnabled && (
-                          <div className="space-y-3">
-                            <p className="text-sm font-medium text-foreground">Forma de pagamento</p>
-                            <div className="grid gap-3 grid-cols-2">
-                              <button
-                                onClick={() => setSelectedPaymentMethod('pix')}
-                                className={cn(
-                                  "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
-                                  selectedPaymentMethod === 'pix' 
-                                    ? "border-primary bg-primary/5" 
-                                    : "border-border hover:border-primary/50"
-                                )}
-                              >
-                                <CreditCard className="w-6 h-6" />
-                                <span className="text-sm font-medium">PIX</span>
-                              </button>
-                              <button
-                                onClick={() => setSelectedPaymentMethod('evopay')}
-                                className={cn(
-                                  "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
-                                  selectedPaymentMethod === 'evopay' 
-                                    ? "border-primary bg-primary/5" 
-                                    : "border-border hover:border-primary/50"
-                                )}
-                              >
-                                <Wallet className="w-6 h-6" />
-                                <span className="text-sm font-medium">EvoPay</span>
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="text-center py-2">
-                          <p className="text-sm text-muted-foreground">
-                            {`Pagamento instantâneo via PIX. ${isPlanPurchase ? "Sua licença será" : "Suas sessions serão"} liberada${isPlanPurchase ? "" : "s"} automaticamente.`}
-                          </p>
-                        </div>
-                      </>
-                    )}
-
-                    <Button 
-                      onClick={handlePayment}
-                      disabled={isProcessing || !displayInfo}
-                      size="lg"
-                      className={`w-full h-12 text-base font-medium ${
-                        isFreeProduct 
-                          ? 'bg-success hover:bg-success/90' 
-                          : 'bg-primary hover:bg-primary/90'
-                      }`}
-                    >
-                      {isProcessing ? (
-                        <span className="flex items-center gap-2">
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          {isFreeProduct ? "Ativando..." : "Gerando PIX..."}
-                        </span>
-                      ) : isFreeProduct ? (
-                        "Ativar Agora"
+                    <div className="text-right">
+                      {displayInfo.price === 0 ? (
+                        <span className="text-lg font-display font-bold text-success">Grátis</span>
                       ) : (
-                        "Gerar código PIX"
-                      )}
-                    </Button>
-
-                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>Pagamento 100% seguro</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-5">
-                    {/* Payment Status */}
-                    <div className={`flex items-center justify-center gap-2 p-3 rounded-xl ${
-                      paymentStatus === 'completed' || paymentStatus === 'paid'
-                        ? 'bg-success/10 text-success'
-                        : isExpired
-                        ? 'bg-destructive/10 text-destructive'
-                        : !pixData?.pixCode
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-warning/10 text-warning'
-                    }`}>
-                      {paymentStatus === 'completed' || paymentStatus === 'paid' ? (
-                        <>
-                          <CheckCircle2 className="w-5 h-5" />
-                          <span className="font-medium text-sm">Pagamento confirmado!</span>
-                        </>
-                      ) : isExpired ? (
-                        <>
-                          <Clock className="w-5 h-5" />
-                          <span className="font-medium text-sm">PIX expirado</span>
-                        </>
-                      ) : !pixData?.pixCode ? (
-                        <>
-                          <CheckCircle2 className="w-5 h-5" />
-                          <span className="font-medium text-sm">Aguardando aprovação</span>
-                        </>
-                      ) : (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          <span className="font-medium text-sm">Aguardando pagamento...</span>
-                        </>
+                        <span className="text-lg font-display font-bold text-foreground">{formatPrice(displayInfo.price)}</span>
                       )}
                     </div>
+                  </div>
 
-                    {/* Gateway unavailable message */}
-                    {!pixData?.pixCode && paymentStatus === 'pending' && !isExpired && (
-                      <div className="text-center py-4">
-                        <p className="text-sm text-muted-foreground mb-2">
-                          Seu pedido foi registrado e será processado pelo admin.
-                        </p>
-                        <p className="text-xs text-muted-foreground font-mono">
-                          ID: {orderId?.slice(0, 8)}...
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Countdown Timer */}
-                    {timeLeft && !isExpired && paymentStatus === 'pending' && pixData?.pixCode && (
-                      <div className="flex items-center justify-center gap-3">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Expira em</span>
-                        <span className="font-mono font-bold text-xl tabular-nums">
-                          {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* QR Code */}
-                    {pixData?.pixCode && !isExpired && paymentStatus === 'pending' && (
-                      <div className="flex justify-center">
-                        <div className="bg-white p-4 rounded-2xl shadow-lg">
-                          <QRCodeSVG 
-                            value={pixData.pixCode} 
-                            size={200}
-                            level="M"
-                            includeMargin={false}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* PIX Code Copy */}
-                    {pixData?.pixCode && !isExpired && (
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground">Código PIX Copia e Cola:</label>
-                        <div 
-                          onClick={copyPixCode}
-                          className="relative bg-muted/50 hover:bg-muted/70 border border-border/50 rounded-xl p-3 pr-12 cursor-pointer transition-colors group"
+                  {/* Features */}
+                  {displayInfo.features.length > 0 && (
+                    <div className="space-y-2 pt-4 border-t border-border/50">
+                      {displayInfo.features.slice(0, 4).map((feature, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.4, delay: 0.3 + i * 0.1 }}
+                          className="flex items-center gap-2"
                         >
-                          <div className="font-mono text-[10px] break-all line-clamp-2 text-muted-foreground group-hover:text-foreground transition-colors">
-                            {pixData.pixCode}
-                          </div>
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                            {copied ? (
-                              <CheckCircle2 className="w-5 h-5 text-success" />
-                            ) : (
-                              <Copy className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                            )}
-                          </div>
-                        </div>
-                        <p className="text-center text-xs text-muted-foreground">
-                          Clique para copiar
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Generate new PIX button when expired OR when gateway failed */}
-                    {(isExpired || (!pixData?.pixCode && paymentStatus === 'pending')) && (
-                      <Button 
-                        onClick={() => {
-                          setPixData(null);
-                          setExpirationTime(null);
-                          setOrderId(null);
-                          setPaymentStatus('pending');
-                        }}
-                        className="w-full"
-                        variant={isExpired ? "default" : "outline"}
-                      >
-                        {isExpired ? "Gerar novo código PIX" : "Tentar novamente"}
-                      </Button>
-                    )}
-
-                    <p className="text-[10px] text-muted-foreground text-center">
-                      {isExpired 
-                        ? "O código PIX expirou. Gere um novo código para continuar."
-                        : !pixData?.pixCode && paymentStatus === 'pending'
-                        ? "Você será notificado quando o pedido for aprovado."
-                        : isPlanPurchase 
-                          ? "Após o pagamento, sua licença será ativada automaticamente."
-                          : "Após o pagamento, suas sessions serão liberadas automaticamente."
-                      }
-                    </p>
-                  </div>
-                )}
-              </motion.div>
+                          <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-medium shrink-0">
+                            ✓
+                          </span>
+                          <span className="text-xs lg:text-sm text-muted-foreground">{feature}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
             </motion.div>
           </div>
         </div>
-      </main>
-    </div>
+
+        {/* Right Side - Payment Form */}
+        <div className="flex-1 lg:w-[60%] xl:w-[55%] flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8 xl:p-10 bg-background relative min-h-screen lg:min-h-0 overflow-y-auto">
+          {/* Mobile/Tablet Background */}
+          <div className="absolute inset-0 lg:hidden">
+            <AnimatedShaderBackground className="w-full h-full opacity-20" />
+          </div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="w-full max-w-[360px] sm:max-w-[400px] md:max-w-[420px] relative z-10 my-auto"
+          >
+            {/* Mobile Back Button */}
+            <div className="lg:hidden mb-4">
+              <Link 
+                to={isPlanPurchase ? "/comprar" : "/dashboard"} 
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                {isPlanPurchase ? "Voltar aos planos" : "Voltar ao dashboard"}
+              </Link>
+            </div>
+
+            {/* Payment Card */}
+            <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 lg:p-7 shadow-xl">
+              {/* Mobile Header */}
+              <div className="text-center mb-4 sm:mb-5 lg:hidden">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-display font-bold text-foreground">
+                  {pixData ? "Escaneie o QR Code" : isFreeProduct ? "Ativar Plano" : "Finalizar Compra"}
+                </h2>
+                <p className="text-muted-foreground text-xs sm:text-sm mt-1 sm:mt-1.5">
+                  {pixData ? "Abra o app do seu banco e escaneie" : isFreeProduct ? "Ative seu plano gratuito" : "Pague via PIX de forma segura"}
+                </p>
+              </div>
+
+              {/* Desktop Header */}
+              <div className="hidden lg:block text-center mb-5">
+                <h2 className="text-xl font-display font-bold text-foreground">
+                  {pixData ? "Pagamento PIX" : isFreeProduct ? "Ativação Gratuita" : "Método de Pagamento"}
+                </h2>
+              </div>
+
+              {/* Mobile Product Card */}
+              <div className="lg:hidden mb-4">
+                {displayInfo && (
+                  <div className="bg-muted/30 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                          displayInfo?.isPlan && displayInfo?.isLifetime 
+                            ? 'bg-warning/10' 
+                            : 'bg-primary/10'
+                        }`}>
+                          {displayInfo?.isPlan && displayInfo?.isLifetime ? (
+                            <Crown className="w-4 h-4 text-warning" />
+                          ) : displayInfo?.isPlan ? (
+                            <Sparkles className="w-4 h-4 text-primary" />
+                          ) : (
+                            <CreditCard className="w-4 h-4 text-primary" />
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-sm text-foreground">{displayInfo.title}</h3>
+                          <p className="text-xs text-muted-foreground">{displayInfo.subtitle}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        {displayInfo.price === 0 ? (
+                          <span className="text-base font-bold text-success">Grátis</span>
+                        ) : (
+                          <span className="text-base font-bold text-foreground">{formatPrice(displayInfo.price)}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Payment Content */}
+              {!pixData && !orderId ? (
+                <div className="space-y-4">
+                  {isFreeProduct ? (
+                    <div className="text-center py-2">
+                      <p className="text-sm text-muted-foreground">
+                        Clique no botão abaixo para ativar seu plano gratuito instantaneamente.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Payment Method Selection */}
+                      {paymentSettings.evoPayEnabled && (
+                        <div className="space-y-3">
+                          <p className="text-xs sm:text-sm font-medium text-foreground">Forma de pagamento</p>
+                          <div className="grid gap-3 grid-cols-2">
+                            <button
+                              onClick={() => setSelectedPaymentMethod('pix')}
+                              className={cn(
+                                "flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl border-2 transition-all",
+                                selectedPaymentMethod === 'pix' 
+                                  ? "border-primary bg-primary/5" 
+                                  : "border-border hover:border-primary/50"
+                              )}
+                            >
+                              <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" />
+                              <span className="text-xs sm:text-sm font-medium">PIX</span>
+                            </button>
+                            <button
+                              onClick={() => setSelectedPaymentMethod('evopay')}
+                              className={cn(
+                                "flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl border-2 transition-all",
+                                selectedPaymentMethod === 'evopay' 
+                                  ? "border-primary bg-primary/5" 
+                                  : "border-border hover:border-primary/50"
+                              )}
+                            >
+                              <Wallet className="w-5 h-5 sm:w-6 sm:h-6" />
+                              <span className="text-xs sm:text-sm font-medium">EvoPay</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="text-center py-2">
+                        <p className="text-xs sm:text-sm text-muted-foreground">
+                          {`Pagamento instantâneo via PIX. ${isPlanPurchase ? "Sua licença será" : "Suas sessions serão"} liberada${isPlanPurchase ? "" : "s"} automaticamente.`}
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  <Button 
+                    onClick={handlePayment}
+                    disabled={isProcessing || !displayInfo}
+                    size="lg"
+                    className={`w-full h-11 sm:h-12 text-sm sm:text-base font-medium ${
+                      isFreeProduct 
+                        ? 'bg-success hover:bg-success/90' 
+                        : 'bg-primary hover:bg-primary/90'
+                    }`}
+                  >
+                    {isProcessing ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                        {isFreeProduct ? "Ativando..." : "Gerando PIX..."}
+                      </span>
+                    ) : isFreeProduct ? (
+                      "Ativar Agora"
+                    ) : (
+                      "Gerar código PIX"
+                    )}
+                  </Button>
+
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Pagamento 100% seguro</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Payment Status */}
+                  <div className={`flex items-center justify-center gap-2 p-3 rounded-xl ${
+                    paymentStatus === 'completed' || paymentStatus === 'paid'
+                      ? 'bg-success/10 text-success'
+                      : isExpired
+                      ? 'bg-destructive/10 text-destructive'
+                      : !pixData?.pixCode
+                      ? 'bg-primary/10 text-primary'
+                      : 'bg-warning/10 text-warning'
+                  }`}>
+                    {paymentStatus === 'completed' || paymentStatus === 'paid' ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="font-medium text-xs sm:text-sm">Pagamento confirmado!</span>
+                      </>
+                    ) : isExpired ? (
+                      <>
+                        <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="font-medium text-xs sm:text-sm">PIX expirado</span>
+                      </>
+                    ) : !pixData?.pixCode ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="font-medium text-xs sm:text-sm">Aguardando aprovação</span>
+                      </>
+                    ) : (
+                      <>
+                        <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                        <span className="font-medium text-xs sm:text-sm">Aguardando pagamento...</span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Gateway unavailable message */}
+                  {!pixData?.pixCode && paymentStatus === 'pending' && !isExpired && (
+                    <div className="text-center py-3">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-2">
+                        Seu pedido foi registrado e será processado pelo admin.
+                      </p>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        ID: {orderId?.slice(0, 8)}...
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Countdown Timer */}
+                  {timeLeft && !isExpired && paymentStatus === 'pending' && pixData?.pixCode && (
+                    <div className="flex items-center justify-center gap-3">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs sm:text-sm text-muted-foreground">Expira em</span>
+                      <span className="font-mono font-bold text-lg sm:text-xl tabular-nums">
+                        {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* QR Code */}
+                  {pixData?.pixCode && !isExpired && paymentStatus === 'pending' && (
+                    <div className="flex justify-center">
+                      <div className="bg-white p-3 sm:p-4 rounded-xl shadow-lg">
+                        <QRCodeSVG 
+                          value={pixData.pixCode} 
+                          size={160}
+                          level="M"
+                          includeMargin={false}
+                          className="sm:w-[180px] sm:h-[180px]"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PIX Code Copy */}
+                  {pixData?.pixCode && !isExpired && (
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground">Código PIX Copia e Cola:</label>
+                      <div 
+                        onClick={copyPixCode}
+                        className="relative bg-muted/50 hover:bg-muted/70 border border-border/50 rounded-xl p-3 pr-12 cursor-pointer transition-colors group"
+                      >
+                        <div className="font-mono text-[9px] sm:text-[10px] break-all line-clamp-2 text-muted-foreground group-hover:text-foreground transition-colors">
+                          {pixData.pixCode}
+                        </div>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          {copied ? (
+                            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
+                          ) : (
+                            <Copy className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-center text-xs text-muted-foreground">
+                        Clique para copiar
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Generate new PIX button when expired OR when gateway failed */}
+                  {(isExpired || (!pixData?.pixCode && paymentStatus === 'pending')) && (
+                    <Button 
+                      onClick={() => {
+                        setPixData(null);
+                        setExpirationTime(null);
+                        setOrderId(null);
+                        setPaymentStatus('pending');
+                      }}
+                      className="w-full"
+                      variant={isExpired ? "default" : "outline"}
+                    >
+                      {isExpired ? "Gerar novo código PIX" : "Tentar novamente"}
+                    </Button>
+                  )}
+
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    {isExpired 
+                      ? "O código PIX expirou. Gere um novo código para continuar."
+                      : !pixData?.pixCode && paymentStatus === 'pending'
+                      ? "Você será notificado quando o pedido for aprovado."
+                      : isPlanPurchase 
+                        ? "Após o pagamento, sua licença será ativada automaticamente."
+                        : "Após o pagamento, suas sessions serão liberadas automaticamente."
+                    }
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </>
   );
 };
 
