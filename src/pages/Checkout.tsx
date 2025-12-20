@@ -525,7 +525,7 @@ const Checkout = () => {
       />
       <div className="min-h-screen min-h-[100dvh] w-full flex flex-col lg:flex-row overflow-hidden">
         {/* Left Side - Branding & Product Info (hidden on mobile/tablet) */}
-        <div className="hidden lg:flex lg:w-[40%] xl:w-[45%] relative bg-gradient-to-br from-primary/10 via-background to-background overflow-hidden">
+        <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-primary/10 via-background to-background overflow-hidden">
           {/* Background Effects */}
           <div className="absolute inset-0">
             <div className="absolute top-0 left-0 w-full h-full">
@@ -541,103 +541,105 @@ const Checkout = () => {
             />
           </div>
           
-          {/* Content */}
-          <div className="relative z-10 flex flex-col justify-start pt-[15vh] lg:pt-[20vh] px-6 lg:px-8 xl:px-12 2xl:px-16">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              {/* Back Button */}
-              <Link 
-                to={isPlanPurchase ? "/comprar" : "/dashboard"} 
-                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm mb-8"
+          {/* Content - Centered */}
+          <div className="relative z-10 flex flex-col justify-center items-center w-full px-8 xl:px-12 2xl:px-16">
+            <div className="w-full max-w-md">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
               >
-                <ArrowLeft className="w-4 h-4" />
-                {isPlanPurchase ? "Voltar aos planos" : "Voltar ao dashboard"}
-              </Link>
-
-              {/* Title */}
-              <h1 className="text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-display font-bold text-foreground mb-2 lg:mb-3 xl:mb-4 leading-tight">
-                {pixData ? (
-                  <>Escaneie o<br />QR Code</>
-                ) : isFreeProduct ? (
-                  <>Ativar seu<br />plano grátis</>
-                ) : (
-                  <>Finalizar<br />compra</>
-                )}
-              </h1>
-              
-              <p className="text-sm lg:text-base xl:text-lg text-muted-foreground max-w-xs lg:max-w-sm xl:max-w-md mb-6 lg:mb-8">
-                {pixData 
-                  ? "Abra o app do seu banco e escaneie o código para pagar."
-                  : isFreeProduct 
-                  ? "Ative seu plano gratuito e comece a usar agora mesmo."
-                  : "Pague via PIX de forma rápida e segura."}
-              </p>
-
-              {/* Product Summary */}
-              {displayInfo && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-5 max-w-sm"
+                {/* Back Button */}
+                <Link 
+                  to={isPlanPurchase ? "/comprar" : "/dashboard"} 
+                  className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm mb-6"
                 >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      displayInfo?.isPlan && displayInfo?.isLifetime 
-                        ? 'bg-warning/10' 
-                        : 'bg-primary/10'
-                    }`}>
-                      {displayInfo?.isPlan && displayInfo?.isLifetime ? (
-                        <Crown className="w-5 h-5 text-warning" />
-                      ) : displayInfo?.isPlan ? (
-                        <Sparkles className="w-5 h-5 text-primary" />
-                      ) : (
-                        <CreditCard className="w-5 h-5 text-primary" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-display font-bold text-foreground">{displayInfo.title}</h3>
-                      <p className="text-xs text-muted-foreground">{displayInfo.subtitle}</p>
-                    </div>
-                    <div className="text-right">
-                      {displayInfo.price === 0 ? (
-                        <span className="text-lg font-display font-bold text-success">Grátis</span>
-                      ) : (
-                        <span className="text-lg font-display font-bold text-foreground">{formatPrice(displayInfo.price)}</span>
-                      )}
-                    </div>
-                  </div>
+                  <ArrowLeft className="w-4 h-4" />
+                  {isPlanPurchase ? "Voltar aos planos" : "Voltar ao dashboard"}
+                </Link>
 
-                  {/* Features */}
-                  {displayInfo.features.length > 0 && (
-                    <div className="space-y-2 pt-4 border-t border-border/50">
-                      {displayInfo.features.slice(0, 4).map((feature, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.4, delay: 0.3 + i * 0.1 }}
-                          className="flex items-center gap-2"
-                        >
-                          <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-medium shrink-0">
-                            ✓
-                          </span>
-                          <span className="text-xs lg:text-sm text-muted-foreground">{feature}</span>
-                        </motion.div>
-                      ))}
-                    </div>
+                {/* Title */}
+                <h1 className="text-3xl xl:text-4xl 2xl:text-5xl font-display font-bold text-foreground mb-3 leading-tight">
+                  {pixData ? (
+                    <>Escaneie o QR Code</>
+                  ) : isFreeProduct ? (
+                    <>Ativar plano grátis</>
+                  ) : (
+                    <>Finalizar compra</>
                   )}
-                </motion.div>
-              )}
-            </motion.div>
+                </h1>
+                
+                <p className="text-base xl:text-lg text-muted-foreground mb-8">
+                  {pixData 
+                    ? "Abra o app do seu banco e escaneie o código para pagar."
+                    : isFreeProduct 
+                    ? "Ative seu plano gratuito e comece a usar agora mesmo."
+                    : "Pague via PIX de forma rápida e segura."}
+                </p>
+
+                {/* Product Summary */}
+                {displayInfo && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                    className="bg-card/60 backdrop-blur-sm border border-border/50 rounded-2xl p-6"
+                  >
+                    <div className="flex items-start gap-4 mb-5">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                        displayInfo?.isPlan && displayInfo?.isLifetime 
+                          ? 'bg-warning/10' 
+                          : 'bg-primary/10'
+                      }`}>
+                        {displayInfo?.isPlan && displayInfo?.isLifetime ? (
+                          <Crown className="w-6 h-6 text-warning" />
+                        ) : displayInfo?.isPlan ? (
+                          <Sparkles className="w-6 h-6 text-primary" />
+                        ) : (
+                          <CreditCard className="w-6 h-6 text-primary" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-display font-bold text-lg text-foreground truncate">{displayInfo.title}</h3>
+                        <p className="text-sm text-muted-foreground">{displayInfo.subtitle}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {displayInfo.price === 0 ? (
+                          <span className="text-xl font-display font-bold text-success">Grátis</span>
+                        ) : (
+                          <span className="text-xl font-display font-bold text-foreground">{formatPrice(displayInfo.price)}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Features */}
+                    {displayInfo.features.length > 0 && (
+                      <div className="space-y-2.5 pt-5 border-t border-border/50">
+                        {displayInfo.features.slice(0, 4).map((feature, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.4, delay: 0.3 + i * 0.1 }}
+                            className="flex items-center gap-3"
+                          >
+                            <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-medium shrink-0">
+                              ✓
+                            </span>
+                            <span className="text-sm text-muted-foreground">{feature}</span>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </motion.div>
+            </div>
           </div>
         </div>
 
         {/* Right Side - Payment Form */}
-        <div className="flex-1 lg:w-[60%] xl:w-[55%] flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8 xl:p-10 bg-background relative min-h-screen lg:min-h-0 overflow-y-auto">
+        <div className="flex-1 lg:w-1/2 flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12 bg-background relative min-h-screen lg:min-h-0 overflow-y-auto">
           {/* Mobile/Tablet Background */}
           <div className="absolute inset-0 lg:hidden">
             <AnimatedShaderBackground className="w-full h-full opacity-20" />
