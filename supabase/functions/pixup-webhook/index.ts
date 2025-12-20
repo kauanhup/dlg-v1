@@ -130,13 +130,20 @@ Deno.serve(async (req) => {
                       req.headers.get('x-pixup-signature') ||
                       req.headers.get('x-signature')
 
-    // SECURITY: Verify webhook signature if both secret and signature are present
-    // If PixUp doesn't send signatures, we allow the request but log it
-    if (settings?.client_secret && signature) {
+    // SECURITY: Require webhook signature verification when secret is configured
+    if (settings?.client_secret) {
+      if (!signature) {
+        console.error('SECURITY: Missing required webhook signature')
+        return new Response(
+          JSON.stringify({ success: false, error: 'Missing signature' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        )
+      }
+      
       const isValid = await verifyWebhookSignature(rawBody, signature, settings.client_secret)
       
       if (!isValid) {
-        console.error('Invalid webhook signature - potential spoofing attempt')
+        console.error('SECURITY: Invalid webhook signature - potential spoofing attempt')
         return new Response(
           JSON.stringify({ success: false, error: 'Invalid signature' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
@@ -144,8 +151,11 @@ Deno.serve(async (req) => {
       }
       console.log('Webhook signature verified successfully')
     } else {
-      // Allow unsigned webhooks but log warning
-      console.log('WARNING: Processing webhook without signature verification')
+      console.error('SECURITY: Webhook secret not configured - rejecting request')
+      return new Response(
+        JSON.stringify({ success: false, error: 'Webhook not configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      )
     }
 
     // PixUp webhook payload structure
@@ -193,9 +203,17 @@ Deno.serve(async (req) => {
       )
     }
 
-    // SECURITY: Optionally validate amount matches (if provided in webhook)
-    if (amount && Math.abs(Number(amount) - Number(existingOrder.amount)) > 0.01) {
-      console.error(`Amount mismatch: webhook=${amount}, order=${existingOrder.amount}`)
+    // SECURITY: Validate amount matches - MANDATORY check
+    if (!amount) {
+      console.error('SECURITY: Missing amount field in webhook payload')
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing amount' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
+    
+    if (Math.abs(Number(amount) - Number(existingOrder.amount)) > 0.01) {
+      console.error(`SECURITY: Amount mismatch: webhook=${amount}, order=${existingOrder.amount}`)
       return new Response(
         JSON.stringify({ success: false, error: 'Amount mismatch' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }

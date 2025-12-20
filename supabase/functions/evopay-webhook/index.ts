@@ -134,9 +134,16 @@ serve(async (req) => {
       .eq('evopay_enabled', true)
       .maybeSingle();
 
-    // SECURITY: Verify webhook authenticity if both secret and signature present
-    // If EvoPay doesn't send signatures, we allow the request but log warning
-    if (settings?.evopay_api_key && signature) {
+    // SECURITY: Require webhook signature verification when secret is configured
+    if (settings?.evopay_api_key) {
+      if (!signature) {
+        console.error('SECURITY: Missing required EvoPay webhook signature');
+        return new Response(
+          JSON.stringify({ success: false, error: 'Missing signature' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       const isValid = await verifyWebhookSignature(rawBody, signature, settings.evopay_api_key);
       
       if (!isValid) {
@@ -148,8 +155,11 @@ serve(async (req) => {
       }
       console.log('EvoPay webhook signature verified successfully');
     } else {
-      // Allow unsigned webhooks but log warning
-      console.log('WARNING: Processing EvoPay webhook without signature verification');
+      console.error('SECURITY: EvoPay webhook secret not configured - rejecting request');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Webhook not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // EvoPay webhook payload structure from docs:
@@ -197,8 +207,16 @@ serve(async (req) => {
 
     const orderId = finalPayment.order_id;
 
-    // SECURITY: Validate amount matches (if provided in webhook)
-    if (amount && finalPayment.amount && Math.abs(Number(amount) - Number(finalPayment.amount)) > 0.01) {
+    // SECURITY: Validate amount matches - MANDATORY check
+    if (!amount) {
+      console.error('SECURITY: Missing amount field in EvoPay webhook payload');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing amount' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (finalPayment.amount && Math.abs(Number(amount) - Number(finalPayment.amount)) > 0.01) {
       console.error(`SECURITY: Amount mismatch detected - webhook=${amount}, payment=${finalPayment.amount}`);
       return new Response(
         JSON.stringify({ success: false, error: 'Amount mismatch' }),
@@ -230,8 +248,8 @@ serve(async (req) => {
       );
     }
 
-    // SECURITY: Validate order amount matches (defense in depth)
-    if (amount && Math.abs(Number(amount) - Number(order.amount)) > 0.01) {
+    // SECURITY: Validate order amount matches (defense in depth) - amount already validated above
+    if (Math.abs(Number(amount) - Number(order.amount)) > 0.01) {
       console.error(`SECURITY: Order amount mismatch - webhook=${amount}, order=${order.amount}`);
       return new Response(
         JSON.stringify({ success: false, error: 'Order amount mismatch' }),
