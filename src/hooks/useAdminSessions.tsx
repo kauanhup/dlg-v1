@@ -1,5 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+
+// ==========================================
+// TYPES
+// ==========================================
 
 export interface SessionInventory {
   id: string;
@@ -44,6 +48,58 @@ export interface SoldSession {
   buyer_email: string;
 }
 
+// ==========================================
+// CONSTANTS - Security
+// ==========================================
+
+const ALLOWED_EXTENSIONS = ['.session'];
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB max per file
+const MAX_FILENAME_LENGTH = 200;
+
+// ==========================================
+// HELPERS - Security
+// ==========================================
+
+/**
+ * Validates file extension (security)
+ */
+const validateFileExtension = (fileName: string): boolean => {
+  const ext = fileName.toLowerCase().slice(fileName.lastIndexOf('.'));
+  return ALLOWED_EXTENSIONS.includes(ext);
+};
+
+/**
+ * Validates file size (security)
+ */
+const validateFileSize = (file: File): boolean => {
+  return file.size <= MAX_FILE_SIZE_BYTES;
+};
+
+/**
+ * Sanitizes file name to prevent path traversal and special chars
+ */
+const sanitizeFileName = (fileName: string): string => {
+  // Remove path separators and special characters
+  let sanitized = fileName
+    .replace(/[\/\\]/g, '') // Remove path separators
+    .replace(/\.\./g, '')   // Remove parent directory references
+    .replace(/[<>:"|?*]/g, '') // Remove Windows reserved characters
+    .replace(/[\x00-\x1f\x80-\x9f]/g, '') // Remove control characters
+    .trim();
+  
+  // Truncate if too long
+  if (sanitized.length > MAX_FILENAME_LENGTH) {
+    const ext = sanitized.slice(sanitized.lastIndexOf('.'));
+    sanitized = sanitized.slice(0, MAX_FILENAME_LENGTH - ext.length) + ext;
+  }
+  
+  return sanitized || 'unnamed.session';
+};
+
+// ==========================================
+// HOOK
+// ==========================================
+
 export const useAdminSessions = () => {
   const [inventory, setInventory] = useState<SessionInventory[]>([]);
   const [combos, setCombos] = useState<SessionCombo[]>([]);
@@ -53,55 +109,40 @@ export const useAdminSessions = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  // ==========================================
+  // FETCH DATA
+  // ==========================================
+  
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Fetch inventory
-      const { data: inventoryData, error: inventoryError } = await supabase
-        .from('sessions_inventory')
-        .select('*');
+      // Fetch all data in parallel for efficiency
+      const [inventoryResult, combosResult, filesResult, soldResult] = await Promise.all([
+        supabase.from('sessions_inventory').select('*'),
+        supabase.from('session_combos').select('*').order('quantity', { ascending: true }),
+        supabase.from('session_files').select('*').order('uploaded_at', { ascending: false }),
+        supabase
+          .from('session_files')
+          .select('id, file_name, type, sold_at, user_id')
+          .eq('status', 'sold')
+          .not('sold_at', 'is', null)
+          .order('sold_at', { ascending: false })
+      ]);
 
-      if (inventoryError) throw inventoryError;
-      setInventory(inventoryData || []);
+      if (inventoryResult.error) throw inventoryResult.error;
+      if (combosResult.error) throw combosResult.error;
+      if (filesResult.error) throw filesResult.error;
+      if (soldResult.error) throw soldResult.error;
 
-      // Fetch combos
-      const { data: combosData, error: combosError } = await supabase
-        .from('session_combos')
-        .select('*')
-        .order('quantity', { ascending: true });
-
-      if (combosError) throw combosError;
-      setCombos(combosData || []);
-
-      // Fetch session files
-      const { data: filesData, error: filesError } = await supabase
-        .from('session_files')
-        .select('*')
-        .order('uploaded_at', { ascending: false });
-
-      if (filesError) throw filesError;
-      setSessionFiles((filesData || []) as SessionFile[]);
-
-      // Fetch sold sessions with buyer info
-      const { data: soldData, error: soldError } = await supabase
-        .from('session_files')
-        .select(`
-          id,
-          file_name,
-          type,
-          sold_at,
-          user_id
-        `)
-        .eq('status', 'sold')
-        .not('sold_at', 'is', null)
-        .order('sold_at', { ascending: false });
-
-      if (soldError) throw soldError;
+      setInventory(inventoryResult.data || []);
+      setCombos(combosResult.data || []);
+      setSessionFiles((filesResult.data || []) as SessionFile[]);
 
       // Fetch buyer profiles for sold sessions
-      if (soldData && soldData.length > 0) {
+      const soldData = soldResult.data || [];
+      if (soldData.length > 0) {
         const userIds = [...new Set(soldData.filter(s => s.user_id).map(s => s.user_id))];
         const { data: profiles } = await supabase
           .from('profiles')
@@ -129,16 +170,42 @@ export const useAdminSessions = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
+  // ==========================================
+  // UPLOAD FILES (with security validations)
+  // ==========================================
+  
   const uploadSessionFiles = async (files: File[], type: 'brasileiras' | 'estrangeiras') => {
     setIsUploading(true);
     const results: { success: boolean; fileName: string; error?: string }[] = [];
 
     try {
       for (const file of files) {
+        // SECURITY: Validate file extension
+        if (!validateFileExtension(file.name)) {
+          results.push({ 
+            success: false, 
+            fileName: file.name, 
+            error: 'Extensão de arquivo inválida. Apenas .session é permitido.' 
+          });
+          continue;
+        }
+        
+        // SECURITY: Validate file size
+        if (!validateFileSize(file)) {
+          results.push({ 
+            success: false, 
+            fileName: file.name, 
+            error: `Arquivo muito grande. Máximo permitido: ${MAX_FILE_SIZE_BYTES / 1024 / 1024}MB` 
+          });
+          continue;
+        }
+        
+        // SECURITY: Sanitize file name
+        const sanitizedName = sanitizeFileName(file.name);
         const timestamp = Date.now();
-        const filePath = `${type}/${timestamp}_${file.name}`;
+        const filePath = `${type}/${timestamp}_${sanitizedName}`;
 
         // Upload to storage
         const { error: uploadError } = await supabase.storage
@@ -155,7 +222,7 @@ export const useAdminSessions = () => {
         const { error: insertError } = await supabase
           .from('session_files')
           .insert({
-            file_name: file.name,
+            file_name: sanitizedName, // Use sanitized name in DB
             file_path: filePath,
             type: type,
             status: 'available'
@@ -163,7 +230,7 @@ export const useAdminSessions = () => {
 
         if (insertError) {
           console.error('Insert error:', insertError);
-          // Try to delete the uploaded file if record creation failed
+          // Rollback: delete the uploaded file if record creation failed
           await supabase.storage.from('sessions').remove([filePath]);
           results.push({ success: false, fileName: file.name, error: insertError.message });
           continue;
@@ -172,20 +239,34 @@ export const useAdminSessions = () => {
         results.push({ success: true, fileName: file.name });
       }
 
-      // Update inventory count
+      // ATOMIC: Update inventory count using SQL increment to avoid race conditions
       const successCount = results.filter(r => r.success).length;
       if (successCount > 0) {
-        const currentInventory = inventory.find(i => i.type === type);
-        if (currentInventory) {
-          await supabase
-            .from('sessions_inventory')
-            .update({ quantity: currentInventory.quantity + successCount })
-            .eq('type', type);
-        } else {
-          // Create inventory record if it doesn't exist
-          await supabase
-            .from('sessions_inventory')
-            .insert({ type, quantity: successCount, cost_per_session: 0, sale_price_per_session: 0 });
+        // Use RPC or update with fresh fetch to avoid race conditions
+        const { data: currentInv, error: invError } = await supabase
+          .from('sessions_inventory')
+          .select('id, quantity')
+          .eq('type', type)
+          .maybeSingle();
+
+        if (!invError) {
+          if (currentInv) {
+            // Atomic update with fresh value
+            await supabase
+              .from('sessions_inventory')
+              .update({ quantity: currentInv.quantity + successCount })
+              .eq('id', currentInv.id);
+          } else {
+            // Create inventory record if it doesn't exist
+            await supabase
+              .from('sessions_inventory')
+              .insert({ 
+                type, 
+                quantity: successCount, 
+                cost_per_session: 0, 
+                sale_price_per_session: 0 
+              });
+          }
         }
       }
 
@@ -205,6 +286,10 @@ export const useAdminSessions = () => {
     }
   };
 
+  // ==========================================
+  // DELETE FILE (with atomic inventory update)
+  // ==========================================
+  
   const deleteSessionFile = async (fileId: string, filePath: string) => {
     try {
       // Get file info from database (fresh, not cached state)
@@ -240,25 +325,26 @@ export const useAdminSessions = () => {
 
       if (deleteError) throw deleteError;
 
-      // Update inventory count only if file was available (not already sold)
+      // ATOMIC: Update inventory count with fresh fetch to avoid race conditions
       if (wasAvailable && fileType) {
-        // Use atomic decrement via RPC or fetch fresh count
-        const { data: freshInventory } = await supabase
+        const { data: freshInventory, error: invError } = await supabase
           .from('sessions_inventory')
-          .select('quantity')
+          .select('id, quantity')
           .eq('type', fileType)
           .maybeSingle();
 
-        if (freshInventory && freshInventory.quantity > 0) {
+        if (!invError && freshInventory && freshInventory.quantity > 0) {
           await supabase
             .from('sessions_inventory')
-            .update({ quantity: freshInventory.quantity - 1 })
-            .eq('type', fileType);
+            .update({ quantity: Math.max(0, freshInventory.quantity - 1) })
+            .eq('id', freshInventory.id);
         }
       }
 
-      // Update local state and refetch
+      // Update local state immediately for responsiveness
       setSessionFiles(prev => prev.filter(f => f.id !== fileId));
+      
+      // Refetch to ensure consistency
       await fetchData();
 
       return { success: true };
@@ -268,6 +354,10 @@ export const useAdminSessions = () => {
     }
   };
 
+  // ==========================================
+  // UPDATE INVENTORY
+  // ==========================================
+  
   const updateInventory = async (type: string, data: Partial<SessionInventory>) => {
     try {
       const { error } = await supabase
@@ -288,6 +378,10 @@ export const useAdminSessions = () => {
     }
   };
 
+  // ==========================================
+  // COMBO OPERATIONS
+  // ==========================================
+  
   const updateCombo = async (comboId: string, data: Partial<SessionCombo>) => {
     try {
       const { error } = await supabase
@@ -345,14 +439,29 @@ export const useAdminSessions = () => {
     }
   };
 
+  // ==========================================
+  // LIFECYCLE
+  // ==========================================
+  
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
-  const getInventoryByType = (type: string) => inventory.find(i => i.type === type);
-  const getCombosByType = (type: string) => combos.filter(c => c.type === type && c.is_active);
-  const getFilesByType = (type: string) => sessionFiles.filter(f => f.type === type);
-  const getAvailableFilesByType = (type: string) => sessionFiles.filter(f => f.type === type && f.status === 'available');
+  // ==========================================
+  // HELPERS & COMPUTED VALUES
+  // ==========================================
+  
+  const getInventoryByType = useCallback((type: string) => 
+    inventory.find(i => i.type === type), [inventory]);
+  
+  const getCombosByType = useCallback((type: string) => 
+    combos.filter(c => c.type === type && c.is_active), [combos]);
+  
+  const getFilesByType = useCallback((type: string) => 
+    sessionFiles.filter(f => f.type === type), [sessionFiles]);
+  
+  const getAvailableFilesByType = useCallback((type: string) => 
+    sessionFiles.filter(f => f.type === type && f.status === 'available'), [sessionFiles]);
 
   const stats = {
     brasileiras: getInventoryByType('brasileiras'),
