@@ -265,7 +265,7 @@ const Checkout = () => {
         // Get payment info if exists
         const { data: payment } = await supabase
           .from('payments')
-          .select('pix_code, payment_method')
+          .select('pix_code, qr_code_base64, payment_method')
           .eq('order_id', pendingOrder.id)
           .maybeSingle();
 
@@ -282,6 +282,7 @@ const Checkout = () => {
             setExpirationTime(expTime);
             setPixData({
               pixCode: payment.pix_code,
+              qrCodeBase64: (payment as any).qr_code_base64 || undefined,
               transactionId: pendingOrder.id,
             });
             console.log('Recovered PIX for order:', pendingOrder.id);
@@ -340,7 +341,7 @@ const Checkout = () => {
         // Fetch payment data from database (more reliable than state)
         const { data: payment } = await supabase
           .from('payments')
-          .select('pix_code, payment_method, created_at, status')
+          .select('pix_code, qr_code_base64, payment_method, created_at, status')
           .eq('order_id', existingOrderIdFromState)
           .maybeSingle();
         
@@ -356,7 +357,7 @@ const Checkout = () => {
             setSelectedPaymentMethod(payment.payment_method as PaymentMethod || 'pix');
           }
           
-          // Only use PIX code if it's still valid (at least 1 minute remaining)
+        // Only use PIX code if it's still valid (at least 1 minute remaining)
           if (payment.pix_code) {
             const paymentCreated = new Date(payment.created_at);
             const expTime = new Date(paymentCreated.getTime() + PIX_EXPIRATION_MINUTES * 60 * 1000);
@@ -367,6 +368,7 @@ const Checkout = () => {
               setExpirationTime(expTime);
               setPixData({
                 pixCode: payment.pix_code,
+                qrCodeBase64: (payment as any).qr_code_base64 || undefined,
                 transactionId: existingOrderIdFromState,
               });
             } else {
@@ -535,10 +537,11 @@ const Checkout = () => {
           expiresAt: undefined,
         });
 
-        // Update payment with PIX code (await to ensure it's saved)
+        // Update payment with PIX code AND qr_code_base64 (await to ensure it's saved)
         await supabase.from('payments').update({
           pix_code: pixCode,
-        }).eq('order_id', existingOrderId);
+          qr_code_base64: qrCodeBase64 || null,
+        } as any).eq('order_id', existingOrderId);
 
         toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
       } else {
@@ -578,10 +581,11 @@ const Checkout = () => {
         expiresAt: pixResponse.data.expiresAt,
       });
 
-      // Update payment with PIX code (await to ensure it's saved)
+      // Update payment with PIX code AND qr_code_base64 (await to ensure it's saved)
       await supabase.from('payments').update({
         pix_code: pixCode,
-      }).eq('order_id', existingOrderId);
+        qr_code_base64: qrCodeBase64 || null,
+      } as any).eq('order_id', existingOrderId);
 
       toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
     } else {
@@ -761,18 +765,20 @@ const Checkout = () => {
           toast.error("Gateway indisponível", "Pedido criado. Configure o gateway PIX ou aguarde aprovação manual.");
         } else if (evoResponse?.data?.pixCode) {
           const transactionId = evoResponse.data.transactionId || evoResponse.data.id;
+          const qrCodeBase64 = evoResponse.data.qrCodeBase64;
           
           setPixData({
             pixCode: evoResponse.data.pixCode,
-            qrCodeBase64: undefined,
+            qrCodeBase64: qrCodeBase64,
             transactionId: transactionId,
             expiresAt: undefined,
           });
 
-          // Store actual PIX code in background (not transactionId)
+          // Store PIX code AND qrCodeBase64 in background
           supabase.from('payments').update({
             pix_code: evoResponse.data.pixCode,
-          }).eq('order_id', orderData.id);
+            qr_code_base64: qrCodeBase64 || null,
+          } as any).eq('order_id', orderData.id);
 
           toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
         } else {
@@ -810,10 +816,11 @@ const Checkout = () => {
           expiresAt: pixResponse.data.expiresAt,
         });
 
-        // Update payment in background (não bloqueia UI)
+        // Update payment with PIX code AND qrCodeBase64 in background
         supabase.from('payments').update({
           pix_code: pixCode,
-        }).eq('order_id', orderData.id);
+          qr_code_base64: qrCodeBase64 || null,
+        } as any).eq('order_id', orderData.id);
 
         toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
       } else {
