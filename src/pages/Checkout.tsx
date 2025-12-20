@@ -117,7 +117,8 @@ const Checkout = () => {
         .from('subscription_plans')
         .select('*')
         .eq('id', planId)
-        .single();
+        .eq('is_active', true)
+        .maybeSingle();
 
       setIsLoadingPlan(false);
 
