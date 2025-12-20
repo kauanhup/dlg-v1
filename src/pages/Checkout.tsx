@@ -1153,9 +1153,9 @@ const Checkout = () => {
                       ? 'bg-success/10 text-success'
                       : isExpired
                       ? 'bg-destructive/10 text-destructive'
-                      : !pixData?.pixCode
-                      ? 'bg-primary/10 text-primary'
-                      : 'bg-warning/10 text-warning'
+                      : pixData?.pixCode
+                      ? 'bg-warning/10 text-warning'
+                      : 'bg-primary/10 text-primary'
                   }`}>
                     {paymentStatus === 'completed' || paymentStatus === 'paid' ? (
                       <>
@@ -1167,27 +1167,24 @@ const Checkout = () => {
                         <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
                         <span className="font-medium text-xs sm:text-sm">PIX expirado</span>
                       </>
-                    ) : !pixData?.pixCode ? (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span className="font-medium text-xs sm:text-sm">Aguardando aprovação</span>
-                      </>
-                    ) : (
+                    ) : pixData?.pixCode ? (
                       <>
                         <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                         <span className="font-medium text-xs sm:text-sm">Aguardando pagamento...</span>
                       </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="font-medium text-xs sm:text-sm">Pedido registrado</span>
+                      </>
                     )}
                   </div>
 
-                  {/* Gateway unavailable message */}
-                  {!pixData?.pixCode && paymentStatus === 'pending' && !isExpired && (
-                    <div className="text-center py-3">
-                      <p className="text-xs sm:text-sm text-muted-foreground mb-2">
-                        Seu pedido foi registrado e será processado pelo admin.
-                      </p>
-                      <p className="text-xs text-muted-foreground font-mono">
-                        ID: {orderId?.slice(0, 8)}...
+                  {/* Order registered - prompt to generate PIX */}
+                  {!pixData?.pixCode && orderId && paymentStatus === 'pending' && !isExpired && (
+                    <div className="text-center py-2">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        Clique abaixo para gerar o código PIX
                       </p>
                     </div>
                   )}
