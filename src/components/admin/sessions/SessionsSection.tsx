@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAdminSessions, SessionCombo } from "@/hooks/useAdminSessions";
 import { cn } from "@/lib/utils";
+import { Spinner } from "@/components/ui/spinner";
 import {
   DollarSign,
   Package,
@@ -46,7 +47,8 @@ export const SessionsSection = () => {
     deleteCombo,
     getCombosByType,
     getFilesByType,
-    stats 
+    stats,
+    refetch
   } = useAdminSessions();
   
   // Modal states
@@ -58,6 +60,7 @@ export const SessionsSection = () => {
   
   // Form states
   const [isSaving, setIsSaving] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [costBrasileiras, setCostBrasileiras] = useState("");
   const [costEstrangeiras, setCostEstrangeiras] = useState("");
   
@@ -191,12 +194,18 @@ export const SessionsSection = () => {
         })
       ]);
 
-      // Save combo edits in parallel
-      const comboUpdates = Object.entries(comboEdits).map(([comboId, edit]) => {
-        const quantity = parseInt(edit.quantity) || 0;
-        const price = parseFloat(edit.price.replace(',', '.')) || 0;
-        return updateDbCombo(comboId, { quantity, price });
-      });
+      // Validate and save combo edits in parallel
+      const comboUpdates = Object.entries(comboEdits)
+        .filter(([_, edit]) => {
+          const quantity = parseInt(edit.quantity) || 0;
+          const price = parseFloat(edit.price.replace(',', '.')) || 0;
+          return quantity > 0 && price >= 0; // Only save valid combos
+        })
+        .map(([comboId, edit]) => {
+          const quantity = parseInt(edit.quantity) || 0;
+          const price = parseFloat(edit.price.replace(',', '.')) || 0;
+          return updateDbCombo(comboId, { quantity, price });
+        });
       
       await Promise.all(comboUpdates);
 
@@ -206,6 +215,18 @@ export const SessionsSection = () => {
       toast.error("Erro ao salvar configurações");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+      toast.success("Dados atualizados!");
+    } catch (error) {
+      toast.error("Erro ao atualizar dados");
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -264,11 +285,28 @@ export const SessionsSection = () => {
             className="hidden"
             id="session-upload"
           />
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleRefresh} 
+            disabled={isRefreshing || isLoading}
+          >
+            <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
+            Atualizar
+          </Button>
           <Button size="sm" disabled={isUploading} onClick={() => setShowTypeSelector(true)}>
             <Plus className="w-4 h-4 mr-2" /> Importar Sessions
           </Button>
         </div>
       </div>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <Spinner size="lg" />
+          <span className="ml-3 text-muted-foreground">Carregando dados...</span>
+        </div>
+      )}
 
       {/* Modals */}
       <SessionTypeSelectorModal 
@@ -287,74 +325,79 @@ export const SessionsSection = () => {
         onCancel={handleCancelUpload}
       />
 
-      {/* Stats Cards */}
-      <SessionStatsCards 
-        stats={stats} 
-        totalFiles={sessionFiles.length} 
-      />
+      {/* Content - only show when not loading */}
+      {!isLoading && (
+        <>
+          {/* Stats Cards */}
+          <SessionStatsCards 
+            stats={stats} 
+            totalFiles={sessionFiles.length} 
+          />
 
-      {/* Session Files List */}
-      <SessionFilesList 
-        files={sessionFiles}
-        onDelete={handleDeleteFile}
-      />
+          {/* Session Files List */}
+          <SessionFilesList 
+            files={sessionFiles}
+            onDelete={handleDeleteFile}
+          />
 
-      {/* Cost Section */}
-      <SessionCostSection
-        costBrasileiras={costBrasileiras}
-        costEstrangeiras={costEstrangeiras}
-        onCostBrasileirasChange={setCostBrasileiras}
-        onCostEstrangeirasChange={setCostEstrangeiras}
-      />
+          {/* Cost Section */}
+          <SessionCostSection
+            costBrasileiras={costBrasileiras}
+            costEstrangeiras={costEstrangeiras}
+            onCostBrasileirasChange={setCostBrasileiras}
+            onCostEstrangeirasChange={setCostEstrangeiras}
+          />
 
-      {/* Custom Quantity Section */}
-      <SessionCustomQuantitySection
-        customQtyBrEnabled={customQtyBrEnabled}
-        customQtyBrMin={customQtyBrMin}
-        customQtyBrPrice={customQtyBrPrice}
-        customQtyEstEnabled={customQtyEstEnabled}
-        customQtyEstMin={customQtyEstMin}
-        customQtyEstPrice={customQtyEstPrice}
-        onCustomQtyBrEnabledChange={setCustomQtyBrEnabled}
-        onCustomQtyBrMinChange={setCustomQtyBrMin}
-        onCustomQtyBrPriceChange={setCustomQtyBrPrice}
-        onCustomQtyEstEnabledChange={setCustomQtyEstEnabled}
-        onCustomQtyEstMinChange={setCustomQtyEstMin}
-        onCustomQtyEstPriceChange={setCustomQtyEstPrice}
-      />
+          {/* Custom Quantity Section */}
+          <SessionCustomQuantitySection
+            customQtyBrEnabled={customQtyBrEnabled}
+            customQtyBrMin={customQtyBrMin}
+            customQtyBrPrice={customQtyBrPrice}
+            customQtyEstEnabled={customQtyEstEnabled}
+            customQtyEstMin={customQtyEstMin}
+            customQtyEstPrice={customQtyEstPrice}
+            onCustomQtyBrEnabledChange={setCustomQtyBrEnabled}
+            onCustomQtyBrMinChange={setCustomQtyBrMin}
+            onCustomQtyBrPriceChange={setCustomQtyBrPrice}
+            onCustomQtyEstEnabledChange={setCustomQtyEstEnabled}
+            onCustomQtyEstMinChange={setCustomQtyEstMin}
+            onCustomQtyEstPriceChange={setCustomQtyEstPrice}
+          />
 
-      {/* Combos Brasileiras */}
-      <SessionCombosSection
-        title="Combos Sessions Brasileiras"
-        icon={Package}
-        combos={brasileirasCombos}
-        comboEdits={comboEdits}
-        onComboEdit={handleComboEdit}
-        onAddCombo={() => handleAddCombo('brasileiras')}
-        onDeleteCombo={handleDeleteCombo}
-      />
+          {/* Combos Brasileiras */}
+          <SessionCombosSection
+            title="Combos Sessions Brasileiras"
+            icon={Package}
+            combos={brasileirasCombos}
+            comboEdits={comboEdits}
+            onComboEdit={handleComboEdit}
+            onAddCombo={() => handleAddCombo('brasileiras')}
+            onDeleteCombo={handleDeleteCombo}
+          />
 
-      {/* Combos Estrangeiras */}
-      <SessionCombosSection
-        title="Combos Sessions Estrangeiras"
-        icon={Globe}
-        combos={estrangeirasCombos}
-        comboEdits={comboEdits}
-        onComboEdit={handleComboEdit}
-        onAddCombo={() => handleAddCombo('estrangeiras')}
-        onDeleteCombo={handleDeleteCombo}
-      />
+          {/* Combos Estrangeiras */}
+          <SessionCombosSection
+            title="Combos Sessions Estrangeiras"
+            icon={Globe}
+            combos={estrangeirasCombos}
+            comboEdits={comboEdits}
+            onComboEdit={handleComboEdit}
+            onAddCombo={() => handleAddCombo('estrangeiras')}
+            onDeleteCombo={handleDeleteCombo}
+          />
 
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button onClick={handleSaveAll} disabled={isSaving}>
-          {isSaving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-          {isSaving ? "Salvando..." : "Salvar Configurações"}
-        </Button>
-      </div>
+          {/* Save Button */}
+          <div className="flex justify-end">
+            <Button onClick={handleSaveAll} disabled={isSaving}>
+              {isSaving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              {isSaving ? "Salvando..." : "Salvar Configurações"}
+            </Button>
+          </div>
 
-      {/* Sales History */}
-      <SessionSalesHistory sales={soldSessions} />
+          {/* Sales History */}
+          <SessionSalesHistory sales={soldSessions} />
+        </>
+      )}
     </motion.div>
   );
 };
