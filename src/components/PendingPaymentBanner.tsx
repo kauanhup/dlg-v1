@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, CreditCard, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+
+// Routes where the banner should NOT appear
+const EXCLUDED_ROUTES = ['/', '/login', '/comprar', '/recuperar-senha', '/politica-privacidade'];
 
 const PIX_EXPIRATION_MINUTES = 15;
 
@@ -22,10 +25,14 @@ interface PendingPayment {
 
 export const PendingPaymentBanner = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null);
   const [timeLeft, setTimeLeft] = useState<{ minutes: number; seconds: number } | null>(null);
   const [dismissed, setDismissed] = useState(false);
+
+  // Don't show on excluded routes
+  const isExcludedRoute = EXCLUDED_ROUTES.includes(location.pathname);
 
   useEffect(() => {
     const checkPendingPayment = async () => {
@@ -124,7 +131,7 @@ export const PendingPaymentBanner = () => {
     }
   };
 
-  if (!isLoggedIn || !pendingPayment || dismissed || !timeLeft) return null;
+  if (isExcludedRoute || !isLoggedIn || !pendingPayment || dismissed || !timeLeft) return null;
 
   const formatPrice = (value: number) => {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
