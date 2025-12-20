@@ -434,18 +434,30 @@ const Checkout = () => {
         productType = sessionInfo.dbType;
         quantity = sessionInfo.quantity;
 
-        // SEGURANÇA: Validar preço no servidor - buscar combos e preço customizado para verificar
-        const { data: combosData } = await supabase
-          .from('session_combos')
-          .select('quantity, price')
-          .eq('type', sessionInfo.fileType)
-          .eq('is_active', true);
+        // OTIMIZADO: Buscar combos e inventário em PARALELO (muito mais rápido)
+        const [combosResult, inventoryResult] = await Promise.all([
+          supabase
+            .from('session_combos')
+            .select('quantity, price')
+            .eq('type', sessionInfo.fileType)
+            .eq('is_active', true),
+          supabase
+            .from('sessions_inventory')
+            .select('custom_quantity_enabled, custom_quantity_min, custom_price_per_unit, quantity')
+            .eq('type', sessionInfo.fileType)
+            .maybeSingle()
+        ]);
 
-        const { data: inventoryData } = await supabase
-          .from('sessions_inventory')
-          .select('custom_quantity_enabled, custom_quantity_min, custom_price_per_unit')
-          .eq('type', sessionInfo.fileType)
-          .maybeSingle();
+        const combosData = combosResult.data;
+        const inventoryData = inventoryResult.data;
+
+        // Validar estoque primeiro (fail fast)
+        const availableStock = inventoryData?.quantity || 0;
+        if (availableStock < quantity) {
+          toast.error("Estoque insuficiente", `Apenas ${availableStock} sessions disponíveis deste tipo.`);
+          setIsProcessing(false);
+          return;
+        }
 
         // Verificar se o preço corresponde a um combo válido
         const matchingCombo = combosData?.find(c => c.quantity === quantity);
@@ -457,10 +469,8 @@ const Checkout = () => {
 
         // Validar que o preço é legítimo
         if (matchingCombo) {
-          // Preço deve corresponder ao combo
           if (Math.abs(sessionInfo.price - matchingCombo.price) > 0.01) {
-            console.error('Price mismatch detected:', { clientPrice: sessionInfo.price, serverPrice: matchingCombo.price });
-            toast.error("Erro de validação", "Preço inválido. Recarregue a página e tente novamente.");
+            toast.error("Erro de validação", "Preço inválido. Recarregue a página.");
             setIsProcessing(false);
             return;
           }
@@ -468,26 +478,7 @@ const Checkout = () => {
         } else if (isValidCustomPrice) {
           amount = quantity * inventoryData.custom_price_per_unit;
         } else {
-          console.error('Invalid price/quantity combination:', { quantity, clientPrice: sessionInfo.price });
-          toast.error("Erro de validação", "Combinação de quantidade/preço inválida.");
-          setIsProcessing(false);
-          return;
-        }
-
-        // Validate stock for session purchases - use sessions_inventory (RLS allows public read)
-        const { data: inventoryStock, error: stockError } = await supabase
-          .from('sessions_inventory')
-          .select('quantity')
-          .eq('type', sessionInfo.fileType)
-          .maybeSingle();
-
-        if (stockError) {
-          throw new Error('Erro ao verificar estoque');
-        }
-
-        const availableStock = inventoryStock?.quantity || 0;
-        if (availableStock < quantity) {
-          toast.error("Estoque insuficiente", `Apenas ${availableStock} sessions disponíveis deste tipo.`);
+          toast.error("Erro de validação", "Combinação inválida.");
           setIsProcessing(false);
           return;
         }
@@ -517,7 +508,7 @@ const Checkout = () => {
         throw new Error('Invalid product');
       }
 
-      // Create order
+      // Create order first (payment needs order_id)
       const { data: orderData, error: orderError } = await supabase.from('orders').insert({
         user_id: user.id,
         product_name: productName,
@@ -526,21 +517,21 @@ const Checkout = () => {
         amount: amount,
         status: 'pending',
         payment_method: selectedPaymentMethod,
-      }).select().single();
+      }).select('id').single();
 
       if (orderError) throw orderError;
       setOrderId(orderData.id);
 
-      // Create payment record
-      const { error: paymentError } = await supabase.from('payments').insert({
+      // OTIMIZADO: Criar payment em background (não bloqueia o PIX)
+      supabase.from('payments').insert({
         user_id: user.id,
         order_id: orderData.id,
         amount: amount,
         payment_method: selectedPaymentMethod,
         status: 'pending',
+      }).then(({ error }) => {
+        if (error) console.error('Payment record error:', error);
       });
-
-      if (paymentError) console.error('Payment record error:', paymentError);
 
       // Handle EvoPay PIX payment
       if (selectedPaymentMethod === 'evopay') {
@@ -570,9 +561,9 @@ const Checkout = () => {
             expiresAt: undefined,
           });
 
-          // Store transaction ID for webhook matching
-          await supabase.from('payments').update({
-            pix_code: transactionId, // Store transactionId, not pixCode
+          // Store transaction ID in background (não bloqueia UI)
+          supabase.from('payments').update({
+            pix_code: transactionId,
           }).eq('order_id', orderData.id);
 
           toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
@@ -611,8 +602,8 @@ const Checkout = () => {
           expiresAt: pixResponse.data.expiresAt,
         });
 
-        // Update payment with PIX code
-        await supabase.from('payments').update({
+        // Update payment in background (não bloqueia UI)
+        supabase.from('payments').update({
           pix_code: pixCode,
         }).eq('order_id', orderData.id);
 
