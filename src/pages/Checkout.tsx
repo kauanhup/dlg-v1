@@ -87,8 +87,16 @@ const Checkout = () => {
     return parseFloat(cleaned) || 0;
   };
 
-  // Determine session type for database
-  const getSessionType = (typeStr: string | null): string => {
+  // Determine session type for database orders - MUST match constraint: session_brasileiras, session_estrangeiras
+  const getOrderProductType = (typeStr: string | null): string => {
+    if (!typeStr) return '';
+    if (typeStr.toLowerCase().includes('brasileir')) return 'session_brasileiras';
+    if (typeStr.toLowerCase().includes('estrangeir')) return 'session_estrangeiras';
+    return typeStr.toLowerCase();
+  };
+
+  // Determine session type for session_files table - uses: brasileiras, estrangeiras
+  const getSessionFileType = (typeStr: string | null): string => {
     if (!typeStr) return '';
     if (typeStr.toLowerCase().includes('brasileir')) return 'brasileiras';
     if (typeStr.toLowerCase().includes('estrangeir')) return 'estrangeiras';
@@ -101,7 +109,8 @@ const Checkout = () => {
 
   const sessionInfo = isSessionPurchase ? {
     type: type.includes('Brasileir') ? 'Sessions Brasileiras' : type.includes('Estrangeir') ? 'Sessions Estrangeiras' : type,
-    dbType: getSessionType(type),
+    dbType: getOrderProductType(type), // For orders table (session_brasileiras/session_estrangeiras)
+    fileType: getSessionFileType(type), // For session_files table (brasileiras/estrangeiras)
     quantity: parseInt(qty || '0'),
     price: parsePrice(price),
   } : null;
@@ -424,11 +433,11 @@ const Checkout = () => {
         productType = sessionInfo.dbType;
         quantity = sessionInfo.quantity;
 
-        // Validate stock for session purchases
+        // Validate stock for session purchases - use fileType for session_files table
         const { count, error: stockError } = await supabase
           .from('session_files')
           .select('*', { count: 'exact', head: true })
-          .eq('type', productType)
+          .eq('type', sessionInfo.fileType)
           .eq('status', 'available');
 
         if (stockError) {
