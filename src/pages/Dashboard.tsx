@@ -308,38 +308,66 @@ const LojaSection = ({
   };
 
   return (
-    <motion.div {...fadeIn} className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Loja</h1>
-        <p className="text-sm text-muted-foreground">Adquira pacotes de sessions</p>
-      </div>
+    <motion.section 
+      {...fadeIn} 
+      className="space-y-6"
+      aria-labelledby="loja-heading"
+      itemScope 
+      itemType="https://schema.org/Store"
+    >
+      <header>
+        <h1 
+          id="loja-heading" 
+          className="text-lg font-semibold text-foreground"
+          itemProp="name"
+        >
+          Loja de Sessions
+        </h1>
+        <p className="text-sm text-muted-foreground" itemProp="description">
+          Compre pacotes de sessions brasileiras e estrangeiras com entrega instantânea
+        </p>
+        <meta itemProp="url" content="/dashboard" />
+      </header>
 
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div 
+        className="grid sm:grid-cols-2 gap-4" 
+        role="list" 
+        aria-label="Pacotes de sessions disponíveis"
+      >
         {/* Sessions Brasileiras */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
           className="bg-card border border-border rounded-md p-5 space-y-4 hover:shadow-md hover:shadow-success/5 transition-shadow duration-200"
+          role="listitem"
+          itemScope
+          itemType="https://schema.org/Product"
         >
+          <meta itemProp="category" content="Sessions Brasileiras" />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-success/10 rounded-md flex items-center justify-center">
+              <div className="w-10 h-10 bg-success/10 rounded-md flex items-center justify-center" aria-hidden="true">
                 <Globe className="w-5 h-5 text-success" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground text-sm">Sessions Brasileiras</h3>
-                <p className="text-xs text-muted-foreground">Números do Brasil</p>
+                <h2 className="font-semibold text-foreground text-sm" itemProp="name">Sessions Brasileiras</h2>
+                <p className="text-xs text-muted-foreground" itemProp="description">Números do Brasil</p>
               </div>
             </div>
-            <span className={cn(
-              "text-xs px-2 py-1 rounded-md font-medium",
-              brStock > 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
-            )}>{brStock} disponíveis</span>
+            <span 
+              className={cn(
+                "text-xs px-2 py-1 rounded-md font-medium",
+                brStock > 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+              )}
+              aria-label={`${brStock} sessions disponíveis em estoque`}
+            >
+              {brStock} disponíveis
+            </span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2" role="radiogroup" aria-label="Selecione um pacote de sessions brasileiras">
             {brCombos.length === 0 && !brCustomEnabled ? (
-              <div className="text-center py-4 text-muted-foreground text-sm">
+              <div className="text-center py-4 text-muted-foreground text-sm" role="status">
                 Nenhum pacote disponível no momento
               </div>
             ) : (
@@ -420,29 +448,43 @@ const LojaSection = ({
                 {brUseCustom && (
                   <div className="mt-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <input
-                      type="number"
-                      min={brCustomMin}
-                      max={brStock}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={brCustomQty}
                       onChange={(e) => {
                         const val = e.target.value;
                         // SECURITY: Only allow empty or positive integers within stock limit
                         if (val === '') {
                           setBrCustomQty('');
-                        } else {
+                        } else if (/^\d+$/.test(val)) {
                           const num = parseInt(val);
                           if (!isNaN(num) && num >= 0 && num <= brStock) {
                             setBrCustomQty(String(num));
                           }
                         }
                       }}
+                      onPaste={(e) => {
+                        // SECURITY: Validate pasted content
+                        const pastedText = e.clipboardData.getData('text');
+                        if (!/^\d+$/.test(pastedText)) {
+                          e.preventDefault();
+                          return;
+                        }
+                        const num = parseInt(pastedText);
+                        if (isNaN(num) || num < 0 || num > brStock) {
+                          e.preventDefault();
+                        }
+                      }}
                       onKeyDown={(e) => {
-                        if (e.key === '-' || e.key === 'e') {
+                        // Block non-numeric keys except navigation
+                        if (!/[\d\b]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
                           e.preventDefault();
                         }
                       }}
                       className="flex-1 px-3 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
                       placeholder={`Mín: ${brCustomMin}`}
+                      aria-label="Quantidade personalizada de sessions brasileiras"
                     />
                     <span className="text-xs text-muted-foreground whitespace-nowrap">= {getBrTotal()}</span>
                   </div>
@@ -491,25 +533,34 @@ const LojaSection = ({
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3, delay: 0.1 }}
           className="bg-card border border-border rounded-md p-5 space-y-4 hover:shadow-md hover:shadow-primary/5 transition-shadow duration-200"
+          role="listitem"
+          itemScope
+          itemType="https://schema.org/Product"
         >
+          <meta itemProp="category" content="Sessions Estrangeiras" />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
+              <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center" aria-hidden="true">
                 <Globe className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground text-sm">Sessions Estrangeiras</h3>
-                <p className="text-xs text-muted-foreground">Números internacionais</p>
+                <h2 className="font-semibold text-foreground text-sm" itemProp="name">Sessions Estrangeiras</h2>
+                <p className="text-xs text-muted-foreground" itemProp="description">Números internacionais</p>
               </div>
             </div>
-            <span className={cn(
-              "text-xs px-2 py-1 rounded-md font-medium",
-              intlStock > 0 ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
-            )}>{intlStock} disponíveis</span>
+            <span 
+              className={cn(
+                "text-xs px-2 py-1 rounded-md font-medium",
+                intlStock > 0 ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
+              )}
+              aria-label={`${intlStock} sessions disponíveis em estoque`}
+            >
+              {intlStock} disponíveis
+            </span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2" role="radiogroup" aria-label="Selecione um pacote de sessions estrangeiras">
             {intlCombos.length === 0 && !intlCustomEnabled ? (
-              <div className="text-center py-4 text-muted-foreground text-sm">
+              <div className="text-center py-4 text-muted-foreground text-sm" role="status">
                 Nenhum pacote disponível no momento
               </div>
             ) : (
@@ -590,29 +641,43 @@ const LojaSection = ({
                 {intlUseCustom && (
                   <div className="mt-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <input
-                      type="number"
-                      min={intlCustomMin}
-                      max={intlStock}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={intlCustomQty}
                       onChange={(e) => {
                         const val = e.target.value;
                         // SECURITY: Only allow empty or positive integers within stock limit
                         if (val === '') {
                           setIntlCustomQty('');
-                        } else {
+                        } else if (/^\d+$/.test(val)) {
                           const num = parseInt(val);
                           if (!isNaN(num) && num >= 0 && num <= intlStock) {
                             setIntlCustomQty(String(num));
                           }
                         }
                       }}
+                      onPaste={(e) => {
+                        // SECURITY: Validate pasted content
+                        const pastedText = e.clipboardData.getData('text');
+                        if (!/^\d+$/.test(pastedText)) {
+                          e.preventDefault();
+                          return;
+                        }
+                        const num = parseInt(pastedText);
+                        if (isNaN(num) || num < 0 || num > intlStock) {
+                          e.preventDefault();
+                        }
+                      }}
                       onKeyDown={(e) => {
-                        if (e.key === '-' || e.key === 'e') {
+                        // Block non-numeric keys except navigation
+                        if (!/[\d\b]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
                           e.preventDefault();
                         }
                       }}
                       className="flex-1 px-3 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
                       placeholder={`Mín: ${intlCustomMin}`}
+                      aria-label="Quantidade personalizada de sessions estrangeiras"
                     />
                     <span className="text-xs text-muted-foreground whitespace-nowrap">= {getIntlTotal()}</span>
                   </div>
@@ -655,7 +720,7 @@ const LojaSection = ({
           </AlertDialog>
         </motion.div>
       </div>
-    </motion.div>
+    </motion.section>
   );
 };
 
