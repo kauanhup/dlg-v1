@@ -3855,6 +3855,16 @@ const BotManagementSection = () => {
   const [isActivating, setIsActivating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleDownloadActive = async () => {
+    const url = await getDownloadUrl();
+    if (url) window.open(url, '_blank');
+  };
+
+  const handleDownloadVersion = async (filePath: string) => {
+    const url = await getDownloadUrl(filePath);
+    if (url) window.open(url, '_blank');
+  };
+
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -3952,10 +3962,7 @@ const BotManagementSection = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={async () => {
-                  const url = await getDownloadUrl();
-                  if (url) window.open(url, '_blank');
-                }}
+                onClick={handleDownloadActive}
               >
                 <Download className="w-4 h-4 mr-2" />
                 Download
@@ -4087,10 +4094,7 @@ const BotManagementSection = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={async () => {
-                      const url = await getDownloadUrl(file.file_path);
-                      if (url) window.open(url, '_blank');
-                    }}
+                    onClick={() => handleDownloadVersion(file.file_path)}
                   >
                     <Download className="w-4 h-4" />
                   </Button>
