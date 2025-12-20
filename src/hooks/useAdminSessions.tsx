@@ -46,6 +46,17 @@ export interface SoldSession {
   sold_at: string;
   buyer_name: string;
   buyer_email: string;
+  order_id: string | null;
+}
+
+export interface GroupedSale {
+  order_id: string;
+  type: string;
+  quantity: number;
+  sold_at: string;
+  buyer_name: string;
+  buyer_email: string;
+  files: string[];
 }
 
 // ==========================================
@@ -125,7 +136,7 @@ export const useAdminSessions = () => {
         supabase.from('session_files').select('*').order('uploaded_at', { ascending: false }),
         supabase
           .from('session_files')
-          .select('id, file_name, type, sold_at, user_id')
+          .select('id, file_name, type, sold_at, user_id, order_id')
           .eq('status', 'sold')
           .not('sold_at', 'is', null)
           .order('sold_at', { ascending: false })
@@ -158,6 +169,7 @@ export const useAdminSessions = () => {
           sold_at: s.sold_at || '',
           buyer_name: profileMap.get(s.user_id)?.name || 'Desconhecido',
           buyer_email: profileMap.get(s.user_id)?.email || '',
+          order_id: s.order_id || null,
         }));
 
         setSoldSessions(soldWithBuyers);
@@ -504,6 +516,35 @@ export const useAdminSessions = () => {
   const getAvailableFilesByType = useCallback((type: string) => 
     sessionFiles.filter(f => f.type === type && f.status === 'available'), [sessionFiles]);
 
+  // Group sold sessions by order_id for combo display
+  const getGroupedSales = useCallback((): GroupedSale[] => {
+    const grouped = new Map<string, GroupedSale>();
+    
+    soldSessions.forEach(sale => {
+      const key = sale.order_id || sale.id; // Use sale.id as fallback for individual sales
+      
+      if (grouped.has(key)) {
+        const existing = grouped.get(key)!;
+        existing.quantity += 1;
+        existing.files.push(sale.file_name);
+      } else {
+        grouped.set(key, {
+          order_id: key,
+          type: sale.type,
+          quantity: 1,
+          sold_at: sale.sold_at,
+          buyer_name: sale.buyer_name,
+          buyer_email: sale.buyer_email,
+          files: [sale.file_name],
+        });
+      }
+    });
+    
+    return Array.from(grouped.values()).sort((a, b) => 
+      new Date(b.sold_at).getTime() - new Date(a.sold_at).getTime()
+    );
+  }, [soldSessions]);
+
   const stats = {
     brasileiras: getInventoryByType('brasileiras'),
     estrangeiras: getInventoryByType('estrangeiras'),
@@ -517,6 +558,7 @@ export const useAdminSessions = () => {
     combos,
     sessionFiles,
     soldSessions,
+    groupedSales: getGroupedSales(),
     isLoading,
     isUploading,
     error,

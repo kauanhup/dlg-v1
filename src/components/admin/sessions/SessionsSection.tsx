@@ -36,7 +36,7 @@ export const SessionsSection = () => {
     inventory, 
     combos: dbCombos, 
     sessionFiles,
-    soldSessions,
+    groupedSales,
     isLoading, 
     isUploading,
     uploadSessionFiles,
@@ -395,7 +395,7 @@ export const SessionsSection = () => {
           </div>
 
           {/* Sales History */}
-          <SessionSalesHistory sales={soldSessions} />
+          <SessionSalesHistory sales={groupedSales} />
         </>
       )}
     </motion.div>
