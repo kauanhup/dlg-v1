@@ -90,11 +90,13 @@ const staggerItem = {
 const LojaSection = ({ 
   onCheckout, 
   combos, 
-  inventory 
+  inventory,
+  isMaintenanceMode
 }: { 
   onCheckout: (type: string, qty: number, price: string) => void;
   combos: { id: string; type: string; quantity: number; price: number; is_popular: boolean }[];
   inventory: { type: string; quantity: number; custom_quantity_enabled: boolean; custom_quantity_min: number; custom_price_per_unit: number }[];
+  isMaintenanceMode?: boolean;
 }) => {
   const navigate = useNavigate();
   const [brSelectedComboId, setBrSelectedComboId] = useState<string | null>(null);
@@ -257,6 +259,11 @@ const LojaSection = ({
   };
 
   const handleBrCheckout = () => {
+    // SEGURANÇA: Bloquear durante manutenção
+    if (isMaintenanceMode) {
+      toast.error("Sistema em manutenção - compras desabilitadas");
+      return;
+    }
     const qty = getBrQty();
     const total = getBrTotal();
     // Validação rigorosa - previne valores inválidos
@@ -277,6 +284,11 @@ const LojaSection = ({
   };
 
   const handleIntlCheckout = () => {
+    // SEGURANÇA: Bloquear durante manutenção
+    if (isMaintenanceMode) {
+      toast.error("Sistema em manutenção - compras desabilitadas");
+      return;
+    }
     const qty = getIntlQty();
     const total = getIntlTotal();
     // Validação rigorosa - previne valores inválidos
@@ -1394,7 +1406,7 @@ const Dashboard = () => {
 
         {/* Comprar */}
         {activeTab === "comprar" && (
-          <LojaSection onCheckout={() => {}} combos={combos} inventory={inventory} />
+          <LojaSection onCheckout={() => {}} combos={combos} inventory={inventory} isMaintenanceMode={systemSettings.maintenanceMode} />
         )}
 
         {/* Preferências */}

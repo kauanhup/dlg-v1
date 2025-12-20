@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { useAlertToast } from "@/hooks/use-alert-toast";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
 import { cn } from "@/lib/utils";
@@ -56,6 +57,8 @@ const Checkout = () => {
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({ pixEnabled: true, evoPayEnabled: false });
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('pix');
   
+  // SEGURANÇA: Verificar modo manutenção
+  const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   // FIX #6: Track active channel to prevent duplicates
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
@@ -412,6 +415,12 @@ const Checkout = () => {
   const handlePayment = async () => {
     // FIX #5: Prevent double-click by checking isProcessing first
     if (!user || isProcessing) return;
+
+    // SEGURANÇA: Bloquear compras durante modo manutenção
+    if (systemSettings.maintenanceMode) {
+      toast.error("Sistema em manutenção", "Compras estão temporariamente desabilitadas. Tente novamente mais tarde.");
+      return;
+    }
 
     // Handle free products
     if (isFreeProduct) {
