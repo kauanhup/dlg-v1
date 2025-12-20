@@ -255,21 +255,31 @@ const LojaSection = ({
   };
 
   const handleBrCheckout = () => {
+    const qty = getBrQty();
+    const total = getBrTotal();
+    if (qty <= 0 || !total) {
+      return; // Prevent checkout with invalid data
+    }
     navigate('/checkout', { 
       state: { 
         type: 'Sessions Brasileiras', 
-        qty: getBrQty(), 
-        price: getBrTotal() 
+        qty: qty, 
+        price: total 
       } 
     });
   };
 
   const handleIntlCheckout = () => {
+    const qty = getIntlQty();
+    const total = getIntlTotal();
+    if (qty <= 0 || !total) {
+      return; // Prevent checkout with invalid data
+    }
     navigate('/checkout', { 
       state: { 
         type: 'Sessions Estrangeiras', 
-        qty: getIntlQty(), 
-        price: getIntlTotal() 
+        qty: qty, 
+        price: total 
       } 
     });
   };
@@ -305,47 +315,55 @@ const LojaSection = ({
             )}>{brStock} disponíveis</span>
           </div>
           <div className="space-y-2">
-            {brCombos.map((combo) => {
-              const isAvailable = hasEnoughStock(combo);
-              return (
-                <div 
-                  key={combo.id}
-                  onClick={() => {
-                    if (isAvailable) {
-                      setBrSelectedComboId(combo.id);
-                      setBrUseCustom(false);
-                    }
-                  }}
-                  className={cn(
-                    "flex items-center justify-between p-3 rounded-md text-sm transition-all duration-150",
-                    !isAvailable 
-                      ? "bg-muted/30 opacity-50 cursor-not-allowed" 
-                      : !brUseCustom && brSelectedComboId === combo.id
-                        ? "bg-primary/10 border border-primary/20 cursor-pointer" 
-                        : "bg-muted/50 hover:bg-muted cursor-pointer"
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className={cn(
-                      "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
-                      !isAvailable 
-                        ? "border-muted-foreground/50" 
-                        : !brUseCustom && brSelectedComboId === combo.id ? "border-primary" : "border-muted-foreground"
-                    )}>
-                      {!brUseCustom && brSelectedComboId === combo.id && isAvailable && <div className="w-2 h-2 rounded-full bg-primary" />}
+            {brCombos.length === 0 && !brCustomEnabled ? (
+              <div className="text-center py-4 text-muted-foreground text-sm">
+                Nenhum pacote disponível no momento
+              </div>
+            ) : (
+              <>
+                {brCombos.map((combo) => {
+                  const isAvailable = hasEnoughStock(combo);
+                  return (
+                    <div 
+                      key={combo.id}
+                      onClick={() => {
+                        if (isAvailable) {
+                          setBrSelectedComboId(combo.id);
+                          setBrUseCustom(false);
+                        }
+                      }}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-md text-sm transition-all duration-150",
+                        !isAvailable 
+                          ? "bg-muted/30 opacity-50 cursor-not-allowed" 
+                          : !brUseCustom && brSelectedComboId === combo.id
+                            ? "bg-primary/10 border border-primary/20 cursor-pointer" 
+                            : "bg-muted/50 hover:bg-muted cursor-pointer"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={cn(
+                          "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
+                          !isAvailable 
+                            ? "border-muted-foreground/50" 
+                            : !brUseCustom && brSelectedComboId === combo.id ? "border-primary" : "border-muted-foreground"
+                        )}>
+                          {!brUseCustom && brSelectedComboId === combo.id && isAvailable && <div className="w-2 h-2 rounded-full bg-primary" />}
+                        </div>
+                        <span className={cn("text-sm", isAvailable ? "text-foreground" : "text-muted-foreground")}>+{combo.quantity} sessions</span>
+                        {combo.is_popular && isAvailable && (
+                          <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">TOP</span>
+                        )}
+                        {!isAvailable && (
+                          <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-medium">Sem estoque</span>
+                        )}
+                      </div>
+                      <span className={cn("font-semibold text-sm", isAvailable ? "text-primary" : "text-muted-foreground")}>{formatPrice(combo.price)}</span>
                     </div>
-                    <span className={cn("text-sm", isAvailable ? "text-foreground" : "text-muted-foreground")}>+{combo.quantity} sessions</span>
-                    {combo.is_popular && isAvailable && (
-                      <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">TOP</span>
-                    )}
-                    {!isAvailable && (
-                      <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-medium">Sem estoque</span>
-                    )}
-                  </div>
-                  <span className={cn("font-semibold text-sm", isAvailable ? "text-primary" : "text-muted-foreground")}>{formatPrice(combo.price)}</span>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </>
+            )}
             
             {/* Custom Quantity Option - Brasileiras */}
             {brCustomEnabled && (
@@ -451,47 +469,55 @@ const LojaSection = ({
             )}>{intlStock} disponíveis</span>
           </div>
           <div className="space-y-2">
-            {intlCombos.map((combo) => {
-              const isAvailable = hasEnoughStock(combo);
-              return (
-                <div 
-                  key={combo.id}
-                  onClick={() => {
-                    if (isAvailable) {
-                      setIntlSelectedComboId(combo.id);
-                      setIntlUseCustom(false);
-                    }
-                  }}
-                  className={cn(
-                    "flex items-center justify-between p-3 rounded-md text-sm transition-all duration-150",
-                    !isAvailable 
-                      ? "bg-muted/30 opacity-50 cursor-not-allowed" 
-                      : !intlUseCustom && intlSelectedComboId === combo.id
-                        ? "bg-primary/10 border border-primary/20 cursor-pointer" 
-                        : "bg-muted/50 hover:bg-muted cursor-pointer"
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className={cn(
-                      "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
-                      !isAvailable 
-                        ? "border-muted-foreground/50" 
-                        : !intlUseCustom && intlSelectedComboId === combo.id ? "border-primary" : "border-muted-foreground"
-                    )}>
-                      {!intlUseCustom && intlSelectedComboId === combo.id && isAvailable && <div className="w-2 h-2 rounded-full bg-primary" />}
+            {intlCombos.length === 0 && !intlCustomEnabled ? (
+              <div className="text-center py-4 text-muted-foreground text-sm">
+                Nenhum pacote disponível no momento
+              </div>
+            ) : (
+              <>
+                {intlCombos.map((combo) => {
+                  const isAvailable = hasEnoughStock(combo);
+                  return (
+                    <div 
+                      key={combo.id}
+                      onClick={() => {
+                        if (isAvailable) {
+                          setIntlSelectedComboId(combo.id);
+                          setIntlUseCustom(false);
+                        }
+                      }}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-md text-sm transition-all duration-150",
+                        !isAvailable 
+                          ? "bg-muted/30 opacity-50 cursor-not-allowed" 
+                          : !intlUseCustom && intlSelectedComboId === combo.id
+                            ? "bg-primary/10 border border-primary/20 cursor-pointer" 
+                            : "bg-muted/50 hover:bg-muted cursor-pointer"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={cn(
+                          "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
+                          !isAvailable 
+                            ? "border-muted-foreground/50" 
+                            : !intlUseCustom && intlSelectedComboId === combo.id ? "border-primary" : "border-muted-foreground"
+                        )}>
+                          {!intlUseCustom && intlSelectedComboId === combo.id && isAvailable && <div className="w-2 h-2 rounded-full bg-primary" />}
+                        </div>
+                        <span className={cn("text-sm", isAvailable ? "text-foreground" : "text-muted-foreground")}>+{combo.quantity} sessions</span>
+                        {combo.is_popular && isAvailable && (
+                          <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">MELHOR</span>
+                        )}
+                        {!isAvailable && (
+                          <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-medium">Sem estoque</span>
+                        )}
+                      </div>
+                      <span className={cn("font-semibold text-sm", isAvailable ? "text-primary" : "text-muted-foreground")}>{formatPrice(combo.price)}</span>
                     </div>
-                    <span className={cn("text-sm", isAvailable ? "text-foreground" : "text-muted-foreground")}>+{combo.quantity} sessions</span>
-                    {combo.is_popular && isAvailable && (
-                      <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">MELHOR</span>
-                    )}
-                    {!isAvailable && (
-                      <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-medium">Sem estoque</span>
-                    )}
-                  </div>
-                  <span className={cn("font-semibold text-sm", isAvailable ? "text-primary" : "text-muted-foreground")}>{formatPrice(combo.price)}</span>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </>
+            )}
             
             {/* Custom Quantity Option - Estrangeiras */}
             {intlCustomEnabled && (
