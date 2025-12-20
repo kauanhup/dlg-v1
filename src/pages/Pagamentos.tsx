@@ -94,34 +94,10 @@ const Pagamentos = () => {
 
       if (error) throw error;
       
-      // Auto-cancel expired pending payments
-      const updatedPayments = await Promise.all((data || []).map(async (payment) => {
-        if (payment.status === 'pending') {
-          const createdAt = new Date(payment.created_at);
-          const expiresAt = new Date(createdAt.getTime() + PIX_EXPIRATION_MINUTES * 60 * 1000);
-          
-          if (new Date() > expiresAt) {
-            // Cancel expired payment
-            await supabase
-              .from('payments')
-              .update({ status: 'cancelled' })
-              .eq('id', payment.id);
-            
-            // Also cancel the order
-            if (payment.order_id) {
-              await supabase
-                .from('orders')
-                .update({ status: 'cancelled' })
-                .eq('id', payment.order_id);
-            }
-            
-            return { ...payment, status: 'cancelled' };
-          }
-        }
-        return payment;
-      }));
-      
-      setPayments(updatedPayments);
+      // SECURITY FIX: Do NOT auto-cancel expired payments here
+      // The backend cron job handles this to prevent race conditions with webhooks
+      // We only update the UI display status, not the database
+      setPayments(data || []);
     } catch (error) {
       console.error('Error fetching payments:', error);
     } finally {
