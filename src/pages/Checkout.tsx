@@ -481,19 +481,20 @@ const Checkout = () => {
           return;
         }
 
-        // Validate stock for session purchases - use fileType for session_files table
-        const { count, error: stockError } = await supabase
-          .from('session_files')
-          .select('*', { count: 'exact', head: true })
+        // Validate stock for session purchases - use sessions_inventory (RLS allows public read)
+        const { data: inventoryStock, error: stockError } = await supabase
+          .from('sessions_inventory')
+          .select('quantity')
           .eq('type', sessionInfo.fileType)
-          .eq('status', 'available');
+          .maybeSingle();
 
         if (stockError) {
           throw new Error('Erro ao verificar estoque');
         }
 
-        if (count === null || count < quantity) {
-          toast.error("Estoque insuficiente", `Apenas ${count || 0} sessions disponíveis deste tipo.`);
+        const availableStock = inventoryStock?.quantity || 0;
+        if (availableStock < quantity) {
+          toast.error("Estoque insuficiente", `Apenas ${availableStock} sessions disponíveis deste tipo.`);
           setIsProcessing(false);
           return;
         }
