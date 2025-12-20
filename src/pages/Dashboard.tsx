@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import SEO from "@/components/SEO";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { UserProfileSidebar } from "@/components/ui/menu";
@@ -258,8 +259,13 @@ const LojaSection = ({
   const handleBrCheckout = () => {
     const qty = getBrQty();
     const total = getBrTotal();
-    if (qty <= 0 || !total) {
-      return; // Prevent checkout with invalid data
+    // Validação rigorosa - previne valores inválidos
+    if (qty <= 0 || !total || qty > brStock) {
+      return;
+    }
+    // Validação de quantidade customizada vs mínimo
+    if (brUseCustom && qty < brCustomMin) {
+      return;
     }
     navigate('/checkout', { 
       state: { 
@@ -273,8 +279,13 @@ const LojaSection = ({
   const handleIntlCheckout = () => {
     const qty = getIntlQty();
     const total = getIntlTotal();
-    if (qty <= 0 || !total) {
-      return; // Prevent checkout with invalid data
+    // Validação rigorosa - previne valores inválidos
+    if (qty <= 0 || !total || qty > intlStock) {
+      return;
+    }
+    // Validação de quantidade customizada vs mínimo
+    if (intlUseCustom && qty < intlCustomMin) {
+      return;
     }
     navigate('/checkout', { 
       state: { 
@@ -802,7 +813,14 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
+    <>
+      <SEO 
+        title="Dashboard"
+        description="Gerencie suas licenças, sessions e configurações da conta. Acesse sua loja de sessions e acompanhe seus pedidos."
+        canonical="/dashboard"
+        noIndex={true}
+      />
+      <div className="min-h-screen bg-background flex flex-col lg:flex-row">
       {/* Maintenance Mode Modal */}
       {showMaintenanceModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
@@ -1901,7 +1919,8 @@ const Dashboard = () => {
           </p>
         </footer>
       </main>
-    </div>
+      </div>
+    </>
   );
 };
 

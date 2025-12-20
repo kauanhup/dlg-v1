@@ -428,10 +428,49 @@ const Checkout = () => {
       let quantity: number;
 
       if (isSessionPurchase && sessionInfo) {
-        amount = sessionInfo.price;
         productName = sessionInfo.type;
         productType = sessionInfo.dbType;
         quantity = sessionInfo.quantity;
+
+        // SEGURANÇA: Validar preço no servidor - buscar combos e preço customizado para verificar
+        const { data: combosData } = await supabase
+          .from('session_combos')
+          .select('quantity, price')
+          .eq('type', sessionInfo.fileType)
+          .eq('is_active', true);
+
+        const { data: inventoryData } = await supabase
+          .from('sessions_inventory')
+          .select('custom_quantity_enabled, custom_quantity_min, custom_price_per_unit')
+          .eq('type', sessionInfo.fileType)
+          .maybeSingle();
+
+        // Verificar se o preço corresponde a um combo válido
+        const matchingCombo = combosData?.find(c => c.quantity === quantity);
+        
+        // Calcular preço customizado se aplicável
+        const isValidCustomPrice = inventoryData?.custom_quantity_enabled && 
+          quantity >= (inventoryData.custom_quantity_min || 1) &&
+          Math.abs(sessionInfo.price - (quantity * inventoryData.custom_price_per_unit)) < 0.01;
+
+        // Validar que o preço é legítimo
+        if (matchingCombo) {
+          // Preço deve corresponder ao combo
+          if (Math.abs(sessionInfo.price - matchingCombo.price) > 0.01) {
+            console.error('Price mismatch detected:', { clientPrice: sessionInfo.price, serverPrice: matchingCombo.price });
+            toast.error("Erro de validação", "Preço inválido. Recarregue a página e tente novamente.");
+            setIsProcessing(false);
+            return;
+          }
+          amount = matchingCombo.price;
+        } else if (isValidCustomPrice) {
+          amount = quantity * inventoryData.custom_price_per_unit;
+        } else {
+          console.error('Invalid price/quantity combination:', { quantity, clientPrice: sessionInfo.price });
+          toast.error("Erro de validação", "Combinação de quantidade/preço inválida.");
+          setIsProcessing(false);
+          return;
+        }
 
         // Validate stock for session purchases - use fileType for session_files table
         const { count, error: stockError } = await supabase
