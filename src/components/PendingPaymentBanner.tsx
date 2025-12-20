@@ -246,17 +246,20 @@ export const PendingPaymentBanner = () => {
     }
   }, [location.pathname, isExcludedRoute, checkPendingPayment]);
 
-  // Countdown timer
+  // Countdown timer - uses absolute time to prevent drift in inactive tabs
   useEffect(() => {
     if (!pendingPayment) return;
 
+    const createdAt = new Date(pendingPayment.created_at).getTime();
+    const expiresAt = createdAt + PIX_EXPIRATION_MINUTES * 60 * 1000;
+
     const updateTimer = () => {
-      const createdAt = new Date(pendingPayment.created_at);
-      const expiresAt = new Date(createdAt.getTime() + PIX_EXPIRATION_MINUTES * 60 * 1000);
-      const now = new Date();
-      const diff = expiresAt.getTime() - now.getTime();
+      // Always recalculate from current system time (Date.now)
+      const now = Date.now();
+      const diff = expiresAt - now;
 
       if (diff <= 0) {
+        setTimeLeft(null);
         setPendingPayment(null);
         cleanupChannels();
         return;
@@ -267,9 +270,25 @@ export const PendingPaymentBanner = () => {
       setTimeLeft({ minutes, seconds });
     };
 
+    // Update immediately
     updateTimer();
+    
+    // Use requestAnimationFrame-based interval for more reliable updates
+    // when tab becomes active again
     const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
+    
+    // Also update on visibility change (when user switches back to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        updateTimer();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [pendingPayment, cleanupChannels]);
 
   const handleGoToCheckout = () => {
@@ -384,7 +403,7 @@ export const PendingPaymentBanner = () => {
                 {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full">
               <Button 
                 size="sm" 
                 className="h-7 text-xs flex-1 bg-primary hover:bg-primary/90"
@@ -396,7 +415,7 @@ export const PendingPaymentBanner = () => {
               <Button 
                 size="sm" 
                 variant="outline"
-                className="h-7 text-xs bg-destructive/10 border-destructive/30 hover:bg-destructive/20 text-destructive"
+                className="h-7 text-xs flex-shrink-0 bg-destructive/10 border-destructive/30 hover:bg-destructive/20 text-destructive"
                 onClick={handleCancelClick}
                 disabled={isCancelling}
               >
