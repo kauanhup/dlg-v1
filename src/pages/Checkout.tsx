@@ -589,6 +589,44 @@ const Checkout = () => {
     }
   };
 
+  const handleCancelOrder = async () => {
+    if (!orderId || !user) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      // Update order status to cancelled
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', orderId)
+        .eq('user_id', user.id);
+
+      if (orderError) throw orderError;
+
+      // Update payment status
+      await supabase
+        .from('payments')
+        .update({ status: 'cancelled' })
+        .eq('order_id', orderId);
+
+      toast.success("Pedido cancelado", "Você pode criar um novo pedido quando quiser.");
+      
+      // Reset state
+      setPixData(null);
+      setExpirationTime(null);
+      setTimeLeft(null);
+      setOrderId(null);
+      setPaymentStatus('pending');
+      setCopied(false);
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      toast.error("Erro", "Não foi possível cancelar o pedido.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // FIX #4: Show loading when fetching plan
   if (isLoading || (isPlanPurchase && !plan && isLoadingPlan)) {
     return (
@@ -1035,6 +1073,25 @@ const Checkout = () => {
                         "Gerar novo código PIX"
                       ) : (
                         "Tentar novamente"
+                      )}
+                    </Button>
+                  )}
+
+                  {/* Cancel order button - show when QR is active */}
+                  {pixData?.pixCode && !isExpired && paymentStatus === 'pending' && (
+                    <Button 
+                      onClick={handleCancelOrder}
+                      disabled={isProcessing}
+                      variant="ghost"
+                      className="w-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    >
+                      {isProcessing ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Cancelando...
+                        </span>
+                      ) : (
+                        "Cancelar compra"
                       )}
                     </Button>
                   )}
