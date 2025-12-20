@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { z } from "zod";
+import { toast } from "sonner";
 
 // Profile update validation schema
 const profileUpdateSchema = z.object({
@@ -117,13 +118,31 @@ export const useAuth = (requiredRole?: 'admin' | 'user') => {
 
       // Check if user was banned - force logout immediately
       if (profileData?.banned === true) {
+        toast.error("Conta suspensa - Entre em contato com o suporte");
         await signOut();
         return;
       }
 
+      const userRole = roleData?.role || 'user';
+
+      // SEGURANÇA: Verificar modo manutenção - deslogar usuários não-admin
+      if (userRole !== 'admin') {
+        const { data: maintenanceData } = await supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'maintenance_mode')
+          .maybeSingle();
+
+        if (maintenanceData?.value === 'true') {
+          toast.error("Sistema em manutenção - Tente novamente mais tarde");
+          await signOut();
+          return;
+        }
+      }
+
       setAuthState(prev => ({
         ...prev,
-        role: roleData?.role || 'user',
+        role: userRole,
         profile: profileData ? {
           id: profileData.id,
           name: profileData.name,
