@@ -2901,6 +2901,68 @@ const ApiSection = () => {
     }
   };
 
+  const handleCopyPixupWebhookUrl = () => {
+    setWebhookUrl("https://dlgconnect.com/api/webhook-pixup.php");
+    navigator.clipboard.writeText("https://dlgconnect.com/api/webhook-pixup.php");
+    toast.success("URL copiada!");
+  };
+
+  const handleSaveEmailTemplate = async () => {
+    setIsSavingTemplate(true);
+    setTemplateSaveSuccess(false);
+    try {
+      const { data } = await supabase.functions.invoke('pixup', {
+        body: { 
+          action: 'save_email_template',
+          email_template_title: templateTitle,
+          email_template_greeting: templateGreeting,
+          email_template_message: templateMessage,
+          email_template_expiry_text: templateExpiryText,
+          email_template_footer: templateFooter,
+          email_template_bg_color: templateBgColor,
+          email_template_accent_color: templateAccentColor,
+          email_template_show_logo: templateShowLogo,
+          email_template_logo_url: templateLogoUrl
+        }
+      });
+      if (data?.success) { 
+        toast.success("Template salvo!"); 
+        setTemplateSaveSuccess(true);
+        setTimeout(() => setTemplateSaveSuccess(false), 2000);
+      }
+      else { toast.error(data?.error || "Erro ao salvar"); }
+    } catch { toast.error("Erro ao salvar"); }
+    finally { setIsSavingTemplate(false); }
+  };
+
+  const handleSaveRecaptcha = async () => {
+    if (!recaptchaSiteKey.trim()) { toast.error("Preencha a Site Key"); return; }
+    if (!hasRecaptchaSecret && !recaptchaSecretKey.trim()) { toast.error("Preencha a Secret Key"); return; }
+    setIsSavingRecaptcha(true);
+    setRecaptchaSaveSuccess(false);
+    try {
+      const payload: any = { action: 'save_recaptcha_settings', recaptcha_site_key: recaptchaSiteKey.trim() };
+      if (recaptchaSecretKey.trim()) payload.recaptcha_secret_key = recaptchaSecretKey.trim();
+      const { data } = await supabase.functions.invoke('pixup', { body: payload });
+      if (data?.success) {
+        toast.success("Salvo!");
+        setHasRecaptchaSecret(true);
+        setRecaptchaSecretKey("");
+        setRecaptchaSaveSuccess(true);
+        setTimeout(() => setRecaptchaSaveSuccess(false), 2000);
+      } else { toast.error(data?.error || "Erro"); }
+    } catch { toast.error("Erro ao salvar"); }
+    finally { setIsSavingRecaptcha(false); }
+  };
+
+  const handleTestRecaptcha = () => {
+    if (!hasRecaptchaSecret) {
+      toast.error("Configure a Secret Key primeiro");
+      return;
+    }
+    toast.success("reCAPTCHA está configurado corretamente!");
+  };
+
   const apiTabs = [
     { id: "gateway" as const, label: "Gateway PIX", icon: CreditCard },
     { id: "email" as const, label: "Email", icon: Zap },
@@ -3068,11 +3130,7 @@ const ApiSection = () => {
                     type="button"
                     variant="outline"
                     size="icon"
-                    onClick={() => {
-                      setWebhookUrl("https://dlgconnect.com/api/webhook-pixup.php");
-                      navigator.clipboard.writeText("https://dlgconnect.com/api/webhook-pixup.php");
-                      toast.success("URL copiada!");
-                    }}
+                    onClick={handleCopyPixupWebhookUrl}
                     title="Usar URL padrão da Hostinger"
                   >
                     <Copy className="w-4 h-4" />
@@ -3521,33 +3579,7 @@ const ApiSection = () => {
                     </div>
 
                     <Button 
-                      onClick={async () => {
-                        setIsSavingTemplate(true);
-                        setTemplateSaveSuccess(false);
-                        try {
-                          const { data } = await supabase.functions.invoke('pixup', {
-                            body: { 
-                              action: 'save_email_template',
-                              email_template_title: templateTitle,
-                              email_template_greeting: templateGreeting,
-                              email_template_message: templateMessage,
-                              email_template_expiry_text: templateExpiryText,
-                              email_template_footer: templateFooter,
-                              email_template_bg_color: templateBgColor,
-                              email_template_accent_color: templateAccentColor,
-                              email_template_show_logo: templateShowLogo,
-                              email_template_logo_url: templateLogoUrl
-                            }
-                          });
-                          if (data?.success) { 
-                            toast.success("Template salvo!"); 
-                            setTemplateSaveSuccess(true);
-                            setTimeout(() => setTemplateSaveSuccess(false), 2000);
-                          }
-                          else { toast.error(data?.error || "Erro ao salvar"); }
-                        } catch { toast.error("Erro ao salvar"); }
-                        finally { setIsSavingTemplate(false); }
-                      }}
+                      onClick={handleSaveEmailTemplate}
                       disabled={isSavingTemplate}
                       className={cn("w-full gap-2 transition-colors", templateSaveSuccess && "bg-green-600 hover:bg-green-600")}
                     >
@@ -3701,25 +3733,7 @@ const ApiSection = () => {
 
             <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-border/50">
               <Button 
-                onClick={async () => {
-                  if (!recaptchaSiteKey.trim()) { toast.error("Preencha a Site Key"); return; }
-                  if (!hasRecaptchaSecret && !recaptchaSecretKey.trim()) { toast.error("Preencha a Secret Key"); return; }
-                  setIsSavingRecaptcha(true);
-                  setRecaptchaSaveSuccess(false);
-                  try {
-                    const payload: any = { action: 'save_recaptcha_settings', recaptcha_site_key: recaptchaSiteKey.trim() };
-                    if (recaptchaSecretKey.trim()) payload.recaptcha_secret_key = recaptchaSecretKey.trim();
-                    const { data } = await supabase.functions.invoke('pixup', { body: payload });
-                    if (data?.success) {
-                      toast.success("Salvo!");
-                      setHasRecaptchaSecret(true);
-                      setRecaptchaSecretKey("");
-                      setRecaptchaSaveSuccess(true);
-                      setTimeout(() => setRecaptchaSaveSuccess(false), 2000);
-                    } else { toast.error(data?.error || "Erro"); }
-                  } catch { toast.error("Erro ao salvar"); }
-                  finally { setIsSavingRecaptcha(false); }
-                }}
+                onClick={handleSaveRecaptcha}
                 disabled={isSavingRecaptcha}
                 className={cn("gap-2 transition-colors", recaptchaSaveSuccess && "bg-green-600 hover:bg-green-600")}
               >
@@ -3728,13 +3742,7 @@ const ApiSection = () => {
               </Button>
               <Button 
                 variant="outline" 
-                onClick={async () => {
-                  if (!hasRecaptchaSecret) {
-                    toast.error("Configure a Secret Key primeiro");
-                    return;
-                  }
-                  toast.success("reCAPTCHA está configurado corretamente!");
-                }}
+                onClick={handleTestRecaptcha}
                 disabled={!hasRecaptchaSecret}
                 className={cn("gap-2", recaptchaEnabled && hasRecaptchaSecret && "border-green-500/50 text-green-500")}
               >
