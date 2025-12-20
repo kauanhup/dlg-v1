@@ -56,12 +56,15 @@ $forwardHeaders = [
     'Content-Type: application/json',
 ];
 
+// Mapear headers do PixUp para o formato esperado pelo Supabase webhook
 if (!empty($signature)) {
-    $forwardHeaders[] = 'X-Signature: ' . $signature;
+    $forwardHeaders[] = 'X-Webhook-Signature: ' . $signature;
 }
 
-if (!empty($webhookSecret)) {
-    $forwardHeaders[] = 'X-Webhook-Secret: ' . $webhookSecret;
+// Também tentar capturar outros formatos de assinatura que o PixUp pode enviar
+$pixupSignature = isset($_SERVER['HTTP_X_PIXUP_SIGNATURE']) ? $_SERVER['HTTP_X_PIXUP_SIGNATURE'] : '';
+if (!empty($pixupSignature)) {
+    $forwardHeaders[] = 'X-Webhook-Signature: ' . $pixupSignature;
 }
 
 // Encaminhar para Supabase Edge Function
