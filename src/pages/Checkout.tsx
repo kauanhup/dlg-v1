@@ -409,6 +409,87 @@ const Checkout = () => {
     }
   };
 
+  // Helper function to generate PIX for an existing order (used when recovering pending orders)
+  const generatePixForOrder = async (existingOrderId: string, amount: number, productName: string, quantity: number) => {
+    const expTime = new Date();
+    expTime.setMinutes(expTime.getMinutes() + PIX_EXPIRATION_MINUTES);
+    setExpirationTime(expTime);
+
+    const description = isPlanPurchase ? `Licença: ${productName}` : `${quantity}x ${productName}`;
+
+    if (selectedPaymentMethod === 'evopay') {
+      const { data: evoResponse, error: evoError } = await supabase.functions.invoke('evopay', {
+        body: {
+          action: 'create_pix',
+          amount: amount,
+          external_id: existingOrderId,
+          description: description,
+        },
+      });
+
+      if (evoError) {
+        console.error('EvoPay PIX generation error:', evoError);
+        toast.error("Gateway indisponível", "Não foi possível gerar o PIX. Tente novamente.");
+        return;
+      }
+      
+      if (evoResponse?.data?.pixCode) {
+        const transactionId = evoResponse.data.transactionId || evoResponse.data.id;
+        setPixData({
+          pixCode: evoResponse.data.pixCode,
+          qrCodeBase64: undefined,
+          transactionId: transactionId,
+          expiresAt: undefined,
+        });
+
+        supabase.from('payments').update({
+          pix_code: transactionId,
+        }).eq('order_id', existingOrderId);
+
+        toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
+      } else {
+        toast.warning("Gateway não configurado", "Aguarde aprovação manual do admin.");
+      }
+      return;
+    }
+
+    // PixUp
+    const { data: pixResponse, error: pixError } = await supabase.functions.invoke('pixup', {
+      body: {
+        action: 'create_pix',
+        amount: amount,
+        external_id: existingOrderId,
+        description: description,
+      },
+    });
+
+    if (pixError) {
+      console.error('PIX generation error:', pixError);
+      toast.error("Gateway indisponível", "Não foi possível gerar o PIX. Tente novamente.");
+      return;
+    }
+    
+    if (pixResponse?.data?.pixCode || pixResponse?.data?.qrcode) {
+      const pixCode = pixResponse.data.pixCode || pixResponse.data.qrcode;
+      const qrCodeBase64 = pixResponse.data.qrCodeBase64 || pixResponse.data.qrcode_base64;
+      
+      setPixData({
+        pixCode: pixCode,
+        qrCodeBase64: qrCodeBase64,
+        transactionId: pixResponse.data.transactionId || pixResponse.data.id,
+        expiresAt: pixResponse.data.expiresAt,
+      });
+
+      supabase.from('payments').update({
+        pix_code: pixCode,
+      }).eq('order_id', existingOrderId);
+
+      toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
+    } else {
+      toast.warning("Gateway não configurado", "Aguarde aprovação manual do admin.");
+    }
+  };
+
   const handlePayment = async () => {
     // FIX #5: Prevent double-click by checking isProcessing first
     if (!user || isProcessing) return;
@@ -428,6 +509,28 @@ const Checkout = () => {
     setIsProcessing(true);
     
     try {
+      // FIX: If we already have an orderId (from pending order), regenerate PIX for it
+      if (orderId && !pixData) {
+        // Fetch existing order details
+        const { data: existingOrder, error: orderFetchError } = await supabase
+          .from('orders')
+          .select('amount, product_name, quantity')
+          .eq('id', orderId)
+          .single();
+        
+        if (orderFetchError || !existingOrder) {
+          toast.error("Erro", "Pedido não encontrado. Crie um novo pedido.");
+          setOrderId(null);
+          setIsProcessing(false);
+          return;
+        }
+
+        // Generate new PIX for existing order
+        await generatePixForOrder(orderId, existingOrder.amount, existingOrder.product_name, existingOrder.quantity);
+        setIsProcessing(false);
+        return;
+      }
+
       let amount: number;
       let productName: string;
       let productType: string;
