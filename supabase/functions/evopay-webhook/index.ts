@@ -119,11 +119,12 @@ serve(async (req) => {
     const rawBody = await req.text();
     const body = JSON.parse(rawBody);
     
-    console.log('EvoPay webhook received');
+    console.log('EvoPay webhook received:', JSON.stringify(body));
 
-    // Get signature from headers
+    // Get signature from headers (multiple possible header names)
     const signature = req.headers.get('x-evopay-signature') || 
-                      req.headers.get('x-webhook-signature');
+                      req.headers.get('x-webhook-signature') ||
+                      req.headers.get('x-signature');
 
     // SECURITY: Fetch EvoPay API key from settings to use as webhook secret
     const { data: settings } = await supabase
@@ -133,8 +134,8 @@ serve(async (req) => {
       .eq('evopay_enabled', true)
       .maybeSingle();
 
-    // SECURITY: CRITICAL - Verify webhook authenticity
-    // If signature verification is configured, enforce it
+    // SECURITY: Verify webhook authenticity if both secret and signature present
+    // If EvoPay doesn't send signatures, we allow the request but log warning
     if (settings?.evopay_api_key && signature) {
       const isValid = await verifyWebhookSignature(rawBody, signature, settings.evopay_api_key);
       
@@ -146,12 +147,10 @@ serve(async (req) => {
         );
       }
       console.log('EvoPay webhook signature verified successfully');
-    } else if (signature) {
-      // Signature provided but no secret configured - log warning but process
-      console.warn('SECURITY WARNING: Webhook signature provided but API key not configured for verification');
+    } else {
+      // Allow unsigned webhooks but log warning
+      console.log('WARNING: Processing EvoPay webhook without signature verification');
     }
-
-    // SECURITY: Additional IP validation could be added here if EvoPay provides IP whitelist
 
     // EvoPay webhook payload structure from docs:
     // { id, status, amount, type, qrCodeText, qrCodeUrl, payerDocument, payerName }
