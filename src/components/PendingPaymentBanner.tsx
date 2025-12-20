@@ -429,23 +429,25 @@ export const PendingPaymentBanner = () => {
 
       {/* Cancel Confirmation Dialog */}
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent className="max-w-sm">
-          <AlertDialogHeader>
-            <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2">
-              <AlertTriangle className="w-6 h-6 text-destructive" />
+        <AlertDialogContent className="max-w-[340px] rounded-xl border-border/50 bg-card/95 backdrop-blur-xl p-5">
+          <AlertDialogHeader className="space-y-3">
+            <div className="mx-auto w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center">
+              <AlertTriangle className="w-7 h-7 text-destructive" />
             </div>
-            <AlertDialogTitle className="text-center">Cancelar Pedido?</AlertDialogTitle>
-            <AlertDialogDescription className="text-center">
+            <AlertDialogTitle className="text-center text-lg font-semibold text-foreground">
+              Cancelar Pedido?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-sm text-muted-foreground">
               Tem certeza que deseja cancelar este pedido? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
-            <AlertDialogCancel className="w-full sm:w-auto">
+          <AlertDialogFooter className="flex-row gap-3 mt-4">
+            <AlertDialogCancel className="flex-1 m-0 bg-secondary/50 border-border/50 hover:bg-secondary">
               Voltar
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleConfirmCancel}
-              className="w-full sm:w-auto bg-destructive hover:bg-destructive/90"
+              className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               Sim, Cancelar
             </AlertDialogAction>
