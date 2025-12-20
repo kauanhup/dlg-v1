@@ -74,13 +74,14 @@ const Checkout = () => {
   }, []);
 
   // Get parameters from location state (from Dashboard) OR searchParams (from Buy page)
-  const locationState = location.state as { type?: string; qty?: number; price?: string } | null;
+  const locationState = location.state as { type?: string; qty?: number; price?: string; existingOrderId?: string } | null;
   
   // Priority: location state > search params
   const type = locationState?.type || searchParams.get("type");
   const qty = locationState?.qty?.toString() || searchParams.get("qty");
   const price = locationState?.price || searchParams.get("price");
   const planId = searchParams.get("plano");
+  const existingOrderIdFromState = locationState?.existingOrderId;
 
   // Parse price from string like "R$ 99,90" or number
   const parsePrice = useCallback((priceValue: string | number | null | undefined): number => {
@@ -291,8 +292,46 @@ const Checkout = () => {
 
       setUser(session.user);
       
-      // Check for existing pending order after we have user and product info
-      if (plan || sessionInfo) {
+      // If we have an existing order ID from the banner, use it directly
+      if (existingOrderIdFromState) {
+        setOrderId(existingOrderIdFromState);
+        console.log('Using existing order from banner:', existingOrderIdFromState);
+        
+        // Check if there's already a PIX for this order
+        const { data: payment } = await supabase
+          .from('payments')
+          .select('pix_code, payment_method')
+          .eq('order_id', existingOrderIdFromState)
+          .maybeSingle();
+        
+        if (payment?.payment_method) {
+          setSelectedPaymentMethod(payment.payment_method as PaymentMethod || 'pix');
+        }
+        
+        if (payment?.pix_code) {
+          // Get order creation time for expiration
+          const { data: orderData } = await supabase
+            .from('orders')
+            .select('created_at, status')
+            .eq('id', existingOrderIdFromState)
+            .single();
+          
+          if (orderData) {
+            setPaymentStatus(orderData.status);
+            const orderCreated = new Date(orderData.created_at);
+            const expTime = new Date(orderCreated.getTime() + PIX_EXPIRATION_MINUTES * 60 * 1000);
+            
+            if (expTime > new Date()) {
+              setExpirationTime(expTime);
+              setPixData({
+                pixCode: payment.pix_code,
+                transactionId: existingOrderIdFromState,
+              });
+            }
+          }
+        }
+      } else if (plan || sessionInfo) {
+        // Check for existing pending order after we have user and product info
         await checkExistingOrder(session.user.id);
       }
       
@@ -308,7 +347,7 @@ const Checkout = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, plan, sessionInfo, isPlanPurchase, isSessionPurchase]);
+  }, [navigate, plan, sessionInfo, isPlanPurchase, isSessionPurchase, existingOrderIdFromState]);
 
   // Subscribe to order status changes - FIX #6: Prevent duplicate listeners
   useEffect(() => {
