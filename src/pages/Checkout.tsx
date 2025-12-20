@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Check, CreditCard, ArrowLeft, Copy, CheckCircle2, Loader2, Clock, Crown, Sparkles, ShieldCheck, Wallet, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -83,40 +83,44 @@ const Checkout = () => {
   const planId = searchParams.get("plano");
 
   // Parse price from string like "R$ 99,90" or number
-  const parsePrice = (priceValue: string | number | null | undefined): number => {
+  const parsePrice = useCallback((priceValue: string | number | null | undefined): number => {
     if (!priceValue) return 0;
     if (typeof priceValue === 'number') return priceValue;
     const cleaned = priceValue.replace(/R\$\s?/g, '').replace(/\./g, '').replace(',', '.');
     return parseFloat(cleaned) || 0;
-  };
+  }, []);
 
   // Determine session type for database orders - MUST match constraint: session_brasileiras, session_estrangeiras
-  const getOrderProductType = (typeStr: string | null): string => {
+  const getOrderProductType = useCallback((typeStr: string | null): string => {
     if (!typeStr) return '';
     if (typeStr.toLowerCase().includes('brasileir')) return 'session_brasileiras';
     if (typeStr.toLowerCase().includes('estrangeir')) return 'session_estrangeiras';
     return typeStr.toLowerCase();
-  };
+  }, []);
 
   // Determine session type for session_files table - uses: brasileiras, estrangeiras
-  const getSessionFileType = (typeStr: string | null): string => {
+  const getSessionFileType = useCallback((typeStr: string | null): string => {
     if (!typeStr) return '';
     if (typeStr.toLowerCase().includes('brasileir')) return 'brasileiras';
     if (typeStr.toLowerCase().includes('estrangeir')) return 'estrangeiras';
     return typeStr.toLowerCase();
-  };
+  }, []);
 
   // Determine if it's a session purchase or plan purchase
-  const isSessionPurchase = type && qty && price;
+  const isSessionPurchase = !!(type && qty && price);
   const isPlanPurchase = !!planId;
 
-  const sessionInfo = isSessionPurchase ? {
-    type: type.includes('Brasileir') ? 'Sessions Brasileiras' : type.includes('Estrangeir') ? 'Sessions Estrangeiras' : type,
-    dbType: getOrderProductType(type), // For orders table (session_brasileiras/session_estrangeiras)
-    fileType: getSessionFileType(type), // For session_files table (brasileiras/estrangeiras)
-    quantity: parseInt(qty || '0'),
-    price: parsePrice(price),
-  } : null;
+  // MEMOIZE sessionInfo to prevent re-renders (was causing infinite loop)
+  const sessionInfo = useMemo(() => {
+    if (!isSessionPurchase || !type || !qty || !price) return null;
+    return {
+      type: type.includes('Brasileir') ? 'Sessions Brasileiras' : type.includes('Estrangeir') ? 'Sessions Estrangeiras' : type,
+      dbType: getOrderProductType(type),
+      fileType: getSessionFileType(type),
+      quantity: parseInt(qty || '0'),
+      price: parsePrice(price),
+    };
+  }, [isSessionPurchase, type, qty, price, getOrderProductType, getSessionFileType, parsePrice]);
 
   // Fetch plan if planId is present - FIX #3 & #4: Better loading and error handling
   useEffect(() => {
