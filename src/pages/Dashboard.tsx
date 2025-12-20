@@ -142,7 +142,6 @@ const LojaSection = ({
   const availableIntlCombos = intlCombos.filter(hasEnoughStock);
 
   // Set default selections (only from available combos)
-  // Set default selections (only from available combos)
   useEffect(() => {
     if (availableBrCombos.length > 0 && (!brSelectedComboId || !availableBrCombos.find(c => c.id === brSelectedComboId))) {
       setBrSelectedComboId(availableBrCombos[0].id);
