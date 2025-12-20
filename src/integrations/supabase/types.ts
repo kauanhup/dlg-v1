@@ -323,6 +323,7 @@ export type Database = {
           paid_at: string | null
           payment_method: string
           pix_code: string | null
+          qr_code_base64: string | null
           status: string
           subscription_id: string | null
           user_id: string
@@ -335,6 +336,7 @@ export type Database = {
           paid_at?: string | null
           payment_method?: string
           pix_code?: string | null
+          qr_code_base64?: string | null
           status?: string
           subscription_id?: string | null
           user_id: string
@@ -347,6 +349,7 @@ export type Database = {
           paid_at?: string | null
           payment_method?: string
           pix_code?: string | null
+          qr_code_base64?: string | null
           status?: string
           subscription_id?: string | null
           user_id?: string
