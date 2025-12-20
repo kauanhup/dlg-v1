@@ -246,31 +246,9 @@ export const PendingPaymentBanner = () => {
       checkPendingPayment();
     }
   }, [location.pathname, isExcludedRoute, checkPendingPayment]);
-
-  // Auto-cancel expired orders
-  const cancelExpiredOrder = useCallback(async (orderId: string, paymentId: string) => {
-    try {
-      // Cancel order and payment in parallel
-      await Promise.all([
-        supabase
-          .from('orders')
-          .update({ status: 'cancelled' })
-          .eq('id', orderId),
-        supabase
-          .from('payments')
-          .update({ status: 'cancelled' })
-          .eq('id', paymentId)
-      ]);
-      
-      toast.info('PIX expirado', {
-        description: 'O tempo para pagamento expirou. O pedido foi cancelado automaticamente.',
-      });
-    } catch (error) {
-      console.error('Error cancelling expired order:', error);
-    }
-  }, []);
-
   // Countdown timer - uses absolute time to prevent drift in inactive tabs
+  // SECURITY: We do NOT cancel here - the backend cron job handles cancellation
+  // to prevent race conditions with payment webhooks
   useEffect(() => {
     if (!pendingPayment) return;
 
@@ -283,10 +261,12 @@ export const PendingPaymentBanner = () => {
       const diff = expiresAt - now;
 
       if (diff <= 0) {
-        // Auto-cancel the expired order
-        if (pendingPayment.order_id) {
-          cancelExpiredOrder(pendingPayment.order_id, pendingPayment.id);
-        }
+        // Only hide the banner - do NOT cancel the order here
+        // The backend cron job will cancel after a grace period (20 min)
+        // This prevents cancelling orders where payment was made but webhook is slow
+        toast.info('PIX expirado', {
+          description: 'O tempo para pagamento expirou. O pedido será cancelado automaticamente em breve.',
+        });
         setTimeLeft(null);
         setPendingPayment(null);
         cleanupChannels();
@@ -317,7 +297,7 @@ export const PendingPaymentBanner = () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [pendingPayment, cleanupChannels, cancelExpiredOrder]);
+  }, [pendingPayment, cleanupChannels]);
 
   const handleGoToCheckout = () => {
     if (pendingPayment?.order) {
