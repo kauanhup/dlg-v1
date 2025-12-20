@@ -169,49 +169,47 @@ export const PendingPaymentBanner = () => {
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-md"
+        initial={{ opacity: 0, x: 20, scale: 0.95 }}
+        animate={{ opacity: 1, x: 0, scale: 1 }}
+        exit={{ opacity: 0, x: 20, scale: 0.95 }}
+        className="fixed bottom-4 right-4 z-50 w-auto max-w-[320px] sm:max-w-sm"
       >
-        <div className="bg-warning/10 border border-warning/30 backdrop-blur-xl rounded-xl p-4 shadow-lg">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center flex-shrink-0">
-              <Clock className="w-5 h-5 text-warning" />
+        <div className="bg-card/95 border border-warning/40 backdrop-blur-xl rounded-xl p-3 shadow-2xl">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-warning/20 flex items-center justify-center flex-shrink-0">
+              <Clock className="w-4 h-4 text-warning" />
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-foreground text-sm">Pagamento Pendente</h4>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <h4 className="font-semibold text-foreground text-xs">Pagamento Pendente</h4>
+              <p className="text-[10px] text-muted-foreground truncate">
                 {pendingPayment.order?.product_name || 'Pedido'} - {formatPrice(Number(pendingPayment.amount))}
               </p>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className={cn(
-                  "text-xs font-mono font-bold px-2 py-1 rounded bg-background/50",
-                  timeLeft.minutes < 5 ? "text-destructive" : "text-warning"
-                )}>
-                  {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
-                </span>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  className="h-7 text-xs bg-primary/10 border-primary/30 hover:bg-primary/20 text-primary"
-                  onClick={handleGoToCheckout}
-                >
-                  <CreditCard className="w-3 h-3 mr-1" />
-                  Pagar Agora
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  className="h-7 text-xs bg-destructive/10 border-destructive/30 hover:bg-destructive/20 text-destructive"
-                  onClick={handleCancelOrder}
-                  disabled={isCancelling}
-                >
-                  <X className="w-3 h-3 mr-1" />
-                  {isCancelling ? 'Cancelando...' : 'Cancelar'}
-                </Button>
-              </div>
             </div>
+            <span className={cn(
+              "text-xs font-mono font-bold px-2 py-1 rounded",
+              timeLeft.minutes < 5 ? "bg-destructive/20 text-destructive" : "bg-warning/20 text-warning"
+            )}>
+              {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button 
+              size="sm" 
+              className="h-7 text-xs flex-1 bg-primary hover:bg-primary/90"
+              onClick={handleGoToCheckout}
+            >
+              <CreditCard className="w-3 h-3 mr-1" />
+              Pagar
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline"
+              className="h-7 text-xs bg-destructive/10 border-destructive/30 hover:bg-destructive/20 text-destructive"
+              onClick={handleCancelOrder}
+              disabled={isCancelling}
+            >
+              <X className="w-3 h-3" />
+            </Button>
           </div>
         </div>
       </motion.div>
