@@ -3857,12 +3857,26 @@ const BotManagementSection = () => {
 
   const handleDownloadActive = async () => {
     const url = await getDownloadUrl();
-    if (url) window.open(url, '_blank');
+    if (url) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = botFile?.file_name || 'DLGConnect.exe';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
-  const handleDownloadVersion = async (filePath: string) => {
+  const handleDownloadVersion = async (filePath: string, fileName: string) => {
     const url = await getDownloadUrl(filePath);
-    if (url) window.open(url, '_blank');
+    if (url) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const formatBytes = (bytes: number) => {
@@ -4094,7 +4108,7 @@ const BotManagementSection = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDownloadVersion(file.file_path)}
+                    onClick={() => handleDownloadVersion(file.file_path, file.file_name)}
                   >
                     <Download className="w-4 h-4" />
                   </Button>
