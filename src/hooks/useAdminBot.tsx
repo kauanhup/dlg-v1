@@ -99,10 +99,15 @@ export const useAdminBot = () => {
 
   const deleteBotFile = async (id: string, filePath: string) => {
     try {
-      // Delete from storage
-      await supabase.storage
+      // Delete from storage first
+      const { error: storageError } = await supabase.storage
         .from('bot-files')
         .remove([filePath]);
+
+      if (storageError) {
+        console.error('Storage delete error:', storageError);
+        // Continue with DB delete even if storage fails (file might not exist)
+      }
 
       // Delete from database
       const { error } = await supabase
