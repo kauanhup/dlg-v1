@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, CreditCard, X, AlertTriangle } from "lucide-react";
@@ -21,6 +21,9 @@ const EXCLUDED_ROUTES = ['/', '/login', '/comprar', '/recuperar-senha', '/politi
 
 const PIX_EXPIRATION_MINUTES = 15;
 
+// Use localStorage for persistence across browser sessions
+const STORAGE_KEY = 'dismissed_payment_ids';
+
 interface PendingPayment {
   id: string;
   order_id: string;
@@ -28,9 +31,11 @@ interface PendingPayment {
   created_at: string;
   pix_code: string | null;
   order?: {
+    id: string;
     product_name: string;
     product_type: string;
     quantity: number;
+    status: string;
   } | null;
 }
 
@@ -43,10 +48,14 @@ export const PendingPaymentBanner = () => {
   const [isCancelling, setIsCancelling] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   
-  // Persist dismissed state in sessionStorage (per payment ID)
+  // Use ref for channel to prevent stale closures
+  const paymentChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const orderChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  
+  // Persist dismissed state in localStorage (persists across browser sessions)
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => {
     try {
-      const stored = sessionStorage.getItem('dismissed_payment_ids');
+      const stored = localStorage.getItem(STORAGE_KEY);
       return stored ? new Set(JSON.parse(stored)) : new Set();
     } catch {
       return new Set();
@@ -56,70 +65,157 @@ export const PendingPaymentBanner = () => {
   // Don't show on excluded routes
   const isExcludedRoute = EXCLUDED_ROUTES.includes(location.pathname);
 
+  // Clean up old dismissed IDs (older than 24h)
   useEffect(() => {
-    let paymentChannel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const ids = JSON.parse(stored);
+        // Keep only recent IDs (we don't have timestamps, so just limit size)
+        if (ids.length > 50) {
+          const recentIds = ids.slice(-20);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(recentIds));
+          setDismissedIds(new Set(recentIds));
+        }
+      }
+    } catch {
+      // Ignore errors
+    }
+  }, []);
 
-    const checkPendingPayment = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setIsLoggedIn(false);
+  // Function to clean up realtime channels
+  const cleanupChannels = useCallback(() => {
+    if (paymentChannelRef.current) {
+      supabase.removeChannel(paymentChannelRef.current);
+      paymentChannelRef.current = null;
+    }
+    if (orderChannelRef.current) {
+      supabase.removeChannel(orderChannelRef.current);
+      orderChannelRef.current = null;
+    }
+  }, []);
+
+  // Function to set up realtime subscriptions
+  const setupRealtimeSubscriptions = useCallback((paymentId: string, orderId: string) => {
+    // Clean up existing channels first
+    cleanupChannels();
+    
+    // Subscribe to payment changes
+    paymentChannelRef.current = supabase
+      .channel(`payment-banner-${paymentId}-${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'payments',
+          filter: `id=eq.${paymentId}`,
+        },
+        (payload) => {
+          const newStatus = payload.new.status;
+          console.log('[Banner] Payment status updated:', newStatus);
+          if (newStatus === 'cancelled' || newStatus === 'paid') {
+            setPendingPayment(null);
+          }
+        }
+      )
+      .subscribe();
+    
+    // Subscribe to order changes
+    orderChannelRef.current = supabase
+      .channel(`order-banner-${orderId}-${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        (payload) => {
+          const newStatus = payload.new.status;
+          console.log('[Banner] Order status updated:', newStatus);
+          if (newStatus === 'cancelled' || newStatus === 'completed' || newStatus === 'paid') {
+            setPendingPayment(null);
+          }
+        }
+      )
+      .subscribe();
+  }, [cleanupChannels]);
+
+  const checkPendingPayment = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setIsLoggedIn(false);
+      setPendingPayment(null);
+      cleanupChannels();
+      return;
+    }
+
+    setIsLoggedIn(true);
+
+    // Check for pending payments within expiration window
+    const expirationTime = new Date(Date.now() - PIX_EXPIRATION_MINUTES * 60 * 1000).toISOString();
+    
+    const { data, error } = await supabase
+      .from('payments')
+      .select(`
+        id,
+        order_id,
+        amount,
+        created_at,
+        pix_code,
+        order:orders(id, product_name, product_type, quantity, status)
+      `)
+      .eq('user_id', session.user.id)
+      .eq('status', 'pending')
+      .gte('created_at', expirationTime)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[Banner] Error fetching pending payment:', error);
+      return;
+    }
+
+    // CRITICAL: Validate order status - don't show if order is cancelled/completed
+    if (data) {
+      const orderStatus = data.order?.status;
+      
+      // If order is not pending, don't show banner and cancel the payment
+      if (orderStatus && orderStatus !== 'pending') {
+        console.log('[Banner] Order not pending, skipping:', orderStatus);
         setPendingPayment(null);
+        cleanupChannels();
         return;
       }
 
-      setIsLoggedIn(true);
-
-      // Check for pending payments within expiration window
-      const expirationTime = new Date(Date.now() - PIX_EXPIRATION_MINUTES * 60 * 1000).toISOString();
-      
-      const { data } = await supabase
-        .from('payments')
-        .select(`
-          id,
-          order_id,
-          amount,
-          created_at,
-          pix_code,
-          order:orders(product_name, product_type, quantity)
-        `)
-        .eq('user_id', session.user.id)
-        .eq('status', 'pending')
-        .gte('created_at', expirationTime)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (data) {
-        setPendingPayment(data);
-        
-        // Subscribe to realtime changes for this payment
-        if (paymentChannel) {
-          supabase.removeChannel(paymentChannel);
-        }
-        
-        paymentChannel = supabase
-          .channel(`payment-banner-${data.id}`)
-          .on(
-            'postgres_changes',
-            {
-              event: 'UPDATE',
-              schema: 'public',
-              table: 'payments',
-              filter: `id=eq.${data.id}`,
-            },
-            (payload) => {
-              const newStatus = payload.new.status;
-              if (newStatus === 'cancelled' || newStatus === 'paid') {
-                setPendingPayment(null);
-              }
-            }
-          )
-          .subscribe();
-      } else {
+      // If order doesn't exist or payment has no valid order, skip
+      if (!data.order_id || !data.order) {
+        console.log('[Banner] No valid order for payment');
         setPendingPayment(null);
+        cleanupChannels();
+        return;
       }
-    };
 
+      // Check if already dismissed
+      if (dismissedIds.has(data.id)) {
+        console.log('[Banner] Payment dismissed, skipping');
+        setPendingPayment(null);
+        cleanupChannels();
+        return;
+      }
+
+      setPendingPayment(data);
+      setupRealtimeSubscriptions(data.id, data.order_id);
+    } else {
+      setPendingPayment(null);
+      cleanupChannels();
+    }
+  }, [dismissedIds, cleanupChannels, setupRealtimeSubscriptions]);
+
+  useEffect(() => {
     checkPendingPayment();
     
     // Listen for auth changes
@@ -127,21 +223,28 @@ export const PendingPaymentBanner = () => {
       if (!session) {
         setIsLoggedIn(false);
         setPendingPayment(null);
+        cleanupChannels();
       } else {
         checkPendingPayment();
       }
     });
     
-    // Check every 30 seconds
+    // Check every 30 seconds for updates
     const interval = setInterval(checkPendingPayment, 30000);
+    
     return () => {
       clearInterval(interval);
       subscription.unsubscribe();
-      if (paymentChannel) {
-        supabase.removeChannel(paymentChannel);
-      }
+      cleanupChannels();
     };
-  }, []);
+  }, [checkPendingPayment, cleanupChannels]);
+
+  // Re-check when returning from other pages
+  useEffect(() => {
+    if (!isExcludedRoute) {
+      checkPendingPayment();
+    }
+  }, [location.pathname, isExcludedRoute, checkPendingPayment]);
 
   // Countdown timer
   useEffect(() => {
@@ -155,6 +258,7 @@ export const PendingPaymentBanner = () => {
 
       if (diff <= 0) {
         setPendingPayment(null);
+        cleanupChannels();
         return;
       }
 
@@ -166,20 +270,28 @@ export const PendingPaymentBanner = () => {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [pendingPayment]);
+  }, [pendingPayment, cleanupChannels]);
 
   const handleGoToCheckout = () => {
     if (pendingPayment?.order) {
       const order = pendingPayment.order;
-      // Pass PIX code if exists to prevent regeneration
+      
+      // Calculate if PIX is still valid (at least 2 minutes left)
+      const createdAt = new Date(pendingPayment.created_at);
+      const expiresAt = new Date(createdAt.getTime() + PIX_EXPIRATION_MINUTES * 60 * 1000);
+      const now = new Date();
+      const timeRemaining = expiresAt.getTime() - now.getTime();
+      const hasValidPix = pendingPayment.pix_code && timeRemaining > 2 * 60 * 1000; // At least 2 min left
+      
       navigate('/checkout', {
         state: {
           type: order.product_name,
           qty: order.quantity,
           price: `R$ ${Number(pendingPayment.amount).toFixed(2).replace('.', ',')}`,
           existingOrderId: pendingPayment.order_id,
-          existingPixCode: pendingPayment.pix_code, // Pass the existing PIX code
-          paymentCreatedAt: pendingPayment.created_at // Pass creation time for expiration calc
+          // Only pass PIX code if it's still valid (at least 2 min left)
+          existingPixCode: hasValidPix ? pendingPayment.pix_code : null,
+          paymentCreatedAt: hasValidPix ? pendingPayment.created_at : null
         }
       });
     } else {
@@ -198,29 +310,39 @@ export const PendingPaymentBanner = () => {
     setShowCancelDialog(false);
     
     try {
-      // Cancel payment
-      await supabase
+      // Cancel payment first
+      const { error: paymentError } = await supabase
         .from('payments')
         .update({ status: 'cancelled' })
         .eq('id', pendingPayment.id);
       
-      // Cancel order
-      if (pendingPayment.order_id) {
-        await supabase
-          .from('orders')
-          .update({ status: 'cancelled' })
-          .eq('id', pendingPayment.order_id);
+      if (paymentError) {
+        console.error('[Banner] Error cancelling payment:', paymentError);
       }
       
-      // Add to dismissed list
+      // Cancel order
+      if (pendingPayment.order_id) {
+        const { error: orderError } = await supabase
+          .from('orders')
+          .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+          .eq('id', pendingPayment.order_id);
+        
+        if (orderError) {
+          console.error('[Banner] Error cancelling order:', orderError);
+        }
+      }
+      
+      // Add to dismissed list and persist
       const newDismissed = new Set(dismissedIds);
       newDismissed.add(pendingPayment.id);
       setDismissedIds(newDismissed);
-      sessionStorage.setItem('dismissed_payment_ids', JSON.stringify([...newDismissed]));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...newDismissed]));
       
+      // Clear state
       setPendingPayment(null);
+      cleanupChannels();
     } catch (error) {
-      console.error('Error cancelling order:', error);
+      console.error('[Banner] Error cancelling order:', error);
     } finally {
       setIsCancelling(false);
     }
