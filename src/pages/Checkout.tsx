@@ -363,6 +363,23 @@ const Checkout = () => {
           return;
         }
       } else if (isPlanPurchase && plan) {
+        // FIX: Validate subscription limit for PAID plans too (not just free)
+        if (plan.max_subscriptions_per_user !== null) {
+          const { count, error: countError } = await supabase
+            .from('user_subscriptions')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('plan_id', plan.id);
+
+          if (countError) throw countError;
+
+          if (count !== null && count >= plan.max_subscriptions_per_user) {
+            toast.error("Limite atingido", `Você já utilizou este plano o máximo de ${plan.max_subscriptions_per_user} vez(es).`);
+            setIsProcessing(false);
+            return;
+          }
+        }
+
         amount = planPrice;
         productName = plan.name;
         productType = 'subscription';
@@ -415,15 +432,18 @@ const Checkout = () => {
           console.error('EvoPay PIX generation error:', evoError);
           toast.error("Gateway indisponível", "Pedido criado. Configure o gateway PIX ou aguarde aprovação manual.");
         } else if (evoResponse?.data?.pixCode) {
+          const transactionId = evoResponse.data.transactionId || evoResponse.data.id;
+          
           setPixData({
             pixCode: evoResponse.data.pixCode,
             qrCodeBase64: undefined,
-            transactionId: evoResponse.data.transactionId,
+            transactionId: transactionId,
             expiresAt: undefined,
           });
 
+          // Store transaction ID for webhook matching
           await supabase.from('payments').update({
-            pix_code: evoResponse.data.pixCode,
+            pix_code: transactionId, // Store transactionId, not pixCode
           }).eq('order_id', orderData.id);
 
           toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
@@ -912,10 +932,9 @@ const Checkout = () => {
                       <div className="bg-white p-3 sm:p-4 rounded-xl shadow-lg">
                         <QRCodeSVG 
                           value={pixData.pixCode} 
-                          size={160}
+                          size={180}
                           level="M"
                           includeMargin={false}
-                          className="sm:w-[180px] sm:h-[180px]"
                         />
                       </div>
                     </div>
@@ -929,7 +948,7 @@ const Checkout = () => {
                         onClick={copyPixCode}
                         className="relative bg-muted/50 hover:bg-muted/70 border border-border/50 rounded-xl p-3 pr-12 cursor-pointer transition-colors group"
                       >
-                        <div className="font-mono text-[9px] sm:text-[10px] break-all line-clamp-2 text-muted-foreground group-hover:text-foreground transition-colors">
+                        <div className="font-mono text-[10px] sm:text-xs break-all line-clamp-2 text-muted-foreground group-hover:text-foreground transition-colors">
                           {pixData.pixCode}
                         </div>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -958,10 +977,20 @@ const Checkout = () => {
                         setPaymentStatus('pending');
                         setCopied(false);
                       }}
+                      disabled={isProcessing}
                       className="w-full"
                       variant={isExpired ? "default" : "outline"}
                     >
-                      {isExpired ? "Gerar novo código PIX" : "Tentar novamente"}
+                      {isProcessing ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Processando...
+                        </span>
+                      ) : isExpired ? (
+                        "Gerar novo código PIX"
+                      ) : (
+                        "Tentar novamente"
+                      )}
                     </Button>
                   )}
 
