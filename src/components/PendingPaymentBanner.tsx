@@ -30,6 +30,7 @@ export const PendingPaymentBanner = () => {
   const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null);
   const [timeLeft, setTimeLeft] = useState<{ minutes: number; seconds: number } | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Don't show on excluded routes
   const isExcludedRoute = EXCLUDED_ROUTES.includes(location.pathname);
@@ -131,6 +132,34 @@ export const PendingPaymentBanner = () => {
     }
   };
 
+  const handleCancelOrder = async () => {
+    if (!pendingPayment || isCancelling) return;
+    
+    setIsCancelling(true);
+    try {
+      // Cancel payment
+      await supabase
+        .from('payments')
+        .update({ status: 'cancelled' })
+        .eq('id', pendingPayment.id);
+      
+      // Cancel order
+      if (pendingPayment.order_id) {
+        await supabase
+          .from('orders')
+          .update({ status: 'cancelled' })
+          .eq('id', pendingPayment.order_id);
+      }
+      
+      setPendingPayment(null);
+      setDismissed(true);
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   if (isExcludedRoute || !isLoggedIn || !pendingPayment || dismissed || !timeLeft) return null;
 
   const formatPrice = (value: number) => {
@@ -151,21 +180,13 @@ export const PendingPaymentBanner = () => {
               <Clock className="w-5 h-5 text-warning" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <h4 className="font-semibold text-foreground text-sm">Pagamento Pendente</h4>
-                <button 
-                  onClick={() => setDismissed(true)}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              <h4 className="font-semibold text-foreground text-sm">Pagamento Pendente</h4>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {pendingPayment.order?.product_name || 'Pedido'} - {formatPrice(Number(pendingPayment.amount))}
               </p>
-              <div className="flex items-center gap-3 mt-2">
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <span className={cn(
-                  "text-xs font-mono font-bold",
+                  "text-xs font-mono font-bold px-2 py-1 rounded bg-background/50",
                   timeLeft.minutes < 5 ? "text-destructive" : "text-warning"
                 )}>
                   {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
@@ -173,11 +194,21 @@ export const PendingPaymentBanner = () => {
                 <Button 
                   size="sm" 
                   variant="outline"
-                  className="h-7 text-xs bg-warning/10 border-warning/30 hover:bg-warning/20"
+                  className="h-7 text-xs bg-primary/10 border-primary/30 hover:bg-primary/20 text-primary"
                   onClick={handleGoToCheckout}
                 >
                   <CreditCard className="w-3 h-3 mr-1" />
                   Pagar Agora
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="h-7 text-xs bg-destructive/10 border-destructive/30 hover:bg-destructive/20 text-destructive"
+                  onClick={handleCancelOrder}
+                  disabled={isCancelling}
+                >
+                  <X className="w-3 h-3 mr-1" />
+                  {isCancelling ? 'Cancelando...' : 'Cancelar'}
                 </Button>
               </div>
             </div>
