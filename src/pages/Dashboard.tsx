@@ -1253,21 +1253,25 @@ const Dashboard = () => {
               </div>
             </motion.div>
 
-            {/* Warning Alert */}
-            <motion.div 
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-              className="bg-warning/10 border border-warning/30 rounded-md p-4 flex items-center gap-3"
-            >
-              <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm text-foreground">Sua licença expira em breve! <span className="text-warning font-medium">10% de desconto</span> na renovação.</p>
-              </div>
-              <Button size="sm" variant="outline" className="hidden sm:flex h-8 border-warning/30 text-warning hover:bg-warning/10 hover:text-warning hover:scale-[1.02] active:scale-[0.98] transition-all">
-                Renovar
-              </Button>
-            </motion.div>
+            {/* Warning Alert - Only show if license exists and expires in < 7 days */}
+            {userLicense && userLicense.daysLeft <= 7 && userLicense.daysLeft > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
+                className="bg-warning/10 border border-warning/30 rounded-md p-4 flex items-center gap-3"
+              >
+                <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm text-foreground">
+                    Sua licença expira em <span className="text-warning font-medium">{userLicense.daysLeft} dia{userLicense.daysLeft !== 1 ? 's' : ''}</span>! Renove agora.
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" className="hidden sm:flex h-8 border-warning/30 text-warning hover:bg-warning/10 hover:text-warning hover:scale-[1.02] active:scale-[0.98] transition-all">
+                  Renovar
+                </Button>
+              </motion.div>
+            )}
           </motion.div>
         )}
 
