@@ -494,13 +494,27 @@ export const useAdminSessions = () => {
 
   // ==========================================
   // SYNC INVENTORY (fix desync issues)
+  // Uses fresh DB count, not local state
   // ==========================================
   
   const syncInventory = async () => {
     try {
-      // Count actual available files for each type
-      const brasileirasCount = sessionFiles.filter(f => f.type === 'brasileiras' && f.status === 'available').length;
-      const estrangeirasCount = sessionFiles.filter(f => f.type === 'estrangeiras' && f.status === 'available').length;
+      // CRITICAL: Count from DATABASE, not local state (to avoid stale data)
+      const [brasileirasResult, estrangeirasResult] = await Promise.all([
+        supabase
+          .from('session_files')
+          .select('id', { count: 'exact', head: true })
+          .eq('type', 'brasileiras')
+          .eq('status', 'available'),
+        supabase
+          .from('session_files')
+          .select('id', { count: 'exact', head: true })
+          .eq('type', 'estrangeiras')
+          .eq('status', 'available')
+      ]);
+      
+      const brasileirasCount = brasileirasResult.count || 0;
+      const estrangeirasCount = estrangeirasResult.count || 0;
       
       // Update inventory to match actual counts
       await Promise.all([
@@ -514,6 +528,9 @@ export const useAdminSessions = () => {
           .eq('type', 'estrangeiras')
       ]);
       
+      // Auto-disable combos without stock
+      await autoDisableCombosWithoutStock(brasileirasCount, estrangeirasCount);
+      
       // Refetch to update UI
       await fetchData();
       
@@ -521,6 +538,48 @@ export const useAdminSessions = () => {
     } catch (err) {
       console.error('Error syncing inventory:', err);
       return { success: false, error: 'Erro ao sincronizar estoque' };
+    }
+  };
+
+  // ==========================================
+  // AUTO-DISABLE COMBOS WITHOUT STOCK
+  // ==========================================
+  
+  const autoDisableCombosWithoutStock = async (brasileirasStock: number, estrangeirasStock: number) => {
+    try {
+      // Fetch all active combos
+      const { data: activeCombos, error } = await supabase
+        .from('session_combos')
+        .select('id, type, quantity, is_active')
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      
+      const combosToDisable: string[] = [];
+      
+      for (const combo of activeCombos || []) {
+        const stock = combo.type === 'brasileiras' ? brasileirasStock : estrangeirasStock;
+        
+        // Disable combo if quantity > available stock
+        if (combo.quantity > stock) {
+          combosToDisable.push(combo.id);
+        }
+      }
+      
+      // Batch disable combos without stock
+      if (combosToDisable.length > 0) {
+        await supabase
+          .from('session_combos')
+          .update({ is_active: false })
+          .in('id', combosToDisable);
+        
+        console.log(`Auto-disabled ${combosToDisable.length} combos without sufficient stock`);
+      }
+      
+      return { disabled: combosToDisable.length };
+    } catch (err) {
+      console.error('Error auto-disabling combos:', err);
+      return { disabled: 0 };
     }
   };
 
