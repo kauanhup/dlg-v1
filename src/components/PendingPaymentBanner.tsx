@@ -29,8 +29,17 @@ export const PendingPaymentBanner = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null);
   const [timeLeft, setTimeLeft] = useState<{ minutes: number; seconds: number } | null>(null);
-  const [dismissed, setDismissed] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  
+  // Persist dismissed state in sessionStorage (per payment ID)
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => {
+    try {
+      const stored = sessionStorage.getItem('dismissed_payment_ids');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
 
   // Don't show on excluded routes
   const isExcludedRoute = EXCLUDED_ROUTES.includes(location.pathname);
@@ -151,8 +160,13 @@ export const PendingPaymentBanner = () => {
           .eq('id', pendingPayment.order_id);
       }
       
+      // Add to dismissed list
+      const newDismissed = new Set(dismissedIds);
+      newDismissed.add(pendingPayment.id);
+      setDismissedIds(newDismissed);
+      sessionStorage.setItem('dismissed_payment_ids', JSON.stringify([...newDismissed]));
+      
       setPendingPayment(null);
-      setDismissed(true);
     } catch (error) {
       console.error('Error cancelling order:', error);
     } finally {
@@ -160,7 +174,10 @@ export const PendingPaymentBanner = () => {
     }
   };
 
-  if (isExcludedRoute || !isLoggedIn || !pendingPayment || dismissed || !timeLeft) return null;
+  // Check if this payment was dismissed
+  const isDismissed = pendingPayment ? dismissedIds.has(pendingPayment.id) : false;
+
+  if (isExcludedRoute || !isLoggedIn || !pendingPayment || isDismissed || !timeLeft) return null;
 
   const formatPrice = (value: number) => {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
