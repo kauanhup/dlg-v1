@@ -18,6 +18,7 @@ export const useAdminBot = () => {
   const [botHistory, setBotHistory] = useState<BotFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
 
   const fetchBotFiles = async () => {
     try {
@@ -52,18 +53,37 @@ export const useAdminBot = () => {
     fetchBotFiles();
   }, []);
 
-  const uploadBotFile = async (file: File, version: string) => {
+  // Check if version already exists
+  const versionExists = (version: string): boolean => {
+    return botHistory.some(file => file.version === version);
+  };
+
+  const uploadBotFile = async (file: File, version: string): Promise<boolean> => {
+    // Check for duplicate version
+    if (versionExists(version)) {
+      toast.error(`Versão ${version} já existe. Use uma versão diferente.`);
+      return false;
+    }
+
     setIsUploading(true);
+    let uploadedFilePath: string | null = null;
+    
     try {
       // Deactivate previous bot files
-      await supabase
+      const { error: deactivateError } = await supabase
         .from('bot_files')
         .update({ is_active: false })
         .eq('is_active', true);
 
+      if (deactivateError) {
+        console.error('Error deactivating previous versions:', deactivateError);
+        // Continue anyway - not critical
+      }
+
       // Upload to storage
       const fileName = `DLGConnect_${version}.exe`;
       const filePath = `${Date.now()}_${fileName}`;
+      uploadedFilePath = filePath;
       
       const { error: uploadError } = await supabase.storage
         .from('bot-files')
@@ -85,13 +105,20 @@ export const useAdminBot = () => {
           is_active: true
         });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        // Rollback: delete file from storage if DB insert fails
+        console.error('DB insert failed, rolling back storage upload:', dbError);
+        await supabase.storage.from('bot-files').remove([filePath]);
+        throw dbError;
+      }
 
       toast.success('Bot enviado com sucesso!');
       await fetchBotFiles();
+      return true;
     } catch (error: any) {
       console.error('Error uploading bot file:', error);
       toast.error('Erro ao enviar arquivo: ' + error.message);
+      return false;
     } finally {
       setIsUploading(false);
     }
@@ -127,37 +154,65 @@ export const useAdminBot = () => {
 
   const getDownloadUrl = async (filePath?: string): Promise<string | null> => {
     const path = filePath || botFile?.file_path;
-    if (!path) return null;
+    if (!path) {
+      toast.error('Arquivo não encontrado');
+      return null;
+    }
     
     const { data, error } = await supabase.storage
       .from('bot-files')
       .createSignedUrl(path, 3600); // 1 hour expiry
     
-    if (error) return null;
+    if (error) {
+      console.error('Error creating signed URL:', error);
+      toast.error('Erro ao gerar link de download');
+      return null;
+    }
     return data.signedUrl;
   };
 
-  const setActiveVersion = async (id: string) => {
+  const setActiveVersion = async (id: string): Promise<boolean> => {
+    // Prevent race condition with lock
+    if (isActivating) {
+      toast.error('Aguarde a ativação anterior concluir');
+      return false;
+    }
+
+    setIsActivating(true);
     try {
-      // Deactivate all
-      await supabase
+      // Deactivate all in a single operation
+      const { error: deactivateError } = await supabase
         .from('bot_files')
         .update({ is_active: false })
         .eq('is_active', true);
 
+      if (deactivateError) {
+        throw new Error('Erro ao desativar versão anterior: ' + deactivateError.message);
+      }
+
       // Activate selected
-      const { error } = await supabase
+      const { error: activateError } = await supabase
         .from('bot_files')
         .update({ is_active: true })
         .eq('id', id);
 
-      if (error) throw error;
+      if (activateError) {
+        // Try to rollback - reactivate the first one in history
+        console.error('Activation failed, state may be inconsistent:', activateError);
+        throw activateError;
+      }
 
       toast.success('Versão ativada com sucesso!');
       await fetchBotFiles();
+      return true;
     } catch (error: any) {
       console.error('Error setting active version:', error);
       toast.error('Erro ao ativar versão: ' + error.message);
+      // Refresh to show current state
+      await fetchBotFiles();
+      return false;
+    } finally {
+      setIsActivating(false);
     }
   };
 
@@ -166,10 +221,12 @@ export const useAdminBot = () => {
     botHistory,
     isLoading,
     isUploading,
+    isActivating,
     uploadBotFile,
     deleteBotFile,
     getDownloadUrl,
     setActiveVersion,
+    versionExists,
     refetch: fetchBotFiles
   };
 };

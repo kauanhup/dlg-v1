@@ -3846,7 +3846,7 @@ const ApiSection = () => {
 
 // Bot Management Section
 const BotManagementSection = () => {
-  const { botFile, botHistory, isLoading, isUploading, uploadBotFile, deleteBotFile, getDownloadUrl, setActiveVersion } = useAdminBot();
+  const { botFile, botHistory, isLoading, isUploading, isActivating: hookIsActivating, uploadBotFile, deleteBotFile, getDownloadUrl, setActiveVersion, versionExists } = useAdminBot();
   const [version, setVersion] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; path: string; version: string } | null>(null);
@@ -3929,11 +3929,13 @@ const BotManagementSection = () => {
   };
 
   const handleActivateConfirm = async () => {
-    if (activateConfirm) {
+    if (activateConfirm && !hookIsActivating) {
       setIsActivating(true);
-      await setActiveVersion(activateConfirm.id);
+      const success = await setActiveVersion(activateConfirm.id);
       setIsActivating(false);
-      setActivateConfirm(null);
+      if (success) {
+        setActivateConfirm(null);
+      }
     }
   };
 
