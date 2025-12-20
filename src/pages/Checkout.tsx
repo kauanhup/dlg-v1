@@ -1042,9 +1042,6 @@ const Checkout = () => {
                           )}
                         </div>
                       </div>
-                      <p className="text-center text-xs text-muted-foreground">
-                        Clique para copiar
-                      </p>
                     </div>
                   )}
 
