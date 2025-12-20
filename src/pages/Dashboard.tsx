@@ -1386,20 +1386,6 @@ const Dashboard = () => {
               </>
             )}
 
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-              className="bg-muted/30 border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-            >
-              <div>
-                <p className="text-sm font-medium text-foreground">Precisa de mais sessions?</p>
-                <p className="text-sm text-muted-foreground">Compre com desconto especial</p>
-              </div>
-              <Button size="sm" variant="outline" className="h-9 hover:scale-[1.02] active:scale-[0.98] transition-transform" onClick={() => setActiveTab("comprar")}>
-                Ver pacotes
-              </Button>
-            </motion.div>
           </motion.div>
         )}
 
