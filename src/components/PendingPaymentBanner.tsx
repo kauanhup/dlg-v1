@@ -22,6 +22,7 @@ interface PendingPayment {
 
 export const PendingPaymentBanner = () => {
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null);
   const [timeLeft, setTimeLeft] = useState<{ minutes: number; seconds: number } | null>(null);
   const [dismissed, setDismissed] = useState(false);
@@ -29,7 +30,13 @@ export const PendingPaymentBanner = () => {
   useEffect(() => {
     const checkPendingPayment = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        setIsLoggedIn(false);
+        setPendingPayment(null);
+        return;
+      }
+
+      setIsLoggedIn(true);
 
       // Check for pending payments within expiration window
       const expirationTime = new Date(Date.now() - PIX_EXPIRATION_MINUTES * 60 * 1000).toISOString();
@@ -52,14 +59,29 @@ export const PendingPaymentBanner = () => {
 
       if (data) {
         setPendingPayment(data);
+      } else {
+        setPendingPayment(null);
       }
     };
 
     checkPendingPayment();
     
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        setIsLoggedIn(false);
+        setPendingPayment(null);
+      } else {
+        checkPendingPayment();
+      }
+    });
+    
     // Check every 30 seconds
     const interval = setInterval(checkPendingPayment, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Countdown timer
@@ -102,7 +124,7 @@ export const PendingPaymentBanner = () => {
     }
   };
 
-  if (!pendingPayment || dismissed || !timeLeft) return null;
+  if (!isLoggedIn || !pendingPayment || dismissed || !timeLeft) return null;
 
   const formatPrice = (value: number) => {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
