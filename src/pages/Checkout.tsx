@@ -301,59 +301,77 @@ const Checkout = () => {
 
       setUser(session.user);
       
-      // If we have an existing order ID from the banner, use it directly
+      // If we have an existing order ID from the banner, validate it first
       if (existingOrderIdFromState) {
-        setOrderId(existingOrderIdFromState);
-        console.log('Using existing order from banner:', existingOrderIdFromState);
+        console.log('[Checkout] Checking existing order from banner:', existingOrderIdFromState);
         
-        // If PIX code was passed from banner, use it directly (no need to re-fetch)
-        if (existingPixCodeFromState && paymentCreatedAtFromState) {
-          const paymentCreated = new Date(paymentCreatedAtFromState);
-          const expTime = new Date(paymentCreated.getTime() + PIX_EXPIRATION_MINUTES * 60 * 1000);
-          
-          if (expTime > new Date()) {
-            setExpirationTime(expTime);
-            setPixData({
-              pixCode: existingPixCodeFromState,
-              transactionId: existingOrderIdFromState,
-            });
-            setPaymentStatus('pending');
-            console.log('Using PIX from banner directly:', existingPixCodeFromState);
+        // CRITICAL: Validate order exists and is still pending
+        const { data: orderData, error: orderError } = await supabase
+          .from('orders')
+          .select('id, status, product_name, product_type, quantity, amount')
+          .eq('id', existingOrderIdFromState)
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        
+        if (orderError || !orderData) {
+          console.log('[Checkout] Order not found, will create new one');
+          // Order doesn't exist - don't set orderId, let user create new one
+          setIsLoading(false);
+          return;
+        }
+        
+        // If order is not pending, redirect or reset
+        if (orderData.status !== 'pending') {
+          console.log('[Checkout] Order status is not pending:', orderData.status);
+          if (orderData.status === 'completed' || orderData.status === 'paid') {
+            toast.success("Pedido já foi pago", "Redirecionando para o dashboard...");
+            setTimeout(() => navigate('/dashboard'), 1500);
+            return;
           }
-        } else {
-          // Fallback: Check database for PIX data
-          const { data: payment } = await supabase
-            .from('payments')
-            .select('pix_code, payment_method, created_at')
-            .eq('order_id', existingOrderIdFromState)
-            .maybeSingle();
+          // For cancelled orders, just don't use this order
+          setIsLoading(false);
+          return;
+        }
+        
+        // Order is valid and pending - use it
+        setOrderId(existingOrderIdFromState);
+        setPaymentStatus('pending');
+        
+        // Fetch payment data from database (more reliable than state)
+        const { data: payment } = await supabase
+          .from('payments')
+          .select('pix_code, payment_method, created_at, status')
+          .eq('order_id', existingOrderIdFromState)
+          .maybeSingle();
+        
+        if (payment) {
+          // If payment is not pending, don't show PIX
+          if (payment.status !== 'pending') {
+            console.log('[Checkout] Payment status is not pending:', payment.status);
+            setIsLoading(false);
+            return;
+          }
           
-          if (payment?.payment_method) {
+          if (payment.payment_method) {
             setSelectedPaymentMethod(payment.payment_method as PaymentMethod || 'pix');
           }
           
-          if (payment?.pix_code) {
-            // Use payment created_at for expiration (more accurate than order created_at)
+          // Only use PIX code if it's still valid (at least 1 minute remaining)
+          if (payment.pix_code) {
             const paymentCreated = new Date(payment.created_at);
             const expTime = new Date(paymentCreated.getTime() + PIX_EXPIRATION_MINUTES * 60 * 1000);
+            const timeRemaining = expTime.getTime() - Date.now();
             
-            if (expTime > new Date()) {
+            if (timeRemaining > 60 * 1000) { // At least 1 minute left
+              console.log('[Checkout] Valid PIX found, time remaining:', Math.round(timeRemaining / 1000), 's');
               setExpirationTime(expTime);
               setPixData({
                 pixCode: payment.pix_code,
                 transactionId: existingOrderIdFromState,
               });
-            }
-            
-            // Get order status
-            const { data: orderData } = await supabase
-              .from('orders')
-              .select('status')
-              .eq('id', existingOrderIdFromState)
-              .single();
-            
-            if (orderData) {
-              setPaymentStatus(orderData.status);
+            } else {
+              console.log('[Checkout] PIX expired or expiring soon, will regenerate');
+              // PIX expired - user will need to regenerate by clicking button
             }
           }
         }
