@@ -139,6 +139,7 @@ const LojaSection = ({
   const availableIntlCombos = intlCombos.filter(hasEnoughStock);
 
   // Set default selections (only from available combos)
+  // Set default selections (only from available combos)
   useEffect(() => {
     if (availableBrCombos.length > 0 && (!brSelectedComboId || !availableBrCombos.find(c => c.id === brSelectedComboId))) {
       setBrSelectedComboId(availableBrCombos[0].id);
@@ -150,7 +151,7 @@ const LojaSection = ({
     } else if (availableIntlCombos.length === 0) {
       setIntlSelectedComboId(null);
     }
-  }, [brCombos, intlCombos, brStock, intlStock]);
+  }, [availableBrCombos, availableIntlCombos, brSelectedComboId, intlSelectedComboId]);
 
   const formatPrice = (value: number) => {
     return `R$ ${Number(value).toFixed(2).replace('.', ',')}`;
@@ -401,7 +402,17 @@ const LojaSection = ({
                       min={brCustomMin}
                       max={brStock}
                       value={brCustomQty}
-                      onChange={(e) => setBrCustomQty(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || parseInt(val) >= 0) {
+                          setBrCustomQty(val);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e') {
+                          e.preventDefault();
+                        }
+                      }}
                       className="flex-1 px-3 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
                       placeholder={`Mín: ${brCustomMin}`}
                     />
@@ -555,7 +566,17 @@ const LojaSection = ({
                       min={intlCustomMin}
                       max={intlStock}
                       value={intlCustomQty}
-                      onChange={(e) => setIntlCustomQty(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || parseInt(val) >= 0) {
+                          setIntlCustomQty(val);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e') {
+                          e.preventDefault();
+                        }
+                      }}
                       className="flex-1 px-3 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
                       placeholder={`Mín: ${intlCustomMin}`}
                     />
