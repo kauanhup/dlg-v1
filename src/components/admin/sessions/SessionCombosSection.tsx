@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { SessionCombo } from "@/hooks/useAdminSessions";
@@ -22,6 +23,21 @@ export const SessionCombosSection = ({
   onAddCombo,
   onDeleteCombo,
 }: SessionCombosSectionProps) => {
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const handleDeleteClick = (comboId: string) => {
+    setDeleteConfirm(comboId);
+  };
+
+  const handleConfirmDelete = (comboId: string) => {
+    onDeleteCombo(comboId);
+    setDeleteConfirm(null);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirm(null);
+  };
+
   return (
     <div className="bg-card border border-border rounded-lg p-5">
       <div className="flex items-center justify-between mb-4">
@@ -62,14 +78,36 @@ export const SessionCombosSection = ({
                   />
                 </div>
               </div>
-              <Button 
-                size="icon" 
-                variant="ghost" 
-                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={() => onDeleteCombo(combo.id)}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              
+              {deleteConfirm === combo.id ? (
+                <div className="flex items-center gap-1">
+                  <Button 
+                    size="sm" 
+                    variant="destructive"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => handleConfirmDelete(combo.id)}
+                  >
+                    Sim
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    className="h-7 px-2 text-xs"
+                    onClick={handleCancelDelete}
+                  >
+                    Não
+                  </Button>
+                </div>
+              ) : (
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => handleDeleteClick(combo.id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           ))
         )}

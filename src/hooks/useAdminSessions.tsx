@@ -354,22 +354,63 @@ export const useAdminSessions = () => {
     }
   };
 
-  // ==========================================
-  // UPDATE INVENTORY
+// ==========================================
+  // UPDATE INVENTORY (with upsert support)
   // ==========================================
   
   const updateInventory = async (type: string, data: Partial<SessionInventory>) => {
     try {
-      const { error } = await supabase
+      // First check if inventory exists
+      const { data: existing, error: checkError } = await supabase
         .from('sessions_inventory')
-        .update(data)
-        .eq('type', type);
+        .select('id')
+        .eq('type', type)
+        .maybeSingle();
+      
+      if (checkError) throw checkError;
+      
+      if (existing) {
+        // Update existing
+        const { error } = await supabase
+          .from('sessions_inventory')
+          .update(data)
+          .eq('type', type);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Create new inventory record
+        const { error } = await supabase
+          .from('sessions_inventory')
+          .insert({ 
+            type, 
+            quantity: 0,
+            cost_per_session: 0, 
+            sale_price_per_session: 0,
+            ...data 
+          });
 
-      setInventory(prev => prev.map(inv => 
-        inv.type === type ? { ...inv, ...data } : inv
-      ));
+        if (error) throw error;
+      }
+
+      setInventory(prev => {
+        const exists = prev.some(inv => inv.type === type);
+        if (exists) {
+          return prev.map(inv => inv.type === type ? { ...inv, ...data } : inv);
+        } else {
+          return [...prev, { 
+            id: '', 
+            type, 
+            quantity: 0,
+            cost_per_session: 0, 
+            sale_price_per_session: 0,
+            updated_at: new Date().toISOString(),
+            custom_quantity_enabled: false,
+            custom_quantity_min: 1,
+            custom_price_per_unit: 0,
+            ...data 
+          } as SessionInventory];
+        }
+      });
 
       return { success: true };
     } catch (err) {
