@@ -133,7 +133,8 @@ export const PendingPaymentBanner = () => {
         state: {
           type: order.product_name,
           qty: order.quantity,
-          price: `R$ ${Number(pendingPayment.amount).toFixed(2).replace('.', ',')}`
+          price: `R$ ${Number(pendingPayment.amount).toFixed(2).replace('.', ',')}`,
+          existingOrderId: pendingPayment.order_id // Pass the order ID to prevent duplication
         }
       });
     } else {
@@ -225,7 +226,8 @@ export const PendingPaymentBanner = () => {
               onClick={handleCancelOrder}
               disabled={isCancelling}
             >
-              <X className="w-3 h-3" />
+              <X className="w-3 h-3 mr-1" />
+              Cancelar
             </Button>
           </div>
         </div>
