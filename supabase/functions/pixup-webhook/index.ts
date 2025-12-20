@@ -187,11 +187,12 @@ Deno.serve(async (req) => {
       )
     }
 
-    // SECURITY: Only process if order is still pending
-    if (existingOrder.status !== 'pending') {
-      console.log(`Order ${externalId} already processed with status: ${existingOrder.status}`)
+    // SECURITY: Only process if order is still pending or paid (not completed)
+    // 'paid' orders can still be processed to 'completed' state
+    if (existingOrder.status === 'completed' || existingOrder.status === 'cancelled' || existingOrder.status === 'refunded') {
+      console.log(`Order ${externalId} already finalized with status: ${existingOrder.status}`)
       return new Response(
-        JSON.stringify({ success: true, message: 'Order already processed', status: existingOrder.status }),
+        JSON.stringify({ success: true, message: 'Order already finalized', status: existingOrder.status }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

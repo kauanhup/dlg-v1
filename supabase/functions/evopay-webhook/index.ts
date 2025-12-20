@@ -167,15 +167,28 @@ serve(async (req) => {
 
     console.log(`Processing EvoPay webhook for transaction: ${transactionId}, status: ${status}`);
 
-    // Find payment by transaction ID stored in pix_code field
+    // Find payment by order_id (transactionId is our order_id/external_id)
+    // OR by pix_code if we stored the transaction ID there
     const { data: payment, error: paymentError } = await supabase
       .from('payments')
       .select('id, order_id, status, amount')
-      .eq('pix_code', transactionId)
-      .eq('payment_method', 'evopay_pix')
-      .single();
+      .eq('order_id', transactionId)
+      .eq('payment_method', 'evopay')
+      .maybeSingle();
 
-    if (paymentError || !payment) {
+    // If not found by order_id, try by pix_code
+    let finalPayment = payment;
+    if (!payment) {
+      const { data: paymentByPix } = await supabase
+        .from('payments')
+        .select('id, order_id, status, amount')
+        .eq('pix_code', transactionId)
+        .eq('payment_method', 'evopay')
+        .maybeSingle();
+      finalPayment = paymentByPix;
+    }
+
+    if (!finalPayment) {
       console.error('Payment not found for transaction:', transactionId);
       return new Response(
         JSON.stringify({ success: false, error: 'Payment not found' }),
@@ -183,11 +196,11 @@ serve(async (req) => {
       );
     }
 
-    const orderId = payment.order_id;
+    const orderId = finalPayment.order_id;
 
     // SECURITY: Validate amount matches (if provided in webhook)
-    if (amount && payment.amount && Math.abs(Number(amount) - Number(payment.amount)) > 0.01) {
-      console.error(`SECURITY: Amount mismatch detected - webhook=${amount}, payment=${payment.amount}`);
+    if (amount && finalPayment.amount && Math.abs(Number(amount) - Number(finalPayment.amount)) > 0.01) {
+      console.error(`SECURITY: Amount mismatch detected - webhook=${amount}, payment=${finalPayment.amount}`);
       return new Response(
         JSON.stringify({ success: false, error: 'Amount mismatch' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
