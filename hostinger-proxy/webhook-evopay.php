@@ -57,8 +57,15 @@ $forwardHeaders = [
     'Content-Type: application/json',
 ];
 
+// Mapear headers do EvoPay para o formato esperado pelo Supabase webhook
 if (!empty($signature)) {
-    $forwardHeaders[] = 'X-Signature: ' . $signature;
+    $forwardHeaders[] = 'X-Evopay-Signature: ' . $signature;
+}
+
+// Também tentar capturar outros formatos de assinatura que o EvoPay pode enviar
+$evopaySignature = isset($_SERVER['HTTP_X_EVOPAY_SIGNATURE']) ? $_SERVER['HTTP_X_EVOPAY_SIGNATURE'] : '';
+if (!empty($evopaySignature)) {
+    $forwardHeaders[] = 'X-Evopay-Signature: ' . $evopaySignature;
 }
 
 if (!empty($authorization)) {
