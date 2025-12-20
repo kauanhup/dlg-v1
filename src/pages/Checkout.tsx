@@ -542,8 +542,8 @@ const Checkout = () => {
           </div>
           
           {/* Content - Centered */}
-          <div className="relative z-10 flex flex-col justify-center items-center w-full px-8 xl:px-12 2xl:px-16">
-            <div className="w-full max-w-md">
+          <div className="relative z-10 flex flex-col justify-center items-center w-full h-full px-12 xl:px-16 2xl:px-20">
+            <div className="w-full max-w-lg text-center">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -552,14 +552,14 @@ const Checkout = () => {
                 {/* Back Button */}
                 <Link 
                   to={isPlanPurchase ? "/comprar" : "/dashboard"} 
-                  className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm mb-6"
+                  className="inline-flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm mb-8 mx-auto"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   {isPlanPurchase ? "Voltar aos planos" : "Voltar ao dashboard"}
                 </Link>
 
                 {/* Title */}
-                <h1 className="text-3xl xl:text-4xl 2xl:text-5xl font-display font-bold text-foreground mb-3 leading-tight">
+                <h1 className="text-3xl xl:text-4xl 2xl:text-5xl font-display font-bold text-foreground mb-4 leading-tight">
                   {pixData ? (
                     <>Escaneie o QR Code</>
                   ) : isFreeProduct ? (
@@ -569,7 +569,7 @@ const Checkout = () => {
                   )}
                 </h1>
                 
-                <p className="text-base xl:text-lg text-muted-foreground mb-8">
+                <p className="text-base xl:text-lg text-muted-foreground mb-10 max-w-sm mx-auto">
                   {pixData 
                     ? "Abra o app do seu banco e escaneie o código para pagar."
                     : isFreeProduct 
