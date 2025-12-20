@@ -286,7 +286,7 @@ async function getSettings(supabase: any) {
 async function getPublicSettings(supabase: any) {
   const { data, error } = await supabase
     .from('gateway_settings')
-    .select('password_recovery_enabled, email_verification_enabled, email_enabled, recaptcha_enabled, recaptcha_site_key')
+    .select('password_recovery_enabled, email_verification_enabled, email_enabled, recaptcha_enabled, recaptcha_site_key, is_active')
     .eq('provider', 'pixup')
     .order('created_at', { ascending: false })
     .limit(1)
@@ -307,7 +307,8 @@ async function getPublicSettings(supabase: any) {
         password_recovery_enabled: data.password_recovery_enabled && data.email_enabled,
         email_verification_enabled: data.email_verification_enabled && data.email_enabled,
         recaptcha_enabled: data.recaptcha_enabled || false,
-        recaptcha_site_key: data.recaptcha_site_key || ''
+        recaptcha_site_key: data.recaptcha_site_key || '',
+        is_active: data.is_active || false
       } : null 
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

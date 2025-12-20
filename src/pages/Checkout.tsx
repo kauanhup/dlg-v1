@@ -173,19 +173,39 @@ const Checkout = () => {
     return () => clearInterval(interval);
   }, [expirationTime, paymentStatus, toast]);
 
-  // Fetch payment settings
+  // Fetch payment settings and auto-select gateway
   useEffect(() => {
     const fetchPaymentSettings = async () => {
       try {
+        // Fetch PixUp settings
+        const { data: pixupData } = await supabase.functions.invoke('pixup', {
+          body: { action: 'get_public_settings' }
+        });
+        
         // Fetch EvoPay settings
         const { data: evoData } = await supabase.functions.invoke('evopay', {
           body: { action: 'get_public_settings' }
         });
         
+        const pixupEnabled = pixupData?.data?.is_active || false;
+        const evoPayEnabled = evoData?.data?.evopay_enabled || false;
+        
         setPaymentSettings({
-          pixEnabled: true, // PIX always available
-          evoPayEnabled: evoData?.data?.evopay_enabled || false
+          pixEnabled: pixupEnabled,
+          evoPayEnabled: evoPayEnabled
         });
+        
+        // Auto-select gateway: random if both active, or use the active one
+        if (pixupEnabled && evoPayEnabled) {
+          // Random selection when both are active
+          const randomChoice = Math.random() < 0.5 ? 'pix' : 'evopay';
+          setSelectedPaymentMethod(randomChoice);
+        } else if (evoPayEnabled) {
+          setSelectedPaymentMethod('evopay');
+        } else if (pixupEnabled) {
+          setSelectedPaymentMethod('pix');
+        }
+        // If neither is enabled, keep default 'pix' - will show error on payment
       } catch (error) {
         console.log('Could not fetch payment settings');
       }
