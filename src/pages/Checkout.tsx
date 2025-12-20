@@ -213,7 +213,58 @@ const Checkout = () => {
     fetchPaymentSettings();
   }, []);
 
+  // Check for existing pending order on page load
   useEffect(() => {
+    const checkExistingOrder = async (userId: string) => {
+      // Build product identifier for matching
+      const productType = isPlanPurchase ? 'subscription' : (isSessionPurchase && sessionInfo ? sessionInfo.dbType : null);
+      const productName = isPlanPurchase && plan ? plan.name : (isSessionPurchase && sessionInfo ? sessionInfo.type : null);
+      
+      if (!productType) return;
+
+      // Look for recent pending order (last 30 min) for same product
+      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      
+      const { data: pendingOrder } = await supabase
+        .from('orders')
+        .select('id, status, created_at')
+        .eq('user_id', userId)
+        .eq('product_type', productType)
+        .eq('status', 'pending')
+        .gte('created_at', thirtyMinAgo)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (pendingOrder) {
+        // Found pending order, get payment info
+        const { data: payment } = await supabase
+          .from('payments')
+          .select('pix_code, payment_method')
+          .eq('order_id', pendingOrder.id)
+          .maybeSingle();
+
+        if (payment?.pix_code) {
+          setOrderId(pendingOrder.id);
+          setPaymentStatus(pendingOrder.status);
+          setSelectedPaymentMethod(payment.payment_method as PaymentMethod || 'pix');
+          
+          // Set expiration based on order creation time
+          const orderCreated = new Date(pendingOrder.created_at);
+          const expTime = new Date(orderCreated.getTime() + PIX_EXPIRATION_MINUTES * 60 * 1000);
+          
+          if (expTime > new Date()) {
+            setExpirationTime(expTime);
+            setPixData({
+              pixCode: payment.pix_code,
+              transactionId: pendingOrder.id,
+            });
+            console.log('Recovered pending order:', pendingOrder.id);
+          }
+        }
+      }
+    };
+
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -224,6 +275,12 @@ const Checkout = () => {
       }
 
       setUser(session.user);
+      
+      // Check for existing pending order after we have user and product info
+      if (plan || sessionInfo) {
+        await checkExistingOrder(session.user.id);
+      }
+      
       setIsLoading(false);
     };
 
@@ -236,7 +293,7 @@ const Checkout = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, plan, sessionInfo, isPlanPurchase, isSessionPurchase]);
 
   // Subscribe to order status changes - FIX #6: Prevent duplicate listeners
   useEffect(() => {
@@ -820,38 +877,6 @@ const Checkout = () => {
                     </div>
                   ) : (
                     <>
-                      {/* Payment Method Selection - Only show if BOTH gateways are active */}
-                      {paymentSettings.pixEnabled && paymentSettings.evoPayEnabled && (
-                        <div className="space-y-3">
-                          <p className="text-xs sm:text-sm font-medium text-foreground">Forma de pagamento</p>
-                          <div className="grid gap-3 grid-cols-2">
-                            <button
-                              onClick={() => setSelectedPaymentMethod('pix')}
-                              className={cn(
-                                "flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl border-2 transition-all",
-                                selectedPaymentMethod === 'pix' 
-                                  ? "border-primary bg-primary/5" 
-                                  : "border-border hover:border-primary/50"
-                              )}
-                            >
-                              <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" />
-                              <span className="text-xs sm:text-sm font-medium">PIX (PixUp)</span>
-                            </button>
-                            <button
-                              onClick={() => setSelectedPaymentMethod('evopay')}
-                              className={cn(
-                                "flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl border-2 transition-all",
-                                selectedPaymentMethod === 'evopay' 
-                                  ? "border-primary bg-primary/5" 
-                                  : "border-border hover:border-primary/50"
-                              )}
-                            >
-                              <Wallet className="w-5 h-5 sm:w-6 sm:h-6" />
-                              <span className="text-xs sm:text-sm font-medium">PIX (EvoPay)</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
 
                       <div className="text-center py-2">
                         <p className="text-xs sm:text-sm text-muted-foreground">
