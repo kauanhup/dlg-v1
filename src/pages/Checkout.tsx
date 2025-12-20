@@ -820,8 +820,8 @@ const Checkout = () => {
                     </div>
                   ) : (
                     <>
-                      {/* Payment Method Selection */}
-                      {paymentSettings.evoPayEnabled && (
+                      {/* Payment Method Selection - Only show if BOTH gateways are active */}
+                      {paymentSettings.pixEnabled && paymentSettings.evoPayEnabled && (
                         <div className="space-y-3">
                           <p className="text-xs sm:text-sm font-medium text-foreground">Forma de pagamento</p>
                           <div className="grid gap-3 grid-cols-2">
@@ -835,7 +835,7 @@ const Checkout = () => {
                               )}
                             >
                               <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" />
-                              <span className="text-xs sm:text-sm font-medium">PIX</span>
+                              <span className="text-xs sm:text-sm font-medium">PIX (PixUp)</span>
                             </button>
                             <button
                               onClick={() => setSelectedPaymentMethod('evopay')}
@@ -847,7 +847,7 @@ const Checkout = () => {
                               )}
                             >
                               <Wallet className="w-5 h-5 sm:w-6 sm:h-6" />
-                              <span className="text-xs sm:text-sm font-medium">EvoPay</span>
+                              <span className="text-xs sm:text-sm font-medium">PIX (EvoPay)</span>
                             </button>
                           </div>
                         </div>
