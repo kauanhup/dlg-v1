@@ -493,6 +493,38 @@ export const useAdminSessions = () => {
   };
 
   // ==========================================
+  // SYNC INVENTORY (fix desync issues)
+  // ==========================================
+  
+  const syncInventory = async () => {
+    try {
+      // Count actual available files for each type
+      const brasileirasCount = sessionFiles.filter(f => f.type === 'brasileiras' && f.status === 'available').length;
+      const estrangeirasCount = sessionFiles.filter(f => f.type === 'estrangeiras' && f.status === 'available').length;
+      
+      // Update inventory to match actual counts
+      await Promise.all([
+        supabase
+          .from('sessions_inventory')
+          .update({ quantity: brasileirasCount })
+          .eq('type', 'brasileiras'),
+        supabase
+          .from('sessions_inventory')
+          .update({ quantity: estrangeirasCount })
+          .eq('type', 'estrangeiras')
+      ]);
+      
+      // Refetch to update UI
+      await fetchData();
+      
+      return { success: true, brasileiras: brasileirasCount, estrangeiras: estrangeirasCount };
+    } catch (err) {
+      console.error('Error syncing inventory:', err);
+      return { success: false, error: 'Erro ao sincronizar estoque' };
+    }
+  };
+
+  // ==========================================
   // LIFECYCLE
   // ==========================================
   
@@ -569,6 +601,7 @@ export const useAdminSessions = () => {
     updateCombo,
     addCombo,
     deleteCombo,
+    syncInventory,
     getInventoryByType,
     getCombosByType,
     getFilesByType,
