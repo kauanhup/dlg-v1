@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Check, CreditCard, ArrowLeft, Copy, CheckCircle2, Loader2, Clock, Crown, Sparkles, ShieldCheck, Wallet, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const toast = useAlertToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingPlan, setIsLoadingPlan] = useState(false); // FIX #4: Loading state for plan fetch
   const [isProcessing, setIsProcessing] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [pixData, setPixData] = useState<PixData | null>(null);
@@ -54,6 +55,9 @@ const Checkout = () => {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({ pixEnabled: true, evoPayEnabled: false });
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('pix');
+  
+  // FIX #6: Track active channel to prevent duplicates
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Force dark theme
   useEffect(() => {
@@ -102,21 +106,31 @@ const Checkout = () => {
     price: parsePrice(price),
   } : null;
 
-  // Fetch plan if planId is present
+  // Fetch plan if planId is present - FIX #3 & #4: Better loading and error handling
   useEffect(() => {
     if (!planId) return;
 
     const fetchPlan = async () => {
+      setIsLoadingPlan(true);
+      
       const { data, error } = await supabase
         .from('subscription_plans')
         .select('*')
         .eq('id', planId)
         .single();
 
-      if (error) {
+      setIsLoadingPlan(false);
+
+      if (error || !data) {
         console.error('Error fetching plan:', error);
-        toast.error("Erro", "Plano não encontrado.");
-        navigate('/comprar');
+        toast.error("Plano não encontrado", "O plano selecionado não existe ou foi desativado.");
+        setTimeout(() => navigate('/comprar'), 1500);
+        return;
+      }
+
+      if (!data.is_active) {
+        toast.error("Plano indisponível", "Este plano não está mais disponível.");
+        setTimeout(() => navigate('/comprar'), 1500);
         return;
       }
 
@@ -204,12 +218,18 @@ const Checkout = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Subscribe to order status changes
+  // Subscribe to order status changes - FIX #6: Prevent duplicate listeners
   useEffect(() => {
     if (!orderId) return;
 
+    // Clean up existing channel first to prevent duplicates
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
     const channel = supabase
-      .channel(`order-${orderId}`)
+      .channel(`order-${orderId}-${Date.now()}`) // Unique channel name
       .on(
         'postgres_changes',
         {
@@ -230,8 +250,13 @@ const Checkout = () => {
       )
       .subscribe();
 
+    channelRef.current = channel;
+
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [orderId, navigate, toast, isPlanPurchase]);
 
@@ -298,7 +323,8 @@ const Checkout = () => {
   };
 
   const handlePayment = async () => {
-    if (!user) return;
+    // FIX #5: Prevent double-click by checking isProcessing first
+    if (!user || isProcessing) return;
 
     // Handle free products
     if (isFreeProduct) {
@@ -466,14 +492,30 @@ const Checkout = () => {
     }
   };
 
-  if (isLoading || (isPlanPurchase && !plan)) {
+  // FIX #4: Show loading when fetching plan
+  if (isLoading || (isPlanPurchase && !plan && isLoadingPlan)) {
     return (
       <div className="min-h-screen w-full relative flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <AnimatedShaderBackground className="w-full h-full" />
         </div>
         <div className="relative z-10">
-          <MorphingSquare message="Carregando checkout..." className="bg-primary" />
+          <MorphingSquare message={isLoadingPlan ? "Carregando plano..." : "Carregando checkout..."} className="bg-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  // FIX #3: If plan purchase but no plan found (after loading), show error state
+  if (isPlanPurchase && !plan && !isLoadingPlan) {
+    return (
+      <div className="min-h-screen w-full relative flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <AnimatedShaderBackground className="w-full h-full" />
+        </div>
+        <div className="relative z-10 text-center">
+          <MorphingSquare message="Plano não encontrado..." className="bg-destructive" />
+          <p className="text-muted-foreground mt-4 text-sm">Redirecionando...</p>
         </div>
       </div>
     );
@@ -681,38 +723,48 @@ const Checkout = () => {
                 </h2>
               </div>
 
-              {/* Mobile Product Card */}
-              <div className="lg:hidden mb-4">
+              {/* Mobile Product Card - FIX #1: Better padding and spacing */}
+              <div className="lg:hidden mb-5">
                 {displayInfo && (
-                  <div className="bg-muted/30 rounded-xl p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                          displayInfo?.isPlan && displayInfo?.isLifetime 
-                            ? 'bg-warning/10' 
-                            : 'bg-primary/10'
-                        }`}>
-                          {displayInfo?.isPlan && displayInfo?.isLifetime ? (
-                            <Crown className="w-4 h-4 text-warning" />
-                          ) : displayInfo?.isPlan ? (
-                            <Sparkles className="w-4 h-4 text-primary" />
-                          ) : (
-                            <CreditCard className="w-4 h-4 text-primary" />
-                          )}
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-sm text-foreground">{displayInfo.title}</h3>
-                          <p className="text-xs text-muted-foreground">{displayInfo.subtitle}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        {displayInfo.price === 0 ? (
-                          <span className="text-base font-bold text-success">Grátis</span>
+                  <div className="bg-muted/30 rounded-xl p-5">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                        displayInfo?.isPlan && displayInfo?.isLifetime 
+                          ? 'bg-warning/10' 
+                          : 'bg-primary/10'
+                      }`}>
+                        {displayInfo?.isPlan && displayInfo?.isLifetime ? (
+                          <Crown className="w-5 h-5 text-warning" />
+                        ) : displayInfo?.isPlan ? (
+                          <Sparkles className="w-5 h-5 text-primary" />
                         ) : (
-                          <span className="text-base font-bold text-foreground">{formatPrice(displayInfo.price)}</span>
+                          <CreditCard className="w-5 h-5 text-primary" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base text-foreground truncate">{displayInfo.title}</h3>
+                        <p className="text-sm text-muted-foreground">{displayInfo.subtitle}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {displayInfo.price === 0 ? (
+                          <span className="text-lg font-bold text-success">Grátis</span>
+                        ) : (
+                          <span className="text-lg font-bold text-foreground">{formatPrice(displayInfo.price)}</span>
                         )}
                       </div>
                     </div>
+                    
+                    {/* Mobile Features - show first 2 */}
+                    {displayInfo.features.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-border/30 space-y-2">
+                        {displayInfo.features.slice(0, 2).map((feature, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span className="text-xs text-muted-foreground">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -894,14 +946,17 @@ const Checkout = () => {
                     </div>
                   )}
 
-                  {/* Generate new PIX button when expired OR when gateway failed */}
+                  {/* Generate new PIX button when expired OR when gateway failed - FIX #2: Reset orderId properly */}
                   {(isExpired || (!pixData?.pixCode && paymentStatus === 'pending')) && (
                     <Button 
                       onClick={() => {
+                        // FIX #2: Clear all payment state before retry
                         setPixData(null);
                         setExpirationTime(null);
-                        setOrderId(null);
+                        setTimeLeft(null);
+                        setOrderId(null); // This clears orderId so new order can be created
                         setPaymentStatus('pending');
+                        setCopied(false);
                       }}
                       className="w-full"
                       variant={isExpired ? "default" : "outline"}
