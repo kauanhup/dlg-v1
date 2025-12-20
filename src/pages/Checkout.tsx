@@ -74,7 +74,14 @@ const Checkout = () => {
   }, []);
 
   // Get parameters from location state (from Dashboard) OR searchParams (from Buy page)
-  const locationState = location.state as { type?: string; qty?: number; price?: string; existingOrderId?: string } | null;
+  const locationState = location.state as { 
+    type?: string; 
+    qty?: number; 
+    price?: string; 
+    existingOrderId?: string;
+    existingPixCode?: string | null;
+    paymentCreatedAt?: string;
+  } | null;
   
   // Priority: location state > search params
   const type = locationState?.type || searchParams.get("type");
@@ -82,6 +89,8 @@ const Checkout = () => {
   const price = locationState?.price || searchParams.get("price");
   const planId = searchParams.get("plano");
   const existingOrderIdFromState = locationState?.existingOrderId;
+  const existingPixCodeFromState = locationState?.existingPixCode;
+  const paymentCreatedAtFromState = locationState?.paymentCreatedAt;
 
   // Parse price from string like "R$ 99,90" or number
   const parsePrice = useCallback((priceValue: string | number | null | undefined): number => {
@@ -297,29 +306,36 @@ const Checkout = () => {
         setOrderId(existingOrderIdFromState);
         console.log('Using existing order from banner:', existingOrderIdFromState);
         
-        // Check if there's already a PIX for this order
-        const { data: payment } = await supabase
-          .from('payments')
-          .select('pix_code, payment_method')
-          .eq('order_id', existingOrderIdFromState)
-          .maybeSingle();
-        
-        if (payment?.payment_method) {
-          setSelectedPaymentMethod(payment.payment_method as PaymentMethod || 'pix');
-        }
-        
-        if (payment?.pix_code) {
-          // Get order creation time for expiration
-          const { data: orderData } = await supabase
-            .from('orders')
-            .select('created_at, status')
-            .eq('id', existingOrderIdFromState)
-            .single();
+        // If PIX code was passed from banner, use it directly (no need to re-fetch)
+        if (existingPixCodeFromState && paymentCreatedAtFromState) {
+          const paymentCreated = new Date(paymentCreatedAtFromState);
+          const expTime = new Date(paymentCreated.getTime() + PIX_EXPIRATION_MINUTES * 60 * 1000);
           
-          if (orderData) {
-            setPaymentStatus(orderData.status);
-            const orderCreated = new Date(orderData.created_at);
-            const expTime = new Date(orderCreated.getTime() + PIX_EXPIRATION_MINUTES * 60 * 1000);
+          if (expTime > new Date()) {
+            setExpirationTime(expTime);
+            setPixData({
+              pixCode: existingPixCodeFromState,
+              transactionId: existingOrderIdFromState,
+            });
+            setPaymentStatus('pending');
+            console.log('Using PIX from banner directly:', existingPixCodeFromState);
+          }
+        } else {
+          // Fallback: Check database for PIX data
+          const { data: payment } = await supabase
+            .from('payments')
+            .select('pix_code, payment_method, created_at')
+            .eq('order_id', existingOrderIdFromState)
+            .maybeSingle();
+          
+          if (payment?.payment_method) {
+            setSelectedPaymentMethod(payment.payment_method as PaymentMethod || 'pix');
+          }
+          
+          if (payment?.pix_code) {
+            // Use payment created_at for expiration (more accurate than order created_at)
+            const paymentCreated = new Date(payment.created_at);
+            const expTime = new Date(paymentCreated.getTime() + PIX_EXPIRATION_MINUTES * 60 * 1000);
             
             if (expTime > new Date()) {
               setExpirationTime(expTime);
@@ -327,6 +343,17 @@ const Checkout = () => {
                 pixCode: payment.pix_code,
                 transactionId: existingOrderIdFromState,
               });
+            }
+            
+            // Get order status
+            const { data: orderData } = await supabase
+              .from('orders')
+              .select('status')
+              .eq('id', existingOrderIdFromState)
+              .single();
+            
+            if (orderData) {
+              setPaymentStatus(orderData.status);
             }
           }
         }
@@ -347,7 +374,7 @@ const Checkout = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, plan, sessionInfo, isPlanPurchase, isSessionPurchase, existingOrderIdFromState]);
+  }, [navigate, plan, sessionInfo, isPlanPurchase, isSessionPurchase, existingOrderIdFromState, existingPixCodeFromState, paymentCreatedAtFromState]);
 
   // Subscribe to order status changes - FIX #6: Prevent duplicate listeners
   useEffect(() => {
