@@ -176,25 +176,35 @@ serve(async (req) => {
 
     console.log(`Processing EvoPay webhook for transaction: ${transactionId}, status: ${status}`);
 
-    // Find payment by order_id (transactionId is our order_id/external_id)
-    // OR by pix_code if we stored the transaction ID there
-    const { data: payment, error: paymentError } = await supabase
+    // Find payment by EvoPay payment_method (evopay_pix)
+    // EvoPay sends the transaction ID (charge id) but we don't store it separately
+    // We need to match by payment_method = 'evopay_pix' and check recent pending payments
+    // 
+    // IMPROVED: Search by order_id first (if EvoPay sends our external_id)
+    // Then search by payment method and status
+    let finalPayment = null;
+    
+    // First try: direct order_id match (EvoPay might send our external_id)
+    const { data: paymentByOrderId } = await supabase
       .from('payments')
-      .select('id, order_id, status, amount')
+      .select('id, order_id, status, amount, pix_code')
       .eq('order_id', transactionId)
-      .eq('payment_method', 'evopay')
+      .in('payment_method', ['evopay', 'evopay_pix'])
       .maybeSingle();
-
-    // If not found by order_id, try by pix_code
-    let finalPayment = payment;
-    if (!payment) {
-      const { data: paymentByPix } = await supabase
+    
+    finalPayment = paymentByOrderId;
+    
+    // Second try: look for the payment by checking if pix_code contains qrCodeText
+    // that matches the webhook's qrCodeText (if provided)
+    if (!finalPayment && body.qrCodeText) {
+      const { data: paymentByQrCode } = await supabase
         .from('payments')
-        .select('id, order_id, status, amount')
-        .eq('pix_code', transactionId)
-        .eq('payment_method', 'evopay')
+        .select('id, order_id, status, amount, pix_code')
+        .eq('pix_code', body.qrCodeText)
+        .in('payment_method', ['evopay', 'evopay_pix'])
         .maybeSingle();
-      finalPayment = paymentByPix;
+      
+      finalPayment = paymentByQrCode;
     }
 
     if (!finalPayment) {

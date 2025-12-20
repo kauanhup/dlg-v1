@@ -517,27 +517,34 @@ const Checkout = () => {
       });
 
       if (evoError) {
-        console.error('EvoPay PIX generation error:', evoError);
+        console.error('[Checkout] EvoPay PIX generation error:', evoError);
         toast.error("Gateway indisponível", "Não foi possível gerar o PIX. Tente novamente.");
+        setExpirationTime(null);
         return;
       }
       
-      if (evoResponse?.data?.pixCode) {
-        const transactionId = evoResponse.data.transactionId || evoResponse.data.id;
+      const pixCode = evoResponse?.data?.pixCode;
+      const qrCodeBase64 = evoResponse?.data?.qrCodeBase64;
+      
+      if (pixCode) {
+        console.log('[Checkout] EvoPay PIX generated successfully');
         setPixData({
-          pixCode: evoResponse.data.pixCode,
-          qrCodeBase64: undefined,
-          transactionId: transactionId,
+          pixCode: pixCode,
+          qrCodeBase64: qrCodeBase64,
+          transactionId: evoResponse.data.transactionId || evoResponse.data.id,
           expiresAt: undefined,
         });
 
-        supabase.from('payments').update({
-          pix_code: evoResponse.data.pixCode, // Store actual PIX code, not transactionId
+        // Update payment with PIX code (await to ensure it's saved)
+        await supabase.from('payments').update({
+          pix_code: pixCode,
         }).eq('order_id', existingOrderId);
 
         toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
       } else {
+        console.log('[Checkout] EvoPay returned no PIX code');
         toast.warning("Gateway não configurado", "Aguarde aprovação manual do admin.");
+        setExpirationTime(null);
       }
       return;
     }
@@ -553,15 +560,17 @@ const Checkout = () => {
     });
 
     if (pixError) {
-      console.error('PIX generation error:', pixError);
+      console.error('[Checkout] PixUp generation error:', pixError);
       toast.error("Gateway indisponível", "Não foi possível gerar o PIX. Tente novamente.");
+      setExpirationTime(null);
       return;
     }
     
-    if (pixResponse?.data?.pixCode || pixResponse?.data?.qrcode) {
-      const pixCode = pixResponse.data.pixCode || pixResponse.data.qrcode;
-      const qrCodeBase64 = pixResponse.data.qrCodeBase64 || pixResponse.data.qrcode_base64;
-      
+    const pixCode = pixResponse?.data?.pixCode || pixResponse?.data?.qrcode;
+    const qrCodeBase64 = pixResponse?.data?.qrCodeBase64 || pixResponse?.data?.qrcode_base64;
+    
+    if (pixCode) {
+      console.log('[Checkout] PixUp PIX generated successfully');
       setPixData({
         pixCode: pixCode,
         qrCodeBase64: qrCodeBase64,
@@ -569,13 +578,16 @@ const Checkout = () => {
         expiresAt: pixResponse.data.expiresAt,
       });
 
-      supabase.from('payments').update({
+      // Update payment with PIX code (await to ensure it's saved)
+      await supabase.from('payments').update({
         pix_code: pixCode,
       }).eq('order_id', existingOrderId);
 
       toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
     } else {
+      console.log('[Checkout] PixUp returned no PIX code');
       toast.warning("Gateway não configurado", "Aguarde aprovação manual do admin.");
+      setExpirationTime(null);
     }
   };
 
