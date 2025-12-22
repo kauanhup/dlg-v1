@@ -1066,7 +1066,7 @@ const SubscriptionsTabContent = () => {
                         </td>
                         <td className="p-4 text-sm text-muted-foreground">{formatDate(payment.created_at)}</td>
                         <td className="p-4">
-                          {(payment.status === "pending" || payment.status === "cancelled" || payment.status === "paid") ? (
+                          {(payment.status === "pending" || payment.status === "cancelled") ? (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -1074,16 +1074,14 @@ const SubscriptionsTabContent = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="bg-card border border-border">
-                                {(payment.status === "pending" || payment.status === "cancelled") && (
-                                  <DropdownMenuItem className="cursor-pointer text-success focus:text-success" onClick={() => handleConfirmPaymentClick(payment)}>
-                                    <CheckCircle className="w-4 h-4 mr-2" /> {payment.status === "cancelled" ? "Atualizar para Pago" : "Confirmar Pagamento"}
-                                  </DropdownMenuItem>
-                                )}
-                                {(payment.status === "pending" || payment.status === "paid") && (
+                                <DropdownMenuItem className="cursor-pointer text-success focus:text-success" onClick={() => handleConfirmPaymentClick(payment)}>
+                                  <CheckCircle className="w-4 h-4 mr-2" /> {payment.status === "cancelled" ? "Atualizar para Pago" : "Confirmar Pagamento"}
+                                </DropdownMenuItem>
+                                {payment.status === "pending" && (
                                   <>
-                                    {payment.status === "pending" && <DropdownMenuSeparator />}
+                                    <DropdownMenuSeparator />
                                     <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={() => handleCancelPaymentClick(payment)}>
-                                      <XCircle className="w-4 h-4 mr-2" /> {payment.status === "paid" ? "Atualizar para Cancelado" : "Cancelar"}
+                                      <XCircle className="w-4 h-4 mr-2" /> Cancelar
                                     </DropdownMenuItem>
                                   </>
                                 )}
