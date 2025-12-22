@@ -229,12 +229,11 @@ const Checkout = () => {
         
         console.log('Payment settings loaded:', { pixupEnabled, evoPayEnabled });
         
-        // Auto-select gateway: alternate based on timestamp for fair distribution
+        // Auto-select gateway: true 50/50 random selection
         if (pixupEnabled && evoPayEnabled) {
-          // Use timestamp to alternate between gateways (changes every second)
-          const useEvoPay = Math.floor(Date.now() / 1000) % 2 === 0;
+          const useEvoPay = Math.random() < 0.5;
           setSelectedPaymentMethod(useEvoPay ? 'evopay' : 'pix');
-          console.log('Both gateways active, selected:', useEvoPay ? 'evopay' : 'pix');
+          console.log('Both gateways active, randomly selected:', useEvoPay ? 'evopay' : 'pix');
         } else if (evoPayEnabled) {
           setSelectedPaymentMethod('evopay');
           console.log('Only EvoPay active, selected: evopay');
