@@ -301,16 +301,9 @@ async function createPixCharge(supabase: any, params: { amount: number; external
   }
 
   try {
-    // Get webhook URL from settings or use default
-    const { data: settings } = await supabase
-      .from('gateway_settings')
-      .select('evopay_webhook_url')
-      .eq('provider', 'pixup')
-      .limit(1)
-      .maybeSingle();
-    
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const webhookUrl = settings?.evopay_webhook_url || `${supabaseUrl}/functions/v1/evopay-webhook`;
+    // Webhook URL - MUST point to Hostinger proxy which forwards to Supabase
+    // EvoPay will send payment confirmation to this URL
+    const webhookUrl = 'https://dlgconnect.com/evopay';
 
     console.log('Creating EvoPay PIX charge:', { amount, external_id, webhookUrl });
 
