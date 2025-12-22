@@ -628,98 +628,100 @@ const SubscriptionsTabContent = () => {
           <h2 className="text-xl font-bold text-foreground">Gestão de Assinaturas</h2>
           <p className="text-sm text-muted-foreground mt-1">Gerencie planos, assinantes e pagamentos</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading} className="w-full sm:w-auto">
           <RefreshCw className={cn("w-4 h-4 mr-2", isLoading && "animate-spin")} />
           Atualizar
         </Button>
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-card border border-border rounded-xl p-4 hover:border-success/50 transition-colors">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
-              <UserCheck className="w-5 h-5 text-success" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-card border border-border rounded-xl p-3 sm:p-4 hover:border-success/50 transition-colors">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-success/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <UserCheck className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{stats.activeSubscribers}</p>
-              <p className="text-xs text-muted-foreground">Assinantes Ativos</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-card border border-border rounded-xl p-4 hover:border-primary/50 transition-colors">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">R$ {stats.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-              <p className="text-xs text-muted-foreground">Receita Mensal</p>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold text-foreground">{stats.activeSubscribers}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Assinantes Ativos</p>
             </div>
           </div>
         </div>
-        <div className="bg-card border border-border rounded-xl p-4 hover:border-warning/50 transition-colors">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-warning" />
+        <div className="bg-card border border-border rounded-xl p-3 sm:p-4 hover:border-primary/50 transition-colors">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{stats.overdueSubscribers}</p>
-              <p className="text-xs text-muted-foreground">Pendente</p>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold text-foreground truncate">R$ {stats.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Receita Mensal</p>
             </div>
           </div>
         </div>
-        <div className="bg-card border border-border rounded-xl p-4 hover:border-destructive/50 transition-colors">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-destructive/10 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-destructive" />
+        <div className="bg-card border border-border rounded-xl p-3 sm:p-4 hover:border-warning/50 transition-colors">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-warning/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-warning" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{stats.churnRate}%</p>
-              <p className="text-xs text-muted-foreground">Taxa de Cancelamento</p>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold text-foreground">{stats.overdueSubscribers}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Pendente</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-3 sm:p-4 hover:border-destructive/50 transition-colors">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-destructive/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-destructive" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold text-foreground">{stats.churnRate}%</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Taxa Cancelamento</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Sub Navigation Tabs */}
-      <div className="bg-card border border-border rounded-xl p-1.5">
+      <div className="bg-card border border-border rounded-xl p-1 sm:p-1.5">
         <div className="flex gap-1">
           <button
             onClick={() => setActiveSubTab("subscribers")}
             className={cn(
-              "flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all",
+              "flex-1 px-2 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2",
               activeSubTab === "subscribers" 
                 ? "bg-primary text-primary-foreground shadow-sm" 
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             )}
           >
-            <Users className="w-4 h-4 inline-block mr-2" />
-            Assinantes
+            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline sm:inline">Assinantes</span>
+            <span className="xs:hidden sm:hidden">Assin.</span>
           </button>
           <button
             onClick={() => setActiveSubTab("plans")}
             className={cn(
-              "flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all",
+              "flex-1 px-2 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2",
               activeSubTab === "plans" 
                 ? "bg-primary text-primary-foreground shadow-sm" 
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             )}
           >
-            <Package className="w-4 h-4 inline-block mr-2" />
+            <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Planos
           </button>
           <button
             onClick={() => setActiveSubTab("payments")}
             className={cn(
-              "flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all",
+              "flex-1 px-2 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2",
               activeSubTab === "payments" 
                 ? "bg-primary text-primary-foreground shadow-sm" 
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             )}
           >
-            <CreditCard className="w-4 h-4 inline-block mr-2" />
-            Pagamentos
+            <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline sm:inline">Pagamentos</span>
+            <span className="xs:hidden sm:hidden">Pagam.</span>
           </button>
         </div>
       </div>
