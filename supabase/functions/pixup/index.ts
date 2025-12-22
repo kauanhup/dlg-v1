@@ -720,11 +720,9 @@ async function testConnection(supabase: any) {
   } catch (error) {
     console.error('Connection test failed:', error);
     
-    // Update is_active to false
-    await supabase
-      .from('gateway_settings')
-      .update({ is_active: false })
-      .eq('provider', 'pixup');
+    // DON'T auto-disable is_active on connection failure
+    // Let the admin control this manually - just show the error
+    // The credentials might be temporarily invalid but the admin may want to keep it enabled
 
     return new Response(
       JSON.stringify({ success: false, error: 'Connection failed - check credentials or proxy configuration' }),
