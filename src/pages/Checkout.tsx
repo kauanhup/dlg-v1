@@ -728,7 +728,8 @@ const Checkout = () => {
       }
 
       // Create order first (payment needs order_id)
-      const { data: orderData, error: orderError } = await supabase.from('orders').insert({
+      // Include upgrade info if this is an upgrade purchase
+      const orderInsertData: any = {
         user_id: user.id,
         product_name: productName,
         product_type: productType,
@@ -736,7 +737,19 @@ const Checkout = () => {
         amount: amount,
         status: 'pending',
         payment_method: selectedPaymentMethod,
-      }).select('id').single();
+      };
+      
+      // Add upgrade info if applicable
+      if (isUpgrade && activeSubscription) {
+        orderInsertData.upgrade_from_subscription_id = activeSubscription.id;
+        orderInsertData.upgrade_credit_amount = upgradeCredit;
+      }
+      
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert(orderInsertData)
+        .select('id')
+        .single();
 
       if (orderError) throw orderError;
       setOrderId(orderData.id);
@@ -943,19 +956,26 @@ const Checkout = () => {
     title: sessionInfo.type,
     subtitle: `${sessionInfo.quantity} sessions`,
     price: sessionInfo.price,
+    originalPrice: sessionInfo.price,
     features: [
       `${sessionInfo.quantity} sessions incluídas`,
       'Download imediato após confirmação',
       'Suporte incluído',
     ],
     isPlan: false,
+    isUpgrade: false,
+    upgradeCredit: 0,
   } : isPlanPurchase && plan ? {
     title: plan.name,
     subtitle: formatPeriod(plan.period),
     price: planPrice,
+    originalPrice: basePlanPrice,
     features: plan.features || [],
     isPlan: true,
     isLifetime: plan.period === 0,
+    isUpgrade: isUpgrade,
+    upgradeCredit: upgradeCredit,
+    upgradingFrom: activeSubscription?.plan_name || null,
   } : null;
 
   return (
@@ -1044,15 +1064,44 @@ const Checkout = () => {
                       <div className="flex-1 min-w-0">
                         <h3 className="font-display font-bold text-lg text-foreground truncate">{displayInfo.title}</h3>
                         <p className="text-sm text-muted-foreground">{displayInfo.subtitle}</p>
+                        {displayInfo.isUpgrade && displayInfo.upgradingFrom && (
+                          <p className="text-xs text-success mt-1 flex items-center gap-1">
+                            <Gift className="w-3 h-3" />
+                            Upgrade de {displayInfo.upgradingFrom}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right shrink-0">
                         {displayInfo.price === 0 ? (
                           <span className="text-xl font-display font-bold text-success">Grátis</span>
+                        ) : displayInfo.isUpgrade && displayInfo.upgradeCredit > 0 ? (
+                          <div>
+                            <span className="text-sm text-muted-foreground line-through block">
+                              {formatPrice(displayInfo.originalPrice)}
+                            </span>
+                            <span className="text-xl font-display font-bold text-success">{formatPrice(displayInfo.price)}</span>
+                          </div>
                         ) : (
                           <span className="text-xl font-display font-bold text-foreground">{formatPrice(displayInfo.price)}</span>
                         )}
                       </div>
                     </div>
+
+                    {/* Upgrade Credit Details */}
+                    {displayInfo.isUpgrade && displayInfo.upgradeCredit > 0 && (
+                      <div className="bg-success/10 border border-success/20 rounded-lg p-3 mb-4">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground flex items-center gap-2">
+                            <Gift className="w-4 h-4 text-success" />
+                            Crédito proporcional aplicado
+                          </span>
+                          <span className="text-success font-medium">-{formatPrice(displayInfo.upgradeCredit)}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Dias restantes do seu plano atual convertidos em desconto.
+                        </p>
+                      </div>
+                    )}
 
                     {/* Features */}
                     {displayInfo.features.length > 0 && (

@@ -286,6 +286,8 @@ export type Database = {
           quantity: number
           status: string
           updated_at: string
+          upgrade_credit_amount: number | null
+          upgrade_from_subscription_id: string | null
           user_id: string
         }
         Insert: {
@@ -298,6 +300,8 @@ export type Database = {
           quantity?: number
           status?: string
           updated_at?: string
+          upgrade_credit_amount?: number | null
+          upgrade_from_subscription_id?: string | null
           user_id: string
         }
         Update: {
@@ -310,9 +314,19 @@ export type Database = {
           quantity?: number
           status?: string
           updated_at?: string
+          upgrade_credit_amount?: number | null
+          upgrade_from_subscription_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_upgrade_from_subscription_id_fkey"
+            columns: ["upgrade_from_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "user_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
