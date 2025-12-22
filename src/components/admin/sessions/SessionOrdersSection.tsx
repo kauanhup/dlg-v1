@@ -59,10 +59,11 @@ const StatCard = ({
 );
 
 export const SessionOrdersSection = ({ className }: SessionOrdersSectionProps) => {
-  const { orders, isLoading, completeOrder, refundOrder, stats, refetch } = useAdminOrders();
+  const { orders, isLoading, completeOrder, refundOrder, cancelOrder, stats, refetch } = useAdminOrders();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Filter only session orders
@@ -125,6 +126,11 @@ export const SessionOrdersSection = ({ className }: SessionOrdersSectionProps) =
     setShowRefundModal(true);
   };
 
+  const handleCancelClick = (order: Order) => {
+    setSelectedOrder(order);
+    setShowCancelModal(true);
+  };
+
   const handleConfirmComplete = async () => {
     if (!selectedOrder) return;
     setIsProcessing(true);
@@ -154,6 +160,22 @@ export const SessionOrdersSection = ({ className }: SessionOrdersSectionProps) =
     }
     
     setShowRefundModal(false);
+    setSelectedOrder(null);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!selectedOrder) return;
+    setIsProcessing(true);
+    const result = await cancelOrder(selectedOrder.id);
+    setIsProcessing(false);
+    
+    if (result.success) {
+      toast.success('Pedido cancelado com sucesso!');
+    } else {
+      toast.error(result.error || 'Erro ao cancelar pedido');
+    }
+    
+    setShowCancelModal(false);
     setSelectedOrder(null);
   };
 
@@ -284,12 +306,21 @@ export const SessionOrdersSection = ({ className }: SessionOrdersSectionProps) =
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-card border border-border">
                             {(order.status === 'pending' || order.status === 'paid') && (
-                              <DropdownMenuItem 
-                                className="cursor-pointer text-success focus:text-success"
-                                onClick={() => handleCompleteClick(order)}
-                              >
-                                <CheckCircle className="w-4 h-4 mr-2" /> Aprovar e Entregar
-                              </DropdownMenuItem>
+                              <>
+                                <DropdownMenuItem 
+                                  className="cursor-pointer text-success focus:text-success"
+                                  onClick={() => handleCompleteClick(order)}
+                                >
+                                  <CheckCircle className="w-4 h-4 mr-2" /> Aprovar e Entregar
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  className="cursor-pointer text-destructive focus:text-destructive"
+                                  onClick={() => handleCancelClick(order)}
+                                >
+                                  <XCircle className="w-4 h-4 mr-2" /> Cancelar Pedido
+                                </DropdownMenuItem>
+                              </>
                             )}
                             {order.status === 'completed' && (
                               <>
@@ -401,6 +432,46 @@ export const SessionOrdersSection = ({ className }: SessionOrdersSectionProps) =
               <Button variant="destructive" onClick={handleConfirmRefund} className="flex-1" disabled={isProcessing}>
                 {isProcessing ? <Spinner size="sm" className="mr-2" /> : null}
                 {isProcessing ? 'Processando...' : 'Confirmar Reembolso'}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Cancel Order Modal */}
+      {showCancelModal && selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowCancelModal(false)} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-xl"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-destructive/10 rounded-lg flex items-center justify-center">
+                <XCircle className="w-5 h-5 text-destructive" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">Cancelar Pedido</h3>
+            </div>
+            <div className="space-y-3 mb-6">
+              <div className="flex items-center gap-3 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+                <XCircle className="w-5 h-5 text-destructive flex-shrink-0" />
+                <p className="text-sm text-foreground">Cancelar pedido de <strong>{selectedOrder.user_name}</strong>?</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Valor: <span className="font-semibold text-foreground">{formatPrice(selectedOrder.amount)}</span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                O pedido será marcado como cancelado e não poderá ser revertido.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowCancelModal(false)} className="flex-1" disabled={isProcessing}>
+                Voltar
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmCancel} className="flex-1" disabled={isProcessing}>
+                {isProcessing ? <Spinner size="sm" className="mr-2" /> : null}
+                {isProcessing ? 'Processando...' : 'Confirmar Cancelamento'}
               </Button>
             </div>
           </motion.div>
