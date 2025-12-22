@@ -106,22 +106,24 @@ export const SessionFilesList = ({ files, onDelete }: SessionFilesListProps) => 
                 {file.status === 'available' && (
                   <>
                     {deleteConfirm === file.id ? (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
                         <Button 
                           size="sm" 
                           variant="destructive"
-                          className="h-7 px-2 text-xs"
+                          className="h-8 px-3 text-sm font-medium"
                           onClick={() => handleConfirmDelete(file.id, file.file_path)}
                           disabled={isDeleting === file.id}
+                          aria-label="Confirmar exclusão do arquivo"
                         >
                           {isDeleting === file.id ? "..." : "Sim"}
                         </Button>
                         <Button 
                           size="sm" 
-                          variant="ghost"
-                          className="h-7 px-2 text-xs"
+                          variant="outline"
+                          className="h-8 px-3 text-sm"
                           onClick={handleCancelDelete}
                           disabled={isDeleting === file.id}
+                          aria-label="Cancelar exclusão"
                         >
                           Não
                         </Button>
@@ -132,6 +134,7 @@ export const SessionFilesList = ({ files, onDelete }: SessionFilesListProps) => 
                         variant="ghost" 
                         className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                         onClick={() => handleDeleteClick(file.id)}
+                        aria-label={`Excluir arquivo ${file.file_name}`}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

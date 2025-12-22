@@ -169,6 +169,17 @@ export const SessionsSection = () => {
   };
 
   const handleComboEdit = useCallback((comboId: string, field: 'quantity' | 'price', value: string) => {
+    // Validate input: only allow positive numbers for quantity
+    if (field === 'quantity') {
+      const numValue = parseInt(value);
+      if (value !== '' && (isNaN(numValue) || numValue < 0)) return;
+    }
+    // Validate price: only allow valid decimal format
+    if (field === 'price') {
+      const cleaned = value.replace(',', '.');
+      if (value !== '' && !/^\d*\.?\d{0,2}$/.test(cleaned)) return;
+    }
+    
     setComboEdits(prev => ({
       ...prev,
       [comboId]: { ...prev[comboId], [field]: value }
@@ -178,13 +189,13 @@ export const SessionsSection = () => {
   const handleSaveAll = async () => {
     setIsSaving(true);
     try {
-      // Parse values
-      const costBrValue = parseFloat(costBrasileiras.replace(',', '.')) || 0;
-      const costEstValue = parseFloat(costEstrangeiras.replace(',', '.')) || 0;
-      const customBrMin = parseInt(customQtyBrMin) || 1;
-      const customBrPrice = parseFloat(customQtyBrPrice.replace(',', '.')) || 0;
-      const customEstMin = parseInt(customQtyEstMin) || 1;
-      const customEstPrice = parseFloat(customQtyEstPrice.replace(',', '.')) || 0;
+      // Parse and validate values
+      const costBrValue = Math.max(0, parseFloat(costBrasileiras.replace(',', '.')) || 0);
+      const costEstValue = Math.max(0, parseFloat(costEstrangeiras.replace(',', '.')) || 0);
+      const customBrMin = Math.max(1, parseInt(customQtyBrMin) || 1);
+      const customBrPrice = Math.max(0, parseFloat(customQtyBrPrice.replace(',', '.')) || 0);
+      const customEstMin = Math.max(1, parseInt(customQtyEstMin) || 1);
+      const customEstPrice = Math.max(0, parseFloat(customQtyEstPrice.replace(',', '.')) || 0);
       
       // Save inventory settings in parallel
       await Promise.all([
@@ -202,20 +213,36 @@ export const SessionsSection = () => {
         })
       ]);
 
-      // Validate and save combo edits in parallel
+      // Get current valid combo IDs from DB to avoid updating deleted combos
+      const validComboIds = new Set(dbCombos.map(c => c.id));
+
+      // Validate and save combo edits in parallel (only for existing combos)
       const comboUpdates = Object.entries(comboEdits)
-        .filter(([_, edit]) => {
+        .filter(([comboId, edit]) => {
+          // Only update combos that still exist in DB
+          if (!validComboIds.has(comboId)) return false;
           const quantity = parseInt(edit.quantity) || 0;
           const price = parseFloat(edit.price.replace(',', '.')) || 0;
           return quantity > 0 && price >= 0; // Only save valid combos
         })
         .map(([comboId, edit]) => {
-          const quantity = parseInt(edit.quantity) || 0;
-          const price = parseFloat(edit.price.replace(',', '.')) || 0;
+          const quantity = Math.max(1, parseInt(edit.quantity) || 1);
+          const price = Math.max(0, parseFloat(edit.price.replace(',', '.')) || 0);
           return updateDbCombo(comboId, { quantity, price });
         });
       
       await Promise.all(comboUpdates);
+
+      // Clean up stale combo edits for deleted combos
+      setComboEdits(prev => {
+        const cleaned: Record<string, { quantity: string; price: string }> = {};
+        Object.entries(prev).forEach(([id, edit]) => {
+          if (validComboIds.has(id)) {
+            cleaned[id] = edit;
+          }
+        });
+        return cleaned;
+      });
 
       toast.success("Configurações salvas com sucesso!");
     } catch (error) {

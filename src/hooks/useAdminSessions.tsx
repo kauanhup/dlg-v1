@@ -251,33 +251,42 @@ export const useAdminSessions = () => {
         results.push({ success: true, fileName: file.name });
       }
 
-      // ATOMIC: Update inventory count using SQL increment to avoid race conditions
+      // ATOMIC: Update inventory count - sync from actual file count to avoid race conditions
       const successCount = results.filter(r => r.success).length;
       if (successCount > 0) {
-        // Use RPC or update with fresh fetch to avoid race conditions
-        const { data: currentInv, error: invError } = await supabase
-          .from('sessions_inventory')
-          .select('id, quantity')
+        // Count actual available files in DB for accuracy (prevents race conditions)
+        const { count: actualCount, error: countError } = await supabase
+          .from('session_files')
+          .select('id', { count: 'exact', head: true })
           .eq('type', type)
-          .maybeSingle();
+          .eq('status', 'available');
 
-        if (!invError) {
-          if (currentInv) {
-            // Atomic update with fresh value
-            await supabase
-              .from('sessions_inventory')
-              .update({ quantity: currentInv.quantity + successCount })
-              .eq('id', currentInv.id);
-          } else {
-            // Create inventory record if it doesn't exist
-            await supabase
-              .from('sessions_inventory')
-              .insert({ 
-                type, 
-                quantity: successCount, 
-                cost_per_session: 0, 
-                sale_price_per_session: 0 
-              });
+        if (!countError && actualCount !== null) {
+          // Check if inventory record exists
+          const { data: existingInv, error: invError } = await supabase
+            .from('sessions_inventory')
+            .select('id')
+            .eq('type', type)
+            .maybeSingle();
+
+          if (!invError) {
+            if (existingInv) {
+              // Update with actual count (atomic and accurate)
+              await supabase
+                .from('sessions_inventory')
+                .update({ quantity: actualCount })
+                .eq('id', existingInv.id);
+            } else {
+              // Create inventory record with actual count
+              await supabase
+                .from('sessions_inventory')
+                .insert({ 
+                  type, 
+                  quantity: actualCount, 
+                  cost_per_session: 0, 
+                  sale_price_per_unit: 0 
+                });
+            }
           }
         }
       }

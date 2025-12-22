@@ -89,8 +89,9 @@ export const SessionCombosSection = ({
                     type="number"
                     value={comboEdits[combo.id]?.quantity ?? combo.quantity.toString()}
                     onChange={(e) => onComboEdit(combo.id, 'quantity', e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     min="1"
+                    aria-label={`Quantidade do combo ${index + 1}`}
                   />
                 </div>
                 <div>
@@ -99,29 +100,33 @@ export const SessionCombosSection = ({
                   </label>
                   <input
                     type="text"
+                    inputMode="decimal"
                     value={comboEdits[combo.id]?.price ?? combo.price.toFixed(2)}
                     onChange={(e) => onComboEdit(combo.id, 'price', e.target.value)}
                     className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    aria-label={`Preço do combo ${index + 1}`}
                   />
                 </div>
               </div>
               
               <div className="flex justify-end xs:justify-center pt-1 xs:pt-0">
                 {deleteConfirm === combo.id ? (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
                     <Button 
                       size="sm" 
                       variant="destructive"
-                      className="h-8 px-3 text-xs"
+                      className="h-9 px-4 text-sm font-medium"
                       onClick={() => handleConfirmDelete(combo.id)}
+                      aria-label="Confirmar exclusão do combo"
                     >
                       Excluir
                     </Button>
                     <Button 
                       size="sm" 
-                      variant="ghost"
-                      className="h-8 px-3 text-xs"
+                      variant="outline"
+                      className="h-9 px-4 text-sm"
                       onClick={handleCancelDelete}
+                      aria-label="Cancelar exclusão"
                     >
                       Cancelar
                     </Button>
@@ -132,6 +137,7 @@ export const SessionCombosSection = ({
                     variant="ghost" 
                     className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={() => handleDeleteClick(combo.id)}
+                    aria-label={`Excluir combo de ${combo.quantity} sessions`}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>

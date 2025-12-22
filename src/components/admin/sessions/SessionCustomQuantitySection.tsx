@@ -43,8 +43,9 @@ export const SessionCustomQuantitySection = ({
               checked={customQtyBrEnabled}
               onChange={(e) => onCustomQtyBrEnabledChange(e.target.checked)}
               className="sr-only peer"
+              aria-label="Ativar quantidade personalizada para sessions brasileiras"
             />
-            <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-success peer-focus:ring-2 peer-focus:ring-success/50 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></div>
+            <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-success peer-focus:ring-2 peer-focus:ring-success/50 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" role="switch" aria-checked={customQtyBrEnabled}></div>
           </label>
         </div>
         
@@ -90,8 +91,9 @@ export const SessionCustomQuantitySection = ({
               checked={customQtyEstEnabled}
               onChange={(e) => onCustomQtyEstEnabledChange(e.target.checked)}
               className="sr-only peer"
+              aria-label="Ativar quantidade personalizada para sessions estrangeiras"
             />
-            <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary peer-focus:ring-2 peer-focus:ring-primary/50 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></div>
+            <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary peer-focus:ring-2 peer-focus:ring-primary/50 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" role="switch" aria-checked={customQtyEstEnabled}></div>
           </label>
         </div>
         
