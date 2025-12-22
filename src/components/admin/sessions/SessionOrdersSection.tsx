@@ -16,13 +16,9 @@ import {
   MoreHorizontal,
   CheckCircle,
   XCircle,
-  Clock,
-  DollarSign,
   ShoppingCart,
   RefreshCw,
   Package,
-  TrendingUp,
-  ArrowUpRight,
 } from "lucide-react";
 
 interface SessionOrdersSectionProps {
@@ -33,38 +29,30 @@ const StatCard = ({
   title, 
   value, 
   change, 
-  icon: Icon, 
   trend = "up",
-  iconColor = "text-primary",
-  bgColor = "bg-primary/10"
+  valueColor = "text-foreground"
 }: { 
   title: string; 
   value: string; 
   change?: string; 
-  icon: React.ElementType; 
   trend?: "up" | "down" | "neutral";
-  iconColor?: string;
-  bgColor?: string;
+  valueColor?: string;
 }) => (
   <div className="bg-card border border-border rounded-lg p-4 sm:p-5">
     <div className="flex items-center justify-between">
-      <div className={cn("w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center", bgColor)}>
-        <Icon className={cn("w-4 h-4 sm:w-5 sm:h-5", iconColor)} />
-      </div>
+      <p className={cn("text-xl sm:text-2xl font-bold", valueColor)}>{value}</p>
       {change && (
         <span className={cn(
-          "text-[10px] sm:text-xs font-medium px-2 py-1 rounded-md flex items-center gap-0.5",
+          "text-[10px] sm:text-xs font-medium px-2 py-1 rounded-md",
           trend === "up" ? "bg-success/10 text-success" : 
           trend === "down" ? "bg-destructive/10 text-destructive" : 
           "bg-muted text-muted-foreground"
         )}>
-          {trend === "up" && <ArrowUpRight className="w-3 h-3" />}
           {change}
         </span>
       )}
     </div>
-    <div className="mt-3 sm:mt-4">
-      <p className="text-xl sm:text-2xl font-bold text-foreground">{value}</p>
+    <div className="mt-2">
       <p className="text-xs sm:text-sm text-muted-foreground">{title}</p>
     </div>
   </div>
@@ -206,34 +194,26 @@ export const SessionOrdersSection = ({ className }: SessionOrdersSectionProps) =
           title="Total Pedidos" 
           value={sessionStats.total.toString()} 
           change={`${sessionStats.pending} pend.`}
-          icon={ShoppingCart}
           trend="neutral"
         />
         <StatCard 
           title="Concluídos" 
           value={sessionStats.completed.toString()} 
           change={`${sessionStats.total > 0 ? Math.round((sessionStats.completed / sessionStats.total) * 100) : 0}%`}
-          icon={CheckCircle}
-          iconColor="text-success"
-          bgColor="bg-success/10"
+          valueColor="text-success"
           trend="up"
         />
         <StatCard 
           title="Pendentes" 
           value={sessionStats.pending.toString()} 
           change="Aguardando"
-          icon={Clock}
-          iconColor="text-warning"
-          bgColor="bg-warning/10"
           trend={sessionStats.pending > 0 ? "down" : "up"}
         />
         <StatCard 
           title="Receita" 
           value={formatPrice(sessionStats.totalRevenue)} 
           change="Confirmada"
-          icon={DollarSign}
-          iconColor="text-success"
-          bgColor="bg-success/10"
+          valueColor="text-success"
           trend="up"
         />
       </div>
