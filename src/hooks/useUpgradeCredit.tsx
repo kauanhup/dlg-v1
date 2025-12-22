@@ -19,6 +19,7 @@ export interface UpgradeCreditResult {
   isLoading: boolean;
   error: string | null;
   calculateFinalPrice: (newPlanPrice: number) => number;
+  isValidUpgrade: (newPlanPrice: number) => boolean;
   refetch: () => Promise<void>;
 }
 
@@ -129,8 +130,20 @@ export const useUpgradeCredit = (userId: string | undefined): UpgradeCreditResul
    */
   const calculateFinalPrice = (newPlanPrice: number): number => {
     if (!activeSubscription) return newPlanPrice;
+    // Only apply credit if it's a valid upgrade (new plan costs more)
+    if (newPlanPrice <= activeSubscription.price_paid) return newPlanPrice;
     const finalPrice = newPlanPrice - activeSubscription.credit_value;
     return Math.max(0, Math.round(finalPrice * 100) / 100);
+  };
+
+  /**
+   * Check if the new plan is a valid upgrade (costs more than current plan)
+   * @param newPlanPrice - The price of the new plan
+   * @returns true if it's a valid upgrade, false if it's a downgrade
+   */
+  const isValidUpgrade = (newPlanPrice: number): boolean => {
+    if (!activeSubscription) return true; // No active subscription, any plan is valid
+    return newPlanPrice > activeSubscription.price_paid;
   };
 
   return {
@@ -138,6 +151,7 @@ export const useUpgradeCredit = (userId: string | undefined): UpgradeCreditResul
     isLoading,
     error,
     calculateFinalPrice,
+    isValidUpgrade,
     refetch: fetchActiveSubscription,
   };
 };

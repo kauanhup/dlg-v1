@@ -64,7 +64,7 @@ const Checkout = () => {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   
   // Upgrade credit system - get credit from current active subscription
-  const { activeSubscription, calculateFinalPrice, isLoading: creditLoading } = useUpgradeCredit(user?.id);
+  const { activeSubscription, calculateFinalPrice, isValidUpgrade, isLoading: creditLoading } = useUpgradeCredit(user?.id);
 
   // Force dark theme
   useEffect(() => {
@@ -173,7 +173,9 @@ const Checkout = () => {
 
   // Get effective price for plan - with upgrade credit applied
   const basePlanPrice = plan ? (plan.promotional_price ?? plan.price) : 0;
-  const isUpgrade = isPlanPurchase && activeSubscription && activeSubscription.credit_value > 0 && activeSubscription.plan_id !== plan?.id;
+  const canUpgradeToPlan = isValidUpgrade(basePlanPrice);
+  const isDowngradeAttempt = isPlanPurchase && activeSubscription && !canUpgradeToPlan && activeSubscription.plan_id !== plan?.id;
+  const isUpgrade = isPlanPurchase && activeSubscription && activeSubscription.credit_value > 0 && activeSubscription.plan_id !== plan?.id && canUpgradeToPlan;
   const planPrice = isUpgrade ? calculateFinalPrice(basePlanPrice) : basePlanPrice;
   const upgradeCredit = isUpgrade ? activeSubscription.credit_value : 0;
   const isFreeProduct = (isSessionPurchase && sessionInfo?.price === 0) || (isPlanPurchase && planPrice === 0);
@@ -1022,7 +1024,9 @@ const Checkout = () => {
 
                 {/* Title */}
                 <h1 className="text-3xl xl:text-4xl 2xl:text-5xl font-display font-bold text-foreground mb-4 leading-tight">
-                  {pixData ? (
+                  {isDowngradeAttempt ? (
+                    <>Downgrade não permitido</>
+                  ) : pixData ? (
                     <>Escaneie o QR Code</>
                   ) : isFreeProduct ? (
                     <>Ativar plano grátis</>
@@ -1032,11 +1036,13 @@ const Checkout = () => {
                 </h1>
                 
                 <p className="text-base xl:text-lg text-muted-foreground mb-10 max-w-sm mx-auto">
-                  {pixData 
-                    ? "Abra o app do seu banco e escaneie o código para pagar."
-                    : isFreeProduct 
-                    ? "Ative seu plano gratuito e comece a usar agora mesmo."
-                    : "Pague via PIX de forma rápida e segura."}
+                  {isDowngradeAttempt 
+                    ? `Você possui o plano "${activeSubscription?.plan_name}" ativo. Faça upgrade para um plano superior.`
+                    : pixData 
+                      ? "Abra o app do seu banco e escaneie o código para pagar."
+                      : isFreeProduct 
+                        ? "Ative seu plano gratuito e comece a usar agora mesmo."
+                        : "Pague via PIX de forma rápida e segura."}
                 </p>
 
                 {/* Product Summary */}
@@ -1238,32 +1244,58 @@ const Checkout = () => {
                     </>
                   )}
 
-                  <Button 
-                    onClick={handlePayment}
-                    disabled={isProcessing || !displayInfo}
-                    size="lg"
-                    className={`w-full h-11 sm:h-12 text-sm sm:text-base font-medium ${
-                      isFreeProduct 
-                        ? 'bg-success hover:bg-success/90' 
-                        : 'bg-primary hover:bg-primary/90'
-                    }`}
-                  >
-                    {isProcessing ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-                        {isFreeProduct ? "Ativando..." : "Gerando PIX..."}
-                      </span>
-                    ) : isFreeProduct ? (
-                      "Ativar Agora"
-                    ) : (
-                      "Gerar código PIX"
-                    )}
-                  </Button>
+                  {isDowngradeAttempt ? (
+                    <>
+                      <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 text-center">
+                        <p className="text-sm text-destructive font-medium mb-2">
+                          Downgrade não permitido
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Você já possui o plano "{activeSubscription?.plan_name}" que é superior a este.
+                          Escolha um plano com valor maior para fazer upgrade.
+                        </p>
+                      </div>
+                      <Link to="/comprar" className="w-full">
+                        <Button 
+                          variant="outline"
+                          size="lg"
+                          className="w-full h-11 sm:h-12"
+                        >
+                          <ArrowLeft className="w-4 h-4 mr-2" />
+                          Ver outros planos
+                        </Button>
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Button 
+                        onClick={handlePayment}
+                        disabled={isProcessing || !displayInfo}
+                        size="lg"
+                        className={`w-full h-11 sm:h-12 text-sm sm:text-base font-medium ${
+                          isFreeProduct 
+                            ? 'bg-success hover:bg-success/90' 
+                            : 'bg-primary hover:bg-primary/90'
+                        }`}
+                      >
+                        {isProcessing ? (
+                          <span className="flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                            {isFreeProduct ? "Ativando..." : "Gerando PIX..."}
+                          </span>
+                        ) : isFreeProduct ? (
+                          "Ativar Agora"
+                        ) : (
+                          "Gerar código PIX"
+                        )}
+                      </Button>
 
-                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Pagamento 100% seguro</span>
-                  </div>
+                      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>Pagamento 100% seguro</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
