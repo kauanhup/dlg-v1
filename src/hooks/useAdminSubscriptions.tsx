@@ -68,7 +68,8 @@ export const useAdminSubscriptions = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = async (showLoading = true) => {
-    if (showLoading) setIsLoading(true);
+    // Only show loading on initial fetch (when no data exists yet)
+    if (showLoading && plans.length === 0) setIsLoading(true);
     setError(null);
     
     try {
