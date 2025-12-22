@@ -279,62 +279,66 @@ export const SessionsSection = () => {
   return (
     <motion.div {...fadeIn} className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-foreground">Sessions</h1>
-          <p className="text-sm text-muted-foreground">Gerenciar estoque e pedidos de sessions</p>
+          <h1 className="text-lg sm:text-xl font-semibold text-foreground">Sessions</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Gerenciar estoque e pedidos de sessions</p>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-1 bg-muted/50 p-1 rounded-lg w-fit flex-wrap">
-        <button
-          onClick={() => setActiveTab("estoque")}
-          className={cn(
-            "px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2",
-            activeTab === "estoque" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Layers className="w-4 h-4" />
-          Estoque
-        </button>
-        <button
-          onClick={() => setActiveTab("configuracoes")}
-          className={cn(
-            "px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2",
-            activeTab === "configuracoes" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Settings className="w-4 h-4" />
-          Configurações
-        </button>
-        <button
-          onClick={() => setActiveTab("combos")}
-          className={cn(
-            "px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2",
-            activeTab === "combos" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Package className="w-4 h-4" />
-          Combos
-        </button>
-        <button
-          onClick={() => setActiveTab("pedidos")}
-          className={cn(
-            "px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2",
-            activeTab === "pedidos" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <ShoppingCart className="w-4 h-4" />
-          Pedidos
-        </button>
+      <div className="w-full overflow-x-auto pb-2 -mb-2">
+        <div className="flex gap-1 bg-muted/50 p-1 rounded-lg w-fit min-w-full sm:min-w-0">
+          <button
+            onClick={() => setActiveTab("estoque")}
+            className={cn(
+              "flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap",
+              activeTab === "estoque" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline">Estoque</span>
+            <span className="xs:hidden">Est.</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("configuracoes")}
+            className={cn(
+              "flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap",
+              activeTab === "configuracoes" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline">Configurações</span>
+            <span className="xs:hidden">Config.</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("combos")}
+            className={cn(
+              "flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap",
+              activeTab === "combos" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            Combos
+          </button>
+          <button
+            onClick={() => setActiveTab("pedidos")}
+            className={cn(
+              "flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap",
+              activeTab === "pedidos" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            Pedidos
+          </button>
+        </div>
       </div>
 
       {/* Estoque Tab */}
       {activeTab === "estoque" && (
         <>
           {/* Actions */}
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-col xs:flex-row justify-end gap-2">
             <input
               type="file"
               accept=".session"
@@ -348,11 +352,12 @@ export const SessionsSection = () => {
               variant="outline" 
               onClick={handleRefresh} 
               disabled={isRefreshing || isLoading}
+              className="w-full xs:w-auto"
             >
               <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
               Atualizar
             </Button>
-            <Button size="sm" disabled={isUploading} onClick={() => setShowTypeSelector(true)}>
+            <Button size="sm" disabled={isUploading} onClick={() => setShowTypeSelector(true)} className="w-full xs:w-auto">
               <Plus className="w-4 h-4 mr-2" /> Importar Sessions
             </Button>
           </div>
