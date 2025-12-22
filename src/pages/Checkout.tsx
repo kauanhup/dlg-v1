@@ -227,6 +227,8 @@ const Checkout = () => {
           evoPayEnabled: evoPayEnabled
         });
         
+        console.log('Payment settings loaded:', { pixupEnabled, evoPayEnabled });
+        
         // Auto-select gateway: alternate based on timestamp for fair distribution
         if (pixupEnabled && evoPayEnabled) {
           // Use timestamp to alternate between gateways (changes every second)
@@ -235,11 +237,15 @@ const Checkout = () => {
           console.log('Both gateways active, selected:', useEvoPay ? 'evopay' : 'pix');
         } else if (evoPayEnabled) {
           setSelectedPaymentMethod('evopay');
+          console.log('Only EvoPay active, selected: evopay');
         } else if (pixupEnabled) {
           setSelectedPaymentMethod('pix');
+          console.log('Only PixUp active, selected: pix');
+        } else {
+          console.warn('No payment gateway active!');
         }
       } catch (error) {
-        console.log('Could not fetch payment settings');
+        console.error('Could not fetch payment settings:', error);
       }
     };
     fetchPaymentSettings();
@@ -281,9 +287,8 @@ const Checkout = () => {
           .eq('order_id', pendingOrder.id)
           .maybeSingle();
 
-        if (payment?.payment_method) {
-          setSelectedPaymentMethod(payment.payment_method as PaymentMethod || 'pix');
-        }
+        // Don't restore payment_method from old orders - let the auto-select logic use currently active gateway
+        console.log('Pending order payment_method was:', payment?.payment_method, '- will use current active gateway instead');
 
         // Only restore PIX data if we have a valid pix_code and not expired
         if (payment?.pix_code) {
@@ -365,9 +370,8 @@ const Checkout = () => {
             return;
           }
           
-          if (payment.payment_method) {
-            setSelectedPaymentMethod(payment.payment_method as PaymentMethod || 'pix');
-          }
+          // Don't restore payment_method from old orders - let the auto-select logic use currently active gateway
+          console.log('[Checkout] Order payment_method was:', payment.payment_method, '- will use current active gateway instead');
           
         // Only use PIX code if it's still valid (at least 1 minute remaining)
           if (payment.pix_code) {
