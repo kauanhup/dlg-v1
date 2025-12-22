@@ -35,8 +35,8 @@ export const useAdminUsers = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUsers = async () => {
-    setIsLoading(true);
+  const fetchUsers = async (showLoading = true) => {
+    if (showLoading) setIsLoading(true);
     setError(null);
     
     try {

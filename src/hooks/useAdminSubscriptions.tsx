@@ -67,8 +67,8 @@ export const useAdminSubscriptions = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
-    setIsLoading(true);
+  const fetchData = async (showLoading = true) => {
+    if (showLoading) setIsLoading(true);
     setError(null);
     
     try {

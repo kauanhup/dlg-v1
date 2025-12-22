@@ -422,7 +422,7 @@ const SubscriptionsTabContent = () => {
       toast.error(result.error || 'Erro ao alterar status do plano');
     }
     setTogglingPlanId(null);
-    refetch();
+    refetch(false);
   };
 
   const formatDate = (dateString: string | null) => {
@@ -467,7 +467,7 @@ const SubscriptionsTabContent = () => {
     }
     setShowRenewModal(false);
     setSelectedSubscriber(null);
-    refetch();
+    refetch(false);
   };
 
   const handleConfirmCancel = async () => {
@@ -482,7 +482,7 @@ const SubscriptionsTabContent = () => {
     }
     setShowCancelModal(false);
     setSelectedSubscriber(null);
-    refetch();
+    refetch(false);
   };
 
   const handleSavePlan = async (planData: { name: string; price: string; promotional_price: string | null; period: number; features: string[]; status: string; max_subscriptions_per_user: number | null }) => {
@@ -542,7 +542,7 @@ const SubscriptionsTabContent = () => {
       }
       setEditingPlan(null);
       setIsModalOpen(false);
-      refetch();
+      refetch(false);
     } finally {
       setIsSavingPlan(false);
     }
@@ -589,7 +589,7 @@ const SubscriptionsTabContent = () => {
     }
     setShowCancelPaymentModal(false);
     setSelectedPayment(null);
-    refetch();
+    refetch(false);
   };
 
   const handleConfirmPaymentConfirmation = async () => {
@@ -605,7 +605,7 @@ const SubscriptionsTabContent = () => {
     }
     setShowConfirmPaymentModal(false);
     setSelectedPayment(null);
-    refetch();
+    refetch(false);
   };
 
   const statusStyles: Record<string, string> = {
@@ -1057,7 +1057,7 @@ const SubscriptionsTabContent = () => {
                     setIsDeletingPlan(false);
                     setShowDeletePlanModal(false);
                     setPlanToDelete(null);
-                    refetch();
+                    refetch(false);
                   }}
                 >
                   {isDeletingPlan ? (
@@ -1771,7 +1771,7 @@ const UsersSection = () => {
         toast.success('Usuário atualizado com sucesso!');
         setShowEditModal(false);
         setSelectedUser(null);
-        refetch();
+        refetch(false);
       } else {
         toast.error(result.error || 'Erro ao atualizar usuário');
       }
@@ -1793,7 +1793,7 @@ const UsersSection = () => {
         toast.success(newBannedStatus ? 'Usuário banido com sucesso!' : 'Usuário desbanido com sucesso!');
         setShowBanModal(false);
         setSelectedUser(null);
-        refetch();
+        refetch(false);
       } else {
         toast.error(result.error || 'Erro ao atualizar status do usuário');
       }

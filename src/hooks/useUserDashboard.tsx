@@ -81,12 +81,14 @@ export const useUserDashboard = (userId: string | undefined) => {
     setError(null);
     
     try {
-      // Fetch user license
+      // Fetch user license - get the most recent one (active first, then any)
       const { data: licenseData, error: licenseError } = await supabase
         .from('licenses')
         .select('*')
         .eq('user_id', userId)
-        .eq('status', 'active')
+        .order('status', { ascending: true }) // 'active' comes before 'cancelled', 'expired'
+        .order('end_date', { ascending: false }) // Most recent first
+        .limit(1)
         .maybeSingle();
 
       if (licenseError) throw licenseError;

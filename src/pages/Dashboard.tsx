@@ -1129,14 +1129,20 @@ const Dashboard = () => {
                       <h3 className="text-sm font-semibold text-foreground">{userLicense.plan}</h3>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <div className={cn(
-                          "w-1.5 h-1.5 rounded-full animate-pulse",
-                          userLicense.status === 'active' ? "bg-success" : "bg-destructive"
+                          "w-1.5 h-1.5 rounded-full",
+                          userLicense.status === 'active' ? "bg-success animate-pulse" : 
+                          userLicense.status === 'cancelled' ? "bg-destructive" : 
+                          "bg-warning"
                         )} />
                         <span className={cn(
                           "text-xs font-medium",
-                          userLicense.status === 'active' ? "text-success" : "text-destructive"
+                          userLicense.status === 'active' ? "text-success" : 
+                          userLicense.status === 'cancelled' ? "text-destructive" : 
+                          "text-warning"
                         )}>
-                          {userLicense.status === 'active' ? 'Ativa' : 'Expirada'}
+                          {userLicense.status === 'active' ? 'Ativo' : 
+                           userLicense.status === 'cancelled' ? 'Cancelado' : 
+                           userLicense.status === 'expired' ? 'Expirado' : 'Inativo'}
                         </span>
                       </div>
                     </div>
