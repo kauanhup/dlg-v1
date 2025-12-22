@@ -157,12 +157,45 @@ const PlanFormModal = ({
     }
   }, [plan, isOpen]);
 
+  // Sanitize price input to only allow numbers and decimal point
+  const sanitizePriceInput = (value: string) => {
+    // Allow only numbers, dots, and commas
+    return value.replace(/[^0-9.,]/g, '').replace(',', '.');
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate name
+    if (!name.trim()) {
+      toast.error('Nome do plano é obrigatório');
+      return;
+    }
+    
+    // Validate price
+    const priceNum = parseFloat(price.replace(',', '.'));
+    if (isNaN(priceNum) || priceNum < 0) {
+      toast.error('Preço inválido');
+      return;
+    }
+    
+    // Validate promotional price if provided
+    if (promotionalPrice) {
+      const promoNum = parseFloat(promotionalPrice.replace(',', '.'));
+      if (isNaN(promoNum) || promoNum < 0) {
+        toast.error('Preço promocional inválido');
+        return;
+      }
+      if (promoNum >= priceNum) {
+        toast.error('Preço promocional deve ser menor que o preço original');
+        return;
+      }
+    }
+    
     onSave({
-      name,
-      price: `R$ ${price}`,
-      promotional_price: promotionalPrice ? `R$ ${promotionalPrice}` : null,
+      name: name.trim(),
+      price,
+      promotional_price: promotionalPrice || null,
       period,
       features: features.split("\n").filter(f => f.trim()),
       status,
@@ -208,20 +241,23 @@ const PlanFormModal = ({
               <label className="text-sm text-muted-foreground mb-2 block">Preço (R$)</label>
               <input
                 type="text"
+                inputMode="decimal"
                 value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="49,90"
+                onChange={(e) => setPrice(sanitizePriceInput(e.target.value))}
+                placeholder="49.90"
                 className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
                 required
               />
+              <p className="text-xs text-muted-foreground mt-1">Use 0 para plano gratuito</p>
             </div>
             <div>
               <label className="text-sm text-muted-foreground mb-2 block">Preço Promocional (R$)</label>
               <input
                 type="text"
+                inputMode="decimal"
                 value={promotionalPrice}
-                onChange={(e) => setPromotionalPrice(e.target.value)}
-                placeholder="39,90"
+                onChange={(e) => setPromotionalPrice(sanitizePriceInput(e.target.value))}
+                placeholder="39.90"
                 className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
               <p className="text-xs text-muted-foreground mt-1">Deixe vazio se não houver</p>
@@ -336,6 +372,20 @@ const SubscriptionsTabContent = () => {
   const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [isRefunding, setIsRefunding] = useState(false);
   const [isSavingPlan, setIsSavingPlan] = useState(false);
+  const [togglingPlanId, setTogglingPlanId] = useState<string | null>(null);
+
+  // Handler for toggling plan active status with feedback
+  const handleTogglePlanStatus = async (plan: any) => {
+    setTogglingPlanId(plan.id);
+    const result = await updatePlan(plan.id, { is_active: !plan.is_active });
+    if (result.success) {
+      toast.success(plan.is_active ? 'Plano desativado' : 'Plano ativado');
+    } else {
+      toast.error(result.error || 'Erro ao alterar status do plano');
+    }
+    setTogglingPlanId(null);
+    refetch();
+  };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "—";
@@ -400,13 +450,28 @@ const SubscriptionsTabContent = () => {
   const handleSavePlan = async (planData: { name: string; price: string; promotional_price: string | null; period: number; features: string[]; status: string; max_subscriptions_per_user: number | null }) => {
     setIsSavingPlan(true);
     try {
-      const priceValue = parseFloat(planData.price.replace('R$ ', '').replace(',', '.')) || 0;
+      // Clean price string: remove "R$ " and replace comma with dot for parsing
+      const cleanPrice = (str: string) => parseFloat(str.replace('R$ ', '').replace(',', '.')) || 0;
+      
+      const priceValue = cleanPrice(planData.price);
       const promoValue = planData.promotional_price 
-        ? parseFloat(planData.promotional_price.replace('R$ ', '').replace(',', '.')) || null 
+        ? cleanPrice(planData.promotional_price)
         : null;
       
+      // Validate price
+      if (priceValue < 0) {
+        toast.error('O preço não pode ser negativo');
+        return;
+      }
+      
+      // Validate promotional price
+      if (promoValue !== null && promoValue >= priceValue) {
+        toast.error('O preço promocional deve ser menor que o preço original');
+        return;
+      }
+      
       if (editingPlan) {
-        await updatePlan(editingPlan.id, { 
+        const result = await updatePlan(editingPlan.id, { 
           name: planData.name,
           price: priceValue,
           promotional_price: promoValue,
@@ -415,9 +480,14 @@ const SubscriptionsTabContent = () => {
           is_active: planData.status === 'active',
           max_subscriptions_per_user: planData.max_subscriptions_per_user
         });
-        toast.success('Plano atualizado');
+        if (result.success) {
+          toast.success('Plano atualizado');
+        } else {
+          toast.error(result.error || 'Erro ao atualizar plano');
+          return;
+        }
       } else {
-        await createPlan({
+        const result = await createPlan({
           name: planData.name,
           price: priceValue,
           promotional_price: promoValue,
@@ -425,7 +495,12 @@ const SubscriptionsTabContent = () => {
           features: planData.features,
           max_subscriptions_per_user: planData.max_subscriptions_per_user
         });
-        toast.success('Plano criado');
+        if (result.success) {
+          toast.success('Plano criado');
+        } else {
+          toast.error(result.error || 'Erro ao criar plano');
+          return;
+        }
       }
       setEditingPlan(null);
       setIsModalOpen(false);
@@ -436,10 +511,11 @@ const SubscriptionsTabContent = () => {
   };
 
   const handleEditPlan = (plan: any) => {
+    // Pass raw numeric values - the modal will handle formatting
     setEditingPlan({
       ...plan,
-      price: formatPrice(plan.price),
-      promotional_price: plan.promotional_price ? formatPrice(plan.promotional_price) : null,
+      price: String(plan.price),
+      promotional_price: plan.promotional_price ? String(plan.promotional_price) : null,
       status: plan.is_active ? 'active' : 'inactive',
       max_subscriptions_per_user: plan.max_subscriptions_per_user
     });
@@ -591,63 +667,77 @@ const SubscriptionsTabContent = () => {
       {/* Subscribers Tab */}
       {activeSubTab === "subscribers" && (
         <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Plano</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Início</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Próx. Cobrança</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {subscriptions.map((sub) => (
-                  <tr key={sub.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="p-4">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{sub.user_name}</p>
-                        <p className="text-xs text-muted-foreground">{sub.user_email}</p>
-                      </div>
-                    </td>
-                    <td className="p-4 text-sm text-foreground">{sub.plan_name}</td>
-                    <td className="p-4">
-                      <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[sub.status] || statusStyles.pending)}>
-                        {statusLabels[sub.status] || sub.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-sm text-muted-foreground">{formatDate(sub.start_date)}</td>
-                    <td className="p-4 text-sm text-muted-foreground">{formatDate(sub.next_billing_date)}</td>
-                    <td className="p-4 text-sm font-medium text-foreground">{formatPrice(sub.plan_price || 0)}</td>
-                    <td className="p-4">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-card border border-border">
-                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleViewDetails(sub)}>
-                            <Eye className="w-4 h-4 mr-2" /> Ver detalhes
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleRenewClick(sub)}>
-                            <Repeat className="w-4 h-4 mr-2" /> Renovar
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={() => handleCancelClick(sub)}>
-                            <XCircle className="w-4 h-4 mr-2" /> Cancelar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Spinner />
+            </div>
+          ) : subscriptions.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-6 h-6 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum assinante</h3>
+              <p className="text-sm text-muted-foreground">Quando usuários assinarem planos, eles aparecerão aqui.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Plano</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Início</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Próx. Cobrança</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {subscriptions.map((sub) => (
+                    <tr key={sub.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
+                      <td className="p-4">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{sub.user_name}</p>
+                          <p className="text-xs text-muted-foreground">{sub.user_email}</p>
+                        </div>
+                      </td>
+                      <td className="p-4 text-sm text-foreground">{sub.plan_name}</td>
+                      <td className="p-4">
+                        <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[sub.status] || statusStyles.pending)}>
+                          {statusLabels[sub.status] || sub.status}
+                        </span>
+                      </td>
+                      <td className="p-4 text-sm text-muted-foreground">{formatDate(sub.start_date)}</td>
+                      <td className="p-4 text-sm text-muted-foreground">{formatDate(sub.next_billing_date)}</td>
+                      <td className="p-4 text-sm font-medium text-foreground">{formatPrice(sub.plan_price || 0)}</td>
+                      <td className="p-4">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-card border border-border">
+                            <DropdownMenuItem className="cursor-pointer" onClick={() => handleViewDetails(sub)}>
+                              <Eye className="w-4 h-4 mr-2" /> Ver detalhes
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer" onClick={() => handleRenewClick(sub)}>
+                              <Repeat className="w-4 h-4 mr-2" /> Renovar
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={() => handleCancelClick(sub)}>
+                              <XCircle className="w-4 h-4 mr-2" /> Cancelar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -659,82 +749,116 @@ const SubscriptionsTabContent = () => {
               <Plus className="w-4 h-4 mr-2" /> Criar Plano
             </Button>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {dbPlans.map((plan) => (
-              <div key={plan.id} className="bg-card border border-border rounded-lg p-5">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="font-semibold text-foreground">{plan.name}</h3>
-                    <div className="flex items-baseline gap-2 mt-1">
-                      {plan.promotional_price ? (
-                        <>
-                          <span className="text-2xl font-bold text-success">{formatPrice(plan.promotional_price)}</span>
-                          <span className="text-sm text-muted-foreground line-through">{formatPrice(plan.price)}</span>
-                        </>
-                      ) : (
-                        <span className="text-2xl font-bold text-foreground">{formatPrice(plan.price)}</span>
-                      )}
-                      <span className="text-sm text-muted-foreground">
-                        / {plan.period === 0 ? 'vitalício' : `${plan.period} dias`}
-                      </span>
-                    </div>
-                    {plan.max_subscriptions_per_user && (
-                      <span className="text-xs text-warning mt-1">
-                        Limite: {plan.max_subscriptions_per_user}x por usuário
-                      </span>
-                    )}
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-card border border-border">
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleEditPlan(plan)}>
-                        <Edit className="w-4 h-4 mr-2" /> Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="cursor-pointer"
-                        onClick={() => updatePlan(plan.id, { is_active: !plan.is_active })}
-                      >
-                        <XCircle className="w-4 h-4 mr-2" /> {plan.is_active ? "Desativar" : "Ativar"}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="cursor-pointer text-destructive focus:text-destructive"
-                        onClick={() => {
-                          setPlanToDelete(plan);
-                          setShowDeletePlanModal(true);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <div className="space-y-2 mb-4">
-                  {(plan.features || []).map((feature, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <CheckCircle className="w-4 h-4 text-success" />
-                      {feature}
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center justify-between pt-4 border-t border-border">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">{plan.subscribers_count || 0} assinantes</span>
-                  </div>
-                  <span className={cn(
-                    "text-xs px-2 py-1 rounded-md",
-                    plan.is_active ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
-                  )}>
-                    {plan.is_active ? "Ativo" : "Inativo"}
-                  </span>
-                </div>
+          
+          {/* Empty State */}
+          {dbPlans.length === 0 && !isLoading && (
+            <div className="bg-card border border-border rounded-lg p-8 text-center">
+              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <Package className="w-6 h-6 text-muted-foreground" />
               </div>
-            ))}
-          </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum plano encontrado</h3>
+              <p className="text-sm text-muted-foreground mb-4">Crie seu primeiro plano de assinatura para começar a vender.</p>
+              <Button size="sm" onClick={handleCreatePlan}>
+                <Plus className="w-4 h-4 mr-2" /> Criar Primeiro Plano
+              </Button>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-12">
+              <Spinner />
+            </div>
+          )}
+
+          {/* Plans Grid */}
+          {dbPlans.length > 0 && (
+            <div className="grid gap-4 md:grid-cols-2">
+              {dbPlans.map((plan) => (
+                <div key={plan.id} className={cn(
+                  "bg-card border border-border rounded-lg p-5 transition-opacity",
+                  togglingPlanId === plan.id && "opacity-50"
+                )}>
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="font-semibold text-foreground">{plan.name}</h3>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        {plan.promotional_price ? (
+                          <>
+                            <span className="text-2xl font-bold text-success">{formatPrice(plan.promotional_price)}</span>
+                            <span className="text-sm text-muted-foreground line-through">{formatPrice(plan.price)}</span>
+                          </>
+                        ) : (
+                          <span className="text-2xl font-bold text-foreground">
+                            {plan.price === 0 ? 'Grátis' : formatPrice(plan.price)}
+                          </span>
+                        )}
+                        <span className="text-sm text-muted-foreground">
+                          / {plan.period === 0 ? 'vitalício' : `${plan.period} dias`}
+                        </span>
+                      </div>
+                      {plan.max_subscriptions_per_user && (
+                        <span className="text-xs text-warning mt-1 block">
+                          Limite: {plan.max_subscriptions_per_user}x por usuário
+                        </span>
+                      )}
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={togglingPlanId === plan.id}>
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-card border border-border">
+                        <DropdownMenuItem className="cursor-pointer" onClick={() => handleEditPlan(plan)}>
+                          <Edit className="w-4 h-4 mr-2" /> Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="cursor-pointer"
+                          onClick={() => handleTogglePlanStatus(plan)}
+                        >
+                          {plan.is_active ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                          {plan.is_active ? "Desativar" : "Ativar"}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="cursor-pointer text-destructive focus:text-destructive"
+                          onClick={() => {
+                            setPlanToDelete(plan);
+                            setShowDeletePlanModal(true);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    {(plan.features || []).length === 0 && (
+                      <p className="text-sm text-muted-foreground italic">Nenhum recurso definido</p>
+                    )}
+                    {(plan.features || []).map((feature, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
+                        <span className="break-words">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between pt-4 border-t border-border">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">{plan.subscribers_count || 0} assinantes</span>
+                    </div>
+                    <span className={cn(
+                      "text-xs px-2 py-1 rounded-md",
+                      plan.is_active ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                    )}>
+                      {plan.is_active ? "Ativo" : "Inativo"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -815,61 +939,75 @@ const SubscriptionsTabContent = () => {
       {/* Payments Tab */}
       {activeSubTab === "payments" && (
         <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">ID</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Plano</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Método</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Data</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dbPayments.map((payment) => (
-                  <tr key={payment.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="p-4 text-sm font-mono text-foreground">#{payment.id.slice(0, 8)}</td>
-                    <td className="p-4 text-sm text-foreground">{payment.user_name}</td>
-                    <td className="p-4 text-sm text-muted-foreground">{payment.plan_name}</td>
-                    <td className="p-4 text-sm font-medium text-foreground">{formatPrice(payment.amount)}</td>
-                    <td className="p-4 text-sm text-muted-foreground">{payment.payment_method}</td>
-                    <td className="p-4">
-                      <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[payment.status] || statusStyles.pending)}>
-                        {statusLabels[payment.status] || payment.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-sm text-muted-foreground">{formatDate(payment.created_at)}</td>
-                    <td className="p-4">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-card border border-border">
-                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleEditPaymentStatus(payment)}>
-                            <Edit className="w-4 h-4 mr-2" /> Editar Status
-                          </DropdownMenuItem>
-                          {payment.status !== "refunded" && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={() => handleRefundClick(payment)}>
-                                <RefreshCw className="w-4 h-4 mr-2" /> Reembolsar
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Spinner />
+            </div>
+          ) : dbPayments.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <CreditCard className="w-6 h-6 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum pagamento</h3>
+              <p className="text-sm text-muted-foreground">Pagamentos de assinaturas aparecerão aqui.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">ID</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Plano</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Método</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Data</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {dbPayments.map((payment) => (
+                    <tr key={payment.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
+                      <td className="p-4 text-sm font-mono text-foreground">#{payment.id.slice(0, 8)}</td>
+                      <td className="p-4 text-sm text-foreground">{payment.user_name}</td>
+                      <td className="p-4 text-sm text-muted-foreground">{payment.plan_name}</td>
+                      <td className="p-4 text-sm font-medium text-foreground">{formatPrice(payment.amount)}</td>
+                      <td className="p-4 text-sm text-muted-foreground uppercase">{payment.payment_method}</td>
+                      <td className="p-4">
+                        <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[payment.status] || statusStyles.pending)}>
+                          {statusLabels[payment.status] || payment.status}
+                        </span>
+                      </td>
+                      <td className="p-4 text-sm text-muted-foreground">{formatDate(payment.created_at)}</td>
+                      <td className="p-4">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-card border border-border">
+                            <DropdownMenuItem className="cursor-pointer" onClick={() => handleEditPaymentStatus(payment)}>
+                              <Edit className="w-4 h-4 mr-2" /> Editar Status
+                            </DropdownMenuItem>
+                            {payment.status !== "refunded" && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={() => handleRefundClick(payment)}>
+                                  <RefreshCw className="w-4 h-4 mr-2" /> Reembolsar
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
