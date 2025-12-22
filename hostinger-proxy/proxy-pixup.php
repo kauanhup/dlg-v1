@@ -188,6 +188,9 @@ switch ($action) {
         $payer_name = $data['payer_name'] ?? '';
         $payer_document = $data['payer_document'] ?? '';
         
+        // URL do webhook - IMPORTANTE: o PixUp envia o callback para esta URL
+        $postback_url = 'https://dlgconnect.com';
+        
         if ($amount < 1) {
             http_response_code(400);
             echo json_encode(['error' => 'Valor mínimo é R$ 1,00']);
@@ -211,6 +214,7 @@ switch ($action) {
         $pixData = [
             'amount' => (float) $amount,
             'external_id' => $external_id,
+            'postbackUrl' => $postback_url,  // URL para receber o webhook de confirmação
             'payer' => [
                 'name' => $payer_name ?: 'Cliente',
                 'document' => preg_replace('/[^0-9]/', '', $payer_document) ?: '00000000000'
@@ -221,6 +225,9 @@ switch ($action) {
         if (!empty($description)) {
             $pixData['description'] = $description;
         }
+        
+        // Log para debug
+        error_log("PixUp create_pix - postbackUrl: $postback_url, external_id: $external_id");
         
         $result = callPixUpAPI('/v2/pix/qrcode', 'POST', $tokenResult['access_token'], $pixData);
         
