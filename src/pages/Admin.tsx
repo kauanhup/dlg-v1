@@ -3614,11 +3614,10 @@ const Admin = () => {
     initials: (user?.user_metadata?.name || "AD").slice(0, 2).toUpperCase(),
   };
 
-  const sidebarTabs = ["dashboard", "orders", "users", "sessions", "bot", "api"];
+  const sidebarTabs = ["dashboard", "users", "sessions", "bot", "api"];
 
   const profileNavItems = [
-    { label: "Dashboard", icon: <LayoutDashboard className="h-full w-full" />, onClick: () => setActiveTab("dashboard") },
-    { label: "Pedidos", icon: <ShoppingCart className="h-full w-full" />, onClick: () => setActiveTab("orders") },
+    { label: "Planos", icon: <LayoutDashboard className="h-full w-full" />, onClick: () => setActiveTab("dashboard") },
     { label: "Usuários", icon: <Users className="h-full w-full" />, onClick: () => setActiveTab("users") },
     { label: "Sessions", icon: <Globe className="h-full w-full" />, onClick: () => setActiveTab("sessions") },
     { label: "Bot", icon: <HardDrive className="h-full w-full" />, onClick: () => setActiveTab("bot") },
@@ -3656,8 +3655,6 @@ const Admin = () => {
     switch (activeTab) {
       case "dashboard":
         return <DashboardSection />;
-      case "orders":
-        return <OrdersSection />;
       case "users":
         return <UsersSection />;
       case "sessions":

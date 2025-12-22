@@ -1,4 +1,5 @@
 export { SessionsSection } from './SessionsSection';
+export { SessionOrdersSection } from './SessionOrdersSection';
 export { SessionStatsCards } from './SessionStatsCards';
 export { SessionFilesList } from './SessionFilesList';
 export { SessionCombosSection } from './SessionCombosSection';

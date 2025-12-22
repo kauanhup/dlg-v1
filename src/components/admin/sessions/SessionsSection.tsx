@@ -13,6 +13,7 @@ import {
   Plus,
   Globe,
   TrendingUp,
+  ShoppingCart,
 } from "lucide-react";
 
 // Sub-components
@@ -24,6 +25,7 @@ import { SessionTypeSelectorModal } from "./SessionTypeSelectorModal";
 import { SessionUploadModal } from "./SessionUploadModal";
 import { SessionCustomQuantitySection } from "./SessionCustomQuantitySection";
 import { SessionCostSection } from "./SessionCostSection";
+import { SessionOrdersSection } from "./SessionOrdersSection";
 
 const fadeIn = {
   initial: { opacity: 0, y: 12 },
@@ -51,6 +53,9 @@ export const SessionsSection = () => {
     stats,
     refetch
   } = useAdminSessions();
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"estoque" | "pedidos">("estoque");
   
   // Modal states
   const [showTypeSelector, setShowTypeSelector] = useState(false);
@@ -276,129 +281,165 @@ export const SessionsSection = () => {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Sessions</h1>
-          <p className="text-sm text-muted-foreground">Gerenciar estoque de sessions importadas (.session)</p>
-        </div>
-        <div className="flex gap-2">
-          <input
-            type="file"
-            accept=".session"
-            multiple
-            onChange={handleFileSelect}
-            className="hidden"
-            id="session-upload"
-          />
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={handleRefresh} 
-            disabled={isRefreshing || isLoading}
-          >
-            <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
-            Atualizar
-          </Button>
-          <Button size="sm" disabled={isUploading} onClick={() => setShowTypeSelector(true)}>
-            <Plus className="w-4 h-4 mr-2" /> Importar Sessions
-          </Button>
+          <p className="text-sm text-muted-foreground">Gerenciar estoque e pedidos de sessions</p>
         </div>
       </div>
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <Spinner size="lg" />
-          <span className="ml-3 text-muted-foreground">Carregando dados...</span>
-        </div>
-      )}
+      {/* Tab Navigation */}
+      <div className="flex gap-1 bg-muted/50 p-1 rounded-lg w-fit">
+        <button
+          onClick={() => setActiveTab("estoque")}
+          className={cn(
+            "px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2",
+            activeTab === "estoque" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Package className="w-4 h-4" />
+          Estoque
+        </button>
+        <button
+          onClick={() => setActiveTab("pedidos")}
+          className={cn(
+            "px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2",
+            activeTab === "pedidos" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <ShoppingCart className="w-4 h-4" />
+          Pedidos
+        </button>
+      </div>
 
-      {/* Modals */}
-      <SessionTypeSelectorModal 
-        isOpen={showTypeSelector}
-        onClose={() => setShowTypeSelector(false)}
-        onSelect={handleSelectType}
-      />
-      
-      <SessionUploadModal
-        isOpen={showUploadModal}
-        uploadType={uploadType}
-        selectedFiles={selectedFiles}
-        isUploading={isUploading}
-        uploadResult={uploadResult}
-        onConfirm={handleConfirmUpload}
-        onCancel={handleCancelUpload}
-      />
-
-      {/* Content - only show when not loading */}
-      {!isLoading && (
+      {/* Estoque Tab */}
+      {activeTab === "estoque" && (
         <>
-          {/* Stats Cards */}
-          <SessionStatsCards 
-            stats={stats} 
-            totalFiles={sessionFiles.length} 
-          />
-
-          {/* Session Files List */}
-          <SessionFilesList 
-            files={sessionFiles}
-            onDelete={handleDeleteFile}
-          />
-
-          {/* Cost Section */}
-          <SessionCostSection
-            costBrasileiras={costBrasileiras}
-            costEstrangeiras={costEstrangeiras}
-            onCostBrasileirasChange={setCostBrasileiras}
-            onCostEstrangeirasChange={setCostEstrangeiras}
-          />
-
-          {/* Custom Quantity Section */}
-          <SessionCustomQuantitySection
-            customQtyBrEnabled={customQtyBrEnabled}
-            customQtyBrMin={customQtyBrMin}
-            customQtyBrPrice={customQtyBrPrice}
-            customQtyEstEnabled={customQtyEstEnabled}
-            customQtyEstMin={customQtyEstMin}
-            customQtyEstPrice={customQtyEstPrice}
-            onCustomQtyBrEnabledChange={setCustomQtyBrEnabled}
-            onCustomQtyBrMinChange={setCustomQtyBrMin}
-            onCustomQtyBrPriceChange={setCustomQtyBrPrice}
-            onCustomQtyEstEnabledChange={setCustomQtyEstEnabled}
-            onCustomQtyEstMinChange={setCustomQtyEstMin}
-            onCustomQtyEstPriceChange={setCustomQtyEstPrice}
-          />
-
-          {/* Combos Brasileiras */}
-          <SessionCombosSection
-            title="Combos Sessions Brasileiras"
-            icon={Package}
-            combos={brasileirasCombos}
-            comboEdits={comboEdits}
-            onComboEdit={handleComboEdit}
-            onAddCombo={() => handleAddCombo('brasileiras')}
-            onDeleteCombo={handleDeleteCombo}
-          />
-
-          {/* Combos Estrangeiras */}
-          <SessionCombosSection
-            title="Combos Sessions Estrangeiras"
-            icon={Globe}
-            combos={estrangeirasCombos}
-            comboEdits={comboEdits}
-            onComboEdit={handleComboEdit}
-            onAddCombo={() => handleAddCombo('estrangeiras')}
-            onDeleteCombo={handleDeleteCombo}
-          />
-
-          {/* Save Button */}
-          <div className="flex justify-end">
-            <Button onClick={handleSaveAll} disabled={isSaving}>
-              {isSaving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-              {isSaving ? "Salvando..." : "Salvar Configurações"}
+          {/* Actions */}
+          <div className="flex justify-end gap-2">
+            <input
+              type="file"
+              accept=".session"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+              id="session-upload"
+            />
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={handleRefresh} 
+              disabled={isRefreshing || isLoading}
+            >
+              <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
+              Atualizar
+            </Button>
+            <Button size="sm" disabled={isUploading} onClick={() => setShowTypeSelector(true)}>
+              <Plus className="w-4 h-4 mr-2" /> Importar Sessions
             </Button>
           </div>
 
-          {/* Sales History */}
-          <SessionSalesHistory sales={groupedSales} />
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-12">
+              <Spinner size="lg" />
+              <span className="ml-3 text-muted-foreground">Carregando dados...</span>
+            </div>
+          )}
+
+          {/* Modals */}
+          <SessionTypeSelectorModal 
+            isOpen={showTypeSelector}
+            onClose={() => setShowTypeSelector(false)}
+            onSelect={handleSelectType}
+          />
+          
+          <SessionUploadModal
+            isOpen={showUploadModal}
+            uploadType={uploadType}
+            selectedFiles={selectedFiles}
+            isUploading={isUploading}
+            uploadResult={uploadResult}
+            onConfirm={handleConfirmUpload}
+            onCancel={handleCancelUpload}
+          />
+
+          {/* Content - only show when not loading */}
+          {!isLoading && (
+            <>
+              {/* Stats Cards */}
+              <SessionStatsCards 
+                stats={stats} 
+                totalFiles={sessionFiles.length} 
+              />
+
+              {/* Session Files List */}
+              <SessionFilesList 
+                files={sessionFiles}
+                onDelete={handleDeleteFile}
+              />
+
+              {/* Cost Section */}
+              <SessionCostSection
+                costBrasileiras={costBrasileiras}
+                costEstrangeiras={costEstrangeiras}
+                onCostBrasileirasChange={setCostBrasileiras}
+                onCostEstrangeirasChange={setCostEstrangeiras}
+              />
+
+              {/* Custom Quantity Section */}
+              <SessionCustomQuantitySection
+                customQtyBrEnabled={customQtyBrEnabled}
+                customQtyBrMin={customQtyBrMin}
+                customQtyBrPrice={customQtyBrPrice}
+                customQtyEstEnabled={customQtyEstEnabled}
+                customQtyEstMin={customQtyEstMin}
+                customQtyEstPrice={customQtyEstPrice}
+                onCustomQtyBrEnabledChange={setCustomQtyBrEnabled}
+                onCustomQtyBrMinChange={setCustomQtyBrMin}
+                onCustomQtyBrPriceChange={setCustomQtyBrPrice}
+                onCustomQtyEstEnabledChange={setCustomQtyEstEnabled}
+                onCustomQtyEstMinChange={setCustomQtyEstMin}
+                onCustomQtyEstPriceChange={setCustomQtyEstPrice}
+              />
+
+              {/* Combos Brasileiras */}
+              <SessionCombosSection
+                title="Combos Sessions Brasileiras"
+                icon={Package}
+                combos={brasileirasCombos}
+                comboEdits={comboEdits}
+                onComboEdit={handleComboEdit}
+                onAddCombo={() => handleAddCombo('brasileiras')}
+                onDeleteCombo={handleDeleteCombo}
+              />
+
+              {/* Combos Estrangeiras */}
+              <SessionCombosSection
+                title="Combos Sessions Estrangeiras"
+                icon={Globe}
+                combos={estrangeirasCombos}
+                comboEdits={comboEdits}
+                onComboEdit={handleComboEdit}
+                onAddCombo={() => handleAddCombo('estrangeiras')}
+                onDeleteCombo={handleDeleteCombo}
+              />
+
+              {/* Save Button */}
+              <div className="flex justify-end">
+                <Button onClick={handleSaveAll} disabled={isSaving}>
+                  {isSaving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                  {isSaving ? "Salvando..." : "Salvar Configurações"}
+                </Button>
+              </div>
+
+              {/* Sales History */}
+              <SessionSalesHistory sales={groupedSales} />
+            </>
+          )}
         </>
+      )}
+
+      {/* Pedidos Tab */}
+      {activeTab === "pedidos" && (
+        <SessionOrdersSection />
       )}
     </motion.div>
   );
