@@ -288,12 +288,40 @@ export const useAdminSubscriptions = () => {
 
   const updateSubscription = async (subId: string, data: Partial<UserSubscription>) => {
     try {
+      // First, get the subscription to find the user_id and plan_id
+      const subscription = subscriptions.find(s => s.id === subId);
+      
       const { error } = await supabase
         .from('user_subscriptions')
         .update(data)
         .eq('id', subId);
 
       if (error) throw error;
+
+      // CRITICAL FIX: Also update the licenses table to keep them in sync
+      // This ensures the user's dashboard reflects the correct subscription status
+      if (subscription && data.status) {
+        const plan = plans.find(p => p.id === subscription.plan_id);
+        
+        if (plan) {
+          // Update the license status for this user and plan
+          const { error: licenseError } = await supabase
+            .from('licenses')
+            .update({ 
+              status: data.status,
+              // If cancelling, also clear the end_date to reflect cancellation
+              ...(data.status === 'cancelled' ? { end_date: new Date().toISOString() } : {})
+            })
+            .eq('user_id', subscription.user_id)
+            .eq('plan_name', plan.name)
+            .eq('status', 'active');
+
+          if (licenseError) {
+            console.error('Error updating license (non-blocking):', licenseError);
+            // Continue anyway - subscription was updated successfully
+          }
+        }
+      }
 
       setSubscriptions(prev => prev.map(sub => 
         sub.id === subId ? { ...sub, ...data } : sub
@@ -311,7 +339,7 @@ export const useAdminSubscriptions = () => {
       // Check if plan still exists
       const { data: planData, error: planError } = await supabase
         .from('subscription_plans')
-        .select('id, period')
+        .select('id, period, name')
         .eq('id', planId)
         .maybeSingle();
 
@@ -319,6 +347,12 @@ export const useAdminSubscriptions = () => {
       
       if (!planData) {
         return { success: false, error: 'O plano desta assinatura não existe mais' };
+      }
+
+      // Get the subscription to find user_id
+      const subscription = subscriptions.find(s => s.id === subId);
+      if (!subscription) {
+        return { success: false, error: 'Assinatura não encontrada' };
       }
 
       // Calculate next billing date based on plan period
@@ -334,6 +368,38 @@ export const useAdminSubscriptions = () => {
         .eq('id', subId);
 
       if (error) throw error;
+
+      // CRITICAL FIX: Also update/create the license to keep in sync
+      // First try to update existing license
+      const { data: existingLicense } = await supabase
+        .from('licenses')
+        .select('id')
+        .eq('user_id', subscription.user_id)
+        .eq('plan_name', planData.name)
+        .maybeSingle();
+
+      if (existingLicense) {
+        // Update existing license
+        await supabase
+          .from('licenses')
+          .update({ 
+            status: 'active',
+            end_date: nextBillingDate.toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingLicense.id);
+      } else {
+        // Create new license if doesn't exist
+        await supabase
+          .from('licenses')
+          .insert({
+            user_id: subscription.user_id,
+            plan_name: planData.name,
+            status: 'active',
+            start_date: new Date().toISOString(),
+            end_date: nextBillingDate.toISOString()
+          });
+      }
 
       setSubscriptions(prev => prev.map(sub => 
         sub.id === subId ? { ...sub, status: 'active', next_billing_date: nextBillingDate.toISOString() } : sub
