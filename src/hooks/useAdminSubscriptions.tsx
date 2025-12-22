@@ -42,6 +42,7 @@ export interface Payment {
   paid_at: string | null;
   created_at: string;
   user_name?: string;
+  user_email?: string;
   plan_name?: string;
   product_type?: string;
 }
@@ -157,6 +158,7 @@ export const useAdminSubscriptions = () => {
           ...payment,
           orders: undefined, // Remove the nested orders object
           user_name: profile?.name || 'Usuário desconhecido',
+          user_email: profile?.email || '',
           plan_name: planName,
           product_type: productType,
         };
