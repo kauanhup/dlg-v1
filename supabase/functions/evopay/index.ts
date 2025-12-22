@@ -331,15 +331,21 @@ async function createPixCharge(supabase: any, params: { amount: number; external
       );
     }
 
-    // Store PIX code (qrCodeText) in payments table for display when user returns
-    // Also store transaction_id separately for webhook matching
-    await supabase
+    // Store PIX code and transaction ID in payments table for webhook matching
+    const { error: updateError } = await supabase
       .from('payments')
       .update({ 
         pix_code: data.qrCodeText, // Store actual PIX code for QR display
-        payment_method: 'evopay_pix'
+        payment_method: 'evopay_pix',
+        evopay_transaction_id: data.id // Store EvoPay transaction ID for webhook matching
       })
       .eq('order_id', external_id);
+    
+    if (updateError) {
+      console.error('Error updating payment with EvoPay data:', updateError);
+    } else {
+      console.log('Payment updated with evopay_transaction_id:', data.id);
+    }
 
     return new Response(
       JSON.stringify({
