@@ -370,6 +370,7 @@ const SubscriptionsTabContent = () => {
   // Search states
   const [subscriberSearch, setSubscriberSearch] = useState("");
   const [paymentSearch, setPaymentSearch] = useState("");
+  const [planSearch, setPlanSearch] = useState("");
 
   // Loading states
   const [isRenewing, setIsRenewing] = useState(false);
@@ -399,9 +400,16 @@ const SubscriptionsTabContent = () => {
     const searchLower = paymentSearch.toLowerCase();
     return (
       payment.user_name?.toLowerCase().includes(searchLower) ||
+      payment.user_email?.toLowerCase().includes(searchLower) ||
       payment.plan_name?.toLowerCase().includes(searchLower) ||
       payment.id.toLowerCase().includes(searchLower)
     );
+  });
+
+  const filteredPlans = dbPlans.filter(plan => {
+    if (!planSearch.trim()) return true;
+    const searchLower = planSearch.toLowerCase();
+    return plan.name?.toLowerCase().includes(searchLower);
   });
 
   // Handler for toggling plan active status with feedback
@@ -827,14 +835,26 @@ const SubscriptionsTabContent = () => {
       {activeSubTab === "plans" && (
         <div className="space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h3 className="text-lg font-semibold text-foreground">Planos de Assinatura</h3>
-              <p className="text-sm text-muted-foreground">{dbPlans.length} plano(s) cadastrado(s)</p>
+              <p className="text-sm text-muted-foreground">{filteredPlans.length} de {dbPlans.length} plano(s)</p>
             </div>
-            <Button onClick={handleCreatePlan}>
-              <Plus className="w-4 h-4 mr-2" /> Criar Plano
-            </Button>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 sm:flex-none">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Buscar plano..."
+                  value={planSearch}
+                  onChange={(e) => setPlanSearch(e.target.value)}
+                  className="w-full sm:w-[200px] pl-9 pr-4 py-2 text-sm bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                />
+              </div>
+              <Button onClick={handleCreatePlan}>
+                <Plus className="w-4 h-4 mr-2" /> Criar Plano
+              </Button>
+            </div>
           </div>
           
           {/* Empty State */}
@@ -861,9 +881,9 @@ const SubscriptionsTabContent = () => {
           )}
 
           {/* Plans Grid */}
-          {dbPlans.length > 0 && (
+          {filteredPlans.length > 0 && (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {dbPlans.map((plan) => (
+              {filteredPlans.map((plan) => (
                 <div key={plan.id} className={cn(
                   "bg-card border border-border rounded-xl overflow-hidden transition-all hover:shadow-lg hover:border-primary/30",
                   togglingPlanId === plan.id && "opacity-50",
