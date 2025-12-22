@@ -378,8 +378,8 @@ const SubscriptionsTabContent = () => {
   const [togglingPlanId, setTogglingPlanId] = useState<string | null>(null);
   const [isDeletingPlan, setIsDeletingPlan] = useState(false);
 
-  // Filter payments to only show subscription payments (has subscription_id)
-  const subscriptionPayments = dbPayments.filter(p => p.subscription_id !== null);
+  // Filter payments to only show subscription payments (product_type === 'subscription')
+  const subscriptionPayments = dbPayments.filter(p => p.product_type === 'subscription');
 
   // Filtered lists based on search
   const filteredSubscriptions = subscriptions.filter(sub => {
