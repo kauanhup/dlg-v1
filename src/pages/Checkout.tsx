@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { Check, CreditCard, ArrowLeft, Copy, CheckCircle2, Loader2, Clock, Crown, Sparkles, ShieldCheck, Wallet, ExternalLink } from "lucide-react";
+import { Check, CreditCard, ArrowLeft, Copy, CheckCircle2, Loader2, Clock, Crown, Sparkles, ShieldCheck, Wallet, ExternalLink, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { MorphingSquare } from "@/components/ui/morphing-square";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { useUpgradeCredit } from "@/hooks/useUpgradeCredit";
 import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,9 @@ const Checkout = () => {
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   // FIX #6: Track active channel to prevent duplicates
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  
+  // Upgrade credit system - get credit from current active subscription
+  const { activeSubscription, calculateFinalPrice, isLoading: creditLoading } = useUpgradeCredit(user?.id);
 
   // Force dark theme
   useEffect(() => {
@@ -167,8 +171,11 @@ const Checkout = () => {
     fetchPlan();
   }, [planId, navigate, toast]);
 
-  // Get effective price for plan
-  const planPrice = plan ? (plan.promotional_price ?? plan.price) : 0;
+  // Get effective price for plan - with upgrade credit applied
+  const basePlanPrice = plan ? (plan.promotional_price ?? plan.price) : 0;
+  const isUpgrade = isPlanPurchase && activeSubscription && activeSubscription.credit_value > 0 && activeSubscription.plan_id !== plan?.id;
+  const planPrice = isUpgrade ? calculateFinalPrice(basePlanPrice) : basePlanPrice;
+  const upgradeCredit = isUpgrade ? activeSubscription.credit_value : 0;
   const isFreeProduct = (isSessionPurchase && sessionInfo?.price === 0) || (isPlanPurchase && planPrice === 0);
 
   // Countdown timer logic

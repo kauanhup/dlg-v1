@@ -1,10 +1,11 @@
-import { Check, Sparkles, Crown, Shield, Clock, Zap, CreditCard, Loader2 } from "lucide-react";
+import { Check, Sparkles, Crown, Shield, Clock, Zap, CreditCard, Loader2, Gift, ArrowUpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Header, Footer } from "@/components/landing";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useUpgradeCredit } from "@/hooks/useUpgradeCredit";
 
 interface Plan {
   id: string;
@@ -52,9 +53,22 @@ const formatPeriod = (days: number): string => {
 const Buy = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<string | undefined>(undefined);
+  
+  // Get upgrade credit info
+  const { activeSubscription, calculateFinalPrice, isLoading: creditLoading } = useUpgradeCredit(userId);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, []);
+
+  // Get user ID for credit calculation
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUserId(session?.user?.id);
+    };
+    getUser();
   }, []);
 
   useEffect(() => {
@@ -106,6 +120,30 @@ const Buy = () => {
             </p>
           </motion.div>
 
+          {/* Upgrade Credit Banner */}
+          {activeSubscription && activeSubscription.credit_value > 0 && (
+            <motion.div 
+              className="max-w-2xl mx-auto mb-8 p-4 rounded-xl bg-success/10 border border-success/30"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
+                  <Gift className="w-5 h-5 text-success" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-success">Crédito de Upgrade Disponível!</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Você tem <span className="font-bold text-success">R$ {activeSubscription.credit_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> de crédito 
+                    ({activeSubscription.days_remaining} dias restantes do plano {activeSubscription.plan_name})
+                  </p>
+                </div>
+                <ArrowUpCircle className="w-6 h-6 text-success" />
+              </div>
+            </motion.div>
+          )}
+
           {/* Loading State */}
           {isLoading ? (
             <div className="flex justify-center items-center py-20">
@@ -133,6 +171,12 @@ const Buy = () => {
                 const { isPopular, isLifetime } = getCardStyle(plan, index);
                 const displayPrice = plan.promotional_price ?? plan.price;
                 
+                // Calculate upgrade price with credit
+                const hasCredit = activeSubscription && activeSubscription.credit_value > 0;
+                const isCurrentPlan = activeSubscription?.plan_id === plan.id;
+                const finalPrice = hasCredit && !isCurrentPlan ? calculateFinalPrice(displayPrice) : displayPrice;
+                const showUpgradeDiscount = hasCredit && !isCurrentPlan && finalPrice < displayPrice;
+                
                 return (
                   <motion.div
                     key={plan.id}
@@ -142,14 +186,24 @@ const Buy = () => {
                       transition: { duration: 0.2 }
                     }}
                     className={`relative p-5 sm:p-6 rounded-2xl transition-shadow overflow-visible ${
-                      isPopular 
-                        ? "border-2 border-primary bg-primary/5 shadow-lg shadow-primary/10 mt-4" 
-                        : isLifetime 
-                          ? "border-2 border-warning/50 bg-warning/5 mt-4" 
-                          : "border border-border bg-card hover:shadow-lg hover:shadow-primary/5"
+                      isCurrentPlan
+                        ? "border-2 border-muted opacity-60"
+                        : isPopular 
+                          ? "border-2 border-primary bg-primary/5 shadow-lg shadow-primary/10 mt-4" 
+                          : isLifetime 
+                            ? "border-2 border-warning/50 bg-warning/5 mt-4" 
+                            : "border border-border bg-card hover:shadow-lg hover:shadow-primary/5"
                     }`}
                   >
-                    {isPopular && (
+                    {isCurrentPlan && (
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground shadow-md whitespace-nowrap">
+                          Plano Atual
+                        </span>
+                      </div>
+                    )}
+                    
+                    {!isCurrentPlan && isPopular && (
                       <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
                         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary text-primary-foreground shadow-md whitespace-nowrap">
                           <Sparkles className="w-3 h-3" />
@@ -158,7 +212,7 @@ const Buy = () => {
                       </div>
                     )}
                     
-                    {isLifetime && (
+                    {!isCurrentPlan && isLifetime && (
                       <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
                         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-warning text-warning-foreground shadow-md whitespace-nowrap">
                           <Crown className="w-3 h-3" />
@@ -172,16 +226,40 @@ const Buy = () => {
                       <p className="text-xs text-muted-foreground mb-3">
                         {isLifetime ? "Licença permanente" : `Acesso por ${plan.period} dias`}
                       </p>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-sm text-muted-foreground">R$</span>
-                        <span className="text-3xl font-display font-bold">
-                          {displayPrice.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                      {plan.promotional_price && (
-                        <p className="text-xs text-muted-foreground line-through mt-1">
-                          R$ {plan.price.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                        </p>
+                      
+                      {/* Price display with upgrade credit */}
+                      {showUpgradeDiscount ? (
+                        <>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-sm text-muted-foreground line-through">
+                              R$ {displayPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-sm text-success">R$</span>
+                            <span className="text-3xl font-display font-bold text-success">
+                              {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <p className="text-xs text-success mt-1 flex items-center gap-1">
+                            <Gift className="w-3 h-3" />
+                            Crédito aplicado: -R$ {activeSubscription!.credit_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-sm text-muted-foreground">R$</span>
+                            <span className="text-3xl font-display font-bold">
+                              {displayPrice.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          {plan.promotional_price && (
+                            <p className="text-xs text-muted-foreground line-through mt-1">
+                              R$ {plan.price.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                            </p>
+                          )}
+                        </>
                       )}
                       <p className="text-xs text-muted-foreground mt-1">{formatPeriod(plan.period)}</p>
                     </div>
@@ -201,20 +279,36 @@ const Buy = () => {
                       </ul>
                     )}
 
-                    <Link to={`/checkout?plano=${plan.id}`} className="w-full">
+                    {isCurrentPlan ? (
                       <Button 
-                        className={`w-full h-11 ${
-                          isPopular 
-                            ? 'bg-primary hover:bg-primary/90' 
-                            : isLifetime 
-                              ? 'bg-warning hover:bg-warning/90 text-warning-foreground' 
-                              : ''
-                        }`}
-                        variant={isPopular || isLifetime ? "default" : "outline"}
+                        className="w-full h-11"
+                        variant="outline"
+                        disabled
                       >
-                        {(plan.promotional_price ?? plan.price) === 0 ? 'Testar Agora' : 'Comprar agora'}
+                        Plano Atual
                       </Button>
-                    </Link>
+                    ) : (
+                      <Link to={`/checkout?plano=${plan.id}`} className="w-full">
+                        <Button 
+                          className={`w-full h-11 ${
+                            showUpgradeDiscount
+                              ? 'bg-success hover:bg-success/90 text-success-foreground'
+                              : isPopular 
+                                ? 'bg-primary hover:bg-primary/90' 
+                                : isLifetime 
+                                  ? 'bg-warning hover:bg-warning/90 text-warning-foreground' 
+                                  : ''
+                          }`}
+                          variant={showUpgradeDiscount || isPopular || isLifetime ? "default" : "outline"}
+                        >
+                          {showUpgradeDiscount 
+                            ? 'Fazer Upgrade' 
+                            : (plan.promotional_price ?? plan.price) === 0 
+                              ? 'Testar Agora' 
+                              : 'Comprar agora'}
+                        </Button>
+                      </Link>
+                    )}
                   </motion.div>
                 );
               })}
