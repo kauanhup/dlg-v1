@@ -49,7 +49,6 @@ import {
   CreditCard,
   Settings,
   HelpCircle,
-  Copy,
   Shield,
   Zap,
   MessageCircle,
@@ -842,7 +841,6 @@ const Dashboard = () => {
     };
     
     return {
-      key: `SWEX-${license.id.slice(0, 4).toUpperCase()}-${license.id.slice(4, 8).toUpperCase()}-${license.id.slice(8, 12).toUpperCase()}`,
       plan: license.plan_name,
       expiresAt: formatDate(endDate),
       daysLeft,
@@ -1152,15 +1150,6 @@ const Dashboard = () => {
                       </div>
                     </div>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-8 gap-1.5 hover:scale-[1.02] active:scale-[0.98] transition-transform"
-                    onClick={() => navigator.clipboard.writeText(userLicense.key)}
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline text-xs">Copiar</span>
-                  </Button>
                 </div>
 
                 {/* License Details Grid */}
@@ -1168,11 +1157,10 @@ const Dashboard = () => {
                   variants={staggerContainer}
                   initial="initial"
                   animate="animate"
-                  className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-3"
                 >
                   {[
-                    { label: "Chave", value: userLicense.key, mono: true },
-                    { label: "Ativada em", value: userLicense.activatedAt },
+                    { label: "Ativado em", value: userLicense.activatedAt },
                     { label: "Expira em", value: userLicense.expiresAt }
                   ].map((item, i) => (
                     <motion.div 
@@ -1181,7 +1169,7 @@ const Dashboard = () => {
                       className="bg-muted/50 rounded-md p-3 hover:bg-muted/70 transition-colors duration-200"
                     >
                       <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
-                      <p className={cn("text-sm text-foreground truncate", item.mono && "font-mono")}>{item.value}</p>
+                      <p className="text-sm text-foreground">{item.value}</p>
                     </motion.div>
                   ))}
                 </motion.div>
@@ -1323,7 +1311,7 @@ const Dashboard = () => {
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-foreground">Baixar Bot</h3>
-                    <p className="text-xs text-muted-foreground">DLGConnect.exe - Insira sua chave de licença</p>
+                    <p className="text-xs text-muted-foreground">DLGConnect.exe - Acesso via plano ativo</p>
                   </div>
                 </div>
                 <DownloadBotButton />
