@@ -87,18 +87,23 @@ export const useAdminSubscriptions = () => {
 
       if (paymentsError) throw paymentsError;
 
-      // Fetch user profiles
+      // Fetch user profiles - only if there are user IDs to fetch
       const userIds = [...new Set([
         ...(subsData?.map(s => s.user_id) || []),
         ...(paymentsData?.map(p => p.user_id) || [])
-      ])];
+      ])].filter(Boolean);
       
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, name, email')
-        .in('user_id', userIds);
+      let profiles: { user_id: string; name: string; email: string }[] = [];
+      
+      if (userIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, name, email')
+          .in('user_id', userIds);
 
-      if (profilesError) throw profilesError;
+        if (profilesError) throw profilesError;
+        profiles = profilesData || [];
+      }
 
       // Count subscribers per plan
       const subscriberCounts: Record<string, number> = {};
@@ -129,15 +134,24 @@ export const useAdminSubscriptions = () => {
 
       setSubscriptions(subsWithInfo);
 
-      // Merge payments with user info
+      // Merge payments with user info - try to find plan from order or subscription
       const paymentsWithInfo: Payment[] = (paymentsData || []).map(payment => {
         const profile = profiles?.find(p => p.user_id === payment.user_id);
-        const sub = subsData?.find(s => s.id === payment.subscription_id);
-        const plan = sub ? plansData?.find(p => p.id === sub.plan_id) : null;
+        
+        // Try to get plan from subscription first
+        let planName = '—';
+        if (payment.subscription_id) {
+          const sub = subsData?.find(s => s.id === payment.subscription_id);
+          if (sub) {
+            const plan = plansData?.find(p => p.id === sub.plan_id);
+            planName = plan?.name || 'Plano não encontrado';
+          }
+        }
+        
         return {
           ...payment,
           user_name: profile?.name || 'Usuário desconhecido',
-          plan_name: plan?.name || '—',
+          plan_name: planName,
         };
       });
 
@@ -347,13 +361,29 @@ export const useAdminSubscriptions = () => {
     fetchData();
   }, []);
 
+  // Calculate MRR by normalizing all prices to monthly (30 days)
+  const calculateMRR = () => {
+    const activeWithPlans = subscriptions.filter(s => s.status === 'active');
+    let totalMRR = 0;
+    
+    activeWithPlans.forEach(sub => {
+      const plan = plans.find(p => p.id === sub.plan_id);
+      if (plan && plan.period > 0) {
+        // Normalize to monthly: (price / period) * 30
+        const monthlyValue = ((plan.promotional_price ?? plan.price) / plan.period) * 30;
+        totalMRR += monthlyValue;
+      }
+      // Lifetime plans (period = 0) don't contribute to MRR
+    });
+    
+    return totalMRR;
+  };
+
   const stats = {
     activeSubscribers: subscriptions.filter(s => s.status === 'active').length,
     cancelledSubscribers: subscriptions.filter(s => s.status === 'cancelled').length,
     overdueSubscribers: subscriptions.filter(s => s.status === 'overdue').length,
-    mrr: subscriptions
-      .filter(s => s.status === 'active')
-      .reduce((sum, s) => sum + (s.plan_price || 0), 0),
+    mrr: calculateMRR(),
     churnRate: subscriptions.length > 0 
       ? (subscriptions.filter(s => s.status === 'cancelled').length / subscriptions.length * 100).toFixed(1)
       : '0',

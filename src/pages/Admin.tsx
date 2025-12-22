@@ -373,6 +373,7 @@ const SubscriptionsTabContent = () => {
   const [isRefunding, setIsRefunding] = useState(false);
   const [isSavingPlan, setIsSavingPlan] = useState(false);
   const [togglingPlanId, setTogglingPlanId] = useState<string | null>(null);
+  const [isDeletingPlan, setIsDeletingPlan] = useState(false);
 
   // Handler for toggling plan active status with feedback
   const handleTogglePlanStatus = async (plan: any) => {
@@ -909,26 +910,39 @@ const SubscriptionsTabContent = () => {
                   variant="outline" 
                   className="flex-1"
                   onClick={() => setShowDeletePlanModal(false)}
+                  disabled={isDeletingPlan}
                 >
                   Cancelar
                 </Button>
                 <Button 
                   variant="destructive" 
                   className="flex-1"
+                  disabled={isDeletingPlan}
                   onClick={async () => {
+                    setIsDeletingPlan(true);
                     const result = await deletePlan(planToDelete.id);
                     if (result.success) {
                       toast.success('Plano excluído');
                     } else {
                       toast.error(result.error || 'Erro ao excluir plano');
                     }
+                    setIsDeletingPlan(false);
                     setShowDeletePlanModal(false);
                     setPlanToDelete(null);
                     refetch();
                   }}
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Excluir Plano
+                  {isDeletingPlan ? (
+                    <>
+                      <Spinner size="sm" className="mr-2" />
+                      Excluindo...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Excluir Plano
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
