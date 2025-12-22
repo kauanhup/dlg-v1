@@ -71,9 +71,7 @@ import {
   ChevronDown,
   ImageIcon,
   FileText,
-  Activity,
-  Link2,
-  Link2Off
+  Activity
 } from "lucide-react";
 
 
@@ -769,7 +767,6 @@ const SubscriptionsTabContent = () => {
                     <tr className="border-b border-border bg-muted/30">
                       <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
                       <th className="text-left text-xs font-medium text-muted-foreground p-4">Plano</th>
-                      <th className="text-left text-xs font-medium text-muted-foreground p-4">Sincr.</th>
                       <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
                       <th className="text-left text-xs font-medium text-muted-foreground p-4">Início</th>
                       <th className="text-left text-xs font-medium text-muted-foreground p-4">Próx. Cobrança</th>
@@ -787,21 +784,6 @@ const SubscriptionsTabContent = () => {
                           </div>
                         </td>
                         <td className="p-4 text-sm text-foreground">{sub.plan_name}</td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-1.5" title={sub.is_synced ? 'Licença sincronizada' : `Dessincronizado: Assinatura=${sub.status}, Licença=${sub.license_status || 'não existe'}`}>
-                            {sub.is_synced ? (
-                              <Link2 className="w-4 h-4 text-success" />
-                            ) : (
-                              <Link2Off className="w-4 h-4 text-destructive" />
-                            )}
-                            <span className={cn(
-                              "text-[10px] px-1.5 py-0.5 rounded",
-                              sub.is_synced ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
-                            )}>
-                              {sub.is_synced ? "Sync" : "Desync"}
-                            </span>
-                          </div>
-                        </td>
                         <td className="p-4">
                           <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[sub.status] || statusStyles.pending)}>
                             {statusLabels[sub.status] || sub.status}
