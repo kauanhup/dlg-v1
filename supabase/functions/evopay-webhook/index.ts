@@ -216,17 +216,32 @@ serve(async (req) => {
       }
     }
 
-    // Strategy 3: Try transaction ID as order_id directly
+    // Strategy 3: Match by evopay_transaction_id (THE CORRECT WAY)
     if (!finalPayment && transactionId) {
       const { data: paymentByTransactionId } = await supabase
         .from('payments')
-        .select('id, order_id, status, amount, pix_code')
-        .eq('order_id', transactionId)
+        .select('id, order_id, status, amount, pix_code, evopay_transaction_id')
+        .eq('evopay_transaction_id', transactionId)
         .maybeSingle();
       
       if (paymentByTransactionId) {
         finalPayment = paymentByTransactionId;
         orderId = paymentByTransactionId.order_id;
+        console.log('Found payment by evopay_transaction_id:', transactionId, '-> order:', orderId);
+      }
+    }
+
+    // Strategy 4: Try transaction ID as order_id directly (fallback)
+    if (!finalPayment && transactionId) {
+      const { data: paymentByTransactionAsOrderId } = await supabase
+        .from('payments')
+        .select('id, order_id, status, amount, pix_code')
+        .eq('order_id', transactionId)
+        .maybeSingle();
+      
+      if (paymentByTransactionAsOrderId) {
+        finalPayment = paymentByTransactionAsOrderId;
+        orderId = paymentByTransactionAsOrderId.order_id;
         console.log('Found payment by transaction ID as order_id:', orderId);
       }
     }

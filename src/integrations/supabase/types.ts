@@ -332,6 +332,7 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          evopay_transaction_id: string | null
           id: string
           order_id: string | null
           paid_at: string | null
@@ -345,6 +346,7 @@ export type Database = {
         Insert: {
           amount: number
           created_at?: string
+          evopay_transaction_id?: string | null
           id?: string
           order_id?: string | null
           paid_at?: string | null
@@ -358,6 +360,7 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string
+          evopay_transaction_id?: string | null
           id?: string
           order_id?: string | null
           paid_at?: string | null
