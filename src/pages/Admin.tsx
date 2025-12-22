@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useAdminSessions } from "@/hooks/useAdminSessions";
 import { SessionsSection } from "@/components/admin/sessions";
+import { AdminDashboardSection } from "@/components/admin/dashboard";
 import { useAdminOrders } from "@/hooks/useAdminOrders";
 import { useAdminSubscriptions } from "@/hooks/useAdminSubscriptions";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
@@ -69,7 +70,8 @@ import {
   Wallet,
   ChevronDown,
   ImageIcon,
-  FileText
+  FileText,
+  Activity
 } from "lucide-react";
 
 
@@ -3547,7 +3549,7 @@ const BotManagementSection = () => {
 // Main Admin Component
 const Admin = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("overview");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState<number>(1);
   const { settings, setMaintenanceMode, setAllowRegistration } = useSystemSettings();
@@ -3614,9 +3616,10 @@ const Admin = () => {
     initials: (user?.user_metadata?.name || "AD").slice(0, 2).toUpperCase(),
   };
 
-  const sidebarTabs = ["dashboard", "users", "sessions", "bot", "api"];
+  const sidebarTabs = ["overview", "dashboard", "users", "sessions", "bot", "api"];
 
   const profileNavItems = [
+    { label: "Dashboard", icon: <Activity className="h-full w-full" />, onClick: () => setActiveTab("overview") },
     { label: "Planos", icon: <LayoutDashboard className="h-full w-full" />, onClick: () => setActiveTab("dashboard") },
     { label: "Usuários", icon: <Users className="h-full w-full" />, onClick: () => setActiveTab("users") },
     { label: "Sessions", icon: <Globe className="h-full w-full" />, onClick: () => setActiveTab("sessions") },
@@ -3653,6 +3656,8 @@ const Admin = () => {
 
   const renderContent = () => {
     switch (activeTab) {
+      case "overview":
+        return <AdminDashboardSection />;
       case "dashboard":
         return <DashboardSection />;
       case "users":
@@ -3664,7 +3669,7 @@ const Admin = () => {
       case "api":
         return <ApiSection />;
       default:
-        return <DashboardSection />;
+        return <AdminDashboardSection />;
     }
   };
 
