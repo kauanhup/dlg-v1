@@ -56,7 +56,7 @@ export const SessionsSection = () => {
   } = useAdminSessions();
   
   // Tab state
-  const [activeTab, setActiveTab] = useState<"estoque" | "pedidos">("estoque");
+  const [activeTab, setActiveTab] = useState<"estoque" | "configuracoes" | "combos" | "pedidos">("estoque");
   
   // Modal states
   const [showTypeSelector, setShowTypeSelector] = useState(false);
@@ -287,7 +287,7 @@ export const SessionsSection = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-1 bg-muted/50 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 bg-muted/50 p-1 rounded-lg w-fit flex-wrap">
         <button
           onClick={() => setActiveTab("estoque")}
           className={cn(
@@ -295,8 +295,28 @@ export const SessionsSection = () => {
             activeTab === "estoque" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
           )}
         >
-          <Package className="w-4 h-4" />
+          <Layers className="w-4 h-4" />
           Estoque
+        </button>
+        <button
+          onClick={() => setActiveTab("configuracoes")}
+          className={cn(
+            "px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2",
+            activeTab === "configuracoes" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Settings className="w-4 h-4" />
+          Configurações
+        </button>
+        <button
+          onClick={() => setActiveTab("combos")}
+          className={cn(
+            "px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2",
+            activeTab === "combos" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Package className="w-4 h-4" />
+          Combos
         </button>
         <button
           onClick={() => setActiveTab("pedidos")}
@@ -365,34 +385,39 @@ export const SessionsSection = () => {
           {/* Content - only show when not loading */}
           {!isLoading && (
             <>
-              {/* ===== SEÇÃO 1: ESTOQUE ===== */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 border-b border-border pb-2">
-                  <Layers className="w-4 h-4 text-primary" />
-                  <h2 className="text-base font-semibold text-foreground">Estoque</h2>
-                </div>
-                
-                {/* Stats Cards */}
-                <SessionStatsCards 
-                  stats={stats} 
-                  totalFiles={sessionFiles.length} 
-                />
+              {/* Stats Cards */}
+              <SessionStatsCards 
+                stats={stats} 
+                totalFiles={sessionFiles.length} 
+              />
 
-                {/* Session Files List */}
-                <SessionFilesList 
-                  files={sessionFiles}
-                  onDelete={handleDeleteFile}
-                />
-              </div>
+              {/* Session Files List */}
+              <SessionFilesList 
+                files={sessionFiles}
+                onDelete={handleDeleteFile}
+              />
+            </>
+          )}
+        </>
+      )}
 
-              {/* ===== SEÇÃO 2: CONFIGURAÇÕES DE SESSIONS ===== */}
+      {/* Configurações Tab */}
+      {activeTab === "configuracoes" && (
+        <>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Spinner size="lg" />
+              <span className="ml-3 text-muted-foreground">Carregando dados...</span>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Configurações de Quantidade Customizada */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b border-border pb-2">
                   <Settings className="w-4 h-4 text-primary" />
-                  <h2 className="text-base font-semibold text-foreground">Configurações de Sessions</h2>
+                  <h2 className="text-base font-semibold text-foreground">Quantidade Personalizada</h2>
                 </div>
 
-                {/* Custom Quantity Section */}
                 <SessionCustomQuantitySection
                   customQtyBrEnabled={customQtyBrEnabled}
                   customQtyBrMin={customQtyBrMin}
@@ -409,49 +434,18 @@ export const SessionsSection = () => {
                 />
               </div>
 
-              {/* ===== SEÇÃO 3: CUSTOS ===== */}
+              {/* Custos */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b border-border pb-2">
                   <DollarSign className="w-4 h-4 text-primary" />
-                  <h2 className="text-base font-semibold text-foreground">Custos</h2>
+                  <h2 className="text-base font-semibold text-foreground">Custos por Session</h2>
                 </div>
 
-                {/* Cost Section */}
                 <SessionCostSection
                   costBrasileiras={costBrasileiras}
                   costEstrangeiras={costEstrangeiras}
                   onCostBrasileirasChange={setCostBrasileiras}
                   onCostEstrangeirasChange={setCostEstrangeiras}
-                />
-              </div>
-
-              {/* ===== SEÇÃO 4: COMBOS ===== */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 border-b border-border pb-2">
-                  <Package className="w-4 h-4 text-primary" />
-                  <h2 className="text-base font-semibold text-foreground">Combos de Sessions</h2>
-                </div>
-
-                {/* Combos Brasileiras */}
-                <SessionCombosSection
-                  title="🇧🇷 Brasileiras"
-                  icon={Package}
-                  combos={brasileirasCombos}
-                  comboEdits={comboEdits}
-                  onComboEdit={handleComboEdit}
-                  onAddCombo={() => handleAddCombo('brasileiras')}
-                  onDeleteCombo={handleDeleteCombo}
-                />
-
-                {/* Combos Estrangeiras */}
-                <SessionCombosSection
-                  title="🌍 Estrangeiras"
-                  icon={Globe}
-                  combos={estrangeirasCombos}
-                  comboEdits={comboEdits}
-                  onComboEdit={handleComboEdit}
-                  onAddCombo={() => handleAddCombo('estrangeiras')}
-                  onDeleteCombo={handleDeleteCombo}
                 />
               </div>
 
@@ -462,7 +456,51 @@ export const SessionsSection = () => {
                   {isSaving ? "Salvando..." : "Salvar Configurações"}
                 </Button>
               </div>
-            </>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Combos Tab */}
+      {activeTab === "combos" && (
+        <>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Spinner size="lg" />
+              <span className="ml-3 text-muted-foreground">Carregando dados...</span>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Combos Brasileiras */}
+              <SessionCombosSection
+                title="🇧🇷 Combos Brasileiras"
+                icon={Package}
+                combos={brasileirasCombos}
+                comboEdits={comboEdits}
+                onComboEdit={handleComboEdit}
+                onAddCombo={() => handleAddCombo('brasileiras')}
+                onDeleteCombo={handleDeleteCombo}
+              />
+
+              {/* Combos Estrangeiras */}
+              <SessionCombosSection
+                title="🌍 Combos Estrangeiras"
+                icon={Globe}
+                combos={estrangeirasCombos}
+                comboEdits={comboEdits}
+                onComboEdit={handleComboEdit}
+                onAddCombo={() => handleAddCombo('estrangeiras')}
+                onDeleteCombo={handleDeleteCombo}
+              />
+
+              {/* Save Button */}
+              <div className="flex justify-end pt-4 border-t border-border">
+                <Button onClick={handleSaveAll} disabled={isSaving}>
+                  {isSaving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                  {isSaving ? "Salvando..." : "Salvar Combos"}
+                </Button>
+              </div>
+            </div>
           )}
         </>
       )}
