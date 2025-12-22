@@ -14,6 +14,8 @@ import {
   Globe,
   TrendingUp,
   ShoppingCart,
+  Settings,
+  Layers,
 } from "lucide-react";
 
 // Sub-components
@@ -363,11 +365,11 @@ export const SessionsSection = () => {
           {/* Content - only show when not loading */}
           {!isLoading && (
             <>
-              {/* ===== SEÇÃO 1: VISÃO GERAL ===== */}
+              {/* ===== SEÇÃO 1: ESTOQUE ===== */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b border-border pb-2">
-                  <TrendingUp className="w-4 h-4 text-primary" />
-                  <h2 className="text-base font-semibold text-foreground">Visão Geral</h2>
+                  <Layers className="w-4 h-4 text-primary" />
+                  <h2 className="text-base font-semibold text-foreground">Estoque</h2>
                 </div>
                 
                 {/* Stats Cards */}
@@ -383,20 +385,12 @@ export const SessionsSection = () => {
                 />
               </div>
 
-              {/* ===== SEÇÃO 2: PREÇOS E CONFIGURAÇÕES ===== */}
+              {/* ===== SEÇÃO 2: CONFIGURAÇÕES DE SESSIONS ===== */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b border-border pb-2">
-                  <DollarSign className="w-4 h-4 text-primary" />
-                  <h2 className="text-base font-semibold text-foreground">Preços e Configurações</h2>
+                  <Settings className="w-4 h-4 text-primary" />
+                  <h2 className="text-base font-semibold text-foreground">Configurações de Sessions</h2>
                 </div>
-
-                {/* Cost Section */}
-                <SessionCostSection
-                  costBrasileiras={costBrasileiras}
-                  costEstrangeiras={costEstrangeiras}
-                  onCostBrasileirasChange={setCostBrasileiras}
-                  onCostEstrangeirasChange={setCostEstrangeiras}
-                />
 
                 {/* Custom Quantity Section */}
                 <SessionCustomQuantitySection
@@ -415,7 +409,23 @@ export const SessionsSection = () => {
                 />
               </div>
 
-              {/* ===== SEÇÃO 3: COMBOS ===== */}
+              {/* ===== SEÇÃO 3: CUSTOS ===== */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-border pb-2">
+                  <DollarSign className="w-4 h-4 text-primary" />
+                  <h2 className="text-base font-semibold text-foreground">Custos</h2>
+                </div>
+
+                {/* Cost Section */}
+                <SessionCostSection
+                  costBrasileiras={costBrasileiras}
+                  costEstrangeiras={costEstrangeiras}
+                  onCostBrasileirasChange={setCostBrasileiras}
+                  onCostEstrangeirasChange={setCostEstrangeiras}
+                />
+              </div>
+
+              {/* ===== SEÇÃO 4: COMBOS ===== */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b border-border pb-2">
                   <Package className="w-4 h-4 text-primary" />
