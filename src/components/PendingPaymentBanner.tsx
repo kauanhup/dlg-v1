@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 // Routes where the banner should NOT appear
-const EXCLUDED_ROUTES = ['/', '/login', '/comprar', '/recuperar-senha', '/politica-privacidade', '/checkout'];
+const EXCLUDED_ROUTES = ['/', '/login', '/comprar', '/recuperar-senha', '/politica-privacidade', '/checkout', '/admin'];
 
 const PIX_EXPIRATION_MINUTES = 15;
 
