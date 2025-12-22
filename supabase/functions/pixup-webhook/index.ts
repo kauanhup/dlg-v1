@@ -230,88 +230,19 @@ Deno.serve(async (req) => {
       console.log('No amount in webhook - skipping amount validation')
     }
 
-    // Map PixUp status to our internal status
-    let orderStatus = 'pending'
-    let paymentStatus = 'pending'
-
+    // Map PixUp status to determine action
     const statusLower = (status || '').toLowerCase()
     console.log('Processing status:', statusLower)
 
-    switch (statusLower) {
-      case 'paid':
-      case 'confirmed':
-      case 'approved':
-      case 'completed':
-      case 'success':
-      case 'pago':
-      case 'aprovado':
-        orderStatus = 'paid'
-        paymentStatus = 'paid'
-        break
-      case 'expired':
-      case 'cancelled':
-      case 'canceled':
-      case 'expirado':
-      case 'cancelado':
-        orderStatus = 'cancelled'
-        paymentStatus = 'cancelled'
-        break
-      case 'refunded':
-      case 'reembolsado':
-        orderStatus = 'refunded'
-        paymentStatus = 'refunded'
-        break
-      case 'pending':
-      case 'waiting':
-      case 'pendente':
-      case 'aguardando':
-      default:
-        orderStatus = 'pending'
-        paymentStatus = 'pending'
-        break
-    }
+    const isPaid = ['paid', 'confirmed', 'approved', 'completed', 'success', 'pago', 'aprovado'].includes(statusLower)
+    const isCancelled = ['expired', 'cancelled', 'canceled', 'expirado', 'cancelado'].includes(statusLower)
+    const isRefunded = ['refunded', 'reembolsado'].includes(statusLower)
 
-    console.log(`Updating order ${externalId} to status: ${orderStatus}`)
-
-    // Update order status
-    const { error: orderError } = await supabase
-      .from('orders')
-      .update({ 
-        status: orderStatus,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', externalId)
-
-    if (orderError) {
-      console.error('Error updating order:', orderError)
-      return new Response(
-        JSON.stringify({ success: false, error: 'Failed to update order' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      )
-    }
-
-    console.log('Order status updated successfully')
-
-    // Update payment status
-    const { error: paymentError } = await supabase
-      .from('payments')
-      .update({ 
-        status: paymentStatus,
-        paid_at: paymentStatus === 'paid' ? (paidAt || new Date().toISOString()) : null
-      })
-      .eq('order_id', externalId)
-
-    if (paymentError) {
-      console.error('Error updating payment:', paymentError)
-    } else {
-      console.log('Payment status updated successfully')
-    }
-
-    // If payment is confirmed, trigger order completion
-    if (paymentStatus === 'paid') {
+    // If payment is confirmed, go straight to order completion (which handles status properly)
+    if (isPaid) {
       console.log('Payment confirmed - triggering order completion...')
       
-      // Call the atomic order completion function
+      // Call the atomic order completion function - this will set order to 'completed'
       const { data: result, error: completeError } = await supabase.rpc('complete_order_atomic', {
         _order_id: existingOrder.id,
         _user_id: existingOrder.user_id,
@@ -321,15 +252,56 @@ Deno.serve(async (req) => {
 
       if (completeError) {
         console.error('Error completing order:', completeError)
-      } else {
-        console.log('Order completed successfully:', JSON.stringify(result))
+        return new Response(
+          JSON.stringify({ success: false, error: 'Failed to complete order: ' + completeError.message }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        )
       }
+      
+      console.log('Order completed successfully:', JSON.stringify(result))
+      console.log(`=== PIXUP WEBHOOK END - Order ${externalId} completed ===`)
+      
+      return new Response(
+        JSON.stringify({ success: true, status: 'completed', result }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    console.log(`=== PIXUP WEBHOOK END - Order ${externalId} updated to ${orderStatus} ===`)
+    // Handle cancelled/refunded status
+    if (isCancelled || isRefunded) {
+      const newStatus = isRefunded ? 'refunded' : 'cancelled'
+      
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', externalId)
+
+      if (orderError) {
+        console.error('Error updating order:', orderError)
+      }
+
+      const { error: paymentError } = await supabase
+        .from('payments')
+        .update({ status: newStatus })
+        .eq('order_id', externalId)
+
+      if (paymentError) {
+        console.error('Error updating payment:', paymentError)
+      }
+
+      console.log(`=== PIXUP WEBHOOK END - Order ${externalId} updated to ${newStatus} ===`)
+      
+      return new Response(
+        JSON.stringify({ success: true, status: newStatus }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // For pending or unknown status, just acknowledge
+    console.log(`=== PIXUP WEBHOOK END - Order ${externalId} status pending ===`)
 
     return new Response(
-      JSON.stringify({ success: true, status: orderStatus }),
+      JSON.stringify({ success: true, status: 'pending' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
