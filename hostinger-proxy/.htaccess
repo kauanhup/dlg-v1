@@ -1,0 +1,9 @@
+# Redireciona apenas requisições POST para o webhook handler
+# Requisições normais (GET) continuam funcionando para o site
+
+RewriteEngine On
+
+# Se for POST na raiz, redireciona para o webhook
+RewriteCond %{REQUEST_METHOD} POST
+RewriteCond %{REQUEST_URI} ^/$
+RewriteRule ^$ /api/webhook-pixup.php [L]
