@@ -52,7 +52,6 @@ import {
   Shield,
   Zap,
   MessageCircle,
-  Sparkles,
   Lock,
   History,
   Moon,
@@ -746,8 +745,6 @@ const Dashboard = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState<number>(1);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState(1);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -783,12 +780,6 @@ const Dashboard = () => {
       setIsChangingPassword(false);
     }
   };
-
-  const upgradePlans = [
-    { name: "Plano 60 Dias", price: "R$ 49,90", discount: "Economize 15%" },
-    { name: "Plano 90 Dias", price: "R$ 69,90", discount: "Economize 25%", popular: true },
-    { name: "Plano Anual", price: "R$ 199,90", discount: "Economize 40%" },
-  ];
 
   // Apply theme to document
   useEffect(() => {
@@ -1054,7 +1045,7 @@ const Dashboard = () => {
         <header className="hidden lg:flex items-center justify-between h-14 px-6 border-b border-border bg-card sticky top-0 z-40">
           <nav className="flex items-center gap-1 relative">
               {[
-                { label: "Licenças", tab: "licencas", icon: Key },
+                { label: "Plano", tab: "licencas", icon: Key },
                 { label: "Sessions", tab: "numeros", icon: Globe },
                 { label: "Loja", tab: "comprar", icon: CreditCard },
               ].map((item) => (
@@ -1092,8 +1083,8 @@ const Dashboard = () => {
           <motion.div {...fadeIn} className="space-y-6">
             {/* Header */}
             <div>
-              <h1 className="text-lg font-semibold text-foreground">Minhas Licenças</h1>
-              <p className="text-sm text-muted-foreground">Gerencie suas licenças ativas</p>
+              <h1 className="text-lg font-semibold text-foreground">Meu Plano</h1>
+              <p className="text-sm text-muted-foreground">Gerencie seu plano ativo</p>
             </div>
 
             {/* No License State */}
@@ -1107,8 +1098,8 @@ const Dashboard = () => {
                   <Key className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground">Nenhuma licença ativa</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Adquira uma licença para começar a usar o sistema</p>
+                  <h3 className="text-sm font-semibold text-foreground">Nenhum plano ativo</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Adquira um plano para começar a usar o sistema</p>
                 </div>
                 <Button size="sm" onClick={() => navigate("/comprar")}>
                   <CreditCard className="w-4 h-4 mr-2" />
@@ -1232,67 +1223,6 @@ const Dashboard = () => {
                       <span>Renovar ({userLicense.daysLeft} dias restantes)</span>
                     </Button>
                   )}
-
-                  <AlertDialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-9 text-xs sm:text-sm">
-                        <Sparkles className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-                        <span>Upgrade</span>
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-card border-border">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Fazer Upgrade</AlertDialogTitle>
-                        <AlertDialogDescription className="space-y-3">
-                          <p>Escolha um plano superior para obter mais benefícios.</p>
-                          <div className="space-y-2">
-                            {upgradePlans.map((plan, i) => (
-                              <div 
-                                key={i}
-                                onClick={() => setSelectedUpgradePlan(i)}
-                                className={cn(
-                                  "rounded-md p-3 border cursor-pointer transition-colors",
-                                  selectedUpgradePlan === i 
-                                    ? "bg-primary/10 border-primary/30" 
-                                    : "bg-muted/50 border-border hover:border-primary/50"
-                                )}
-                              >
-                                <div className="flex justify-between items-center">
-                                  <div className="flex items-center gap-2">
-                                    <div className={cn(
-                                      "w-4 h-4 rounded-full border-2 flex items-center justify-center",
-                                      selectedUpgradePlan === i ? "border-primary" : "border-muted-foreground"
-                                    )}>
-                                      {selectedUpgradePlan === i && <div className="w-2 h-2 rounded-full bg-primary" />}
-                                    </div>
-                                    <div>
-                                      <div className="flex items-center gap-2">
-                                        <p className="text-sm font-medium text-foreground">{plan.name}</p>
-                                        {plan.popular && (
-                                          <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-medium">POPULAR</span>
-                                        )}
-                                      </div>
-                                      <p className="text-xs text-muted-foreground">{plan.discount}</p>
-                                    </div>
-                                  </div>
-                                  <span className="text-primary font-semibold">{plan.price}</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => {
-                          const plan = upgradePlans[selectedUpgradePlan];
-                          navigate('/checkout', { state: { type: 'Upgrade', plan: plan.name, price: plan.price } });
-                        }}>
-                          Continuar para pagamento
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
                 </div>
               </motion.div>
             )}
