@@ -1004,7 +1004,7 @@ const Dashboard = () => {
           <nav className="flex-1 flex justify-center absolute left-1/2 -translate-x-1/2">
             <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md relative">
               {[
-                { label: "Licenças", tab: "licencas", icon: Key },
+                { label: "Plano", tab: "licencas", icon: Key },
                 { label: "Sessions", tab: "numeros", icon: Globe },
                 { label: "Loja", tab: "comprar", icon: CreditCard },
               ].map((item) => (
