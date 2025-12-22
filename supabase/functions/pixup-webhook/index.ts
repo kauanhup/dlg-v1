@@ -168,14 +168,16 @@ Deno.serve(async (req) => {
       console.log('No signature header - processing webhook without verification')
     }
 
-    // PixUp webhook payload structure - support multiple field name formats
-    const transactionId = payload.transactionId || payload.transaction_id || payload.id
-    const externalId = payload.externalId || payload.external_id || payload.orderId || payload.order_id
-    const status = payload.status
-    const amount = payload.amount || payload.value || payload.paidAmount || payload.paid_amount
-    const paidAt = payload.paidAt || payload.paid_at || payload.confirmedAt || payload.confirmed_at
-    const payerDocument = payload.payerDocument || payload.payer_document || payload.cpf
-    const payerName = payload.payerName || payload.payer_name || payload.name
+    // PixUp webhook payload structure - data can be inside 'requestBody' wrapper
+    const data = payload.requestBody || payload;
+    
+    const transactionId = data.transactionId || data.transaction_id || data.id
+    const externalId = data.externalId || data.external_id || data.orderId || data.order_id
+    const status = data.status
+    const amount = data.amount || data.value || data.paidAmount || data.paid_amount
+    const paidAt = data.paidAt || data.paid_at || data.dateApproval || data.confirmedAt || data.confirmed_at
+    const payerDocument = data.creditParty?.taxId || data.payerDocument || data.payer_document || data.cpf
+    const payerName = data.creditParty?.name || data.payerName || data.payer_name || data.name
 
     console.log('Parsed webhook data:', { transactionId, externalId, status, amount, paidAt })
 
