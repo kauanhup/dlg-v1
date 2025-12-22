@@ -1189,19 +1189,37 @@ const Dashboard = () => {
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                  {userLicense.daysLeft <= 1 ? (
+                  {/* Upgrade Button - always visible for active licenses */}
+                  {userLicense.status === 'active' && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="h-9 text-xs sm:text-sm"
+                      onClick={() => navigate('/comprar')}
+                    >
+                      <Zap className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                      <span>Fazer Upgrade</span>
+                    </Button>
+                  )}
+                  
+                  {/* Renew Button - show when license is expiring, expired or cancelled */}
+                  {(userLicense.daysLeft <= 7 || userLicense.status !== 'active') ? (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button size="sm" className="h-9 text-xs sm:text-sm">
-                          <Zap className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-                          <span>Renovar Licença</span>
+                          <CreditCard className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                          <span>
+                            {userLicense.status === 'active' 
+                              ? `Renovar (${userLicense.daysLeft} dias)` 
+                              : 'Renovar Plano'}
+                          </span>
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent className="bg-card border-border">
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Renovar Licença</AlertDialogTitle>
+                          <AlertDialogTitle>Renovar Plano</AlertDialogTitle>
                           <AlertDialogDescription className="space-y-3">
-                            <p>Renove sua licença para continuar usando todos os recursos.</p>
+                            <p>Renove seu plano para continuar usando todos os recursos.</p>
                             <div className="bg-muted/50 rounded-md p-3 space-y-2">
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Plano atual</span>
@@ -1223,12 +1241,7 @@ const Dashboard = () => {
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
-                  ) : (
-                    <Button size="sm" className="h-9 text-xs sm:text-sm opacity-50 cursor-not-allowed" disabled>
-                      <Zap className="w-4 h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-                      <span>Renovar ({userLicense.daysLeft} dias restantes)</span>
-                    </Button>
-                  )}
+                  ) : null}
                 </div>
               </motion.div>
             )}
