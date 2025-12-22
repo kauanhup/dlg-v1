@@ -362,18 +362,45 @@ const SubscriptionsTabContent = () => {
 
   // Payment modals state
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
-  const [showEditStatusModal, setShowEditStatusModal] = useState(false);
-  const [showRefundModal, setShowRefundModal] = useState(false);
-  const [newPaymentStatus, setNewPaymentStatus] = useState("");
+  const [showCancelPaymentModal, setShowCancelPaymentModal] = useState(false);
+  const [showConfirmPaymentModal, setShowConfirmPaymentModal] = useState(false);
+
+  // Search states
+  const [subscriberSearch, setSubscriberSearch] = useState("");
+  const [paymentSearch, setPaymentSearch] = useState("");
 
   // Loading states
   const [isRenewing, setIsRenewing] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
-  const [isSavingStatus, setIsSavingStatus] = useState(false);
-  const [isRefunding, setIsRefunding] = useState(false);
+  const [isCancellingPayment, setIsCancellingPayment] = useState(false);
+  const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
   const [isSavingPlan, setIsSavingPlan] = useState(false);
   const [togglingPlanId, setTogglingPlanId] = useState<string | null>(null);
   const [isDeletingPlan, setIsDeletingPlan] = useState(false);
+
+  // Filter payments to only show subscription payments (has subscription_id)
+  const subscriptionPayments = dbPayments.filter(p => p.subscription_id !== null);
+
+  // Filtered lists based on search
+  const filteredSubscriptions = subscriptions.filter(sub => {
+    if (!subscriberSearch.trim()) return true;
+    const searchLower = subscriberSearch.toLowerCase();
+    return (
+      sub.user_name?.toLowerCase().includes(searchLower) ||
+      sub.user_email?.toLowerCase().includes(searchLower) ||
+      sub.plan_name?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  const filteredPayments = subscriptionPayments.filter(payment => {
+    if (!paymentSearch.trim()) return true;
+    const searchLower = paymentSearch.toLowerCase();
+    return (
+      payment.user_name?.toLowerCase().includes(searchLower) ||
+      payment.plan_name?.toLowerCase().includes(searchLower) ||
+      payment.id.toLowerCase().includes(searchLower)
+    );
+  });
 
   // Handler for toggling plan active status with feedback
   const handleTogglePlanStatus = async (plan: any) => {
@@ -529,37 +556,36 @@ const SubscriptionsTabContent = () => {
   };
 
   // Payment action handlers
-  const handleEditPaymentStatus = (payment: any) => {
+  const handleCancelPaymentClick = (payment: any) => {
     setSelectedPayment(payment);
-    setNewPaymentStatus(payment.status);
-    setShowEditStatusModal(true);
+    setShowCancelPaymentModal(true);
   };
 
-  const handleRefundClick = (payment: any) => {
+  const handleConfirmPaymentClick = (payment: any) => {
     setSelectedPayment(payment);
-    setShowRefundModal(true);
+    setShowConfirmPaymentModal(true);
   };
 
-  const handleConfirmStatusChange = async () => {
-    if (selectedPayment && newPaymentStatus) {
-      setIsSavingStatus(true);
-      await updatePayment(selectedPayment.id, { status: newPaymentStatus });
-      toast.success('Status atualizado');
-      setIsSavingStatus(false);
+  const handleConfirmCancelPayment = async () => {
+    if (selectedPayment) {
+      setIsCancellingPayment(true);
+      await updatePayment(selectedPayment.id, { status: 'cancelled' });
+      toast.success('Pagamento cancelado');
+      setIsCancellingPayment(false);
     }
-    setShowEditStatusModal(false);
+    setShowCancelPaymentModal(false);
     setSelectedPayment(null);
     refetch();
   };
 
-  const handleConfirmRefund = async () => {
+  const handleConfirmPaymentConfirmation = async () => {
     if (selectedPayment) {
-      setIsRefunding(true);
-      await updatePayment(selectedPayment.id, { status: 'refunded' });
-      toast.success('Pagamento reembolsado');
-      setIsRefunding(false);
+      setIsConfirmingPayment(true);
+      await updatePayment(selectedPayment.id, { status: 'paid', paid_at: new Date().toISOString() });
+      toast.success('Pagamento confirmado');
+      setIsConfirmingPayment(false);
     }
-    setShowRefundModal(false);
+    setShowConfirmPaymentModal(false);
     setSelectedPayment(null);
     refetch();
   };
@@ -667,56 +693,73 @@ const SubscriptionsTabContent = () => {
 
       {/* Subscribers Tab */}
       {activeSubTab === "subscribers" && (
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Spinner />
-            </div>
-          ) : subscriptions.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-6 h-6 text-muted-foreground" />
+        <div className="space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Buscar por nome, email ou plano..."
+              value={subscriberSearch}
+              onChange={(e) => setSubscriberSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Spinner />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum assinante</h3>
-              <p className="text-sm text-muted-foreground">Quando usuários assinarem planos, eles aparecerão aqui.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Plano</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Início</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Próx. Cobrança</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subscriptions.map((sub) => (
-                    <tr key={sub.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
-                      <td className="p-4">
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{sub.user_name}</p>
-                          <p className="text-xs text-muted-foreground">{sub.user_email}</p>
-                        </div>
-                      </td>
-                      <td className="p-4 text-sm text-foreground">{sub.plan_name}</td>
-                      <td className="p-4">
-                        <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[sub.status] || statusStyles.pending)}>
-                          {statusLabels[sub.status] || sub.status}
-                        </span>
-                      </td>
-                      <td className="p-4 text-sm text-muted-foreground">{formatDate(sub.start_date)}</td>
-                      <td className="p-4 text-sm text-muted-foreground">{formatDate(sub.next_billing_date)}</td>
-                      <td className="p-4 text-sm font-medium text-foreground">{formatPrice(sub.plan_price || 0)}</td>
-                      <td className="p-4">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="w-4 h-4" />
+            ) : filteredSubscriptions.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {subscriberSearch ? "Nenhum resultado encontrado" : "Nenhum assinante"}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {subscriberSearch ? "Tente buscar por outro termo." : "Quando usuários assinarem planos, eles aparecerão aqui."}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
+                      <th className="text-left text-xs font-medium text-muted-foreground p-4">Plano</th>
+                      <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
+                      <th className="text-left text-xs font-medium text-muted-foreground p-4">Início</th>
+                      <th className="text-left text-xs font-medium text-muted-foreground p-4">Próx. Cobrança</th>
+                      <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
+                      <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredSubscriptions.map((sub) => (
+                      <tr key={sub.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
+                        <td className="p-4">
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{sub.user_name}</p>
+                            <p className="text-xs text-muted-foreground">{sub.user_email}</p>
+                          </div>
+                        </td>
+                        <td className="p-4 text-sm text-foreground">{sub.plan_name}</td>
+                        <td className="p-4">
+                          <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[sub.status] || statusStyles.pending)}>
+                            {statusLabels[sub.status] || sub.status}
+                          </span>
+                        </td>
+                        <td className="p-4 text-sm text-muted-foreground">{formatDate(sub.start_date)}</td>
+                        <td className="p-4 text-sm text-muted-foreground">{formatDate(sub.next_billing_date)}</td>
+                        <td className="p-4 text-sm font-medium text-foreground">{formatPrice(sub.plan_price || 0)}</td>
+                        <td className="p-4">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-card border border-border">
@@ -740,7 +783,8 @@ const SubscriptionsTabContent = () => {
             </div>
           )}
         </div>
-      )}
+      </div>
+    )}
 
       {/* Plans Tab */}
       {activeSubTab === "plans" && (
@@ -952,83 +996,99 @@ const SubscriptionsTabContent = () => {
 
       {/* Payments Tab */}
       {activeSubTab === "payments" && (
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Spinner />
-            </div>
-          ) : dbPayments.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <CreditCard className="w-6 h-6 text-muted-foreground" />
+        <div className="space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Buscar por ID, usuário ou plano..."
+              value={paymentSearch}
+              onChange={(e) => setPaymentSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Spinner />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum pagamento</h3>
-              <p className="text-sm text-muted-foreground">Pagamentos de assinaturas aparecerão aqui.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">ID</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Plano</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Método</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Data</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dbPayments.map((payment) => (
-                    <tr key={payment.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
-                      <td className="p-4 text-sm font-mono text-foreground">#{payment.id.slice(0, 8)}</td>
-                      <td className="p-4 text-sm text-foreground">{payment.user_name}</td>
-                      <td className="p-4 text-sm text-muted-foreground">{payment.plan_name}</td>
-                      <td className="p-4 text-sm font-medium text-foreground">{formatPrice(payment.amount)}</td>
-                      <td className="p-4 text-sm text-muted-foreground uppercase">{payment.payment_method}</td>
-                      <td className="p-4">
-                        <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[payment.status] || statusStyles.pending)}>
-                          {statusLabels[payment.status] || payment.status}
-                        </span>
-                      </td>
-                      <td className="p-4 text-sm text-muted-foreground">{formatDate(payment.created_at)}</td>
-                      <td className="p-4">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-card border border-border">
-                            <DropdownMenuItem className="cursor-pointer" onClick={() => handleEditPaymentStatus(payment)}>
-                              <Edit className="w-4 h-4 mr-2" /> Editar Status
-                            </DropdownMenuItem>
-                            {payment.status !== "refunded" && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={() => handleRefundClick(payment)}>
-                                  <RefreshCw className="w-4 h-4 mr-2" /> Reembolsar
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
+            ) : filteredPayments.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CreditCard className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {paymentSearch ? "Nenhum resultado encontrado" : "Nenhum pagamento"}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {paymentSearch ? "Tente buscar por outro termo." : "Pagamentos de assinaturas aparecerão aqui."}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="text-left text-xs font-medium text-muted-foreground p-4">ID</th>
+                      <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
+                      <th className="text-left text-xs font-medium text-muted-foreground p-4">Plano</th>
+                      <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
+                      <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
+                      <th className="text-left text-xs font-medium text-muted-foreground p-4">Data</th>
+                      <th className="text-left text-xs font-medium text-muted-foreground p-4">Ações</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {filteredPayments.map((payment) => (
+                      <tr key={payment.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
+                        <td className="p-4 text-sm font-mono text-foreground">#{payment.id.slice(0, 8)}</td>
+                        <td className="p-4 text-sm text-foreground">{payment.user_name}</td>
+                        <td className="p-4 text-sm text-muted-foreground">{payment.plan_name}</td>
+                        <td className="p-4 text-sm font-medium text-foreground">{formatPrice(payment.amount)}</td>
+                        <td className="p-4">
+                          <span className={cn("text-xs px-2 py-1 rounded-md", statusStyles[payment.status] || statusStyles.pending)}>
+                            {statusLabels[payment.status] || payment.status}
+                          </span>
+                        </td>
+                        <td className="p-4 text-sm text-muted-foreground">{formatDate(payment.created_at)}</td>
+                        <td className="p-4">
+                          {payment.status === "pending" ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="bg-card border border-border">
+                                <DropdownMenuItem className="cursor-pointer text-success focus:text-success" onClick={() => handleConfirmPaymentClick(payment)}>
+                                  <CheckCircle className="w-4 h-4 mr-2" /> Confirmar Pagamento
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={() => handleCancelPaymentClick(payment)}>
+                                  <XCircle className="w-4 h-4 mr-2" /> Cancelar
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Edit Payment Status Modal */}
-      {showEditStatusModal && selectedPayment && (
+      {/* Cancel Payment Modal */}
+      {showCancelPaymentModal && selectedPayment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowEditStatusModal(false)} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowCancelPaymentModal(false)} />
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -1036,48 +1096,39 @@ const SubscriptionsTabContent = () => {
             className="relative bg-card border border-border rounded-lg p-6 w-full max-w-sm"
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-foreground">Editar Status</h2>
-              <button onClick={() => setShowEditStatusModal(false)} className="text-muted-foreground hover:text-foreground">
+              <h2 className="text-lg font-semibold text-foreground">Cancelar Pagamento</h2>
+              <button onClick={() => setShowCancelPaymentModal(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-4">
-              <div className="text-sm text-muted-foreground">
-                <p>Pagamento: <strong className="text-foreground">#{selectedPayment.id.slice(0, 8)}</strong></p>
-                <p>Usuário: {selectedPayment.user_name}</p>
-                <p>Valor: {formatPrice(selectedPayment.amount)}</p>
+              <div className="flex items-center gap-3 p-3 bg-destructive/10 rounded-lg">
+                <XCircle className="w-5 h-5 text-destructive" />
+                <p className="text-sm text-foreground">Cancelar pagamento <strong>#{selectedPayment.id.slice(0, 8)}</strong>?</p>
               </div>
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Novo Status</label>
-                <select
-                  value={newPaymentStatus}
-                  onChange={(e) => setNewPaymentStatus(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                >
-                  <option value="paid">Pago</option>
-                  <option value="pending">Pendente</option>
-                  <option value="failed">Falhou</option>
-                  <option value="refunded">Reembolsado</option>
-                </select>
+              <div className="text-sm text-muted-foreground">
+                <p>Usuário: {selectedPayment.user_name}</p>
+                <p>Plano: {selectedPayment.plan_name}</p>
+                <p>Valor: {formatPrice(selectedPayment.amount)}</p>
               </div>
             </div>
             <div className="flex gap-3 pt-6">
-              <Button variant="outline" onClick={() => setShowEditStatusModal(false)} className="flex-1" disabled={isSavingStatus}>
-                Cancelar
+              <Button variant="outline" onClick={() => setShowCancelPaymentModal(false)} className="flex-1" disabled={isCancellingPayment}>
+                Voltar
               </Button>
-              <Button onClick={handleConfirmStatusChange} className="flex-1" disabled={isSavingStatus}>
-                {isSavingStatus ? <Spinner size="sm" className="mr-2" /> : null}
-                {isSavingStatus ? "Salvando..." : "Salvar"}
+              <Button variant="destructive" onClick={handleConfirmCancelPayment} className="flex-1" disabled={isCancellingPayment}>
+                {isCancellingPayment ? <Spinner size="sm" className="mr-2" /> : null}
+                {isCancellingPayment ? "Cancelando..." : "Cancelar Pagamento"}
               </Button>
             </div>
           </motion.div>
         </div>
       )}
 
-      {/* Refund Confirmation Modal */}
-      {showRefundModal && selectedPayment && (
+      {/* Confirm Payment Modal */}
+      {showConfirmPaymentModal && selectedPayment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowRefundModal(false)} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowConfirmPaymentModal(false)} />
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -1085,32 +1136,32 @@ const SubscriptionsTabContent = () => {
             className="relative bg-card border border-border rounded-lg p-6 w-full max-w-sm"
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-foreground">Confirmar Reembolso</h2>
-              <button onClick={() => setShowRefundModal(false)} className="text-muted-foreground hover:text-foreground">
+              <h2 className="text-lg font-semibold text-foreground">Confirmar Pagamento</h2>
+              <button onClick={() => setShowConfirmPaymentModal(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-warning/10 rounded-lg">
-                <RefreshCw className="w-5 h-5 text-warning" />
-                <p className="text-sm text-foreground">Reembolsar pagamento <strong>{selectedPayment.id}</strong>?</p>
+              <div className="flex items-center gap-3 p-3 bg-success/10 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-success" />
+                <p className="text-sm text-foreground">Confirmar pagamento <strong>#{selectedPayment.id.slice(0, 8)}</strong>?</p>
               </div>
               <div className="text-sm text-muted-foreground">
                 <p>Usuário: {selectedPayment.user_name}</p>
+                <p>Plano: {selectedPayment.plan_name}</p>
                 <p>Valor: {formatPrice(selectedPayment.amount)}</p>
-                <p>Data: {formatDate(selectedPayment.created_at)}</p>
               </div>
               <p className="text-xs text-muted-foreground">
-                Esta ação irá marcar o pagamento como reembolsado.
+                Esta ação irá marcar o pagamento como pago e ativar a assinatura.
               </p>
             </div>
             <div className="flex gap-3 pt-6">
-              <Button variant="outline" onClick={() => setShowRefundModal(false)} className="flex-1" disabled={isRefunding}>
-                Cancelar
+              <Button variant="outline" onClick={() => setShowConfirmPaymentModal(false)} className="flex-1" disabled={isConfirmingPayment}>
+                Voltar
               </Button>
-              <Button variant="destructive" onClick={handleConfirmRefund} className="flex-1" disabled={isRefunding}>
-                {isRefunding ? <Spinner size="sm" className="mr-2" /> : null}
-                {isRefunding ? "Reembolsando..." : "Reembolsar"}
+              <Button onClick={handleConfirmPaymentConfirmation} className="flex-1" disabled={isConfirmingPayment}>
+                {isConfirmingPayment ? <Spinner size="sm" className="mr-2" /> : null}
+                {isConfirmingPayment ? "Confirmando..." : "Confirmar Pagamento"}
               </Button>
             </div>
           </motion.div>
