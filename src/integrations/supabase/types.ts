@@ -99,12 +99,14 @@ export type Database = {
           evopay_api_key: string | null
           evopay_enabled: boolean | null
           evopay_webhook_url: string | null
+          evopay_weight: number | null
           id: string
           is_active: boolean
           mercadopago_access_token: string | null
           mercadopago_enabled: boolean | null
           mercadopago_public_key: string | null
           password_recovery_enabled: boolean | null
+          pixup_weight: number | null
           provider: string
           recaptcha_enabled: boolean | null
           recaptcha_secret_key: string | null
@@ -133,12 +135,14 @@ export type Database = {
           evopay_api_key?: string | null
           evopay_enabled?: boolean | null
           evopay_webhook_url?: string | null
+          evopay_weight?: number | null
           id?: string
           is_active?: boolean
           mercadopago_access_token?: string | null
           mercadopago_enabled?: boolean | null
           mercadopago_public_key?: string | null
           password_recovery_enabled?: boolean | null
+          pixup_weight?: number | null
           provider?: string
           recaptcha_enabled?: boolean | null
           recaptcha_secret_key?: string | null
@@ -167,12 +171,14 @@ export type Database = {
           evopay_api_key?: string | null
           evopay_enabled?: boolean | null
           evopay_webhook_url?: string | null
+          evopay_weight?: number | null
           id?: string
           is_active?: boolean
           mercadopago_access_token?: string | null
           mercadopago_enabled?: boolean | null
           mercadopago_public_key?: string | null
           password_recovery_enabled?: boolean | null
+          pixup_weight?: number | null
           provider?: string
           recaptcha_enabled?: boolean | null
           recaptcha_secret_key?: string | null

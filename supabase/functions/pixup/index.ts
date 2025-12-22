@@ -167,7 +167,7 @@ serve(async (req) => {
     }
 
     // Actions that modify settings - add audit logging
-    const auditableActions = ['save_credentials', 'save_email_settings', 'save_feature_toggles', 'save_recaptcha_settings', 'save_email_template', 'save_evopay_settings'];
+    const auditableActions = ['save_credentials', 'save_email_settings', 'save_feature_toggles', 'save_recaptcha_settings', 'save_email_template', 'save_evopay_settings', 'save_gateway_weights'];
 
     switch (action) {
       case 'test_connection':
@@ -206,6 +206,10 @@ serve(async (req) => {
       case 'save_evopay_settings':
         await logAudit(supabaseAdmin, userId!, 'UPDATE', 'evopay_settings', { enabled: params.evopay_enabled }, req);
         return await saveEvopaySettings(supabaseAdmin, params);
+      
+      case 'save_gateway_weights':
+        await logAudit(supabaseAdmin, userId!, 'UPDATE', 'gateway_weights', { pixup_weight: params.pixup_weight, evopay_weight: params.evopay_weight }, req);
+        return await saveGatewayWeights(supabaseAdmin, params);
       
       case 'create_pix':
         return await createPixCharge(supabaseAdmin, params, userId!);
@@ -275,7 +279,10 @@ async function getSettings(supabase: any) {
         // EvoPay settings
         evopay_enabled: data.evopay_enabled || false,
         has_evopay_key: !!data.evopay_api_key,
-        evopay_webhook_url: data.evopay_webhook_url || ''
+        evopay_webhook_url: data.evopay_webhook_url || '',
+        // Gateway weights
+        pixup_weight: data.pixup_weight ?? 50,
+        evopay_weight: data.evopay_weight ?? 50
       } : null 
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -560,6 +567,54 @@ async function saveEvopaySettings(supabase: any, params: {
   );
 }
 
+async function saveGatewayWeights(supabase: any, params: { 
+  pixup_weight?: number; 
+  evopay_weight?: number;
+}) {
+  const { pixup_weight, evopay_weight } = params;
+
+  // Validate weights are between 0 and 100
+  if (pixup_weight !== undefined && (pixup_weight < 0 || pixup_weight > 100)) {
+    return new Response(
+      JSON.stringify({ error: 'pixup_weight deve estar entre 0 e 100' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+  if (evopay_weight !== undefined && (evopay_weight < 0 || evopay_weight > 100)) {
+    return new Response(
+      JSON.stringify({ error: 'evopay_weight deve estar entre 0 e 100' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const settingsId = await getOrCreateSettingsId(supabase);
+
+  const updateData: any = { updated_at: new Date().toISOString() };
+  
+  if (pixup_weight !== undefined) {
+    updateData.pixup_weight = Math.round(pixup_weight);
+  }
+  if (evopay_weight !== undefined) {
+    updateData.evopay_weight = Math.round(evopay_weight);
+  }
+
+  const { error } = await supabase
+    .from('gateway_settings')
+    .update(updateData)
+    .eq('id', settingsId);
+
+  if (error) {
+    console.error('Error saving gateway weights:', error);
+    throw new Error('Failed to save gateway weights');
+  }
+
+  console.log('Gateway weights saved successfully');
+  return new Response(
+    JSON.stringify({ success: true }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
 async function saveCredentials(supabase: any, params: { client_id: string; client_secret?: string; webhook_url?: string; is_active?: boolean }) {
   const { client_id, client_secret, webhook_url, is_active } = params;
 
@@ -598,10 +653,10 @@ async function saveCredentials(supabase: any, params: { client_id: string; clien
     updateData.is_active = is_active;
   }
   
-  // Only update secret if provided - and reset is_active when secret changes
+  // Only update secret if provided - DON'T force is_active=false
+  // The admin controls is_active via the toggle, not automatically based on secret changes
   if (client_secret) {
     updateData.client_secret = client_secret;
-    updateData.is_active = false; // Force re-test when secret changes
   }
   
   const { error } = await supabase
