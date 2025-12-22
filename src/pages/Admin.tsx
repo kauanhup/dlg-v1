@@ -71,7 +71,8 @@ import {
   ChevronDown,
   ImageIcon,
   FileText,
-  Activity
+  Activity,
+  Sliders
 } from "lucide-react";
 
 
@@ -2177,6 +2178,12 @@ const ApiSection = () => {
   const [isTestingEvo, setIsTestingEvo] = useState(false);
   const [evoConnected, setEvoConnected] = useState(false);
 
+  // Gateway weights state
+  const [pixupWeight, setPixupWeight] = useState(50);
+  const [evopayWeight, setEvopayWeight] = useState(50);
+  const [isSavingWeights, setIsSavingWeights] = useState(false);
+  const [weightsSaveSuccess, setWeightsSaveSuccess] = useState(false);
+
   // Resend state
   const [resendApiKey, setResendApiKey] = useState("");
   const [resendFromEmail, setResendFromEmail] = useState("");
@@ -2261,6 +2268,9 @@ const ApiSection = () => {
           setEvoWebhookUrl(data.data.evopay_webhook_url || "");
           // Set evoConnected based on enabled + has key (same logic as PixUp)
           setEvoConnected(data.data.evopay_enabled === true && data.data.has_evopay_key === true);
+          // Gateway weights
+          setPixupWeight(data.data.pixup_weight ?? 50);
+          setEvopayWeight(data.data.evopay_weight ?? 50);
         } else {
           // No settings yet
           setClientId("");
@@ -2431,6 +2441,36 @@ const ApiSection = () => {
       setEvoConnected(false);
     } finally {
       setIsTestingEvo(false);
+    }
+  };
+
+  // Gateway weights save handler
+  const handleSaveGatewayWeights = async () => {
+    setIsSavingWeights(true);
+    setWeightsSaveSuccess(false);
+    try {
+      const { data, error } = await supabase.functions.invoke('pixup', {
+        body: { 
+          action: 'save_gateway_weights',
+          pixup_weight: pixupWeight,
+          evopay_weight: evopayWeight
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success("Pesos dos gateways salvos!");
+        setWeightsSaveSuccess(true);
+        setTimeout(() => setWeightsSaveSuccess(false), 2000);
+      } else {
+        toast.error(data?.error || "Erro ao salvar pesos");
+      }
+    } catch (error) {
+      console.error('Error saving gateway weights:', error);
+      toast.error("Erro ao salvar pesos dos gateways");
+    } finally {
+      setIsSavingWeights(false);
     }
   };
 
@@ -2924,6 +2964,92 @@ const ApiSection = () => {
                 >
                   {isTestingEvo ? <Spinner size="sm" /> : evoConnected ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
                   {evoConnected ? "Conectado" : "Testar Conexão"}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Gateway Weights Card */}
+          <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                  <Sliders className="w-5 h-5 text-purple-500" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Distribuição de Gateways</h3>
+                  <p className="text-sm text-muted-foreground">Configure a porcentagem de uso de cada gateway</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <p className="text-sm text-muted-foreground">
+                Quando ambos os gateways estão ativos, o sistema escolhe aleatoriamente qual usar baseado nos pesos configurados.
+                Valores maiores = maior chance de ser selecionado.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-primary" />
+                      PixUp
+                    </label>
+                    <span className="text-sm font-semibold text-primary">{pixupWeight}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={pixupWeight}
+                    onChange={(e) => setPixupWeight(Number(e.target.value))}
+                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>0%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                      EvoPay
+                    </label>
+                    <span className="text-sm font-semibold text-emerald-500">{evopayWeight}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={evopayWeight}
+                    onChange={(e) => setEvopayWeight(Number(e.target.value))}
+                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>0%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
+                <p className="text-xs text-muted-foreground">
+                  <strong>Exemplo:</strong> Se PixUp = 70% e EvoPay = 30%, em 100 pagamentos aproximadamente 70 usarão PixUp e 30 usarão EvoPay.
+                  Os valores não precisam somar 100% - o sistema calcula proporcionalmente.
+                </p>
+              </div>
+
+              <div className="flex justify-end pt-2 border-t border-border/50">
+                <Button 
+                  onClick={handleSaveGatewayWeights} 
+                  disabled={isSavingWeights}
+                  className={cn("gap-2 transition-all", weightsSaveSuccess && "bg-green-600 hover:bg-green-600")}
+                >
+                  {isSavingWeights ? <Spinner size="sm" /> : weightsSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                  {weightsSaveSuccess ? "Salvo!" : "Salvar Pesos"}
                 </Button>
               </div>
             </div>
