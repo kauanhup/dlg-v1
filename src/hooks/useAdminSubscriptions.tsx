@@ -340,17 +340,20 @@ export const useAdminSubscriptions = () => {
         const plan = plans.find(p => p.id === subscription.plan_id);
         
         if (plan) {
-          // Update the license status for this user and plan
+          // Update ALL licenses for this user and plan (not just active ones)
+          // This handles edge cases where the license might already be in a different status
           const { error: licenseError } = await supabase
             .from('licenses')
             .update({ 
               status: data.status,
-              // If cancelling, also clear the end_date to reflect cancellation
-              ...(data.status === 'cancelled' ? { end_date: new Date().toISOString() } : {})
+              updated_at: new Date().toISOString(),
+              // If cancelling or expiring, set end_date to now
+              ...(data.status === 'cancelled' || data.status === 'expired' 
+                ? { end_date: new Date().toISOString() } 
+                : {})
             })
             .eq('user_id', subscription.user_id)
-            .eq('plan_name', plan.name)
-            .eq('status', 'active');
+            .eq('plan_name', plan.name);
 
           if (licenseError) {
             console.error('Error updating license (non-blocking):', licenseError);
