@@ -7,18 +7,19 @@ import {
   Activity,
   ArrowUpRight,
   ArrowDownRight,
-  Wallet,
-  UserCheck,
   Package,
   Clock,
-  Zap
+  CheckCircle,
+  XCircle
 } from "lucide-react";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useAdminOrders } from "@/hooks/useAdminOrders";
 import { useAdminSubscriptions } from "@/hooks/useAdminSubscriptions";
 import { useAdminSessions } from "@/hooks/useAdminSessions";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 const fadeIn = {
   initial: { opacity: 0, y: 12 },
@@ -26,102 +27,78 @@ const fadeIn = {
   transition: { duration: 0.3 }
 };
 
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.08
-    }
-  }
-};
-
-interface MetricCardProps {
-  title: string;
-  value: string | number;
-  change?: string;
-  trend?: "up" | "down" | "neutral";
-  icon: React.ElementType;
-  color: string;
-  delay?: number;
-}
-
-const MetricCard = ({ title, value, change, trend = "neutral", icon: Icon, color, delay = 0 }: MetricCardProps) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.4, delay }}
-    className="relative overflow-hidden bg-card border border-border rounded-xl p-5 group hover:border-primary/30 transition-all duration-300"
-  >
-    {/* Gradient glow effect */}
-    <div className={cn(
-      "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500",
-      `bg-gradient-to-br ${color} blur-xl`
-    )} />
-    
-    <div className="relative z-10">
-      <div className="flex items-start justify-between mb-4">
-        <div className={cn(
-          "w-12 h-12 rounded-xl flex items-center justify-center",
-          `bg-gradient-to-br ${color}`
-        )}>
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-        {change && (
-          <div className={cn(
-            "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
-            trend === "up" && "bg-emerald-500/10 text-emerald-500",
-            trend === "down" && "bg-red-500/10 text-red-500",
-            trend === "neutral" && "bg-muted text-muted-foreground"
-          )}>
-            {trend === "up" && <ArrowUpRight className="w-3 h-3" />}
-            {trend === "down" && <ArrowDownRight className="w-3 h-3" />}
-            {change}
-          </div>
-        )}
+// Stat Card matching admin style
+const StatCard = ({ 
+  title, 
+  value, 
+  change, 
+  icon: Icon, 
+  trend = "up" 
+}: { 
+  title: string; 
+  value: string; 
+  change?: string; 
+  icon: React.ElementType; 
+  trend?: "up" | "down" | "neutral"; 
+}) => (
+  <div className="bg-card border border-border rounded-lg p-4 sm:p-5">
+    <div className="flex items-center justify-between">
+      <div className="w-9 h-9 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+        <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
       </div>
-      
-      <p className="text-3xl font-bold text-foreground tracking-tight">{value}</p>
-      <p className="text-sm text-muted-foreground mt-1">{title}</p>
+      {change && (
+        <span className={cn(
+          "text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md flex items-center gap-0.5",
+          trend === "up" ? "bg-success/10 text-success" : 
+          trend === "down" ? "bg-destructive/10 text-destructive" : 
+          "bg-muted text-muted-foreground"
+        )}>
+          {trend === "up" && <ArrowUpRight className="w-3 h-3" />}
+          {trend === "down" && <ArrowDownRight className="w-3 h-3" />}
+          {change}
+        </span>
+      )}
     </div>
-  </motion.div>
-);
-
-interface ActivityItemProps {
-  title: string;
-  description: string;
-  time: string;
-  icon: React.ElementType;
-  color: string;
-}
-
-const ActivityItem = ({ title, description, time, icon: Icon, color }: ActivityItemProps) => (
-  <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-    <div className={cn(
-      "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
-      color
-    )}>
-      <Icon className="w-4 h-4" />
+    <div className="mt-3 sm:mt-4">
+      <p className="text-xl sm:text-2xl font-bold text-foreground">{value}</p>
+      <p className="text-xs sm:text-sm text-muted-foreground">{title}</p>
     </div>
-    <div className="flex-1 min-w-0">
-      <p className="text-sm font-medium text-foreground truncate">{title}</p>
-      <p className="text-xs text-muted-foreground truncate">{description}</p>
-    </div>
-    <span className="text-xs text-muted-foreground whitespace-nowrap">{time}</span>
   </div>
 );
 
-const QuickStatCard = ({ label, value, icon: Icon }: { label: string; value: string | number; icon: React.ElementType }) => (
-  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
-    <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
-      <Icon className="w-4 h-4 text-primary" />
+// Activity Item
+const ActivityItem = ({ 
+  title, 
+  description, 
+  time, 
+  status 
+}: { 
+  title: string; 
+  description: string; 
+  time: string; 
+  status: "completed" | "pending" | "cancelled"; 
+}) => (
+  <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+    <div className={cn(
+      "w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0",
+      status === "completed" && "bg-success/10",
+      status === "pending" && "bg-warning/10",
+      status === "cancelled" && "bg-destructive/10"
+    )}>
+      {status === "completed" && <CheckCircle className="w-4 h-4 text-success" />}
+      {status === "pending" && <Clock className="w-4 h-4 text-warning" />}
+      {status === "cancelled" && <XCircle className="w-4 h-4 text-destructive" />}
     </div>
-    <div>
-      <p className="text-lg font-semibold text-foreground">{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
+    <div className="flex-1 min-w-0">
+      <p className="text-xs sm:text-sm font-medium text-foreground truncate">{title}</p>
+      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{description}</p>
     </div>
+    <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">{time}</span>
   </div>
 );
 
 export const AdminDashboardSection = () => {
+  const { profile } = useAuth();
   const { users, totalUsers, bannedCount, isLoading: usersLoading } = useAdminUsers();
   const { orders, isLoading: ordersLoading } = useAdminOrders();
   const { subscriptions, isLoading: subsLoading } = useAdminSubscriptions();
@@ -131,6 +108,7 @@ export const AdminDashboardSection = () => {
 
   // Calculate metrics
   const activeUsers = users?.filter(u => !u.banned).length || 0;
+  
   const totalRevenue = orders?.reduce((sum, order) => {
     if (order.status === 'completed' || order.status === 'paid') {
       return sum + (Number(order.amount) || 0);
@@ -140,24 +118,63 @@ export const AdminDashboardSection = () => {
 
   const pendingOrders = orders?.filter(o => o.status === 'pending').length || 0;
   const completedOrders = orders?.filter(o => o.status === 'completed' || o.status === 'paid').length || 0;
+  const cancelledOrders = orders?.filter(o => o.status === 'cancelled' || o.status === 'expired').length || 0;
   
   const totalSessions = inventory?.reduce((sum, inv) => sum + (inv.quantity || 0), 0) || 0;
   const activeSubscriptions = subscriptions?.filter(s => s.status === 'active').length || 0;
+
+  // Today's metrics
+  const today = new Date().toDateString();
+  const todayOrders = orders?.filter(o => new Date(o.created_at).toDateString() === today) || [];
+  const todayRevenue = todayOrders.filter(o => o.status === 'completed' || o.status === 'paid')
+    .reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
+  const todayOrdersCount = todayOrders.length;
 
   const formatCurrency = (value: number) => {
     return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   };
 
+  // Generate chart data from orders (last 7 days)
+  const getLast7DaysData = () => {
+    const data = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toDateString();
+      const dayOrders = orders?.filter(o => new Date(o.created_at).toDateString() === dateStr) || [];
+      const dayRevenue = dayOrders
+        .filter(o => o.status === 'completed' || o.status === 'paid')
+        .reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
+      
+      data.push({
+        name: date.toLocaleDateString('pt-BR', { weekday: 'short' }),
+        vendas: dayRevenue,
+        pedidos: dayOrders.length
+      });
+    }
+    return data;
+  };
+
+  const chartData = getLast7DaysData();
+
   // Get recent activities from orders
-  const recentActivities = orders?.slice(0, 5).map(order => ({
+  const recentActivities = orders?.slice(0, 6).map(order => ({
     title: order.product_name || 'Pedido',
-    description: `${order.product_type === 'session' ? 'Session' : 'Assinatura'} - ${order.quantity || 1}x`,
+    description: `${order.quantity || 1}x - ${formatCurrency(Number(order.amount) || 0)}`,
     time: new Date(order.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-    icon: order.status === 'completed' || order.status === 'paid' ? DollarSign : Clock,
-    color: order.status === 'completed' || order.status === 'paid' 
-      ? 'bg-emerald-500/10 text-emerald-500' 
-      : 'bg-amber-500/10 text-amber-500'
+    status: (order.status === 'completed' || order.status === 'paid') ? 'completed' as const : 
+            order.status === 'pending' ? 'pending' as const : 'cancelled' as const
   })) || [];
+
+  // Get greeting based on time
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Bom dia";
+    if (hour < 18) return "Boa tarde";
+    return "Boa noite";
+  };
+
+  const firstName = profile?.name?.split(' ')[0] || 'Admin';
 
   if (isLoading) {
     return (
@@ -171,106 +188,195 @@ export const AdminDashboardSection = () => {
     <motion.div
       initial="initial"
       animate="animate"
-      variants={staggerContainer}
-      className="space-y-6"
+      className="space-y-4 sm:space-y-6"
     >
-      {/* Header */}
-      <motion.div {...fadeIn} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-            Dashboard
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Visão geral do sistema
-          </p>
+      {/* Header with Greeting */}
+      <motion.div {...fadeIn} className="bg-card border border-border rounded-lg p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+              {getGreeting()}, {firstName}! 👋
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Aqui está o resumo do seu negócio
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full border border-border/50 w-fit">
+            <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+            <span>Sistema online</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full border border-border/50">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Atualizado agora</span>
+
+        {/* Quick Summary */}
+        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-lg border border-primary/20">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/20 rounded-xl flex items-center justify-center">
+                <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Receita Total</p>
+                <p className="text-lg sm:text-2xl font-bold text-foreground">{formatCurrency(totalRevenue)}</p>
+              </div>
+            </div>
+            <div className="h-px sm:h-10 sm:w-px bg-border" />
+            <div className="flex items-center gap-4 sm:gap-6">
+              <div>
+                <p className="text-xs text-muted-foreground">Hoje</p>
+                <p className="text-base sm:text-lg font-semibold text-success">{formatCurrency(todayRevenue)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Pedidos Hoje</p>
+                <p className="text-base sm:text-lg font-semibold text-foreground">{todayOrdersCount}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </motion.div>
 
-      {/* Main Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          title="Receita Total"
-          value={formatCurrency(totalRevenue)}
-          change="+12%"
-          trend="up"
-          icon={DollarSign}
-          color="from-emerald-500/20 to-emerald-600/5"
-          delay={0}
-        />
-        <MetricCard
-          title="Total de Usuários"
-          value={totalUsers}
+      {/* Stats Grid */}
+      <motion.div {...fadeIn} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <StatCard
+          title="Total Usuários"
+          value={String(totalUsers)}
           change={`${activeUsers} ativos`}
-          trend="neutral"
           icon={Users}
-          color="from-blue-500/20 to-blue-600/5"
-          delay={0.1}
-        />
-        <MetricCard
-          title="Assinaturas Ativas"
-          value={activeSubscriptions}
-          change="+5%"
-          trend="up"
-          icon={TrendingUp}
-          color="from-violet-500/20 to-violet-600/5"
-          delay={0.2}
-        />
-        <MetricCard
-          title="Pedidos Pendentes"
-          value={pendingOrders}
-          change={`${completedOrders} completos`}
           trend="neutral"
-          icon={ShoppingCart}
-          color="from-amber-500/20 to-amber-600/5"
-          delay={0.3}
         />
-      </div>
+        <StatCard
+          title="Assinaturas Ativas"
+          value={String(activeSubscriptions)}
+          icon={TrendingUp}
+          trend="up"
+        />
+        <StatCard
+          title="Pedidos Pendentes"
+          value={String(pendingOrders)}
+          change={`${completedOrders} completos`}
+          icon={ShoppingCart}
+          trend="neutral"
+        />
+        <StatCard
+          title="Sessions em Estoque"
+          value={String(totalSessions)}
+          icon={Package}
+          trend="neutral"
+        />
+      </motion.div>
 
-      {/* Secondary Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Quick Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.4 }}
-          className="lg:col-span-1 bg-card border border-border rounded-xl p-5"
-        >
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Revenue Chart */}
+        <motion.div {...fadeIn} className="bg-card border border-border rounded-lg p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-4">
-            <Zap className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-foreground">Estatísticas Rápidas</h3>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-success/10 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-success" />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-semibold text-foreground">Vendas - Últimos 7 dias</h3>
+              <p className="text-xs text-muted-foreground">Receita diária</p>
+            </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-3">
-            <QuickStatCard label="Sessions em Estoque" value={totalSessions} icon={Package} />
-            <QuickStatCard label="Usuários Ativos" value={activeUsers} icon={UserCheck} />
-            <QuickStatCard label="Pedidos Hoje" value={orders?.filter(o => {
-              const today = new Date().toDateString();
-              return new Date(o.created_at).toDateString() === today;
-            }).length || 0} icon={ShoppingCart} />
-            <QuickStatCard label="Receita Hoje" value={formatCurrency(
-              orders?.filter(o => {
-                const today = new Date().toDateString();
-                return new Date(o.created_at).toDateString() === today && 
-                  (o.status === 'completed' || o.status === 'paid');
-              }).reduce((sum, o) => sum + (Number(o.amount) || 0), 0) || 0
-            )} icon={Wallet} />
+          <div className="h-48 sm:h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorVendas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                />
+                <YAxis 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickFormatter={(value) => `R$${value}`}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    fontSize: '12px'
+                  }}
+                  formatter={(value: number) => [formatCurrency(value), 'Vendas']}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="vendas" 
+                  stroke="hsl(var(--primary))" 
+                  fillOpacity={1} 
+                  fill="url(#colorVendas)" 
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </motion.div>
 
-        {/* Recent Activity */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.5 }}
-          className="lg:col-span-2 bg-card border border-border rounded-xl p-5"
-        >
+        {/* Orders Chart */}
+        <motion.div {...fadeIn} className="bg-card border border-border rounded-lg p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-4">
-            <Activity className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-foreground">Atividade Recente</h3>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-lg flex items-center justify-center">
+              <ShoppingCart className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-semibold text-foreground">Pedidos - Últimos 7 dias</h3>
+              <p className="text-xs text-muted-foreground">Quantidade diária</p>
+            </div>
+          </div>
+          
+          <div className="h-48 sm:h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                />
+                <YAxis 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    fontSize: '12px'
+                  }}
+                  formatter={(value: number) => [value, 'Pedidos']}
+                />
+                <Bar 
+                  dataKey="pedidos" 
+                  fill="hsl(var(--primary))" 
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Bottom Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Recent Activity */}
+        <motion.div {...fadeIn} className="lg:col-span-2 bg-card border border-border rounded-lg p-4 sm:p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-lg flex items-center justify-center">
+              <Activity className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-semibold text-foreground">Atividade Recente</h3>
+              <p className="text-xs text-muted-foreground">Últimos pedidos</p>
+            </div>
           </div>
           
           {recentActivities.length > 0 ? (
@@ -286,32 +392,54 @@ export const AdminDashboardSection = () => {
             </div>
           )}
         </motion.div>
-      </div>
 
-      {/* Status Cards Row */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.6 }}
-        className="grid grid-cols-2 sm:grid-cols-4 gap-4"
-      >
-        <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20 rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-emerald-500">{completedOrders}</p>
-          <p className="text-xs text-muted-foreground mt-1">Pedidos Completos</p>
-        </div>
-        <div className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20 rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-amber-500">{pendingOrders}</p>
-          <p className="text-xs text-muted-foreground mt-1">Pendentes</p>
-        </div>
-        <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-blue-500">{activeUsers}</p>
-          <p className="text-xs text-muted-foreground mt-1">Usuários Ativos</p>
-        </div>
-        <div className="bg-gradient-to-br from-red-500/10 to-red-600/5 border border-red-500/20 rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-red-500">{bannedCount}</p>
-          <p className="text-xs text-muted-foreground mt-1">Banidos</p>
-        </div>
-      </motion.div>
+        {/* Status Summary */}
+        <motion.div {...fadeIn} className="bg-card border border-border rounded-lg p-4 sm:p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-lg flex items-center justify-center">
+              <ShoppingCart className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-semibold text-foreground">Status dos Pedidos</h3>
+              <p className="text-xs text-muted-foreground">Resumo geral</p>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-success/5 rounded-lg border border-success/20">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-success" />
+                <span className="text-sm text-foreground">Completos</span>
+              </div>
+              <span className="text-lg font-bold text-success">{completedOrders}</span>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-warning/5 rounded-lg border border-warning/20">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-warning" />
+                <span className="text-sm text-foreground">Pendentes</span>
+              </div>
+              <span className="text-lg font-bold text-warning">{pendingOrders}</span>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-destructive/5 rounded-lg border border-destructive/20">
+              <div className="flex items-center gap-2">
+                <XCircle className="w-4 h-4 text-destructive" />
+                <span className="text-sm text-foreground">Cancelados</span>
+              </div>
+              <span className="text-lg font-bold text-destructive">{cancelledOrders}</span>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-foreground">Banidos</span>
+              </div>
+              <span className="text-lg font-bold text-muted-foreground">{bannedCount}</span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
     </motion.div>
   );
 };
