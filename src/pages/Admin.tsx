@@ -1424,7 +1424,7 @@ const UsersSection = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showBanModal, setShowBanModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
-  const [editForm, setEditForm] = useState({ name: "", email: "" });
+  const [editForm, setEditForm] = useState({ name: "", email: "", whatsapp: "" });
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isBanning, setIsBanning] = useState(false);
   
@@ -1440,7 +1440,7 @@ const UsersSection = () => {
     avatar: user.avatar,
     banned: user.banned,
     createdAt: new Date(user.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }),
-    lastLogin: new Date(user.updated_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }),
+    updatedAt: new Date(user.updated_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }),
     whatsapp: user.whatsapp || "—",
   }));
 
@@ -1461,7 +1461,7 @@ const UsersSection = () => {
 
   const handleEdit = (user: any) => {
     setSelectedUser(user);
-    setEditForm({ name: user.name, email: user.email });
+    setEditForm({ name: user.name, email: user.email, whatsapp: user.whatsapp === "—" ? "" : user.whatsapp });
     setShowEditModal(true);
   };
 
@@ -1471,11 +1471,16 @@ const UsersSection = () => {
       const result = await updateUserProfile(selectedUser.user_id, {
         name: editForm.name,
         email: editForm.email,
+        whatsapp: editForm.whatsapp || undefined,
       });
       setIsSavingEdit(false);
       if (result.success) {
+        toast.success('Usuário atualizado com sucesso!');
         setShowEditModal(false);
         setSelectedUser(null);
+        refetch();
+      } else {
+        toast.error(result.error || 'Erro ao atualizar usuário');
       }
     }
   };
@@ -1492,8 +1497,12 @@ const UsersSection = () => {
       const result = await banUser(selectedUser.user_id, newBannedStatus);
       setIsBanning(false);
       if (result.success) {
+        toast.success(newBannedStatus ? 'Usuário banido com sucesso!' : 'Usuário desbanido com sucesso!');
         setShowBanModal(false);
         setSelectedUser(null);
+        refetch();
+      } else {
+        toast.error(result.error || 'Erro ao atualizar status do usuário');
       }
     }
   };
@@ -1745,6 +1754,16 @@ const UsersSection = () => {
                       type="email"
                       value={editForm.email}
                       onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-1 block">WhatsApp</label>
+                    <input
+                      type="text"
+                      value={editForm.whatsapp}
+                      onChange={(e) => setEditForm({ ...editForm, whatsapp: e.target.value })}
+                      placeholder="+5565999999999"
                       className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
