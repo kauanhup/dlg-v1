@@ -2,6 +2,12 @@ import { useState } from "react";
 import { DollarSign, TrendingUp, ChevronDown, ChevronUp, Package } from "lucide-react";
 import { GroupedSale } from "@/hooks/useAdminSessions";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SessionSalesHistoryProps {
   sales: GroupedSale[];
@@ -72,9 +78,27 @@ export const SessionSalesHistory = ({ sales }: SessionSalesHistoryProps) => {
                     <p className="text-xs text-muted-foreground">{formatDate(sale.sold_at)}</p>
                   </div>
                 </div>
-                <div className="text-right min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{sale.buyer_name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{sale.buyer_email}</p>
+                <div className="text-right min-w-0 max-w-[120px] sm:max-w-[180px]">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-sm font-medium text-foreground truncate cursor-default">{sale.buyer_name}</p>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{sale.buyer_name}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-xs text-muted-foreground truncate cursor-default">{sale.buyer_email}</p>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{sale.buyer_email}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
               
