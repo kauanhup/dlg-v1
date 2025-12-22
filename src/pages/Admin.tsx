@@ -622,89 +622,106 @@ const SubscriptionsTabContent = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header with Title and Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Gestão de Assinaturas</h2>
+          <p className="text-sm text-muted-foreground mt-1">Gerencie planos, assinantes e pagamentos</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+          <RefreshCw className={cn("w-4 h-4 mr-2", isLoading && "animate-spin")} />
+          Atualizar
+        </Button>
+      </div>
+
       {/* Metrics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-card border border-border rounded-lg p-4">
+        <div className="bg-card border border-border rounded-xl p-4 hover:border-success/50 transition-colors">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
               <UserCheck className="w-5 h-5 text-success" />
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground">{stats.activeSubscribers}</p>
+              <p className="text-2xl font-bold text-foreground">{stats.activeSubscribers}</p>
               <p className="text-xs text-muted-foreground">Assinantes Ativos</p>
             </div>
           </div>
         </div>
-        <div className="bg-card border border-border rounded-lg p-4">
+        <div className="bg-card border border-border rounded-xl p-4 hover:border-primary/50 transition-colors">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground">R$ {stats.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              <p className="text-2xl font-bold text-foreground">R$ {stats.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               <p className="text-xs text-muted-foreground">Receita Mensal</p>
             </div>
           </div>
         </div>
-        <div className="bg-card border border-border rounded-lg p-4">
+        <div className="bg-card border border-border rounded-xl p-4 hover:border-warning/50 transition-colors">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
               <AlertCircle className="w-5 h-5 text-warning" />
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground">{stats.overdueSubscribers}</p>
+              <p className="text-2xl font-bold text-foreground">{stats.overdueSubscribers}</p>
               <p className="text-xs text-muted-foreground">Pendente</p>
             </div>
           </div>
         </div>
-        <div className="bg-card border border-border rounded-lg p-4">
+        <div className="bg-card border border-border rounded-xl p-4 hover:border-destructive/50 transition-colors">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-destructive/10 rounded-lg flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-destructive" />
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground">{stats.churnRate}%</p>
+              <p className="text-2xl font-bold text-foreground">{stats.churnRate}%</p>
               <p className="text-xs text-muted-foreground">Taxa de Cancelamento</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Sub Navigation */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-1 bg-muted/50 p-1 rounded-lg w-fit">
+      {/* Sub Navigation Tabs */}
+      <div className="bg-card border border-border rounded-xl p-1.5">
+        <div className="flex gap-1">
           <button
             onClick={() => setActiveSubTab("subscribers")}
             className={cn(
-              "px-4 py-2 text-sm font-medium rounded-md transition-colors",
-              activeSubTab === "subscribers" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              "flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all",
+              activeSubTab === "subscribers" 
+                ? "bg-primary text-primary-foreground shadow-sm" 
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             )}
           >
+            <Users className="w-4 h-4 inline-block mr-2" />
             Assinantes
           </button>
           <button
             onClick={() => setActiveSubTab("plans")}
             className={cn(
-              "px-4 py-2 text-sm font-medium rounded-md transition-colors",
-              activeSubTab === "plans" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              "flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all",
+              activeSubTab === "plans" 
+                ? "bg-primary text-primary-foreground shadow-sm" 
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             )}
           >
+            <Package className="w-4 h-4 inline-block mr-2" />
             Planos
           </button>
           <button
             onClick={() => setActiveSubTab("payments")}
             className={cn(
-              "px-4 py-2 text-sm font-medium rounded-md transition-colors",
-              activeSubTab === "payments" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              "flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all",
+              activeSubTab === "payments" 
+                ? "bg-primary text-primary-foreground shadow-sm" 
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             )}
           >
+            <CreditCard className="w-4 h-4 inline-block mr-2" />
             Pagamentos
           </button>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
-          <RefreshCw className={cn("w-4 h-4 mr-2", isLoading && "animate-spin")} />
-          Atualizar
-        </Button>
       </div>
 
       {/* Subscribers Tab */}
@@ -804,22 +821,29 @@ const SubscriptionsTabContent = () => {
 
       {/* Plans Tab */}
       {activeSubTab === "plans" && (
-        <div className="space-y-4">
-          <div className="flex justify-end">
-            <Button size="sm" onClick={handleCreatePlan}>
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">Planos de Assinatura</h3>
+              <p className="text-sm text-muted-foreground">{dbPlans.length} plano(s) cadastrado(s)</p>
+            </div>
+            <Button onClick={handleCreatePlan}>
               <Plus className="w-4 h-4 mr-2" /> Criar Plano
             </Button>
           </div>
           
           {/* Empty State */}
           {dbPlans.length === 0 && !isLoading && (
-            <div className="bg-card border border-border rounded-lg p-8 text-center">
-              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <Package className="w-6 h-6 text-muted-foreground" />
+            <div className="bg-card border border-dashed border-border rounded-xl p-12 text-center">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <Package className="w-8 h-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum plano encontrado</h3>
-              <p className="text-sm text-muted-foreground mb-4">Crie seu primeiro plano de assinatura para começar a vender.</p>
-              <Button size="sm" onClick={handleCreatePlan}>
+              <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+                Crie seu primeiro plano de assinatura para começar a vender e gerenciar assinantes.
+              </p>
+              <Button onClick={handleCreatePlan}>
                 <Plus className="w-4 h-4 mr-2" /> Criar Primeiro Plano
               </Button>
             </div>
@@ -827,94 +851,114 @@ const SubscriptionsTabContent = () => {
 
           {/* Loading State */}
           {isLoading && (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-16">
               <Spinner />
             </div>
           )}
 
           {/* Plans Grid */}
           {dbPlans.length > 0 && (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {dbPlans.map((plan) => (
                 <div key={plan.id} className={cn(
-                  "bg-card border border-border rounded-lg p-5 transition-opacity",
-                  togglingPlanId === plan.id && "opacity-50"
+                  "bg-card border border-border rounded-xl overflow-hidden transition-all hover:shadow-lg hover:border-primary/30",
+                  togglingPlanId === plan.id && "opacity-50",
+                  !plan.is_active && "opacity-60"
                 )}>
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="font-semibold text-foreground">{plan.name}</h3>
-                      <div className="flex items-baseline gap-2 mt-1">
-                        {plan.promotional_price ? (
-                          <>
-                            <span className="text-2xl font-bold text-success">{formatPrice(plan.promotional_price)}</span>
-                            <span className="text-sm text-muted-foreground line-through">{formatPrice(plan.price)}</span>
-                          </>
-                        ) : (
-                          <span className="text-2xl font-bold text-foreground">
-                            {plan.price === 0 ? 'Grátis' : formatPrice(plan.price)}
+                  {/* Plan Header */}
+                  <div className="p-5 border-b border-border bg-muted/20">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-bold text-lg text-foreground">{plan.name}</h3>
+                          <span className={cn(
+                            "text-[10px] px-2 py-0.5 rounded-full font-medium uppercase",
+                            plan.is_active ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                          )}>
+                            {plan.is_active ? "Ativo" : "Inativo"}
                           </span>
-                        )}
-                        <span className="text-sm text-muted-foreground">
-                          / {plan.period === 0 ? 'vitalício' : `${plan.period} dias`}
-                        </span>
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          {plan.promotional_price ? (
+                            <>
+                              <span className="text-2xl font-bold text-success">{formatPrice(plan.promotional_price)}</span>
+                              <span className="text-sm text-muted-foreground line-through">{formatPrice(plan.price)}</span>
+                            </>
+                          ) : (
+                            <span className="text-2xl font-bold text-foreground">
+                              {plan.price === 0 ? 'Grátis' : formatPrice(plan.price)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {plan.period === 0 ? 'Acesso vitalício' : `Válido por ${plan.period} dias`}
+                        </p>
                       </div>
-                      {plan.max_subscriptions_per_user && (
-                        <span className="text-xs text-warning mt-1 block">
-                          Limite: {plan.max_subscriptions_per_user}x por usuário
-                        </span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 -mt-1" disabled={togglingPlanId === plan.id}>
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-card border border-border">
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleEditPlan(plan)}>
+                            <Edit className="w-4 h-4 mr-2" /> Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="cursor-pointer"
+                            onClick={() => handleTogglePlanStatus(plan)}
+                          >
+                            {plan.is_active ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                            {plan.is_active ? "Desativar" : "Ativar"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="cursor-pointer text-destructive focus:text-destructive"
+                            onClick={() => {
+                              setPlanToDelete(plan);
+                              setShowDeletePlanModal(true);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+
+                  {/* Features */}
+                  <div className="p-5">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Recursos inclusos</p>
+                    <div className="space-y-2.5">
+                      {(plan.features || []).length === 0 && (
+                        <p className="text-sm text-muted-foreground italic">Nenhum recurso definido</p>
+                      )}
+                      {(plan.features || []).slice(0, 4).map((feature, idx) => (
+                        <div key={idx} className="flex items-start gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+                          <span className="text-foreground/80">{feature}</span>
+                        </div>
+                      ))}
+                      {(plan.features || []).length > 4 && (
+                        <p className="text-xs text-muted-foreground pl-6">
+                          +{(plan.features || []).length - 4} recursos
+                        </p>
                       )}
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={togglingPlanId === plan.id}>
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-card border border-border">
-                        <DropdownMenuItem className="cursor-pointer" onClick={() => handleEditPlan(plan)}>
-                          <Edit className="w-4 h-4 mr-2" /> Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="cursor-pointer"
-                          onClick={() => handleTogglePlanStatus(plan)}
-                        >
-                          {plan.is_active ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                          {plan.is_active ? "Desativar" : "Ativar"}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="cursor-pointer text-destructive focus:text-destructive"
-                          onClick={() => {
-                            setPlanToDelete(plan);
-                            setShowDeletePlanModal(true);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </div>
-                  <div className="space-y-2 mb-4">
-                    {(plan.features || []).length === 0 && (
-                      <p className="text-sm text-muted-foreground italic">Nenhum recurso definido</p>
-                    )}
-                    {(plan.features || []).map((feature, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
-                        <span className="break-words">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between pt-4 border-t border-border">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">{plan.subscribers_count || 0} assinantes</span>
+
+                  {/* Footer Stats */}
+                  <div className="px-5 py-3 bg-muted/30 border-t border-border flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Users className="w-4 h-4 text-primary" />
+                      <span className="font-medium text-foreground">{plan.subscribers_count || 0}</span>
+                      <span className="text-muted-foreground">assinantes</span>
                     </div>
-                    <span className={cn(
-                      "text-xs px-2 py-1 rounded-md",
-                      plan.is_active ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
-                    )}>
-                      {plan.is_active ? "Ativo" : "Inativo"}
-                    </span>
+                    {plan.max_subscriptions_per_user && (
+                      <span className="text-xs text-warning bg-warning/10 px-2 py-1 rounded">
+                        Limite: {plan.max_subscriptions_per_user}x
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
