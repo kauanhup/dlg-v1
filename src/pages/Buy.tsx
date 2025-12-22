@@ -1,4 +1,4 @@
-import { Check, Sparkles, Crown, Shield, Clock, Zap, CreditCard, Loader2, Gift, ArrowUpCircle } from "lucide-react";
+import { Check, Sparkles, Crown, Shield, Clock, Zap, Loader2, Gift, ArrowUpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -103,19 +103,15 @@ const Buy = () => {
         <div className="container mx-auto px-4 sm:px-6">
           {/* Title */}
           <motion.div 
-            className="text-center max-w-2xl mx-auto mb-12 sm:mb-16"
+            className="text-center max-w-2xl mx-auto mb-8 sm:mb-12"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
-              <CreditCard className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Compra segura</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold mb-4">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold mb-3">
               Escolha sua licença
             </h1>
-            <p className="text-muted-foreground text-sm sm:text-base lg:text-lg">
+            <p className="text-muted-foreground text-sm sm:text-base">
               Selecione o plano ideal para você. Após a compra, sua chave será entregue instantaneamente.
             </p>
           </motion.div>
