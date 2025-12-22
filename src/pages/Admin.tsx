@@ -671,34 +671,40 @@ const SubscriptionsTabContent = () => {
       </div>
 
       {/* Sub Navigation */}
-      <div className="flex gap-1 bg-muted/50 p-1 rounded-lg w-fit">
-        <button
-          onClick={() => setActiveSubTab("subscribers")}
-          className={cn(
-            "px-4 py-2 text-sm font-medium rounded-md transition-colors",
-            activeSubTab === "subscribers" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Assinantes
-        </button>
-        <button
-          onClick={() => setActiveSubTab("plans")}
-          className={cn(
-            "px-4 py-2 text-sm font-medium rounded-md transition-colors",
-            activeSubTab === "plans" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Planos
-        </button>
-        <button
-          onClick={() => setActiveSubTab("payments")}
-          className={cn(
-            "px-4 py-2 text-sm font-medium rounded-md transition-colors",
-            activeSubTab === "payments" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Pagamentos
-        </button>
+      <div className="flex items-center justify-between">
+        <div className="flex gap-1 bg-muted/50 p-1 rounded-lg w-fit">
+          <button
+            onClick={() => setActiveSubTab("subscribers")}
+            className={cn(
+              "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+              activeSubTab === "subscribers" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Assinantes
+          </button>
+          <button
+            onClick={() => setActiveSubTab("plans")}
+            className={cn(
+              "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+              activeSubTab === "plans" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Planos
+          </button>
+          <button
+            onClick={() => setActiveSubTab("payments")}
+            className={cn(
+              "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+              activeSubTab === "payments" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Pagamentos
+          </button>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+          <RefreshCw className={cn("w-4 h-4 mr-2", isLoading && "animate-spin")} />
+          Atualizar
+        </Button>
       </div>
 
       {/* Subscribers Tab */}
