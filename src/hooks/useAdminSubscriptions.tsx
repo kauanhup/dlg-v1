@@ -15,6 +15,15 @@ export interface SubscriptionPlan {
   max_subscriptions_per_user: number | null;
 }
 
+export interface License {
+  id: string;
+  user_id: string;
+  plan_name: string;
+  status: string;
+  start_date: string;
+  end_date: string;
+}
+
 export interface UserSubscription {
   id: string;
   user_id: string;
@@ -28,6 +37,10 @@ export interface UserSubscription {
   user_email?: string;
   plan_name?: string;
   plan_price?: number;
+  // Sync status with license
+  license_status?: string | null;
+  license_end_date?: string | null;
+  is_synced?: boolean;
 }
 
 export interface Payment {
@@ -81,6 +94,16 @@ export const useAdminSubscriptions = () => {
 
       if (subsError) throw subsError;
 
+      // Fetch licenses to check sync status
+      const { data: licensesData, error: licensesError } = await supabase
+        .from('licenses')
+        .select('id, user_id, plan_name, status, start_date, end_date');
+
+      if (licensesError) {
+        console.error('Error fetching licenses:', licensesError);
+      }
+      const licenses: License[] = licensesData || [];
+
       // Fetch payments with order info
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('payments')
@@ -121,16 +144,29 @@ export const useAdminSubscriptions = () => {
 
       setPlans(plansWithCounts);
 
-      // Merge subscriptions with user and plan info
+      // Merge subscriptions with user, plan and license info
       const subsWithInfo: UserSubscription[] = (subsData || []).map(sub => {
         const profile = profiles?.find(p => p.user_id === sub.user_id);
         const plan = plansData?.find(p => p.id === sub.plan_id);
+        
+        // Find matching license for this subscription
+        const license = licenses.find(l => 
+          l.user_id === sub.user_id && 
+          l.plan_name === plan?.name
+        );
+        
+        // Check if synced: subscription status matches license status
+        const isSynced = license ? license.status === sub.status : false;
+        
         return {
           ...sub,
           user_name: profile?.name || 'Usuário desconhecido',
           user_email: profile?.email || '',
           plan_name: plan?.name || 'Plano desconhecido',
           plan_price: plan?.price || 0,
+          license_status: license?.status || null,
+          license_end_date: license?.end_date || null,
+          is_synced: isSynced,
         };
       });
 
@@ -627,7 +663,9 @@ export const useAdminSubscriptions = () => {
   const stats = {
     activeSubscribers: subscriptions.filter(s => s.status === 'active').length,
     cancelledSubscribers: subscriptions.filter(s => s.status === 'cancelled').length,
+    expiredSubscribers: subscriptions.filter(s => s.status === 'expired').length,
     overdueSubscribers: subscriptions.filter(s => s.status === 'overdue').length,
+    desyncedSubscribers: subscriptions.filter(s => !s.is_synced).length,
     mrr: calculateMRR(),
     churnRate: subscriptions.length > 0 
       ? (subscriptions.filter(s => s.status === 'cancelled').length / subscriptions.length * 100).toFixed(1)
