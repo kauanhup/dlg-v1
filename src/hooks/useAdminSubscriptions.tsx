@@ -367,24 +367,24 @@ export const useAdminSubscriptions = () => {
   };
 
   const confirmPaymentAndActivateSubscription = async (paymentId: string) => {
-    console.log('[confirmPaymentAndActivateSubscription] Starting for payment:', paymentId);
+    console.log('[confirmPayment] Starting for payment:', paymentId);
     try {
       // Find the payment to get order details
       const payment = payments.find(p => p.id === paymentId);
-      console.log('[confirmPaymentAndActivateSubscription] Found payment:', payment);
+      console.log('[confirmPayment] Found payment:', payment);
       
       if (!payment) {
-        console.error('[confirmPaymentAndActivateSubscription] Payment not found in local state');
+        console.error('[confirmPayment] Payment not found in local state');
         return { success: false, error: 'Pagamento não encontrado' };
       }
 
       if (!payment.order_id) {
-        console.error('[confirmPaymentAndActivateSubscription] Payment has no order_id');
+        console.error('[confirmPayment] Payment has no order_id');
         return { success: false, error: 'Pedido não encontrado para este pagamento' };
       }
 
       // Get order details
-      console.log('[confirmPaymentAndActivateSubscription] Fetching order:', payment.order_id);
+      console.log('[confirmPayment] Fetching order:', payment.order_id);
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select('*')
@@ -392,57 +392,94 @@ export const useAdminSubscriptions = () => {
         .single();
 
       if (orderError || !orderData) {
-        console.error('[confirmPaymentAndActivateSubscription] Error fetching order:', orderError);
+        console.error('[confirmPayment] Error fetching order:', orderError);
         return { success: false, error: 'Erro ao buscar pedido' };
       }
       
-      console.log('[confirmPaymentAndActivateSubscription] Order data:', orderData);
+      console.log('[confirmPayment] Order data:', orderData);
 
-      // First update order status to 'paid' (required for complete_order_atomic)
-      console.log('[confirmPaymentAndActivateSubscription] Updating order status to paid');
+      // For subscription orders, create subscription and license manually
+      if (orderData.product_type === 'subscription') {
+        // Get plan by name
+        const { data: planData, error: planError } = await supabase
+          .from('subscription_plans')
+          .select('*')
+          .eq('name', orderData.product_name)
+          .single();
+
+        if (planError || !planData) {
+          console.error('[confirmPayment] Plan not found:', planError);
+          return { success: false, error: 'Plano não encontrado' };
+        }
+
+        console.log('[confirmPayment] Plan data:', planData);
+
+        // Calculate dates
+        const startDate = new Date();
+        const endDate = new Date();
+        if (planData.period > 0) {
+          endDate.setDate(endDate.getDate() + planData.period);
+        } else {
+          // Lifetime - 100 years
+          endDate.setFullYear(endDate.getFullYear() + 100);
+        }
+
+        // Create user subscription
+        const { error: subError } = await supabase
+          .from('user_subscriptions')
+          .insert({
+            user_id: orderData.user_id,
+            plan_id: planData.id,
+            status: 'active',
+            start_date: startDate.toISOString(),
+            next_billing_date: endDate.toISOString()
+          });
+
+        if (subError) {
+          console.error('[confirmPayment] Error creating subscription:', subError);
+          return { success: false, error: 'Erro ao criar assinatura' };
+        }
+
+        // Create license
+        const { error: licError } = await supabase
+          .from('licenses')
+          .insert({
+            user_id: orderData.user_id,
+            plan_name: planData.name,
+            status: 'active',
+            start_date: startDate.toISOString(),
+            end_date: endDate.toISOString()
+          });
+
+        if (licError) {
+          console.error('[confirmPayment] Error creating license:', licError);
+          // Continue anyway, subscription was created
+        }
+      }
+
+      // Update order status to completed
       const { error: updateOrderError } = await supabase
         .from('orders')
-        .update({ status: 'paid' })
+        .update({ status: 'completed' })
         .eq('id', payment.order_id);
 
       if (updateOrderError) {
-        console.error('[confirmPaymentAndActivateSubscription] Error updating order:', updateOrderError);
+        console.error('[confirmPayment] Error updating order:', updateOrderError);
         return { success: false, error: 'Erro ao atualizar pedido' };
       }
 
-      // Call the atomic function to complete the order and activate subscription
-      console.log('[confirmPaymentAndActivateSubscription] Calling complete_order_atomic with:', {
-        _order_id: payment.order_id,
-        _user_id: orderData.user_id,
-        _product_type: orderData.product_type,
-        _quantity: orderData.quantity
-      });
-      
-      const { data: result, error: rpcError } = await supabase.rpc('complete_order_atomic', {
-        _order_id: payment.order_id,
-        _user_id: orderData.user_id,
-        _product_type: orderData.product_type,
-        _quantity: orderData.quantity
-      });
+      // Update payment status to paid
+      const { error: updatePaymentError } = await supabase
+        .from('payments')
+        .update({ status: 'paid', paid_at: new Date().toISOString() })
+        .eq('id', paymentId);
 
-      console.log('[confirmPaymentAndActivateSubscription] RPC result:', result, 'error:', rpcError);
-
-      if (rpcError) {
-        console.error('[confirmPaymentAndActivateSubscription] RPC error:', rpcError);
-        // Rollback order status
-        await supabase.from('orders').update({ status: 'pending' }).eq('id', payment.order_id);
-        return { success: false, error: 'Erro ao completar pedido: ' + rpcError.message };
+      if (updatePaymentError) {
+        console.error('[confirmPayment] Error updating payment:', updatePaymentError);
+        return { success: false, error: 'Erro ao atualizar pagamento' };
       }
 
-      const resultObj = result as { success?: boolean; error?: string } | null;
-      if (resultObj && !resultObj.success) {
-        console.error('[confirmPaymentAndActivateSubscription] Order completion failed:', resultObj.error);
-        // Rollback order status
-        await supabase.from('orders').update({ status: 'pending' }).eq('id', payment.order_id);
-        return { success: false, error: resultObj.error || 'Erro ao completar pedido' };
-      }
-
-      console.log('[confirmPaymentAndActivateSubscription] Success!');
+      console.log('[confirmPayment] Success!');
 
       // Update local state
       setPayments(prev => prev.map(p => 
@@ -451,7 +488,7 @@ export const useAdminSubscriptions = () => {
 
       return { success: true };
     } catch (err) {
-      console.error('[confirmPaymentAndActivateSubscription] Exception:', err);
+      console.error('[confirmPayment] Exception:', err);
       return { success: false, error: 'Erro ao confirmar pagamento' };
     }
   };
