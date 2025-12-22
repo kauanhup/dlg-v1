@@ -43,6 +43,7 @@ export interface Payment {
   created_at: string;
   user_name?: string;
   plan_name?: string;
+  product_type?: string;
 }
 
 export const useAdminSubscriptions = () => {
@@ -79,10 +80,10 @@ export const useAdminSubscriptions = () => {
 
       if (subsError) throw subsError;
 
-      // Fetch payments
+      // Fetch payments with order info
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('payments')
-        .select('*')
+        .select('*, orders(product_type, product_name)')
         .order('created_at', { ascending: false });
 
       if (paymentsError) throw paymentsError;
@@ -134,24 +135,30 @@ export const useAdminSubscriptions = () => {
 
       setSubscriptions(subsWithInfo);
 
-      // Merge payments with user info - try to find plan from order or subscription
+      // Merge payments with user info and product_type from order
       const paymentsWithInfo: Payment[] = (paymentsData || []).map(payment => {
         const profile = profiles?.find(p => p.user_id === payment.user_id);
         
-        // Try to get plan from subscription first
-        let planName = '—';
+        // Get product_type and plan_name from order relation
+        const orderData = payment.orders as { product_type: string; product_name: string } | null;
+        const productType = orderData?.product_type || null;
+        let planName = orderData?.product_name || '—';
+        
+        // If it's a subscription and has subscription_id, try to get plan name from there
         if (payment.subscription_id) {
           const sub = subsData?.find(s => s.id === payment.subscription_id);
           if (sub) {
             const plan = plansData?.find(p => p.id === sub.plan_id);
-            planName = plan?.name || 'Plano não encontrado';
+            if (plan) planName = plan.name;
           }
         }
         
         return {
           ...payment,
+          orders: undefined, // Remove the nested orders object
           user_name: profile?.name || 'Usuário desconhecido',
           plan_name: planName,
+          product_type: productType,
         };
       });
 
