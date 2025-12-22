@@ -56,7 +56,7 @@ const Buy = () => {
   const [userId, setUserId] = useState<string | undefined>(undefined);
   
   // Get upgrade credit info
-  const { activeSubscription, calculateFinalPrice, isLoading: creditLoading } = useUpgradeCredit(userId);
+  const { activeSubscription, calculateFinalPrice, isValidUpgrade, isLoading: creditLoading } = useUpgradeCredit(userId);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -171,28 +171,35 @@ const Buy = () => {
                 const { isPopular, isLifetime } = getCardStyle(plan, index);
                 const displayPrice = plan.promotional_price ?? plan.price;
                 
-                // Calculate upgrade price with credit
-                const hasCredit = activeSubscription && activeSubscription.credit_value > 0;
+                // Check upgrade eligibility
+                const hasActiveSubscription = !!activeSubscription;
                 const isCurrentPlan = activeSubscription?.plan_id === plan.id;
-                const finalPrice = hasCredit && !isCurrentPlan ? calculateFinalPrice(displayPrice) : displayPrice;
-                const showUpgradeDiscount = hasCredit && !isCurrentPlan && finalPrice < displayPrice;
+                const canUpgrade = isValidUpgrade(displayPrice);
+                const isDowngrade = hasActiveSubscription && !isCurrentPlan && !canUpgrade;
+                
+                // Calculate upgrade price with credit (only for valid upgrades)
+                const hasCredit = activeSubscription && activeSubscription.credit_value > 0;
+                const finalPrice = hasCredit && !isCurrentPlan && canUpgrade ? calculateFinalPrice(displayPrice) : displayPrice;
+                const showUpgradeDiscount = hasCredit && !isCurrentPlan && canUpgrade && finalPrice < displayPrice;
                 
                 return (
                   <motion.div
                     key={plan.id}
                     variants={cardVariants}
                     whileHover={{ 
-                      y: -8,
+                      y: isCurrentPlan || isDowngrade ? 0 : -8,
                       transition: { duration: 0.2 }
                     }}
                     className={`relative p-5 sm:p-6 rounded-2xl transition-shadow overflow-visible ${
                       isCurrentPlan
                         ? "border-2 border-muted opacity-60"
-                        : isPopular 
-                          ? "border-2 border-primary bg-primary/5 shadow-lg shadow-primary/10 mt-4" 
-                          : isLifetime 
-                            ? "border-2 border-warning/50 bg-warning/5 mt-4" 
-                            : "border border-border bg-card hover:shadow-lg hover:shadow-primary/5"
+                        : isDowngrade
+                          ? "border-2 border-muted/50 opacity-40 cursor-not-allowed"
+                          : isPopular 
+                            ? "border-2 border-primary bg-primary/5 shadow-lg shadow-primary/10 mt-4" 
+                            : isLifetime 
+                              ? "border-2 border-warning/50 bg-warning/5 mt-4" 
+                              : "border border-border bg-card hover:shadow-lg hover:shadow-primary/5"
                     }`}
                   >
                     {isCurrentPlan && (
@@ -202,8 +209,16 @@ const Buy = () => {
                         </span>
                       </div>
                     )}
+
+                    {isDowngrade && (
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-muted/70 text-muted-foreground shadow-md whitespace-nowrap">
+                          Indisponível
+                        </span>
+                      </div>
+                    )}
                     
-                    {!isCurrentPlan && isPopular && (
+                    {!isCurrentPlan && !isDowngrade && isPopular && (
                       <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
                         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary text-primary-foreground shadow-md whitespace-nowrap">
                           <Sparkles className="w-3 h-3" />
@@ -212,7 +227,7 @@ const Buy = () => {
                       </div>
                     )}
                     
-                    {!isCurrentPlan && isLifetime && (
+                    {!isCurrentPlan && !isDowngrade && isLifetime && (
                       <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
                         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-warning text-warning-foreground shadow-md whitespace-nowrap">
                           <Crown className="w-3 h-3" />
@@ -286,6 +301,14 @@ const Buy = () => {
                         disabled
                       >
                         Plano Atual
+                      </Button>
+                    ) : isDowngrade ? (
+                      <Button 
+                        className="w-full h-11"
+                        variant="outline"
+                        disabled
+                      >
+                        Downgrade não permitido
                       </Button>
                     ) : (
                       <Link to={`/checkout?plano=${plan.id}`} className="w-full">
