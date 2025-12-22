@@ -40,21 +40,21 @@ const StatCard = ({
   icon: React.ElementType; 
   trend?: "up" | "down"; 
 }) => (
-  <div className="bg-card border border-border rounded-lg p-4">
-    <div className="flex items-center justify-between">
-      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-        <Icon className="w-5 h-5 text-primary" />
+  <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
+    <div className="flex items-center justify-between gap-2">
+      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+        <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
       </div>
       <span className={cn(
-        "text-xs font-medium px-2 py-1 rounded-md",
+        "text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md truncate",
         trend === "up" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
       )}>
         {change}
       </span>
     </div>
-    <div className="mt-3">
-      <p className="text-xl font-bold text-foreground">{value}</p>
-      <p className="text-xs text-muted-foreground">{title}</p>
+    <div className="mt-2 sm:mt-3">
+      <p className="text-lg sm:text-xl font-bold text-foreground">{value}</p>
+      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{title}</p>
     </div>
   </div>
 );
@@ -167,25 +167,25 @@ export const SessionOrdersSection = ({ className }: SessionOrdersSectionProps) =
   }
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn("space-y-4 sm:space-y-6", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Pedidos de Sessions</h2>
-          <p className="text-sm text-muted-foreground">Gerenciar pedidos de sessions brasileiras e estrangeiras</p>
+          <h2 className="text-base sm:text-lg font-semibold text-foreground">Pedidos de Sessions</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground">Gerenciar pedidos de sessions</p>
         </div>
-        <Button variant="outline" size="sm" onClick={refetch}>
+        <Button variant="outline" size="sm" onClick={refetch} className="w-full xs:w-auto">
           <RefreshCw className="w-4 h-4 mr-2" />
           Atualizar
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard 
           title="Total Pedidos" 
           value={sessionStats.total.toString()} 
-          change={`${sessionStats.pending} pendentes`}
+          change={`${sessionStats.pending} pend.`}
           icon={ShoppingCart}
           trend="up"
         />
