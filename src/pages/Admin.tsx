@@ -1054,7 +1054,7 @@ const SubscriptionsTabContent = () => {
                         </td>
                         <td className="p-4 text-sm text-muted-foreground">{formatDate(payment.created_at)}</td>
                         <td className="p-4">
-                          {payment.status === "pending" ? (
+                          {(payment.status === "pending" || payment.status === "cancelled") ? (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -1063,12 +1063,16 @@ const SubscriptionsTabContent = () => {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="bg-card border border-border">
                                 <DropdownMenuItem className="cursor-pointer text-success focus:text-success" onClick={() => handleConfirmPaymentClick(payment)}>
-                                  <CheckCircle className="w-4 h-4 mr-2" /> Confirmar Pagamento
+                                  <CheckCircle className="w-4 h-4 mr-2" /> {payment.status === "cancelled" ? "Atualizar para Pago" : "Confirmar Pagamento"}
                                 </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={() => handleCancelPaymentClick(payment)}>
-                                  <XCircle className="w-4 h-4 mr-2" /> Cancelar
-                                </DropdownMenuItem>
+                                {payment.status === "pending" && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={() => handleCancelPaymentClick(payment)}>
+                                      <XCircle className="w-4 h-4 mr-2" /> Cancelar
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           ) : (
