@@ -20,7 +20,6 @@ import {
 import { SessionStatsCards } from "./SessionStatsCards";
 import { SessionFilesList } from "./SessionFilesList";
 import { SessionCombosSection } from "./SessionCombosSection";
-import { SessionSalesHistory } from "./SessionSalesHistory";
 import { SessionTypeSelectorModal } from "./SessionTypeSelectorModal";
 import { SessionUploadModal } from "./SessionUploadModal";
 import { SessionCustomQuantitySection } from "./SessionCustomQuantitySection";
@@ -38,7 +37,7 @@ export const SessionsSection = () => {
     inventory, 
     combos: dbCombos, 
     sessionFiles,
-    groupedSales,
+    
     isLoading, 
     isUploading,
     uploadSessionFiles,
@@ -364,74 +363,95 @@ export const SessionsSection = () => {
           {/* Content - only show when not loading */}
           {!isLoading && (
             <>
-              {/* Stats Cards */}
-              <SessionStatsCards 
-                stats={stats} 
-                totalFiles={sessionFiles.length} 
-              />
+              {/* ===== SEÇÃO 1: VISÃO GERAL ===== */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-border pb-2">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  <h2 className="text-base font-semibold text-foreground">Visão Geral</h2>
+                </div>
+                
+                {/* Stats Cards */}
+                <SessionStatsCards 
+                  stats={stats} 
+                  totalFiles={sessionFiles.length} 
+                />
 
-              {/* Session Files List */}
-              <SessionFilesList 
-                files={sessionFiles}
-                onDelete={handleDeleteFile}
-              />
+                {/* Session Files List */}
+                <SessionFilesList 
+                  files={sessionFiles}
+                  onDelete={handleDeleteFile}
+                />
+              </div>
 
-              {/* Cost Section */}
-              <SessionCostSection
-                costBrasileiras={costBrasileiras}
-                costEstrangeiras={costEstrangeiras}
-                onCostBrasileirasChange={setCostBrasileiras}
-                onCostEstrangeirasChange={setCostEstrangeiras}
-              />
+              {/* ===== SEÇÃO 2: PREÇOS E CONFIGURAÇÕES ===== */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-border pb-2">
+                  <DollarSign className="w-4 h-4 text-primary" />
+                  <h2 className="text-base font-semibold text-foreground">Preços e Configurações</h2>
+                </div>
 
-              {/* Custom Quantity Section */}
-              <SessionCustomQuantitySection
-                customQtyBrEnabled={customQtyBrEnabled}
-                customQtyBrMin={customQtyBrMin}
-                customQtyBrPrice={customQtyBrPrice}
-                customQtyEstEnabled={customQtyEstEnabled}
-                customQtyEstMin={customQtyEstMin}
-                customQtyEstPrice={customQtyEstPrice}
-                onCustomQtyBrEnabledChange={setCustomQtyBrEnabled}
-                onCustomQtyBrMinChange={setCustomQtyBrMin}
-                onCustomQtyBrPriceChange={setCustomQtyBrPrice}
-                onCustomQtyEstEnabledChange={setCustomQtyEstEnabled}
-                onCustomQtyEstMinChange={setCustomQtyEstMin}
-                onCustomQtyEstPriceChange={setCustomQtyEstPrice}
-              />
+                {/* Cost Section */}
+                <SessionCostSection
+                  costBrasileiras={costBrasileiras}
+                  costEstrangeiras={costEstrangeiras}
+                  onCostBrasileirasChange={setCostBrasileiras}
+                  onCostEstrangeirasChange={setCostEstrangeiras}
+                />
 
-              {/* Combos Brasileiras */}
-              <SessionCombosSection
-                title="Combos Sessions Brasileiras"
-                icon={Package}
-                combos={brasileirasCombos}
-                comboEdits={comboEdits}
-                onComboEdit={handleComboEdit}
-                onAddCombo={() => handleAddCombo('brasileiras')}
-                onDeleteCombo={handleDeleteCombo}
-              />
+                {/* Custom Quantity Section */}
+                <SessionCustomQuantitySection
+                  customQtyBrEnabled={customQtyBrEnabled}
+                  customQtyBrMin={customQtyBrMin}
+                  customQtyBrPrice={customQtyBrPrice}
+                  customQtyEstEnabled={customQtyEstEnabled}
+                  customQtyEstMin={customQtyEstMin}
+                  customQtyEstPrice={customQtyEstPrice}
+                  onCustomQtyBrEnabledChange={setCustomQtyBrEnabled}
+                  onCustomQtyBrMinChange={setCustomQtyBrMin}
+                  onCustomQtyBrPriceChange={setCustomQtyBrPrice}
+                  onCustomQtyEstEnabledChange={setCustomQtyEstEnabled}
+                  onCustomQtyEstMinChange={setCustomQtyEstMin}
+                  onCustomQtyEstPriceChange={setCustomQtyEstPrice}
+                />
+              </div>
 
-              {/* Combos Estrangeiras */}
-              <SessionCombosSection
-                title="Combos Sessions Estrangeiras"
-                icon={Globe}
-                combos={estrangeirasCombos}
-                comboEdits={comboEdits}
-                onComboEdit={handleComboEdit}
-                onAddCombo={() => handleAddCombo('estrangeiras')}
-                onDeleteCombo={handleDeleteCombo}
-              />
+              {/* ===== SEÇÃO 3: COMBOS ===== */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-border pb-2">
+                  <Package className="w-4 h-4 text-primary" />
+                  <h2 className="text-base font-semibold text-foreground">Combos de Sessions</h2>
+                </div>
+
+                {/* Combos Brasileiras */}
+                <SessionCombosSection
+                  title="🇧🇷 Brasileiras"
+                  icon={Package}
+                  combos={brasileirasCombos}
+                  comboEdits={comboEdits}
+                  onComboEdit={handleComboEdit}
+                  onAddCombo={() => handleAddCombo('brasileiras')}
+                  onDeleteCombo={handleDeleteCombo}
+                />
+
+                {/* Combos Estrangeiras */}
+                <SessionCombosSection
+                  title="🌍 Estrangeiras"
+                  icon={Globe}
+                  combos={estrangeirasCombos}
+                  comboEdits={comboEdits}
+                  onComboEdit={handleComboEdit}
+                  onAddCombo={() => handleAddCombo('estrangeiras')}
+                  onDeleteCombo={handleDeleteCombo}
+                />
+              </div>
 
               {/* Save Button */}
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-4 border-t border-border">
                 <Button onClick={handleSaveAll} disabled={isSaving}>
                   {isSaving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                   {isSaving ? "Salvando..." : "Salvar Configurações"}
                 </Button>
               </div>
-
-              {/* Sales History */}
-              <SessionSalesHistory sales={groupedSales} />
             </>
           )}
         </>
