@@ -65,11 +65,13 @@ export const useAdminSubscriptions = () => {
   const [subscriptions, setSubscriptions] = useState<UserSubscription[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = async (showLoading = true) => {
-    // Only show loading on initial fetch (when no data exists yet)
-    if (showLoading && plans.length === 0) setIsLoading(true);
+    if (showLoading) {
+      setIsRefreshing(true);
+    }
     setError(null);
     
     try {
@@ -208,6 +210,7 @@ export const useAdminSubscriptions = () => {
       setError('Erro ao carregar dados de assinaturas');
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -681,6 +684,7 @@ export const useAdminSubscriptions = () => {
     subscriptions,
     payments,
     isLoading,
+    isRefreshing,
     error,
     refetch: fetchData,
     updatePlan,
