@@ -367,18 +367,24 @@ export const useAdminSubscriptions = () => {
   };
 
   const confirmPaymentAndActivateSubscription = async (paymentId: string) => {
+    console.log('[confirmPaymentAndActivateSubscription] Starting for payment:', paymentId);
     try {
       // Find the payment to get order details
       const payment = payments.find(p => p.id === paymentId);
+      console.log('[confirmPaymentAndActivateSubscription] Found payment:', payment);
+      
       if (!payment) {
+        console.error('[confirmPaymentAndActivateSubscription] Payment not found in local state');
         return { success: false, error: 'Pagamento não encontrado' };
       }
 
       if (!payment.order_id) {
+        console.error('[confirmPaymentAndActivateSubscription] Payment has no order_id');
         return { success: false, error: 'Pedido não encontrado para este pagamento' };
       }
 
       // Get order details
+      console.log('[confirmPaymentAndActivateSubscription] Fetching order:', payment.order_id);
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select('*')
@@ -386,22 +392,32 @@ export const useAdminSubscriptions = () => {
         .single();
 
       if (orderError || !orderData) {
-        console.error('Error fetching order:', orderError);
+        console.error('[confirmPaymentAndActivateSubscription] Error fetching order:', orderError);
         return { success: false, error: 'Erro ao buscar pedido' };
       }
+      
+      console.log('[confirmPaymentAndActivateSubscription] Order data:', orderData);
 
       // First update order status to 'paid' (required for complete_order_atomic)
+      console.log('[confirmPaymentAndActivateSubscription] Updating order status to paid');
       const { error: updateOrderError } = await supabase
         .from('orders')
         .update({ status: 'paid' })
         .eq('id', payment.order_id);
 
       if (updateOrderError) {
-        console.error('Error updating order:', updateOrderError);
+        console.error('[confirmPaymentAndActivateSubscription] Error updating order:', updateOrderError);
         return { success: false, error: 'Erro ao atualizar pedido' };
       }
 
       // Call the atomic function to complete the order and activate subscription
+      console.log('[confirmPaymentAndActivateSubscription] Calling complete_order_atomic with:', {
+        _order_id: payment.order_id,
+        _user_id: orderData.user_id,
+        _product_type: orderData.product_type,
+        _quantity: orderData.quantity
+      });
+      
       const { data: result, error: rpcError } = await supabase.rpc('complete_order_atomic', {
         _order_id: payment.order_id,
         _user_id: orderData.user_id,
@@ -409,20 +425,24 @@ export const useAdminSubscriptions = () => {
         _quantity: orderData.quantity
       });
 
+      console.log('[confirmPaymentAndActivateSubscription] RPC result:', result, 'error:', rpcError);
+
       if (rpcError) {
-        console.error('Error completing order:', rpcError);
+        console.error('[confirmPaymentAndActivateSubscription] RPC error:', rpcError);
         // Rollback order status
         await supabase.from('orders').update({ status: 'pending' }).eq('id', payment.order_id);
-        return { success: false, error: 'Erro ao completar pedido' };
+        return { success: false, error: 'Erro ao completar pedido: ' + rpcError.message };
       }
 
       const resultObj = result as { success?: boolean; error?: string } | null;
       if (resultObj && !resultObj.success) {
-        console.error('Order completion failed:', resultObj.error);
+        console.error('[confirmPaymentAndActivateSubscription] Order completion failed:', resultObj.error);
         // Rollback order status
         await supabase.from('orders').update({ status: 'pending' }).eq('id', payment.order_id);
         return { success: false, error: resultObj.error || 'Erro ao completar pedido' };
       }
+
+      console.log('[confirmPaymentAndActivateSubscription] Success!');
 
       // Update local state
       setPayments(prev => prev.map(p => 
@@ -431,7 +451,7 @@ export const useAdminSubscriptions = () => {
 
       return { success: true };
     } catch (err) {
-      console.error('Error confirming payment:', err);
+      console.error('[confirmPaymentAndActivateSubscription] Exception:', err);
       return { success: false, error: 'Erro ao confirmar pagamento' };
     }
   };
