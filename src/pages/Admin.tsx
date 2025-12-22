@@ -345,7 +345,9 @@ const SubscriptionsTabContent = () => {
     deletePlan,
     updateSubscription,
     renewSubscription,
-    updatePayment 
+    updatePayment,
+    confirmPaymentAndActivateSubscription,
+    cancelPaymentAndOrder
   } = useAdminSubscriptions();
   
   const [activeSubTab, setActiveSubTab] = useState<"subscribers" | "plans" | "payments">("subscribers");
@@ -569,8 +571,12 @@ const SubscriptionsTabContent = () => {
   const handleConfirmCancelPayment = async () => {
     if (selectedPayment) {
       setIsCancellingPayment(true);
-      await updatePayment(selectedPayment.id, { status: 'cancelled' });
-      toast.success('Pagamento cancelado');
+      const result = await cancelPaymentAndOrder(selectedPayment.id);
+      if (result.success) {
+        toast.success('Pagamento cancelado');
+      } else {
+        toast.error(result.error || 'Erro ao cancelar pagamento');
+      }
       setIsCancellingPayment(false);
     }
     setShowCancelPaymentModal(false);
@@ -581,8 +587,12 @@ const SubscriptionsTabContent = () => {
   const handleConfirmPaymentConfirmation = async () => {
     if (selectedPayment) {
       setIsConfirmingPayment(true);
-      await updatePayment(selectedPayment.id, { status: 'paid', paid_at: new Date().toISOString() });
-      toast.success('Pagamento confirmado');
+      const result = await confirmPaymentAndActivateSubscription(selectedPayment.id);
+      if (result.success) {
+        toast.success('Pagamento confirmado e assinatura ativada');
+      } else {
+        toast.error(result.error || 'Erro ao confirmar pagamento');
+      }
       setIsConfirmingPayment(false);
     }
     setShowConfirmPaymentModal(false);

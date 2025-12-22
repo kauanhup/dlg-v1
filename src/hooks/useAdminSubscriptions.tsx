@@ -366,6 +366,119 @@ export const useAdminSubscriptions = () => {
     }
   };
 
+  const confirmPaymentAndActivateSubscription = async (paymentId: string) => {
+    try {
+      // Find the payment to get order details
+      const payment = payments.find(p => p.id === paymentId);
+      if (!payment) {
+        return { success: false, error: 'Pagamento não encontrado' };
+      }
+
+      if (!payment.order_id) {
+        return { success: false, error: 'Pedido não encontrado para este pagamento' };
+      }
+
+      // Get order details
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', payment.order_id)
+        .single();
+
+      if (orderError || !orderData) {
+        console.error('Error fetching order:', orderError);
+        return { success: false, error: 'Erro ao buscar pedido' };
+      }
+
+      // First update order status to 'paid' (required for complete_order_atomic)
+      const { error: updateOrderError } = await supabase
+        .from('orders')
+        .update({ status: 'paid' })
+        .eq('id', payment.order_id);
+
+      if (updateOrderError) {
+        console.error('Error updating order:', updateOrderError);
+        return { success: false, error: 'Erro ao atualizar pedido' };
+      }
+
+      // Call the atomic function to complete the order and activate subscription
+      const { data: result, error: rpcError } = await supabase.rpc('complete_order_atomic', {
+        _order_id: payment.order_id,
+        _user_id: orderData.user_id,
+        _product_type: orderData.product_type,
+        _quantity: orderData.quantity
+      });
+
+      if (rpcError) {
+        console.error('Error completing order:', rpcError);
+        // Rollback order status
+        await supabase.from('orders').update({ status: 'pending' }).eq('id', payment.order_id);
+        return { success: false, error: 'Erro ao completar pedido' };
+      }
+
+      const resultObj = result as { success?: boolean; error?: string } | null;
+      if (resultObj && !resultObj.success) {
+        console.error('Order completion failed:', resultObj.error);
+        // Rollback order status
+        await supabase.from('orders').update({ status: 'pending' }).eq('id', payment.order_id);
+        return { success: false, error: resultObj.error || 'Erro ao completar pedido' };
+      }
+
+      // Update local state
+      setPayments(prev => prev.map(p => 
+        p.id === paymentId ? { ...p, status: 'paid', paid_at: new Date().toISOString() } : p
+      ));
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error confirming payment:', err);
+      return { success: false, error: 'Erro ao confirmar pagamento' };
+    }
+  };
+
+  const cancelPaymentAndOrder = async (paymentId: string) => {
+    try {
+      const payment = payments.find(p => p.id === paymentId);
+      if (!payment) {
+        return { success: false, error: 'Pagamento não encontrado' };
+      }
+
+      // Update payment status
+      const { error: paymentError } = await supabase
+        .from('payments')
+        .update({ status: 'cancelled' })
+        .eq('id', paymentId);
+
+      if (paymentError) {
+        console.error('Error updating payment:', paymentError);
+        return { success: false, error: 'Erro ao cancelar pagamento' };
+      }
+
+      // Update order status if exists
+      if (payment.order_id) {
+        const { error: orderError } = await supabase
+          .from('orders')
+          .update({ status: 'cancelled' })
+          .eq('id', payment.order_id);
+
+        if (orderError) {
+          console.error('Error updating order:', orderError);
+          // Payment was already updated, just log the error
+        }
+      }
+
+      // Update local state
+      setPayments(prev => prev.map(p => 
+        p.id === paymentId ? { ...p, status: 'cancelled' } : p
+      ));
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error cancelling payment:', err);
+      return { success: false, error: 'Erro ao cancelar pagamento' };
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -411,6 +524,8 @@ export const useAdminSubscriptions = () => {
     updateSubscription,
     renewSubscription,
     updatePayment,
+    confirmPaymentAndActivateSubscription,
+    cancelPaymentAndOrder,
     stats,
   };
 };
