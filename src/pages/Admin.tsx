@@ -1033,6 +1033,7 @@ const SubscriptionsTabContent = () => {
                     <tr className="border-b border-border bg-muted/30">
                       <th className="text-left text-xs font-medium text-muted-foreground p-4">ID</th>
                       <th className="text-left text-xs font-medium text-muted-foreground p-4">Usuário</th>
+                      <th className="text-left text-xs font-medium text-muted-foreground p-4">Email</th>
                       <th className="text-left text-xs font-medium text-muted-foreground p-4">Plano</th>
                       <th className="text-left text-xs font-medium text-muted-foreground p-4">Valor</th>
                       <th className="text-left text-xs font-medium text-muted-foreground p-4">Status</th>
@@ -1045,6 +1046,7 @@ const SubscriptionsTabContent = () => {
                       <tr key={payment.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
                         <td className="p-4 text-sm font-mono text-foreground">#{payment.id.slice(0, 8)}</td>
                         <td className="p-4 text-sm text-foreground">{payment.user_name}</td>
+                        <td className="p-4 text-sm text-muted-foreground">{payment.user_email || '—'}</td>
                         <td className="p-4 text-sm text-muted-foreground">{payment.plan_name}</td>
                         <td className="p-4 text-sm font-medium text-foreground">{formatPrice(payment.amount)}</td>
                         <td className="p-4">
