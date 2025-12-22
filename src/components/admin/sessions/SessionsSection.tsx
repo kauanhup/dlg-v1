@@ -16,6 +16,7 @@ import {
   ShoppingCart,
   Settings,
   Layers,
+  ArrowUpRight,
 } from "lucide-react";
 
 // Sub-components
@@ -272,71 +273,87 @@ export const SessionsSection = () => {
     }
   };
 
+  const tabs = [
+    { id: "estoque" as const, label: "Estoque", shortLabel: "Est.", icon: Layers },
+    { id: "configuracoes" as const, label: "Configurações", shortLabel: "Config.", icon: Settings },
+    { id: "combos" as const, label: "Combos", shortLabel: "Combos", icon: Package },
+    { id: "pedidos" as const, label: "Pedidos", shortLabel: "Pedidos", icon: ShoppingCart },
+  ];
+
   // ==========================================
   // RENDER
   // ==========================================
 
   return (
-    <motion.div {...fadeIn} className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-lg sm:text-xl font-semibold text-foreground">Sessions</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">Gerenciar estoque e pedidos de sessions</p>
+    <motion.div 
+      initial="initial"
+      animate="animate"
+      className="space-y-4 sm:space-y-6"
+    >
+      {/* Header Card */}
+      <motion.div {...fadeIn} className="bg-card border border-border rounded-lg p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
+              <Package className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+              Gerenciamento de Sessions
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Gerencie estoque, combos, configurações e pedidos
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full border border-border/50 w-fit">
+            <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+            <span>{stats.totalAvailable} disponíveis</span>
+          </div>
         </div>
-      </div>
+
+        {/* Quick Summary */}
+        <div className="mt-4 sm:mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="p-3 bg-success/5 rounded-lg border border-success/20">
+            <p className="text-xs text-muted-foreground">🇧🇷 Brasileiras</p>
+            <p className="text-lg sm:text-xl font-bold text-success">{stats.totalBrasileiras}</p>
+          </div>
+          <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+            <p className="text-xs text-muted-foreground">🌍 Estrangeiras</p>
+            <p className="text-lg sm:text-xl font-bold text-primary">{stats.totalEstrangeiras}</p>
+          </div>
+          <div className="p-3 bg-muted/50 rounded-lg border border-border">
+            <p className="text-xs text-muted-foreground">Combos BR</p>
+            <p className="text-lg sm:text-xl font-bold text-foreground">{brasileirasCombos.length}</p>
+          </div>
+          <div className="p-3 bg-muted/50 rounded-lg border border-border">
+            <p className="text-xs text-muted-foreground">Combos EST</p>
+            <p className="text-lg sm:text-xl font-bold text-foreground">{estrangeirasCombos.length}</p>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Tab Navigation */}
-      <div className="w-full overflow-x-auto pb-2 -mb-2">
-        <div className="flex gap-1 bg-muted/50 p-1 rounded-lg w-fit min-w-full sm:min-w-0">
-          <button
-            onClick={() => setActiveTab("estoque")}
-            className={cn(
-              "flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap",
-              activeTab === "estoque" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="hidden xs:inline">Estoque</span>
-            <span className="xs:hidden">Est.</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("configuracoes")}
-            className={cn(
-              "flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap",
-              activeTab === "configuracoes" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="hidden xs:inline">Configurações</span>
-            <span className="xs:hidden">Config.</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("combos")}
-            className={cn(
-              "flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap",
-              activeTab === "combos" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            Combos
-          </button>
-          <button
-            onClick={() => setActiveTab("pedidos")}
-            className={cn(
-              "flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap",
-              activeTab === "pedidos" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            Pedidos
-          </button>
+      <motion.div {...fadeIn} className="w-full overflow-x-auto pb-2 -mb-2">
+        <div className="flex gap-1 bg-muted/50 p-1 rounded-lg w-fit min-w-full sm:min-w-0 border border-border/50">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-md transition-all flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap",
+                activeTab === tab.id 
+                  ? "bg-background text-foreground shadow-sm border border-border/50" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              )}
+            >
+              <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">{tab.label}</span>
+              <span className="xs:hidden">{tab.shortLabel}</span>
+            </button>
+          ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Estoque Tab */}
       {activeTab === "estoque" && (
-        <>
+        <motion.div {...fadeIn} className="space-y-4 sm:space-y-6">
           {/* Actions */}
           <div className="flex flex-col xs:flex-row justify-end gap-2">
             <input
@@ -403,24 +420,29 @@ export const SessionsSection = () => {
               />
             </>
           )}
-        </>
+        </motion.div>
       )}
 
       {/* Configurações Tab */}
       {activeTab === "configuracoes" && (
-        <>
+        <motion.div {...fadeIn}>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Spinner size="lg" />
               <span className="ml-3 text-muted-foreground">Carregando dados...</span>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Configurações de Quantidade Customizada */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 border-b border-border pb-2">
-                  <Settings className="w-4 h-4 text-primary" />
-                  <h2 className="text-base font-semibold text-foreground">Quantidade Personalizada</h2>
+              <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <Settings className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm sm:text-base font-semibold text-foreground">Quantidade Personalizada</h2>
+                    <p className="text-xs text-muted-foreground">Configurações de quantidade customizada</p>
+                  </div>
                 </div>
 
                 <SessionCustomQuantitySection
@@ -440,10 +462,15 @@ export const SessionsSection = () => {
               </div>
 
               {/* Custos */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 border-b border-border pb-2">
-                  <DollarSign className="w-4 h-4 text-primary" />
-                  <h2 className="text-base font-semibold text-foreground">Custos por Session</h2>
+              <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-success/10 rounded-lg flex items-center justify-center">
+                    <DollarSign className="w-4 h-4 text-success" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm sm:text-base font-semibold text-foreground">Custos por Session</h2>
+                    <p className="text-xs text-muted-foreground">Valor de custo para cálculo de lucro</p>
+                  </div>
                 </div>
 
                 <SessionCostSection
@@ -455,64 +482,65 @@ export const SessionsSection = () => {
               </div>
 
               {/* Save Button */}
-              <div className="flex justify-end pt-4 border-t border-border">
-                <Button onClick={handleSaveAll} disabled={isSaving}>
+              <div className="flex justify-end">
+                <Button onClick={handleSaveAll} disabled={isSaving} size="lg">
                   {isSaving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                   {isSaving ? "Salvando..." : "Salvar Configurações"}
                 </Button>
               </div>
             </div>
           )}
-        </>
+        </motion.div>
       )}
 
       {/* Combos Tab */}
       {activeTab === "combos" && (
-        <>
+        <motion.div {...fadeIn}>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Spinner size="lg" />
               <span className="ml-3 text-muted-foreground">Carregando dados...</span>
             </div>
           ) : (
-            <div className="space-y-6">
-              {/* Combos Brasileiras */}
-              <SessionCombosSection
-                title="🇧🇷 Combos Brasileiras"
-                icon={Package}
-                combos={brasileirasCombos}
-                comboEdits={comboEdits}
-                onComboEdit={handleComboEdit}
-                onAddCombo={() => handleAddCombo('brasileiras')}
-                onDeleteCombo={handleDeleteCombo}
-              />
-
-              {/* Combos Estrangeiras */}
-              <SessionCombosSection
-                title="🌍 Combos Estrangeiras"
-                icon={Globe}
-                combos={estrangeirasCombos}
-                comboEdits={comboEdits}
-                onComboEdit={handleComboEdit}
-                onAddCombo={() => handleAddCombo('estrangeiras')}
-                onDeleteCombo={handleDeleteCombo}
-              />
+            <div className="space-y-4 sm:space-y-6">
+              <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+                <SessionCombosSection
+                  title="🇧🇷 Combos Brasileiras"
+                  icon={Package}
+                  combos={brasileirasCombos}
+                  comboEdits={comboEdits}
+                  onComboEdit={handleComboEdit}
+                  onAddCombo={() => handleAddCombo('brasileiras')}
+                  onDeleteCombo={handleDeleteCombo}
+                />
+                <SessionCombosSection
+                  title="🌍 Combos Estrangeiras"
+                  icon={Globe}
+                  combos={estrangeirasCombos}
+                  comboEdits={comboEdits}
+                  onComboEdit={handleComboEdit}
+                  onAddCombo={() => handleAddCombo('estrangeiras')}
+                  onDeleteCombo={handleDeleteCombo}
+                />
+              </div>
 
               {/* Save Button */}
-              <div className="flex justify-end pt-4 border-t border-border">
-                <Button onClick={handleSaveAll} disabled={isSaving}>
+              <div className="flex justify-end">
+                <Button onClick={handleSaveAll} disabled={isSaving} size="lg">
                   {isSaving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                  {isSaving ? "Salvando..." : "Salvar Combos"}
+                  {isSaving ? "Salvando..." : "Salvar Alterações"}
                 </Button>
               </div>
             </div>
           )}
-        </>
+        </motion.div>
       )}
 
       {/* Pedidos Tab */}
       {activeTab === "pedidos" && (
-        <SessionOrdersSection />
+        <motion.div {...fadeIn}>
+          <SessionOrdersSection />
+        </motion.div>
       )}
     </motion.div>
   );

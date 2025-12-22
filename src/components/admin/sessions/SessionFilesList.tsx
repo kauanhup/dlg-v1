@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Package, Trash2, AlertCircle } from "lucide-react";
+import { Package, Trash2, FileText, Clock } from "lucide-react";
 import { SessionFile } from "@/hooks/useAdminSessions";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -42,38 +42,65 @@ export const SessionFilesList = ({ files, onDelete }: SessionFilesListProps) => 
     setDeleteConfirm(null);
   };
 
+  const availableFiles = files.filter(f => f.status === 'available').length;
+  const soldFiles = files.filter(f => f.status === 'sold').length;
+
   return (
-    <div className="bg-card border border-border rounded-lg p-3 sm:p-5">
-      <h3 className="font-semibold text-foreground mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
-        <Package className="w-4 h-4 text-primary" />
-        Arquivos de Session ({files.length})
-      </h3>
+    <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-lg flex items-center justify-center">
+          <FileText className="w-4 h-4 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm sm:text-base font-semibold text-foreground">
+            Arquivos de Session
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            {availableFiles} disponíveis • {soldFiles} vendidos • {files.length} total
+          </p>
+        </div>
+      </div>
       
       {files.length === 0 ? (
-        <div className="text-center py-6 sm:py-8 text-muted-foreground">
-          <Package className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-2 opacity-50" />
-          <p className="text-xs sm:text-sm">Nenhum arquivo importado ainda</p>
-          <p className="text-[10px] sm:text-xs">Use o botão "Importar Sessions" para adicionar arquivos</p>
+        <div className="text-center py-8 sm:py-12 bg-muted/30 rounded-lg border border-dashed border-border">
+          <Package className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 text-muted-foreground/50" />
+          <p className="text-sm font-medium text-muted-foreground">Nenhum arquivo importado</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            Use o botão "Importar Sessions" para adicionar arquivos
+          </p>
         </div>
       ) : (
-        <div className="space-y-2 max-h-64 overflow-y-auto">
+        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
           {files.slice(0, 50).map((file) => (
-            <div key={file.id} className="flex flex-col xs:flex-row xs:items-center justify-between p-2 sm:p-3 bg-muted/30 rounded-lg gap-2">
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                <span className="text-base sm:text-lg flex-shrink-0">{file.type === 'brasileiras' ? '🇧🇷' : '🌍'}</span>
+            <motion.div 
+              key={file.id} 
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col xs:flex-row xs:items-center justify-between p-3 sm:p-4 bg-muted/30 rounded-lg gap-2 hover:bg-muted/50 transition-colors border border-transparent hover:border-border/50"
+            >
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className={cn(
+                  "w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 text-lg",
+                  file.type === 'brasileiras' ? "bg-success/10" : "bg-primary/10"
+                )}>
+                  {file.type === 'brasileiras' ? '🇧🇷' : '🌍'}
+                </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs sm:text-sm font-medium text-foreground truncate">{file.file_name}</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">{formatDate(file.uploaded_at)}</p>
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <Clock className="w-3 h-3" />
+                    <p className="text-[10px] sm:text-xs">{formatDate(file.uploaded_at)}</p>
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2 justify-end">
                 <span className={cn(
-                  "text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md whitespace-nowrap",
-                  file.status === 'available' ? "bg-success/10 text-success" :
-                  file.status === 'sold' ? "bg-muted text-muted-foreground" :
-                  "bg-warning/10 text-warning"
+                  "text-[10px] sm:text-xs px-2 py-1 rounded-md font-medium whitespace-nowrap",
+                  file.status === 'available' ? "bg-success/10 text-success border border-success/20" :
+                  file.status === 'sold' ? "bg-muted text-muted-foreground border border-border" :
+                  "bg-warning/10 text-warning border border-warning/20"
                 )}>
-                  {file.status === 'available' ? 'Disponível' : file.status === 'sold' ? 'Vendido' : 'Reservado'}
+                  {file.status === 'available' ? '✓ Disponível' : file.status === 'sold' ? 'Vendido' : 'Reservado'}
                 </span>
                 
                 {file.status === 'available' && (
@@ -83,7 +110,7 @@ export const SessionFilesList = ({ files, onDelete }: SessionFilesListProps) => 
                         <Button 
                           size="sm" 
                           variant="destructive"
-                          className="h-6 sm:h-7 px-1.5 sm:px-2 text-[10px] sm:text-xs"
+                          className="h-7 px-2 text-xs"
                           onClick={() => handleConfirmDelete(file.id, file.file_path)}
                           disabled={isDeleting === file.id}
                         >
@@ -92,7 +119,7 @@ export const SessionFilesList = ({ files, onDelete }: SessionFilesListProps) => 
                         <Button 
                           size="sm" 
                           variant="ghost"
-                          className="h-6 sm:h-7 px-1.5 sm:px-2 text-[10px] sm:text-xs"
+                          className="h-7 px-2 text-xs"
                           onClick={handleCancelDelete}
                           disabled={isDeleting === file.id}
                         >
@@ -103,19 +130,19 @@ export const SessionFilesList = ({ files, onDelete }: SessionFilesListProps) => 
                       <Button 
                         size="icon" 
                         variant="ghost" 
-                        className="h-7 w-7 sm:h-8 sm:w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                         onClick={() => handleDeleteClick(file.id)}
                       >
-                        <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     )}
                   </>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))}
           {files.length > 50 && (
-            <p className="text-[10px] sm:text-xs text-center text-muted-foreground pt-2">
+            <p className="text-xs text-center text-muted-foreground pt-3 border-t border-border mt-3">
               Mostrando 50 de {files.length} arquivos
             </p>
           )}
