@@ -149,6 +149,33 @@ export const useAdminOrders = () => {
     }
   };
 
+  const cancelOrder = async (orderId: string) => {
+    try {
+      // Update order status
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update({ status: 'cancelled' })
+        .eq('id', orderId);
+
+      if (orderError) throw orderError;
+
+      // Update payment status
+      await supabase
+        .from('payments')
+        .update({ status: 'cancelled' })
+        .eq('order_id', orderId);
+
+      setOrders(prev => prev.map(o => 
+        o.id === orderId ? { ...o, status: 'cancelled' } : o
+      ));
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error cancelling order:', err);
+      return { success: false, error: 'Erro ao cancelar pedido' };
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
   }, []);
@@ -169,6 +196,7 @@ export const useAdminOrders = () => {
     updateOrderStatus,
     completeOrder,
     refundOrder,
+    cancelOrder,
     stats,
   };
 };
