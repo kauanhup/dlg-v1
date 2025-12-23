@@ -27,25 +27,20 @@ const fadeIn = {
   transition: { duration: 0.3 }
 };
 
-// Stat Card matching admin style
+// Stat Card matching admin style (sem ícone)
 const StatCard = ({ 
   title, 
   value, 
   change, 
-  icon: Icon, 
   trend = "up" 
 }: { 
   title: string; 
   value: string; 
   change?: string; 
-  icon: React.ElementType; 
   trend?: "up" | "down" | "neutral"; 
 }) => (
   <div className="bg-card border border-border rounded-lg p-4 sm:p-5">
-    <div className="flex items-center justify-between">
-      <div className="w-9 h-9 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-        <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-      </div>
+    <div className="flex items-center justify-end">
       {change && (
         <span className={cn(
           "text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md flex items-center gap-0.5",
@@ -59,7 +54,7 @@ const StatCard = ({
         </span>
       )}
     </div>
-    <div className="mt-3 sm:mt-4">
+    <div className="mt-2">
       <p className="text-xl sm:text-2xl font-bold text-foreground">{value}</p>
       <p className="text-xs sm:text-sm text-muted-foreground">{title}</p>
     </div>
@@ -240,26 +235,22 @@ export const AdminDashboardSection = () => {
           title="Total Usuários"
           value={String(totalUsers)}
           change={`${activeUsers} ativos`}
-          icon={Users}
           trend="neutral"
         />
         <StatCard
           title="Assinaturas Ativas"
           value={String(activeSubscriptions)}
-          icon={TrendingUp}
           trend="up"
         />
         <StatCard
           title="Pedidos Pendentes"
           value={String(pendingOrders)}
           change={`${completedOrders} completos`}
-          icon={ShoppingCart}
           trend="neutral"
         />
         <StatCard
           title="Sessions em Estoque"
           value={String(totalSessions)}
-          icon={Package}
           trend="neutral"
         />
       </motion.div>
