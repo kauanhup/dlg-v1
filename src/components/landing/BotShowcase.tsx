@@ -16,9 +16,6 @@ const BotShowcase = () => {
             viewport={{ once: true }}
             className="order-2 lg:order-1"
           >
-            <span className="inline-block px-3 py-1 mb-4 text-xs font-medium tracking-wide uppercase bg-primary/10 text-primary rounded-full border border-primary/20">
-              Dashboard Completo
-            </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight">
               Controle total em{" "}
               <span className="text-primary">tempo real</span>
