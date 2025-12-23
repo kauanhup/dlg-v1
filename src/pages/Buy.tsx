@@ -184,12 +184,9 @@ const Buy = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="title-animate text-3xl sm:text-4xl lg:text-5xl font-display font-bold mb-4 text-foreground">
+            <h1 className="title-animate text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground">
               Escolha seu plano
             </h1>
-            <p className="title-animate text-muted-foreground text-base sm:text-lg" style={{ animationDelay: "0.15s" }}>
-              Selecione o plano ideal para você. Entrega instantânea após o pagamento.
-            </p>
           </motion.div>
 
           {/* Upgrade Credit Banner */}
