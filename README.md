@@ -14,19 +14,27 @@ O DLG Connect é uma plataforma SaaS que oferece automação para crescimento de
 #### Para Usuários:
 - **Autenticação segura** com verificação de email e reCAPTCHA
 - **Gestão de licenças** - compra e renovação de planos mensais
+- **Sistema de upgrade/downgrade** - mudança de planos com crédito proporcional
 - **Compra de sessões** - brasileiras e estrangeiras em combos ou quantidade personalizada
 - **Dashboard pessoal** - visualização de licenças, sessões e histórico
-- **Download de arquivos** - bot e sessões compradas
+- **Histórico de faturas** - todas as transações e recibos
+- **Download de arquivos** - bot e sessões compradas com retry automático
 - **Histórico de login** - monitoramento de acessos
+- **Notificações em tempo real** - atualizações instantâneas de pedidos
+- **Avisos de expiração** - lembretes proativos de renovação de licença
+- **Tutorial de primeiro uso** - onboarding interativo para novos usuários
 
 #### Para Administradores:
-- **Gestão de usuários** - visualização, banimento, alteração de roles
-- **Gestão de assinaturas** - criar, editar, cancelar licenças
-- **Gestão de sessões** - upload, exclusão, configuração de preços
+- **Gestão de usuários** - visualização, banimento com motivo, alteração de roles
+- **Gestão de assinaturas** - criar, editar, cancelar, upgrade/downgrade de licenças
+- **Gestão de sessões** - upload com validação, exclusão, configuração de preços
 - **Gestão de combos** - criar pacotes de sessões com preços especiais
 - **Configurações do sistema** - modo manutenção, gateways de pagamento
 - **Gestão do bot** - upload de novas versões
-- **Dashboard analítico** - métricas e estatísticas
+- **Dashboard analítico** - métricas, gráficos e estatísticas detalhadas
+- **Painel de debug** - ferramentas de diagnóstico e testes do sistema
+- **Logs de auditoria** - rastreamento completo de todas as ações administrativas
+- **Sincronização de inventário** - ferramenta para corrigir inconsistências
 
 ### 1.3 Tecnologias Utilizadas
 
@@ -116,6 +124,65 @@ O DLG Connect é uma plataforma SaaS que oferece automação para crescimento de
                      └──────────────┘
 ```
 
+### 2.4 Sistemas de Proteção
+
+#### Real-time Synchronization
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  REAL-TIME LISTENERS                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │session_files │  │    orders    │  │  inventory   │     │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘     │
+│         │                  │                  │             │
+│         └──────────────────┼──────────────────┘             │
+│                            ▼                                │
+│                  ┌──────────────────┐                       │
+│                  │  Auto Invalidate │                       │
+│                  │  React Query     │                       │
+│                  └──────────────────┘                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Session Reservation System
+```
+CHECKOUT PROCESS:
+1. User inicia checkout
+2. Sistema RESERVA sessões (status: 'reserved')
+   ├─ reserved_for_order: order_id
+   └─ reserved_at: timestamp
+3. Se pagamento confirma → status: 'sold'
+4. Se expira (30min) → cleanup libera (status: 'available')
+```
+
+#### Webhook Idempotency
+```
+WEBHOOK FLOW:
+Gateway → Webhook Handler
+              │
+              ├─ Check: transaction_id exists?
+              │   ├─ YES → Return 200 (already processed)
+              │   └─ NO → Continue
+              │
+              ├─ Process payment
+              │
+              └─ Save to processed_webhooks
+```
+
+#### Gateway Fallback
+```
+PRIMARY GATEWAY FAILS
+         │
+         ▼
+┌─────────────────┐
+│ Automatic       │
+│ Fallback to     │
+│ Secondary       │
+└─────────────────┘
+         │
+         ▼
+  System Resilient
+```
+
 ---
 
 ## 3. ESTRUTURA DE ARQUIVOS
@@ -162,6 +229,10 @@ dlg-connect/
 │   │   ├── admin/                 # Componentes do painel admin
 │   │   │   ├── dashboard/
 │   │   │   │   ├── AdminDashboardSection.tsx
+│   │   │   │   └── index.ts
+│   │   │   │
+│   │   │   ├── debug/
+│   │   │   │   ├── SystemDebugPanel.tsx    # Painel de debug e testes
 │   │   │   │   └── index.ts
 │   │   │   │
 │   │   │   └── sessions/
@@ -211,7 +282,9 @@ dlg-connect/
 │   │       └── types.ts           # Tipos do banco (auto-gerado)
 │   │
 │   └── lib/
-│       └── utils.ts               # Utilitários (cn, etc)
+│       ├── utils.ts               # Utilitários (cn, etc)
+│       ├── downloadWithRetry.ts   # Download com retry automático
+│       └── auditLog.ts            # Helper de auditoria
 │
 ├── supabase/
 │   ├── config.toml                # Configuração Supabase
@@ -227,6 +300,8 @@ dlg-connect/
 │       ├── evopay/                # Gateway EvoPay
 │       ├── evopay-webhook/        # Webhook EvoPay
 │       ├── cleanup-expired-orders/ # Limpeza de pedidos
+│       ├── cleanup-expired-reservations/ # Limpeza de reservas antigas
+│       ├── sync-sessions-inventory/ # Sincronização de inventário
 │       └── expire-subscriptions/  # Expiração de assinaturas
 │
 ├── hostinger-proxy/               # Proxy para webhooks
@@ -246,6 +321,7 @@ dlg-connect/
 ├── tailwind.config.ts
 ├── vite.config.ts
 ├── eslint.config.js
+├── DEBUG_GUIDE.md                 # Guia de debug
 └── README.md
 ```
 
@@ -256,9 +332,11 @@ dlg-connect/
 | `src/components/ui/` | Componentes base reutilizáveis (botões, inputs, modais) |
 | `src/components/landing/` | Componentes específicos da landing page |
 | `src/components/admin/` | Componentes do painel administrativo |
+| `src/components/admin/debug/` | Ferramentas de diagnóstico e testes |
 | `src/hooks/` | Lógica de negócio, estado e integrações |
 | `src/pages/` | Páginas/rotas da aplicação |
 | `src/integrations/` | Configuração de serviços externos |
+| `src/lib/` | Utilitários e helpers |
 | `supabase/functions/` | Funções serverless (backend) |
 | `hostinger-proxy/` | Proxy PHP para webhooks |
 
@@ -283,12 +361,13 @@ dlg-connect/
 - **Propósito**: Painel administrativo completo
 - **Estado Interno**: `activeSection`, modais diversos
 - **Hooks Utilizados**: `useAuth`, `useAdminUsers`, `useAdminSubscriptions`, `useAdminSessions`, `useAdminBot`
-- **Seções**: Dashboard, Usuários, Assinaturas, Sessões, Configurações
+- **Seções**: Dashboard, Usuários, Assinaturas, Sessões, Configurações, Debug
 - **Responsabilidades**:
   - Gestão completa de usuários
   - Controle de assinaturas/licenças
   - Upload e gestão de sessões
   - Configurações do sistema
+  - Ferramentas de debug
 
 #### `src/pages/Login.tsx`
 - **Propósito**: Autenticação e registro
@@ -304,6 +383,7 @@ dlg-connect/
   - Geração de QR Code PIX
   - Código copia e cola
   - Polling de status de pagamento
+  - Reserva atômica de sessões
 
 ### 4.2 Componentes Admin
 
@@ -322,6 +402,10 @@ dlg-connect/
 - **Propósito**: Dashboard analítico do admin
 - **Props**: `stats`, `isLoading`, `onNavigate`
 - **Componentes**: StatCards (Total Usuários, Assinaturas, Pedidos, Sessions)
+
+#### `SystemDebugPanel.tsx`
+- **Propósito**: Ferramentas de diagnóstico e testes
+- **Funcionalidades**: Setup, health check, cleanup, sync inventário
 
 ### 4.3 Componentes UI
 
@@ -382,7 +466,7 @@ const isAdmin = roleData?.role === 'admin';
 #### 5.3.2 Gestão de Usuários
 - **Visualizar**: Lista completa de usuários
 - **Buscar**: Por nome, email ou whatsapp
-- **Banir/Desbanir**: Bloquear acesso
+- **Banir/Desbanir**: Bloquear acesso com motivo obrigatório
 - **Alterar Role**: Promover a admin ou rebaixar
 - **Ver Detalhes**: Assinaturas, pedidos, sessões do usuário
 
@@ -390,11 +474,12 @@ const isAdmin = roleData?.role === 'admin';
 - **Criar**: Nova assinatura para usuário
 - **Editar**: Alterar plano, datas, status
 - **Cancelar**: Encerrar assinatura
+- **Upgrade/Downgrade**: Mudança de plano com crédito proporcional
 - **Visualizar**: Status, datas, histórico
 
 #### 5.3.4 Gestão de Sessões
-- **Upload**: Enviar arquivos .session
-- **Excluir**: Remover sessões
+- **Upload**: Enviar arquivos .session com validação
+- **Excluir**: Remover sessões com confirmação dupla
 - **Configurar Preços**: Custo e venda por tipo
 - **Sincronizar**: Atualizar inventário com storage
 
@@ -427,6 +512,7 @@ const isAdmin = roleData?.role === 'admin';
 | Configurar sistema | ❌ | ✅ |
 | Acessar `/admin` | ❌ | ✅ |
 | Banir usuários | ❌ | ✅ |
+| Painel de debug | ❌ | ✅ |
 
 ### 5.5 Proteções de Segurança
 
@@ -445,6 +531,81 @@ USING (
     WHERE user_id = auth.uid() AND role = 'admin'
   )
 );
+```
+
+### 5.6 Painel de Debug e Testes
+
+#### Acesso
+Menu Admin → "Debug & Testes"
+
+#### Funcionalidades
+
+**1. Setup Completo**
+- Cria colunas e índices no banco
+- Ativa real-time em todas as tabelas
+- Configura cron jobs automáticos
+- Valida estrutura do sistema
+
+**2. Verificar Saúde**
+Monitora:
+- ✅ Status do real-time (ativo/inativo por tabela)
+- ✅ Sincronização de inventário (files vs inventory)
+- ⚠️ Sessões reservadas há mais de 30min
+- ⚠️ Pedidos pendentes antigos
+- ⚠️ Gateway logs e falhas
+
+**3. Forçar Limpeza**
+- Libera sessões reservadas expiradas
+- Marca pedidos antigos como expirados
+- Atualiza inventário
+
+**4. Testar Real-time**
+- Monitora eventos do banco por 10 segundos
+- Valida que subscriptions estão funcionando
+- Detecta problemas de sincronização
+
+**5. Sincronizar Inventário**
+- Conta arquivos reais no storage
+- Atualiza tabela sessions_inventory
+- Corrige inconsistências
+
+#### Comandos SQL Úteis
+O painel fornece comandos SQL prontos para:
+- Ver sessões reservadas antigas
+- Verificar pedidos pendentes por usuário
+- Liberar manualmente recursos
+- Diagnosticar problemas
+
+### 5.7 Logs de Auditoria
+
+#### O que é Registrado
+Todas as ações administrativas são registradas com:
+- Admin que executou
+- Data e hora
+- Ação realizada (ban_user, cancel_subscription, delete_sessions, etc)
+- Usuário afetado (se aplicável)
+- Valores antigos e novos (JSON)
+- Motivo da ação
+- IP do admin
+
+#### Visualização
+Menu Admin → "Logs de Auditoria"
+- Tabela com todas as ações
+- Filtros por admin, ação, data
+- Detalhes expandíveis em JSON
+- Exportação para análise
+
+#### Exemplos de Logs
+```json
+{
+  "action": "ban_user",
+  "target_user": "user@example.com",
+  "old_value": { "banned": false },
+  "new_value": { "banned": true, "reason": "Violação dos termos" },
+  "admin": "admin@dlgconnect.com",
+  "timestamp": "2024-12-23T10:30:00Z",
+  "ip": "192.168.1.1"
+}
 ```
 
 ---
@@ -638,9 +799,13 @@ const isActive = license.status === 'active' && daysLeft > 0;
 // Validação de email
 const emailSchema = z.string().email('Email inválido');
 
-// Validação de senha
+// Validação de senha forte
 const passwordSchema = z.string()
-  .min(6, 'Mínimo 6 caracteres');
+  .min(8, 'Mínimo 8 caracteres')
+  .regex(/[A-Z]/, 'Pelo menos 1 maiúscula')
+  .regex(/[a-z]/, 'Pelo menos 1 minúscula')
+  .regex(/[0-9]/, 'Pelo menos 1 número')
+  .regex(/[^A-Za-z0-9]/, 'Pelo menos 1 caractere especial');
 
 // Validação de WhatsApp
 const whatsappSchema = z.string()
@@ -658,6 +823,219 @@ const calculateCredit = (subscription) => {
   return dailyValue * daysRemaining;
 };
 ```
+
+### 8.6 Sistema de Reserva de Sessões
+
+#### Problema Resolvido
+Evita race conditions onde:
+- User inicia checkout
+- Admin deleta sessões
+- Checkout tenta processar sessões inexistentes
+
+#### Fluxo de Reserva
+
+```typescript
+// 1. No momento do checkout
+const reserveSessions = async (type, quantity, orderId) => {
+  // Buscar sessões disponíveis
+  const { data: sessions } = await supabase
+    .from('session_files')
+    .select('id')
+    .eq('type', type)
+    .eq('status', 'available')
+    .limit(quantity);
+  
+  // Validar quantidade
+  if (sessions.length < quantity) {
+    throw new Error('Sessões insuficientes');
+  }
+  
+  // Marcar como reservadas
+  await supabase
+    .from('session_files')
+    .update({ 
+      status: 'reserved',
+      reserved_for_order: orderId,
+      reserved_at: new Date().toISOString()
+    })
+    .in('id', sessions.map(s => s.id));
+};
+
+// 2. Se pagamento confirma
+// status: 'reserved' → 'sold'
+
+// 3. Se expira (30min)
+// Cron job: status: 'reserved' → 'available'
+```
+
+#### Estados de Sessão
+- `available` - Disponível para compra
+- `reserved` - Reservada para pedido pendente
+- `sold` - Vendida e entregue
+
+#### Limpeza Automática
+Edge function `cleanup-expired-reservations` roda a cada 10 minutos:
+- Busca sessões reservadas há mais de 30min
+- Libera para status `available`
+- Registra em logs
+
+### 8.7 Webhook Idempotency (Anti-Duplicação)
+
+#### Problema Resolvido
+Gateway pode enviar webhook duplicado, causando:
+- Pedido processado 2x
+- User recebe sessões em duplicata
+- Inventário negativo
+
+#### Solução Implementada
+
+**Tabela: processed_webhooks**
+```sql
+CREATE TABLE processed_webhooks (
+  id UUID PRIMARY KEY,
+  transaction_id TEXT UNIQUE,  -- ID único do gateway
+  gateway TEXT,
+  order_id UUID,
+  processed_at TIMESTAMPTZ,
+  webhook_payload JSONB
+);
+```
+
+**Validação no Webhook Handler**
+```typescript
+// 1. Extrair transaction_id
+const txId = webhookData.transaction_id || webhookData.id;
+
+// 2. Verificar se já foi processado
+const { data: existing } = await supabase
+  .from('processed_webhooks')
+  .select('id')
+  .eq('transaction_id', txId)
+  .single();
+
+if (existing) {
+  return Response.json({ status: 'already_processed' }, { status: 200 });
+}
+
+// 3. Processar pedido...
+
+// 4. Registrar que foi processado
+await supabase
+  .from('processed_webhooks')
+  .insert({ transaction_id: txId, gateway, order_id });
+```
+
+#### Benefícios
+- ✅ Webhooks duplicados são ignorados
+- ✅ Histórico completo de webhooks recebidos
+- ✅ Debug facilitado (payload salvo)
+- ✅ Garantia de processamento único
+
+### 8.8 Gateway Fallback (Resiliência)
+
+#### Problema Resolvido
+Se PixUp ou EvoPay ficam offline, sistema continua funcionando.
+
+#### Implementação
+
+```typescript
+export async function callGatewayWithFallback(
+  primaryGateway: 'pixup' | 'evopay',
+  orderData: any
+) {
+  const gateways = primaryGateway === 'pixup' 
+    ? ['pixup', 'evopay'] 
+    : ['evopay', 'pixup'];
+  
+  for (const gateway of gateways) {
+    try {
+      console.log(`Tentando gateway: ${gateway}`);
+      const response = await callGateway(gateway, orderData);
+      
+      // Log de sucesso
+      await logGatewayAttempt(gateway, 'success', orderData.order_id);
+      
+      return { gateway, ...response };
+      
+    } catch (error) {
+      console.error(`Gateway ${gateway} falhou`);
+      
+      // Log de falha
+      await logGatewayAttempt(gateway, 'failed', orderData.order_id, error);
+      
+      // Tentar próximo gateway
+      continue;
+    }
+  }
+  
+  throw new Error('Todos os gateways falharam');
+}
+```
+
+#### Logs de Gateway
+```sql
+CREATE TABLE gateway_logs (
+  id UUID PRIMARY KEY,
+  gateway TEXT,
+  order_id UUID,
+  status TEXT,      -- 'success' ou 'failed'
+  error TEXT,
+  attempt INTEGER,
+  created_at TIMESTAMPTZ
+);
+```
+
+#### Monitoramento
+Admin pode ver no dashboard:
+- Taxa de sucesso por gateway
+- Tempo médio de resposta
+- Falhas recentes
+- Uso de fallback
+
+### 8.9 Cálculo Inteligente de Preços
+
+#### Problema Resolvido
+User comprando quantidade personalizada sempre paga o melhor preço possível, mesmo se existir combo mais vantajoso.
+
+#### Algoritmo
+
+```typescript
+function calculateBestPrice(quantity, combos, unitPrice) {
+  // 1. Encontrar combo com melhor preço unitário
+  const bestCombo = combos
+    .filter(c => c.quantity <= quantity)
+    .sort((a, b) => (a.price/a.quantity) - (b.price/b.quantity))[0];
+  
+  if (!bestCombo) {
+    return quantity * unitPrice;
+  }
+  
+  // 2. Aplicar preço do combo para tudo
+  const pricePerUnit = bestCombo.price / bestCombo.quantity;
+  const numCombos = Math.floor(quantity / bestCombo.quantity);
+  const remaining = quantity % bestCombo.quantity;
+  
+  return (numCombos * bestCombo.price) + (remaining * pricePerUnit);
+}
+```
+
+#### Exemplo
+```
+Configuração:
+- Combo 10 sessões: R$ 80 (R$ 8/unidade)
+- Preço avulso: R$ 10/unidade
+
+User compra 15 sessões:
+- Sistema calcula: 1 combo (R$ 80) + 5 avulso a R$ 8 = R$ 120
+- Sem otimização seria: 10 combo + 5 × R$ 10 = R$ 130
+- Economia: R$ 10
+```
+
+#### UI
+Mostra para o user:
+- Preço total otimizado
+- Breakdown detalhado
+- Economia em relação ao preço normal
 
 ---
 
@@ -728,6 +1106,55 @@ const handleSubmit = async () => {
 };
 ```
 
+### 9.4 Sistema de Email Aprimorado
+
+#### Templates HTML
+Emails agora usam templates profissionais em HTML com:
+- Design responsivo
+- Branding consistente
+- CTAs claros
+- Informações detalhadas
+
+#### Tipos de Email
+
+**1. Pagamento Confirmado**
+```typescript
+getPaymentConfirmedEmail({
+  userName: string,
+  productName: string,
+  amount: number,
+  orderDate: string,
+  dashboardUrl: string,
+  downloadUrl?: string
+})
+```
+Contém:
+- Detalhes da compra
+- Próximos passos numerados
+- Link direto para dashboard
+- Link de download (se aplicável)
+
+**2. Lembrete de Renovação**
+Enviado automaticamente em:
+- 7 dias antes da expiração
+- 3 dias antes
+- 1 dia antes
+
+**3. Notificação de Banimento**
+```typescript
+getBanNotificationEmail({
+  userName: string,
+  reason: string,
+  supportEmail: string
+})
+```
+Inclui motivo detalhado e contato para suporte.
+
+#### Automação
+- Cron job diário às 9h para lembretes
+- Webhook trigger para confirmações
+- Real-time para notificações urgentes
+
 ---
 
 ## 10. DEPENDÊNCIAS
@@ -796,6 +1223,7 @@ Todos os pacotes `@radix-ui/*` fornecem componentes acessíveis:
 4. Recebe código de verificação por email
 5. Confirma código
 6. Redireccionado para /dashboard
+7. Tutorial de onboarding aparece
 ```
 
 #### Compra de Licença
@@ -803,11 +1231,12 @@ Todos os pacotes `@radix-ui/*` fornecem componentes acessíveis:
 1. No dashboard, clica em "Comprar Licença"
 2. Seleciona plano desejado
 3. Redireccionado para /checkout
-4. Escaneia QR Code PIX ou copia código
-5. Efetua pagamento
-6. Sistema detecta pagamento (webhook)
-7. Licença ativada automaticamente
-8. Dashboard atualizado
+4. Sistema reserva recursos (se sessões)
+5. Escaneia QR Code PIX ou copia código
+6. Efetua pagamento
+7. Sistema detecta pagamento (webhook idempotente)
+8. Licença ativada automaticamente
+9. Dashboard atualizado em real-time
 ```
 
 #### Compra de Sessões
@@ -816,15 +1245,17 @@ Todos os pacotes `@radix-ui/*` fornecem componentes acessíveis:
 2. Clica em "Comprar Sessions"
 3. Escolhe tipo (brasileiras/estrangeiras)
 4. Seleciona combo ou quantidade personalizada
-5. Segue para checkout
-6. Após pagamento, sessões aparecem para download
+5. Sistema calcula melhor preço
+6. Segue para checkout
+7. Após pagamento, sessões aparecem para download
 ```
 
 #### Download de Bot/Sessões
 ```
 1. Na aba "Licenças", clica em "Baixar Bot"
 2. Na aba "Sessions", clica no arquivo para download
-3. Arquivos são baixados do storage
+3. Sistema faz download com retry automático
+4. Arquivos são baixados do storage
 ```
 
 ### 11.2 Jornada do Administrador
@@ -835,6 +1266,7 @@ Todos os pacotes `@radix-ui/*` fornecem componentes acessíveis:
 2. Visualiza dashboard com métricas
 3. Verifica pedidos pendentes
 4. Processa ações necessárias
+5. Todas as ações são auditadas
 ```
 
 #### Upload de Sessões
@@ -842,7 +1274,7 @@ Todos os pacotes `@radix-ui/*` fornecem componentes acessíveis:
 1. Vai para seção "Sessões"
 2. Clica em "Importar"
 3. Seleciona tipo (BR/Estrangeiras)
-4. Seleciona arquivos .session
+4. Seleciona arquivos .session (validados)
 5. Confirma upload
 6. Sessões aparecem no inventário
 ```
@@ -861,9 +1293,63 @@ Todos os pacotes `@radix-ui/*` fornecem componentes acessíveis:
 1. Vai para seção "Usuários"
 2. Busca usuário por email/nome
 3. Visualiza detalhes
-4. Pode: banir, alterar role, ver assinaturas
+4. Pode: banir (com motivo), alterar role, ver assinaturas
 5. Se necessário, cria assinatura manual
+6. Todas as ações são registradas em audit_logs
 ```
+
+### 11.3 Tutorial de Primeiro Uso
+
+#### Quando Aparece
+- Primeiro login após criar conta
+- Primeira licença adquirida
+- Não mostrar se já foi completado
+
+#### Steps do Tutorial
+
+**Step 1: Boas-vindas**
+```
+🎉 Bem-vindo ao DLG Connect!
+Vamos te ajudar a começar em 3 passos simples.
+```
+
+**Step 2: Download do Bot**
+```
+1️⃣ Baixe o Bot
+Clique no botão para fazer o download do software.
+[CTA: Ir para Downloads]
+```
+
+**Step 3: Comprar Sessões**
+```
+2️⃣ Compre Sessões
+Você precisa de sessões (contas) para o bot funcionar.
+[CTA: Comprar Sessões]
+```
+
+**Step 4: Configuração**
+```
+3️⃣ Configure e Use
+Assista nosso tutorial em vídeo.
+[CTA: Assistir Tutorial]
+```
+
+**Step 5: Conclusão**
+```
+✅ Tudo Pronto!
+Agora você está pronto para começar.
+```
+
+#### Persistência
+```typescript
+// Salvo no localStorage
+localStorage.setItem('onboarding_completed', 'true');
+
+// Pode ser resetado pelo admin se necessário
+```
+
+#### Opção de Pular
+User pode clicar em "Pular Tutorial" a qualquer momento.
 
 ---
 
@@ -892,13 +1378,15 @@ Todos os pacotes `@radix-ui/*` fornecem componentes acessíveis:
 | `login_history` | Histórico de logins |
 | `audit_logs` | Logs de auditoria |
 | `verification_codes` | Códigos de verificação |
+| `processed_webhooks` | Webhooks processados (idempotência) |
+| `gateway_logs` | Logs de tentativas de gateway |
 
 ### 12.2 Storage (Supabase Storage)
 
 | Bucket | Conteúdo |
 |--------|----------|
 | `sessions` | Arquivos .session |
-| `bot` | Versões do bot (.exe/.zip) |
+| `bot-files` | Versões do bot (.exe/.zip) |
 
 ### 12.3 Dados Configuráveis pelo Admin
 
@@ -954,6 +1442,73 @@ Todos os pacotes `@radix-ui/*` fornecem componentes acessíveis:
 │    user_sessions    │
 │     (order_id)      │
 └─────────────────────┘
+```
+
+### 12.5 Tabelas de Controle e Auditoria
+
+#### processed_webhooks
+Previne processamento duplicado de webhooks.
+```sql
+CREATE TABLE processed_webhooks (
+  id UUID PRIMARY KEY,
+  transaction_id TEXT UNIQUE NOT NULL,
+  gateway TEXT NOT NULL,
+  order_id UUID REFERENCES orders(id),
+  processed_at TIMESTAMPTZ DEFAULT NOW(),
+  webhook_payload JSONB
+);
+```
+
+#### gateway_logs
+Rastreia tentativas e falhas de gateways.
+```sql
+CREATE TABLE gateway_logs (
+  id UUID PRIMARY KEY,
+  gateway TEXT NOT NULL,
+  order_id UUID REFERENCES orders(id),
+  status TEXT NOT NULL,
+  error TEXT,
+  attempt INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### audit_logs
+Registra todas as ações administrativas.
+```sql
+CREATE TABLE audit_logs (
+  id UUID PRIMARY KEY,
+  user_id UUID NOT NULL,
+  action TEXT NOT NULL,
+  resource TEXT NOT NULL,
+  details JSONB,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### Colunas Adicionadas
+
+**session_files**
+```sql
+ALTER TABLE session_files ADD COLUMN
+  reserved_for_order UUID REFERENCES orders(id),
+  reserved_at TIMESTAMPTZ;
+```
+
+**orders**
+```sql
+ALTER TABLE orders ADD COLUMN
+  upgrade_from_subscription_id UUID REFERENCES user_subscriptions(id),
+  upgrade_credit_amount DECIMAL(10,2);
+```
+
+**profiles**
+```sql
+ALTER TABLE profiles ADD COLUMN
+  ban_reason TEXT,
+  banned_at TIMESTAMPTZ;
 ```
 
 ---
@@ -1016,6 +1571,262 @@ RECAPTCHA_SECRET_KEY=xxx
 - SQL Injection: Supabase SDK com prepared statements
 - Rate Limiting: Tabela `rate_limits`
 
+### 15.4 Validações Implementadas
+
+#### Arquivos de Sessão
+- Extensão `.session` obrigatória
+- Tamanho mínimo: 100 bytes
+- Tamanho máximo: 10MB
+- Validação antes do upload
+
+#### Senhas
+- Mínimo 8 caracteres
+- Pelo menos 1 maiúscula
+- Pelo menos 1 minúscula
+- Pelo menos 1 número
+- Pelo menos 1 caractere especial
+- Indicador visual de força (5 níveis)
+
+#### Rate Limiting
+- Login: 5 tentativas por hora
+- Registro: 3 por dia por IP
+- Checkout: 10 por hora por usuário
+- Recuperação de senha: 3 por hora
+
+#### Confirmações Obrigatórias
+- Deletar sessões: digitar "CONFIRMAR"
+- Banir usuário: motivo obrigatório (mín 10 caracteres)
+- Alterar role: confirmar se não é último admin
+- Sair do checkout: aviso de pedido pendente
+
+### 15.5 Auditoria
+
+Todas as ações sensíveis são registradas:
+- Quem executou
+- O que foi alterado (antes/depois)
+- Quando ocorreu
+- IP de origem
+- Motivo (quando aplicável)
+
+Ações auditadas:
+- `ban_user`, `unban_user`
+- `change_role`
+- `cancel_subscription`, `create_subscription`
+- `delete_sessions`
+- `update_gateway_settings`
+- `toggle_maintenance_mode`
+
+### 15.6 Proteção contra Banimento
+
+**User banido:**
+- Desconectado em até 60 segundos
+- Real-time listener detecta mudança
+- Modal com motivo do banimento
+- Redirecionado para login
+- Não pode fazer novo login
+
+**Admin protegido:**
+- Não pode banir a si mesmo
+- Não pode alterar próprio role
+- Não pode remover último admin do sistema
+
 ---
 
-*Documentação gerada em dezembro/2024*
+## 16. TESTES E QUALIDADE
+
+### 16.1 Painel de Debug
+
+Ferramentas administrativas para diagnóstico e testes em tempo real.
+
+**Localização:** `/admin` → Menu "Debug & Testes"
+
+**Funcionalidades:**
+- Setup automático do sistema
+- Verificação de saúde (real-time, inventário, reservas)
+- Limpeza manual de recursos
+- Teste de real-time subscriptions
+- Comandos SQL úteis
+
+### 16.2 Monitoramento
+
+**Métricas do Admin Dashboard:**
+- Taxa de conversão de checkout
+- Tempo médio de confirmação PIX
+- Vendas por dia/semana/mês
+- Distribuição de planos
+- Taxa de sucesso de gateways
+
+**Logs Disponíveis:**
+- Auditoria (todas as ações admin)
+- Gateways (sucesso/falha por tentativa)
+- Webhooks processados
+- Rate limiting
+
+### 16.3 Rate Limiting
+
+Proteção implementada por ação:
+
+| Ação | Limite | Janela |
+|------|--------|--------|
+| Login | 5 tentativas | 1 hora |
+| Registro | 3 cadastros | 1 dia |
+| Checkout | 10 pedidos | 1 hora |
+| Recuperar senha | 3 pedidos | 1 hora |
+
+### 16.4 Validações de Segurança
+
+**Senhas Fortes:**
+- Mínimo 8 caracteres
+- 1 maiúscula, 1 minúscula
+- 1 número, 1 caractere especial
+- Indicador visual de força
+
+**Proteções Admin:**
+- Admin não pode alterar próprio role
+- Sistema deve ter pelo menos 1 admin
+- Banimento requer motivo obrigatório
+- Deleção de sessões requer confirmação dupla
+
+**Ban Detection:**
+- Usuário banido é desconectado em até 1 minuto
+- Real-time listener detecta mudanças
+- Modal com motivo do banimento
+
+---
+
+## 17. GUIA DE TROUBLESHOOTING
+
+### 17.1 Problemas Comuns
+
+#### Dashboard não atualiza após compra
+**Causa:** Cache do React Query não invalidado
+**Solução:**
+1. Ir para Debug Panel
+2. Clicar em "Verificar Saúde"
+3. Verificar se real-time está ativo
+4. Se não, clicar em "Setup Completo"
+
+#### Sessões insuficientes no checkout
+**Causa:** Inventário dessincronizado
+**Solução:**
+1. Admin → Debug & Testes
+2. Clicar em "Sincronizar Inventário"
+3. Verificar contagem atualizada
+
+#### Pedido não confirmou após pagamento
+**Verificar:**
+1. Webhook foi recebido? (processed_webhooks)
+2. Gateway respondeu? (gateway_logs)
+3. Pedido está em polling? (orders.status)
+
+**Ação:**
+```sql
+-- Forçar confirmação manual (CUIDADO!)
+UPDATE orders 
+SET status = 'completed'
+WHERE id = 'ORDER_ID' AND status = 'pending';
+```
+
+#### Real-time parou de funcionar
+**Diagnóstico:**
+```sql
+-- Verificar se tabelas têm replication
+SELECT schemaname, tablename 
+FROM pg_publication_tables 
+WHERE pubname = 'supabase_realtime';
+```
+
+**Correção:**
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE session_files;
+ALTER PUBLICATION supabase_realtime ADD TABLE orders;
+-- Repetir para todas as tabelas necessárias
+```
+
+### 17.2 Comandos SQL Úteis
+
+**Ver sessões travadas:**
+```sql
+SELECT * FROM session_files 
+WHERE status = 'reserved' 
+AND reserved_at < NOW() - INTERVAL '30 minutes';
+```
+
+**Liberar sessões manualmente:**
+```sql
+UPDATE session_files
+SET status = 'available', reserved_for_order = NULL, reserved_at = NULL
+WHERE status = 'reserved' 
+AND reserved_at < NOW() - INTERVAL '30 minutes';
+```
+
+**Ver pedidos pendentes por usuário:**
+```sql
+SELECT user_id, COUNT(*) as pending_count
+FROM orders
+WHERE status = 'pending'
+AND created_at > NOW() - INTERVAL '30 minutes'
+GROUP BY user_id
+HAVING COUNT(*) >= 3;
+```
+
+**Ver últimos webhooks processados:**
+```sql
+SELECT * FROM processed_webhooks 
+ORDER BY processed_at DESC 
+LIMIT 10;
+```
+
+### 17.3 Logs de Debug
+
+**Ativar logs detalhados:**
+```typescript
+// No navegador console
+localStorage.setItem('debug', 'true');
+
+// Ver logs de real-time
+localStorage.setItem('debug:realtime', 'true');
+```
+
+### 17.4 Contato de Suporte
+
+Se problemas persistirem:
+1. Capturar screenshot do erro
+2. Copiar logs do console (F12)
+3. Anotar passos para reproduzir
+4. Enviar para: suporte@dlgconnect.com
+
+---
+
+## RESUMO DAS ATUALIZAÇÕES
+
+### Novas Funcionalidades
+- ✅ Sistema de upgrade/downgrade de planos com crédito proporcional
+- ✅ Painel de debug completo para diagnóstico
+- ✅ Tutorial de onboarding para novos usuários
+- ✅ Histórico de faturas detalhado
+- ✅ Dashboard de métricas analíticas
+- ✅ Notificações em tempo real
+
+### Correções de Bugs
+- ✅ Webhook idempotente (anti-duplicação)
+- ✅ Reserva atômica de sessões (anti race condition)
+- ✅ Gateway fallback automático
+- ✅ Download com retry automático
+- ✅ Sincronização de inventário
+
+### Melhorias de Segurança
+- ✅ Rate limiting rigoroso
+- ✅ Validação de senhas fortes
+- ✅ Auditoria completa de ações
+- ✅ Validação de arquivos .session
+
+### Sistemas de Proteção
+- ✅ Real-time sync
+- ✅ Idempotência de webhooks
+- ✅ Fallback automático de gateways
+- ✅ Limpeza automática de recursos
+
+---
+
+*Documentação atualizada em dezembro/2024*
