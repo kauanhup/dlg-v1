@@ -7,7 +7,7 @@ const BotShowcase = () => {
     <section className="relative overflow-hidden bg-background py-20 lg:py-32">
       {/* Section 1: Dashboard */}
       <div className="container mx-auto px-4 mb-32">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left - Text */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
@@ -17,32 +17,37 @@ const BotShowcase = () => {
             className="order-2 lg:order-1"
           >
             <span className="inline-block px-3 py-1 mb-4 text-xs font-medium tracking-wide uppercase bg-primary/10 text-primary rounded-full border border-primary/20">
-              Dashboard
+              Dashboard Completo
             </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight">
-              Monitore todas as suas{" "}
-              <span className="text-primary">contas</span>{" "}
-              em tempo real
+              Controle total em{" "}
+              <span className="text-primary">tempo real</span>
             </h2>
             <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg">
-              Visualize o status de cada conta, saúde do sistema e limites diários de adições em uma interface intuitiva e profissional.
+              Acompanhe o status de cada conta, monitore a saúde do sistema e gerencie limites diários com uma interface profissional.
             </p>
 
-            {/* Stats */}
+            {/* Features Grid */}
             <div className="grid grid-cols-2 gap-4">
               {[
-                { icon: Shield, label: "Saúde das Contas", value: "Monitoramento 24/7" },
-                { icon: Zap, label: "Limites Inteligentes", value: "Proteção anti-ban" },
+                { icon: Shield, label: "Monitoramento 24/7", desc: "Status em tempo real" },
+                { icon: Zap, label: "Proteção Anti-Ban", desc: "Limites inteligentes" },
+                { icon: Users, label: "Multi-Contas", desc: "Gerencie todas juntas" },
+                { icon: Clock, label: "Delays Automáticos", desc: "Segurança garantida" },
               ].map((stat) => (
-                <div key={stat.label} className="flex items-start gap-3">
+                <motion.div 
+                  key={stat.label} 
+                  className="flex items-start gap-3 p-3 rounded-xl bg-[hsl(220,15%,8%)]/50 border border-[hsl(220,15%,15%)] hover:border-primary/30 transition-colors"
+                  whileHover={{ y: -2 }}
+                >
                   <div className="h-10 w-10 bg-primary/10 border border-primary/20 flex items-center justify-center rounded-lg flex-shrink-0">
                     <stat.icon className="h-5 w-5 text-primary" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">{stat.label}</p>
-                    <p className="text-xs text-muted-foreground">{stat.value}</p>
+                    <p className="text-xs text-muted-foreground">{stat.desc}</p>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </motion.div>
@@ -55,7 +60,7 @@ const BotShowcase = () => {
             viewport={{ once: true }}
             className="order-1 lg:order-2 relative"
           >
-            <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 via-primary/5 to-transparent rounded-3xl blur-2xl opacity-60" />
+            <div className="absolute -inset-8 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-3xl blur-3xl opacity-60" />
             <div className="relative">
               <BotDashboardPreview />
             </div>

@@ -46,7 +46,21 @@ export const BotDashboardPreview = () => {
   return (
     <div className="relative group">
       {/* Outer glow */}
-      <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 via-blue-500/20 to-primary/30 rounded-[28px] blur-xl opacity-70 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="absolute -inset-2 bg-gradient-to-r from-primary/40 via-blue-500/30 to-primary/40 rounded-[28px] blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+      
+      {/* Floating badge */}
+      <motion.div
+        className="absolute -top-3 -right-3 z-20 bg-green-500/20 border border-green-500/40 rounded-lg px-3 py-1.5 backdrop-blur-sm"
+        initial={{ opacity: 0, scale: 0.8 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.5 }}
+        viewport={{ once: true }}
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-[10px] font-semibold text-green-400">Sistema Online</span>
+        </div>
+      </motion.div>
       
       {/* Main container */}
       <div className="relative bg-gradient-to-br from-[hsl(220,20%,10%)] via-[hsl(220,20%,7%)] to-[hsl(220,25%,4%)] rounded-[24px] overflow-hidden border border-[hsl(220,15%,20%)] shadow-[0_30px_100px_-20px_rgba(0,0,0,0.9)]">
