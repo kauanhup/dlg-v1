@@ -3,11 +3,21 @@
 
 User-agent: Googlebot
 Allow: /
+Allow: /comprar
+Allow: /login
+Disallow: /dashboard
+Disallow: /checkout
 Disallow: /admin
+Disallow: /pagamentos
 
 User-agent: Bingbot
 Allow: /
+Allow: /comprar
+Allow: /login
+Disallow: /dashboard
+Disallow: /checkout
 Disallow: /admin
+Disallow: /pagamentos
 
 User-agent: Twitterbot
 Allow: /
@@ -17,7 +27,14 @@ Allow: /
 
 User-agent: *
 Allow: /
+Allow: /comprar
+Allow: /login
+Allow: /politica-privacidade
+Allow: /recuperar-senha
+Disallow: /dashboard
+Disallow: /checkout
 Disallow: /admin
+Disallow: /pagamentos
 
 # Sitemap
 Sitemap: https://dlgconnect.com/sitemap.xml

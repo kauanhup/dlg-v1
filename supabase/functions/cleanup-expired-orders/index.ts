@@ -5,9 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Grace period in minutes before cancelling expired orders
-// This gives time for slow webhooks to arrive after the 15-min PIX expiration
-const GRACE_PERIOD_MINUTES = 20;
+// SYNCHRONIZED: Cancel orders at same time as PIX expiration (15 min)
+// This eliminates the "limbo" state where banner is gone but order is still pending
+const GRACE_PERIOD_MINUTES = 15;
 
 Deno.serve(async (req) => {
   // Handle CORS preflight

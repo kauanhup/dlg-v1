@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { DownloadBotButton } from "@/components/ui/download-bot-button";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { LicenseExpirationBanner } from "@/components/LicenseExpirationBanner";
+import { PaymentConfirmedBanner } from "@/components/PaymentConfirmedBanner";
 import {
   Popover,
   PopoverContent,
@@ -1134,6 +1135,9 @@ const Dashboard = () => {
         
         {/* Content */}
         <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        
+        {/* Payment Confirmed Banner - shows for 24h after payment */}
+        <PaymentConfirmedBanner userId={user?.id} />
         
         {/* License Expiration Warning Banner */}
         <LicenseExpirationBanner 
