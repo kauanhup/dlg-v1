@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Header, Hero, Features, Pricing, FAQ, CTA, Footer } from "@/components/landing";
+import { Header, Hero, BotShowcase, Features, Pricing, FAQ, CTA, Footer } from "@/components/landing";
 import SEO from "@/components/SEO";
 
 const Index = () => {
@@ -27,6 +27,7 @@ const Index = () => {
         <Header />
         <main>
           <Hero />
+          <BotShowcase />
           <Features />
           <Pricing />
           <FAQ />
