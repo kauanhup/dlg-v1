@@ -22,6 +22,37 @@ const RotatingDivider = () => {
       ctx.scale(dpr, dpr);
     };
 
+    // Draw Telegram paper plane icon
+    const drawTelegramIcon = (x: number, y: number, size: number, alpha: number) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(size / 24, size / 24);
+      
+      ctx.beginPath();
+      // Telegram paper plane path
+      ctx.moveTo(2.01, 10.97);
+      ctx.lineTo(9.67, 13.36);
+      ctx.lineTo(12.02, 21.02);
+      ctx.lineTo(21.99, 3.01);
+      ctx.lineTo(2.01, 10.97);
+      ctx.closePath();
+      
+      ctx.fillStyle = `rgba(139, 92, 246, ${alpha})`;
+      ctx.fill();
+      
+      // Inner fold
+      ctx.beginPath();
+      ctx.moveTo(9.67, 13.36);
+      ctx.lineTo(12.02, 21.02);
+      ctx.lineTo(13.15, 14.83);
+      ctx.lineTo(9.67, 13.36);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(168, 85, 247, ${alpha * 0.8})`;
+      ctx.fill();
+      
+      ctx.restore();
+    };
+
     const draw = () => {
       const width = canvas.width / (window.devicePixelRatio || 1);
       const height = canvas.height / (window.devicePixelRatio || 1);
@@ -30,87 +61,77 @@ const RotatingDivider = () => {
 
       ctx.clearRect(0, 0, width, height);
 
-      // Draw rotating geometric shape
-      ctx.save();
-      ctx.translate(centerX, centerY);
-      ctx.rotate(rotation);
-
-      // Outer ring
-      const outerRadius = Math.min(width, height) * 0.35;
-      ctx.beginPath();
-      ctx.arc(0, 0, outerRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(139, 92, 246, 0.3)";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Inner geometric pattern
-      const segments = 8;
-      const innerRadius = outerRadius * 0.6;
+      // Orbiting Telegram icons
+      const orbitRadius = Math.min(width, height) * 0.25;
+      const iconCount = 6;
       
-      for (let i = 0; i < segments; i++) {
-        const angle = (i / segments) * Math.PI * 2;
-        const nextAngle = ((i + 1) / segments) * Math.PI * 2;
+      for (let i = 0; i < iconCount; i++) {
+        const angle = rotation + (i / iconCount) * Math.PI * 2;
+        const x = centerX + Math.cos(angle) * orbitRadius;
+        const y = centerY + Math.sin(angle) * orbitRadius * 0.4; // Elliptical orbit
+        const depth = Math.sin(angle); // For 3D effect
+        const size = 16 + depth * 6;
+        const alpha = 0.3 + depth * 0.3;
         
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(
-          Math.cos(angle) * outerRadius,
-          Math.sin(angle) * outerRadius
-        );
-        ctx.strokeStyle = `rgba(139, 92, 246, ${0.1 + (i % 2) * 0.15})`;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        // Diamond shapes
-        ctx.beginPath();
-        ctx.moveTo(
-          Math.cos(angle) * innerRadius,
-          Math.sin(angle) * innerRadius
-        );
-        ctx.lineTo(
-          Math.cos((angle + nextAngle) / 2) * outerRadius,
-          Math.sin((angle + nextAngle) / 2) * outerRadius
-        );
-        ctx.lineTo(
-          Math.cos(nextAngle) * innerRadius,
-          Math.sin(nextAngle) * innerRadius
-        );
-        ctx.strokeStyle = "rgba(168, 85, 247, 0.2)";
-        ctx.stroke();
+        drawTelegramIcon(x - size/2, y - size/2, size, alpha);
       }
 
-      // Center circle
-      ctx.beginPath();
-      ctx.arc(0, 0, outerRadius * 0.15, 0, Math.PI * 2);
-      const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, outerRadius * 0.15);
-      gradient.addColorStop(0, "rgba(139, 92, 246, 0.5)");
-      gradient.addColorStop(1, "rgba(139, 92, 246, 0.1)");
+      // Second orbit (counter-rotating)
+      const orbit2Radius = orbitRadius * 1.5;
+      for (let i = 0; i < 8; i++) {
+        const angle = -rotation * 0.7 + (i / 8) * Math.PI * 2;
+        const x = centerX + Math.cos(angle) * orbit2Radius;
+        const y = centerY + Math.sin(angle) * orbit2Radius * 0.3;
+        const depth = Math.sin(angle);
+        
+        // Connection dots
+        ctx.beginPath();
+        ctx.arc(x, y, 3 + depth, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(139, 92, 246, ${0.2 + depth * 0.2})`;
+        ctx.fill();
+        
+        // Connection lines to center
+        if (i % 2 === 0) {
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(centerX, centerY);
+          ctx.strokeStyle = `rgba(139, 92, 246, ${0.05 + depth * 0.05})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+
+      // Central hub with glow
+      const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 40);
+      gradient.addColorStop(0, "rgba(139, 92, 246, 0.4)");
+      gradient.addColorStop(0.5, "rgba(139, 92, 246, 0.15)");
+      gradient.addColorStop(1, "rgba(139, 92, 246, 0)");
       ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 40, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.restore();
-
-      // Counter-rotating outer elements
+      // Central Telegram icon (larger, rotating opposite)
       ctx.save();
       ctx.translate(centerX, centerY);
       ctx.rotate(-rotation * 0.5);
+      drawTelegramIcon(-15, -15, 30, 0.8);
+      ctx.restore();
 
-      const dotCount = 12;
-      const dotRadius = outerRadius * 1.2;
-      for (let i = 0; i < dotCount; i++) {
-        const angle = (i / dotCount) * Math.PI * 2;
-        const x = Math.cos(angle) * dotRadius;
-        const y = Math.sin(angle) * dotRadius;
+      // Floating particles
+      for (let i = 0; i < 20; i++) {
+        const particleAngle = rotation * 0.3 + (i / 20) * Math.PI * 2;
+        const particleRadius = 80 + Math.sin(rotation * 2 + i) * 30;
+        const px = centerX + Math.cos(particleAngle + i * 0.5) * particleRadius;
+        const py = centerY + Math.sin(particleAngle + i * 0.5) * particleRadius * 0.5;
         
         ctx.beginPath();
-        ctx.arc(x, y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(139, 92, 246, ${0.3 + Math.sin(rotation * 2 + i) * 0.2})`;
+        ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(168, 85, 247, ${0.2 + Math.sin(rotation + i) * 0.15})`;
         ctx.fill();
       }
 
-      ctx.restore();
-
-      rotation += 0.003;
+      rotation += 0.008;
       animationId = requestAnimationFrame(draw);
     };
 
@@ -125,27 +146,34 @@ const RotatingDivider = () => {
   }, []);
 
   return (
-    <div className="relative h-32 sm:h-40 md:h-48 overflow-hidden bg-gradient-to-b from-background via-card/20 to-background">
+    <div className="relative h-36 sm:h-44 md:h-52 overflow-hidden bg-gradient-to-b from-background via-card/10 to-background">
       {/* Gradient overlays */}
-      <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-background z-10" />
+      <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-background z-10 pointer-events-none" />
       
-      {/* Horizontal line */}
+      {/* Horizontal lines */}
       <motion.div 
-        className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"
+        className="absolute top-1/3 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent"
         initial={{ scaleX: 0 }}
         whileInView={{ scaleX: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 1, ease: "easeOut" }}
       />
+      <motion.div 
+        className="absolute bottom-1/3 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent"
+        initial={{ scaleX: 0 }}
+        whileInView={{ scaleX: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+      />
 
-      {/* Canvas with rotating element */}
+      {/* Canvas with rotating elements */}
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
       />
 
-      {/* Glow effect */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 sm:w-40 sm:h-40 bg-primary/10 rounded-full blur-3xl" />
+      {/* Central glow effect */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 sm:w-48 sm:h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
     </div>
   );
 };
