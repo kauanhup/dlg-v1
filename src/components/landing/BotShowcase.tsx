@@ -8,13 +8,26 @@ const BotShowcase = () => {
       {/* Section 1: Dashboard */}
       <div className="container mx-auto px-4 mb-32">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Left - Text */}
+          {/* Left - Preview */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="order-2 lg:order-1"
+            className="relative"
+          >
+            <div className="absolute -inset-8 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-3xl blur-3xl opacity-60" />
+            <div className="relative">
+              <BotDashboardPreview />
+            </div>
+          </motion.div>
+
+          {/* Right - Text */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: true }}
           >
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight">
               Controle total em{" "}
@@ -51,20 +64,6 @@ const BotShowcase = () => {
                   <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
                 </motion.div>
               ))}
-            </div>
-          </motion.div>
-
-          {/* Right - Preview */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            viewport={{ once: true }}
-            className="order-1 lg:order-2 relative"
-          >
-            <div className="absolute -inset-8 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-3xl blur-3xl opacity-60" />
-            <div className="relative">
-              <BotDashboardPreview />
             </div>
           </motion.div>
         </div>
