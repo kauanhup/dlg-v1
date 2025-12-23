@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { TypewriterText } from "@/components/ui/typewriter-text";
 import { motion } from "framer-motion";
-import { BotDashboardPreview } from "./BotPreviews";
+import { HeroVisual } from "./HeroVisual";
 
 const Hero = () => {
   return (
@@ -66,28 +66,14 @@ const Hero = () => {
             </motion.div>
           </div>
 
-          {/* Right side - Bot Screenshot */}
+          {/* Right side - Visual */}
           <motion.div
             className="relative hidden lg:block"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-            style={{ perspective: "1000px" }}
           >
-            <motion.div 
-              className="relative"
-              initial={{ rotateY: -8, rotateX: 5 }}
-              animate={{ rotateY: 0, rotateX: 0 }}
-              transition={{ duration: 1.2, delay: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-            >
-              {/* Subtle glow */}
-              <div className="absolute -inset-8 bg-gradient-to-br from-primary/20 via-transparent to-primary/10 rounded-[40px] blur-3xl opacity-50" />
-              
-              {/* Preview container with perspective */}
-              <div className="relative rounded-2xl overflow-hidden shadow-[0_20px_80px_-20px_rgba(0,0,0,0.5)]">
-                <BotDashboardPreview />
-              </div>
-            </motion.div>
+            <HeroVisual />
           </motion.div>
         </div>
       </div>
