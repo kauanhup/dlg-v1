@@ -26,9 +26,17 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
   const [mounted, setMounted] = useState(false)
   const [hoveredTab, setHoveredTab] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string>(defaultActive)
+  const [isScrolled, setIsScrolled] = useState(false)
 
   useEffect(() => {
     setMounted(true)
+    
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50)
+    }
+    
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   // Handle hash scrolling after navigation
@@ -120,9 +128,15 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
 
   return (
     <div className={cn("fixed top-0 left-0 right-0 z-[9999]", className)}>
-      <div className="flex justify-center pt-3 px-2 sm:pt-4 sm:px-4">
+      <div className={cn(
+        "flex justify-center px-2 sm:px-4 transition-all duration-300",
+        isScrolled ? "pt-2 sm:pt-2" : "pt-3 sm:pt-4"
+      )}>
         <motion.div 
-          className="flex items-center gap-0.5 sm:gap-1 bg-background/80 border border-border backdrop-blur-lg py-1.5 sm:py-2 px-1.5 sm:px-2 rounded-full shadow-lg relative"
+          className={cn(
+            "flex items-center gap-0.5 sm:gap-1 bg-background/80 border border-border backdrop-blur-lg px-1.5 sm:px-2 rounded-full shadow-lg relative transition-all duration-300",
+            isScrolled ? "py-1 sm:py-1.5 scale-[0.95]" : "py-1.5 sm:py-2"
+          )}
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{
