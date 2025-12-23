@@ -773,10 +773,14 @@ const Checkout = () => {
       };
       
       // Add plan snapshot for subscription orders (IMMUTABLE after creation)
+      // order_version = 2 indicates full snapshot (v1 = legacy without snapshot)
       if (isPlanPurchase && plan) {
         orderInsertData.plan_period_days = plan.period;
         orderInsertData.plan_id_snapshot = plan.id;
         orderInsertData.plan_features_snapshot = plan.features;
+        orderInsertData.order_version = 2;
+      } else {
+        orderInsertData.order_version = 2; // All new orders are v2
       }
       
       // Add upgrade info if applicable
