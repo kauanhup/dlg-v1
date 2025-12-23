@@ -2,30 +2,29 @@ import { motion, useInView } from "framer-motion";
 import { Play } from "lucide-react";
 import { useRef } from "react";
 
-// Smooth easing curve
-const smoothEase = [0.22, 1, 0.36, 1] as const;
+// GPU-optimized easing
+const gpuEase = [0.33, 1, 0.68, 1] as const;
 
 const Features = () => {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { 
     once: false, 
     amount: 0.3,
-    margin: "-80px 0px -80px 0px"
+    margin: "-60px 0px -60px 0px"
   });
   
-  // Replace this URL with your video when ready
-  const videoUrl = ""; // Add your video URL here
+  const videoUrl = "";
 
   return (
     <section id="features" className="py-20 sm:py-28 bg-background" ref={ref}>
       <div className="container mx-auto px-4 sm:px-6">
         <motion.div 
           className="text-center max-w-2xl mx-auto mb-12"
-          initial={{ opacity: 0, y: 40, filter: "blur(10px)" }}
-          animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 40, filter: "blur(10px)" }}
-          transition={{ duration: 0.7, ease: smoothEase }}
+          style={{ willChange: "transform, opacity" }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.3, ease: gpuEase }}
         >
-          
           <h2 className="text-3xl sm:text-4xl font-display font-bold mb-4">
             Conheça o Bot
           </h2>
@@ -34,12 +33,12 @@ const Features = () => {
           </p>
         </motion.div>
 
-        {/* Video Container */}
         <motion.div
           className="w-full max-w-3xl mx-auto"
-          initial={{ opacity: 0, y: 50, scale: 0.95, filter: "blur(12px)" }}
-          animate={isInView ? { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" } : { opacity: 0, y: 50, scale: 0.95, filter: "blur(12px)" }}
-          transition={{ duration: 0.8, delay: 0.15, ease: smoothEase }}
+          style={{ willChange: "transform, opacity" }}
+          initial={{ opacity: 0, y: 24, scale: 0.98 }}
+          animate={isInView ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 24, scale: 0.98 }}
+          transition={{ duration: 0.35, ease: gpuEase }}
         >
           <div className="relative aspect-[16/9] rounded-2xl overflow-hidden border border-border bg-card/50 backdrop-blur-sm shadow-2xl shadow-primary/10">
             {videoUrl ? (
@@ -51,19 +50,11 @@ const Features = () => {
                 preload="metadata"
               />
             ) : (
-              // Placeholder when no video is set
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10">
                 <motion.div
                   className="w-20 h-20 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mb-4"
-                  animate={{ 
-                    scale: [1, 1.05, 1],
-                    boxShadow: [
-                      "0 0 0 0 rgba(59, 130, 246, 0.4)",
-                      "0 0 0 20px rgba(59, 130, 246, 0)",
-                      "0 0 0 0 rgba(59, 130, 246, 0)"
-                    ]
-                  }}
-                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                  animate={{ scale: [1, 1.04, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 >
                   <Play className="w-8 h-8 text-primary ml-1" />
                 </motion.div>
@@ -71,7 +62,6 @@ const Features = () => {
               </div>
             )}
             
-            {/* Decorative glow */}
             <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-transparent to-primary/20 rounded-2xl blur-xl opacity-50 -z-10" />
           </div>
         </motion.div>

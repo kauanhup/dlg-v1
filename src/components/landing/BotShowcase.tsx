@@ -3,42 +3,37 @@ import { motion, useInView } from "framer-motion";
 import { Users, Clock } from "lucide-react";
 import { useRef } from "react";
 
-// Smooth easing curve for buttery animations
-const smoothEase = [0.22, 1, 0.36, 1] as const;
+// GPU-optimized easing
+const gpuEase = [0.33, 1, 0.68, 1] as const;
 
+// Minimal float animation - GPU only
 const floatAnimation = {
-  y: [0, -6, 0],
+  y: [0, -4, 0],
 };
 
-const pulseGlow = {
-  scale: [1, 1.02, 1],
-  opacity: [0.5, 0.7, 0.5],
-};
-
-// Reusable scroll reveal section component
+// Reusable scroll reveal section component - GPU optimized
 const RevealSection = ({ 
   children, 
   className = "",
-  delay = 0 
 }: { 
   children: React.ReactNode;
   className?: string;
-  delay?: number;
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { 
     once: false, 
     amount: 0.15,
-    margin: "-50px 0px -50px 0px"
+    margin: "-40px 0px -40px 0px"
   });
 
   return (
     <motion.div
       ref={ref}
       className={className}
-      initial={{ opacity: 0, y: 40, filter: "blur(10px)" }}
-      animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 40, filter: "blur(10px)" }}
-      transition={{ duration: 0.7, delay, ease: smoothEase }}
+      style={{ willChange: "transform, opacity" }}
+      initial={{ opacity: 0, y: 24 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+      transition={{ duration: 0.3, ease: gpuEase }}
     >
       {children}
     </motion.div>
@@ -53,22 +48,18 @@ const BotShowcase = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
           {/* Left - Preview */}
           <RevealSection className="relative order-2 lg:order-1">
-            <motion.div 
-              className="absolute -inset-8 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-3xl blur-3xl"
-              animate={pulseGlow}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            />
+            <div className="absolute -inset-8 bg-gradient-to-r from-primary/15 via-primary/5 to-transparent rounded-3xl blur-3xl opacity-60" />
             <motion.div 
               className="relative"
               animate={floatAnimation}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             >
               <BotDashboardPreview />
             </motion.div>
           </RevealSection>
 
           {/* Right - Text */}
-          <RevealSection delay={0.1} className="order-1 lg:order-2 text-center lg:text-left">
+          <RevealSection className="order-1 lg:order-2 text-center lg:text-left">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-display font-bold text-foreground mb-4 sm:mb-6 leading-tight">
               Controle total em{" "}
               <span className="text-primary">tempo real</span>
@@ -77,7 +68,7 @@ const BotShowcase = () => {
               Acompanhe o status de cada conta, monitore a saúde do sistema e gerencie limites diários com uma interface profissional.
             </p>
 
-            {/* Animated Stats */}
+            {/* Stats */}
             <div className="flex flex-wrap justify-center lg:justify-start gap-4 sm:gap-6">
               {[
                 { value: "12", label: "Contas Ativas", color: "text-green-500" },
@@ -87,16 +78,17 @@ const BotShowcase = () => {
                 <motion.div
                   key={stat.label}
                   className="text-center group cursor-default"
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  style={{ willChange: "transform, opacity" }}
+                  initial={{ opacity: 0, scale: 0.95 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: false, amount: 0.5 }}
-                  transition={{ delay: index * 0.1, duration: 0.5, ease: smoothEase }}
-                  whileHover={{ scale: 1.05, transition: { duration: 0.25 } }}
+                  transition={{ delay: index * 0.05, duration: 0.25, ease: gpuEase }}
+                  whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
                 >
-                  <p className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${stat.color} transition-all duration-300 group-hover:drop-shadow-lg`}>
+                  <p className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${stat.color}`}>
                     {stat.value}
                   </p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 transition-colors duration-300 group-hover:text-foreground">{stat.label}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">{stat.label}</p>
                 </motion.div>
               ))}
             </div>
@@ -126,18 +118,18 @@ const BotShowcase = () => {
                 <motion.div 
                   key={stat.label} 
                   className="flex items-start gap-2 sm:gap-3 group cursor-default p-2 sm:p-0"
-                  whileHover={{ x: 4, transition: { duration: 0.25, ease: smoothEase } }}
+                  whileHover={{ x: 3, transition: { duration: 0.2, ease: gpuEase } }}
                 >
                   <motion.div 
-                    className="h-8 w-8 sm:h-10 sm:w-10 bg-green-500/10 border border-green-500/20 flex items-center justify-center rounded-lg flex-shrink-0 transition-all duration-300 group-hover:bg-green-500/20 group-hover:border-green-500/40 group-hover:shadow-lg group-hover:shadow-green-500/10"
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ duration: 0.25 }}
+                    className="h-8 w-8 sm:h-10 sm:w-10 bg-green-500/10 border border-green-500/20 flex items-center justify-center rounded-lg flex-shrink-0 transition-colors duration-200 group-hover:bg-green-500/15"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.2 }}
                   >
                     <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                   </motion.div>
                   <div className="text-left">
-                    <p className="text-xs sm:text-sm font-medium text-foreground transition-colors duration-300">{stat.label}</p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground transition-colors duration-300 group-hover:text-muted-foreground/80">{stat.value}</p>
+                    <p className="text-xs sm:text-sm font-medium text-foreground">{stat.label}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">{stat.value}</p>
                   </div>
                 </motion.div>
               ))}
@@ -145,16 +137,12 @@ const BotShowcase = () => {
           </RevealSection>
 
           {/* Right - Preview */}
-          <RevealSection className="relative" delay={0.1}>
-            <motion.div 
-              className="absolute -inset-4 bg-gradient-to-l from-green-500/20 via-green-500/5 to-transparent rounded-3xl blur-2xl"
-              animate={pulseGlow}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            />
+          <RevealSection className="relative">
+            <div className="absolute -inset-4 bg-gradient-to-l from-green-500/15 via-green-500/5 to-transparent rounded-3xl blur-2xl opacity-60" />
             <motion.div 
               className="relative"
               animate={floatAnimation}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             >
               <BotActionsPreview />
             </motion.div>
@@ -167,22 +155,18 @@ const BotShowcase = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-20 items-center">
           {/* Left - Preview */}
           <RevealSection className="relative order-2 lg:order-1">
-            <motion.div 
-              className="absolute -inset-4 bg-gradient-to-r from-yellow-500/20 via-yellow-500/5 to-transparent rounded-3xl blur-2xl"
-              animate={pulseGlow}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            />
+            <div className="absolute -inset-4 bg-gradient-to-r from-yellow-500/15 via-yellow-500/5 to-transparent rounded-3xl blur-2xl opacity-60" />
             <motion.div 
               className="relative"
               animate={floatAnimation}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             >
               <BotAccountsPreview />
             </motion.div>
           </RevealSection>
 
           {/* Right - Text */}
-          <RevealSection delay={0.1} className="order-1 lg:order-2 text-center lg:text-left">
+          <RevealSection className="order-1 lg:order-2 text-center lg:text-left">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-display font-bold text-foreground mb-4 sm:mb-6 leading-tight">
               Múltiplas contas em{" "}
               <span className="text-yellow-500">um só lugar</span>
@@ -191,39 +175,23 @@ const BotShowcase = () => {
               Conecte várias contas do Telegram, monitore status e gerencie tudo de forma centralizada. Suporte para sessions e códigos de verificação.
             </p>
 
-            {/* Animated Feature Tags */}
+            {/* Feature Tags */}
             <div className="flex flex-wrap justify-center lg:justify-start gap-2 sm:gap-3">
               {[
-                { label: "Sessions .session", delay: 0 },
-                { label: "Código 2FA", delay: 0.1 },
+                { label: "Sessions .session" },
+                { label: "Código 2FA" },
               ].map((tag, index) => (
                 <motion.span 
                   key={tag.label}
-                  className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs sm:text-sm font-medium cursor-default"
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs sm:text-sm font-medium cursor-default transition-colors duration-200 hover:bg-yellow-500/15"
+                  style={{ willChange: "transform, opacity" }}
+                  initial={{ opacity: 0, scale: 0.95 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: false, amount: 0.5 }}
-                  transition={{ delay: tag.delay, duration: 0.5, ease: smoothEase }}
-                  whileHover={{ 
-                    scale: 1.05, 
-                    backgroundColor: "rgba(234, 179, 8, 0.2)",
-                    borderColor: "rgba(234, 179, 8, 0.4)",
-                    transition: { duration: 0.25, ease: smoothEase } 
-                  }}
+                  transition={{ delay: index * 0.05, duration: 0.25, ease: gpuEase }}
+                  whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
                 >
-                  <motion.span
-                    className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-yellow-500"
-                    animate={{ 
-                      scale: [1, 1.3, 1],
-                      opacity: [1, 0.7, 1]
-                    }}
-                    transition={{ 
-                      duration: 2.5, 
-                      repeat: Infinity, 
-                      delay: index * 0.3,
-                      ease: "easeInOut"
-                    }}
-                  />
+                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-yellow-500" />
                   {tag.label}
                 </motion.span>
               ))}

@@ -29,8 +29,8 @@ const formatPeriod = (days: number) => {
   return `${days} dias`;
 };
 
-// Smooth easing curve
-const smoothEase = [0.22, 1, 0.36, 1] as const;
+// GPU-optimized easing
+const gpuEase = [0.33, 1, 0.68, 1] as const;
 
 const Pricing = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -39,8 +39,8 @@ const Pricing = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef, { 
     once: false, 
-    amount: 0.15,
-    margin: "-50px 0px -50px 0px"
+    amount: 0.1,
+    margin: "-40px 0px -40px 0px"
   });
 
   useEffect(() => {
@@ -56,7 +56,6 @@ const Pricing = () => {
 
         const allPlans = data || [];
         
-        // Show up to 4 plans
         if (allPlans.length <= 4) {
           setPlans(allPlans);
         } else {
@@ -78,7 +77,7 @@ const Pricing = () => {
     fetchPlans();
   }, []);
 
-  // Particles animation
+  // Optimized particles - reduced count for mobile
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
@@ -98,14 +97,15 @@ const Pricing = () => {
     const make = (): P => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      v: Math.random() * 0.2 + 0.04,
-      o: Math.random() * 0.3 + 0.1,
+      v: Math.random() * 0.15 + 0.03,
+      o: Math.random() * 0.25 + 0.08,
     });
 
     const init = () => {
       ps = [];
-      const count = Math.floor((canvas.width * canvas.height) / 14000);
-      for (let i = 0; i < count; i++) ps.push(make());
+      // Reduced particle count for better performance
+      const count = Math.floor((canvas.width * canvas.height) / 20000);
+      for (let i = 0; i < Math.min(count, 40); i++) ps.push(make());
     };
 
     const draw = () => {
@@ -115,11 +115,11 @@ const Pricing = () => {
         if (p.y < 0) {
           p.x = Math.random() * canvas.width;
           p.y = canvas.height + Math.random() * 40;
-          p.v = Math.random() * 0.2 + 0.04;
-          p.o = Math.random() * 0.3 + 0.1;
+          p.v = Math.random() * 0.15 + 0.03;
+          p.o = Math.random() * 0.25 + 0.08;
         }
-        ctx.fillStyle = `rgba(139,92,246,${p.o * 0.4})`;
-        ctx.fillRect(p.x, p.y, 0.6, 2);
+        ctx.fillStyle = `rgba(139,92,246,${p.o * 0.35})`;
+        ctx.fillRect(p.x, p.y, 0.6, 1.5);
       });
       raf = requestAnimationFrame(draw);
     };
@@ -162,9 +162,10 @@ const Pricing = () => {
         <div className="flex flex-col items-center">
           <motion.div 
             className="mx-auto max-w-xl text-center"
-            initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
-            animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 30, filter: "blur(10px)" }}
-            transition={{ duration: 0.7, ease: smoothEase }}
+            style={{ willChange: "transform, opacity" }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            transition={{ duration: 0.3, ease: gpuEase }}
           >
             <h2 className="font-display text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
               Planos e Preços
@@ -180,7 +181,7 @@ const Pricing = () => {
               className="text-center py-20 text-muted-foreground"
               initial={{ opacity: 0 }}
               animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.25 }}
             >
               Nenhum plano disponível no momento.
             </motion.div>
@@ -199,17 +200,18 @@ const Pricing = () => {
                 return (
                   <motion.div
                     key={plan.id}
-                    className={`relative flex flex-col p-6 rounded-2xl border backdrop-blur-sm transition-all duration-300 ${
+                    className={`relative flex flex-col p-6 rounded-2xl border backdrop-blur-sm transition-colors duration-200 ${
                       isPopular 
                         ? "bg-primary/5 border-primary/40 scale-[1.02] shadow-lg shadow-primary/20" 
                         : "bg-card/60 border-border hover:border-primary/30"
                     }`}
-                    initial={{ opacity: 0, y: 40, filter: "blur(10px)" }}
-                    animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 40, filter: "blur(10px)" }}
-                    transition={{ duration: 0.6, delay: 0.15 + index * 0.08, ease: smoothEase }}
+                    style={{ willChange: "transform, opacity" }}
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+                    transition={{ duration: 0.3, delay: index * 0.05, ease: gpuEase }}
                     whileHover={{ 
                       y: -4, 
-                      transition: { duration: 0.25, ease: smoothEase } 
+                      transition: { duration: 0.2, ease: gpuEase } 
                     }}
                   >
                     <div>
@@ -244,18 +246,15 @@ const Pricing = () => {
                     )}
 
                     <Link to="/comprar" className="mt-6 block">
-                      <motion.button 
-                        className={`w-full rounded-xl px-5 py-3 font-semibold text-sm transition-all duration-300 ${
+                      <button 
+                        className={`w-full rounded-xl px-5 py-3 font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${
                           isPopular 
                             ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md" 
                             : "bg-transparent border border-primary/30 text-foreground hover:bg-primary/10 hover:border-primary/50"
                         }`}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        transition={{ duration: 0.2 }}
                       >
                         {effectivePrice === 0 ? 'Testar Grátis' : 'Escolher Plano'}
-                      </motion.button>
+                      </button>
                     </Link>
                   </motion.div>
                 );
@@ -265,19 +264,18 @@ const Pricing = () => {
 
           <motion.div 
             className="mt-8 sm:mt-10 text-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.5, delay: 0.4, ease: smoothEase }}
+            style={{ willChange: "transform, opacity" }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+            transition={{ duration: 0.25, ease: gpuEase }}
           >
             <Link to="/comprar">
-              <motion.button 
-                className="inline-flex items-center gap-2 px-6 py-3 font-semibold text-sm text-primary bg-transparent rounded-xl transition-all duration-300 hover:bg-primary/10"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
+              <button 
+                className="inline-flex items-center gap-2 px-6 py-3 font-semibold text-sm text-primary bg-transparent rounded-xl transition-all duration-200 hover:bg-primary/10 hover:scale-[1.02] active:scale-[0.98]"
               >
                 Ver todos os planos
                 <span className="text-lg">→</span>
-              </motion.button>
+              </button>
             </Link>
           </motion.div>
         </div>

@@ -2,12 +2,15 @@ import { motion } from "framer-motion";
 import { Users, Zap, Shield, Clock, Send, UserPlus } from "lucide-react";
 
 const floatingFeatures = [
-  { icon: Clock, label: "Delay Inteligente", delay: 0, x: 5, y: 18 },
-  { icon: Users, label: "Multi-Contas", delay: 0.2, x: 72, y: 6 },
-  { icon: Shield, label: "Anti-Ban", delay: 0.4, x: 78, y: 72 },
-  { icon: Send, label: "Extração", delay: 0.6, x: 3, y: 68 },
-  { icon: UserPlus, label: "Adicionar", delay: 0.8, x: 40, y: 90 },
+  { icon: Clock, label: "Delay Inteligente", x: 5, y: 18 },
+  { icon: Users, label: "Multi-Contas", x: 72, y: 6 },
+  { icon: Shield, label: "Anti-Ban", x: 78, y: 72 },
+  { icon: Send, label: "Extração", x: 3, y: 68 },
+  { icon: UserPlus, label: "Adicionar", x: 40, y: 90 },
 ];
+
+// GPU-optimized easing
+const gpuEase = [0.33, 1, 0.68, 1] as const;
 
 export const HeroVisual = () => {
   return (
@@ -20,9 +23,10 @@ export const HeroVisual = () => {
       {/* Central glowing orb */}
       <motion.div
         className="relative w-24 h-24 xs:w-28 xs:h-28 sm:w-40 sm:h-40 lg:w-48 lg:h-48"
-        initial={{ scale: 0.8, opacity: 0 }}
+        style={{ willChange: "transform, opacity" }}
+        initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 1, ease: "easeOut" }}
+        transition={{ duration: 0.35, ease: gpuEase }}
       >
         {/* Outer glow ring */}
         <motion.div
@@ -37,7 +41,6 @@ export const HeroVisual = () => {
           animate={{ rotate: 360 }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         >
-          {/* Dot on ring */}
           <div className="absolute -top-0.5 sm:-top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary shadow-lg shadow-primary/50" />
         </motion.div>
         
@@ -47,7 +50,6 @@ export const HeroVisual = () => {
           animate={{ rotate: -360 }}
           transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
         >
-          {/* Dot on ring */}
           <div className="absolute -bottom-0.5 sm:-bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-primary/70" />
         </motion.div>
         
@@ -57,8 +59,8 @@ export const HeroVisual = () => {
         {/* Telegram airplane */}
         <motion.div
           className="absolute inset-0 flex items-center justify-center"
-          animate={{ scale: [1, 1.08, 1] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          animate={{ scale: [1, 1.04, 1] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
         >
           <svg 
             viewBox="0 0 24 24" 
@@ -86,20 +88,21 @@ export const HeroVisual = () => {
           style={{ 
             left: `${item.x}%`, 
             top: `${item.y}%`,
+            willChange: "transform, opacity"
           }}
-          initial={{ opacity: 0, scale: 0 }}
+          initial={{ opacity: 0, scale: 0.9 }}
           animate={{ 
             opacity: 1, 
             scale: 1,
-            y: [0, -5, 0],
+            y: [0, -3, 0],
           }}
           transition={{
-            opacity: { delay: item.delay + 0.5, duration: 0.5 },
-            scale: { delay: item.delay + 0.5, duration: 0.5 },
-            y: { delay: item.delay + 1, duration: 3.5, repeat: Infinity, ease: "easeInOut" }
+            opacity: { duration: 0.3, ease: gpuEase },
+            scale: { duration: 0.3, ease: gpuEase },
+            y: { duration: 3, repeat: Infinity, ease: "easeInOut" }
           }}
         >
-          <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 py-1 sm:px-2.5 sm:py-1.5 md:px-3 md:py-2 rounded-lg sm:rounded-xl bg-[hsl(220,20%,8%)]/90 border border-[hsl(220,15%,22%)] shadow-xl backdrop-blur-md hover:border-primary/30 transition-colors">
+          <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 py-1 sm:px-2.5 sm:py-1.5 md:px-3 md:py-2 rounded-lg sm:rounded-xl bg-[hsl(220,20%,8%)]/90 border border-[hsl(220,15%,22%)] shadow-xl backdrop-blur-md hover:border-primary/30 transition-colors duration-200">
             <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-md sm:rounded-lg bg-primary/15 flex items-center justify-center">
               <item.icon className="w-2 h-2 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 text-primary" />
             </div>
@@ -128,28 +131,29 @@ export const HeroVisual = () => {
             strokeWidth="1"
             initial={{ pathLength: 0, opacity: 0 }}
             animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ delay: item.delay + 0.8, duration: 0.8 }}
+            transition={{ duration: 0.35, ease: gpuEase }}
           />
         ))}
       </svg>
 
       {/* Subtle particles */}
-      {[...Array(6)].map((_, i) => (
+      {[...Array(4)].map((_, i) => (
         <motion.div
           key={i}
           className="absolute w-0.5 h-0.5 sm:w-1 sm:h-1 rounded-full bg-primary/50"
           style={{
-            left: `${40 + Math.random() * 20}%`,
-            top: `${40 + Math.random() * 20}%`,
+            left: `${42 + Math.random() * 16}%`,
+            top: `${42 + Math.random() * 16}%`,
+            willChange: "transform, opacity"
           }}
           animate={{
-            opacity: [0, 0.8, 0],
-            scale: [0, 1.2, 0],
+            opacity: [0, 0.7, 0],
+            scale: [0, 1, 0],
           }}
           transition={{
-            duration: 2.5 + Math.random() * 1.5,
+            duration: 2,
             repeat: Infinity,
-            delay: i * 0.4,
+            delay: i * 0.3,
             ease: "easeInOut",
           }}
         />
