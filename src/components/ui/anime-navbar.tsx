@@ -129,13 +129,15 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
   return (
     <div className={cn("fixed top-0 left-0 right-0 z-[9999]", className)}>
       <div className={cn(
-        "flex justify-center px-2 sm:px-4 transition-all duration-300",
-        isScrolled ? "pt-2 sm:pt-2" : "pt-3 sm:pt-4"
+        "flex justify-center px-2 sm:px-4 transition-all duration-300 ease-out",
+        isScrolled ? "pt-1.5 sm:pt-2" : "pt-3 sm:pt-4"
       )}>
         <motion.div 
           className={cn(
-            "flex items-center gap-0.5 sm:gap-1 bg-background/80 border border-border backdrop-blur-lg px-1.5 sm:px-2 rounded-full shadow-lg relative transition-all duration-300",
-            isScrolled ? "py-1 sm:py-1.5 scale-[0.95]" : "py-1.5 sm:py-2"
+            "flex items-center gap-0.5 sm:gap-1 border backdrop-blur-lg px-1.5 sm:px-2 rounded-full shadow-lg relative transition-all duration-300 ease-out",
+            isScrolled 
+              ? "py-0.5 sm:py-1 bg-background/95 border-border/80 scale-[0.88] shadow-xl" 
+              : "py-1.5 sm:py-2 bg-background/80 border-border"
           )}
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -174,7 +176,10 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
                 )}
 
                 <Icon className="w-4 h-4 sm:hidden" strokeWidth={2.5} />
-                <span className="hidden sm:inline relative z-10">{item.name}</span>
+                <span className={cn(
+                  "hidden sm:inline relative z-10 transition-all duration-300",
+                  isScrolled ? "text-xs" : "text-sm"
+                )}>{item.name}</span>
         
                 <AnimatePresence>
                   {isHovered && !isActive && (
@@ -190,9 +195,10 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
             )
 
             const linkClasses = cn(
-              "relative cursor-pointer text-xs sm:text-sm font-medium px-2.5 sm:px-4 py-2 rounded-full transition-all duration-300 flex items-center justify-center",
+              "relative cursor-pointer font-medium rounded-full transition-all duration-300 flex items-center justify-center",
               "text-muted-foreground hover:text-foreground",
-              isActive && "text-foreground"
+              isActive && "text-foreground",
+              isScrolled ? "text-xs px-2 sm:px-3 py-1.5" : "text-xs sm:text-sm px-2.5 sm:px-4 py-2"
             )
 
             if (isAnchor) {
@@ -225,7 +231,10 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
           })}
 
           {/* Divider */}
-          <div className="w-px h-6 bg-border mx-1 sm:mx-2" />
+          <div className={cn(
+            "w-px bg-border mx-1 sm:mx-2 transition-all duration-300",
+            isScrolled ? "h-4" : "h-6"
+          )} />
 
           {/* Action Items (Pages) */}
           {actionItems.map((item) => {
@@ -234,16 +243,20 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
 
             const content = (
               <>
-                <Icon className="w-4 h-4" strokeWidth={2} />
-                <span className="hidden sm:inline">{item.name}</span>
+                <Icon className={cn("transition-all duration-300", isScrolled ? "w-3.5 h-3.5" : "w-4 h-4")} strokeWidth={2} />
+                <span className={cn(
+                  "hidden sm:inline transition-all duration-300",
+                  isScrolled ? "text-xs" : "text-sm"
+                )}>{item.name}</span>
               </>
             )
 
             const classes = cn(
-              "relative cursor-pointer text-xs sm:text-sm font-medium px-2.5 sm:px-4 py-2 rounded-full transition-all duration-300 flex items-center gap-1.5",
+              "relative cursor-pointer font-medium rounded-full transition-all duration-300 flex items-center gap-1.5",
               isComprar 
                 ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+              isScrolled ? "text-xs px-2 sm:px-3 py-1.5" : "text-xs sm:text-sm px-2.5 sm:px-4 py-2"
             )
 
             if (item.onClick) {
