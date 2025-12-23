@@ -1,126 +1,147 @@
 import { motion } from "framer-motion";
-import { Users, Zap, Shield, Send, MessageCircle, UserPlus } from "lucide-react";
-
-const floatingIcons = [
-  { icon: Users, delay: 0, x: 15, y: 20 },
-  { icon: Send, delay: 0.2, x: 82, y: 15 },
-  { icon: Shield, delay: 0.4, x: 78, y: 62 },
-  { icon: MessageCircle, delay: 0.6, x: 12, y: 58 },
-  { icon: UserPlus, delay: 0.8, x: 50, y: 78 },
-];
+import { Users, ArrowRight, Check, Shield, Clock } from "lucide-react";
 
 export const HeroVisual = () => {
   return (
-    <div className="relative w-full h-[280px] sm:h-[320px] lg:h-[380px] flex items-center justify-center">
-      {/* Central glowing orb */}
+    <div className="relative w-full max-w-md mx-auto">
+      {/* Main Bot Interface Preview */}
       <motion.div
-        className="relative w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48"
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 1, ease: "easeOut" }}
+        className="relative bg-[hsl(220,15%,8%)] border border-[hsl(220,15%,18%)] rounded-xl overflow-hidden shadow-2xl"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
       >
-        {/* Outer ring */}
-        <motion.div
-          className="absolute inset-0 rounded-full border-2 border-primary/30"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        />
-        
-        {/* Middle ring */}
-        <motion.div
-          className="absolute inset-3 sm:inset-4 rounded-full border border-primary/20"
-          animate={{ rotate: -360 }}
-          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-        />
-        
-        {/* Inner glow */}
-        <div className="absolute inset-5 sm:inset-6 rounded-full bg-gradient-to-br from-primary/20 via-primary/10 to-transparent blur-xl" />
-        
-        {/* Center icon */}
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center"
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-2xl shadow-primary/30">
-            <Zap className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
+        {/* Header */}
+        <div className="bg-[hsl(220,15%,12%)] px-4 py-3 border-b border-[hsl(220,15%,18%)] flex items-center gap-3">
+          <div className="flex gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
           </div>
-        </motion.div>
+          <span className="text-xs text-muted-foreground ml-2">TeleGrow Bot</span>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 space-y-3">
+          {/* Action in Progress */}
+          <motion.div
+            className="bg-[hsl(220,15%,12%)] rounded-lg p-3 border border-primary/30"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <Users className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <span className="text-xs font-medium text-foreground">Extraindo membros</span>
+              </div>
+              <span className="text-[10px] text-primary font-medium">Em andamento</span>
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-[10px] text-muted-foreground">
+                <span>Grupo: Marketing Digital BR</span>
+                <span>847 / 1.200</span>
+              </div>
+              <div className="h-1.5 bg-[hsl(220,15%,18%)] rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full"
+                  initial={{ width: "0%" }}
+                  animate={{ width: "70%" }}
+                  transition={{ duration: 2, delay: 0.6, ease: "easeOut" }}
+                />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Completed Actions */}
+          <motion.div
+            className="bg-[hsl(220,15%,12%)] rounded-lg p-3 border border-[hsl(220,15%,18%)]"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-green-500/20 flex items-center justify-center">
+                <Check className="w-3.5 h-3.5 text-green-500" />
+              </div>
+              <div className="flex-1">
+                <span className="text-xs font-medium text-foreground">Membros adicionados</span>
+                <p className="text-[10px] text-muted-foreground">+156 membros • Cripto Traders</p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Stats Row */}
+          <motion.div
+            className="grid grid-cols-3 gap-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.8 }}
+          >
+            <div className="bg-[hsl(220,15%,12%)] rounded-lg p-2 text-center border border-[hsl(220,15%,18%)]">
+              <div className="flex items-center justify-center gap-1 mb-0.5">
+                <Users className="w-3 h-3 text-primary" />
+              </div>
+              <p className="text-sm font-bold text-foreground">3</p>
+              <p className="text-[9px] text-muted-foreground">Contas</p>
+            </div>
+            <div className="bg-[hsl(220,15%,12%)] rounded-lg p-2 text-center border border-[hsl(220,15%,18%)]">
+              <div className="flex items-center justify-center gap-1 mb-0.5">
+                <Shield className="w-3 h-3 text-green-500" />
+              </div>
+              <p className="text-sm font-bold text-foreground">100%</p>
+              <p className="text-[9px] text-muted-foreground">Seguro</p>
+            </div>
+            <div className="bg-[hsl(220,15%,12%)] rounded-lg p-2 text-center border border-[hsl(220,15%,18%)]">
+              <div className="flex items-center justify-center gap-1 mb-0.5">
+                <Clock className="w-3 h-3 text-yellow-500" />
+              </div>
+              <p className="text-sm font-bold text-foreground">Auto</p>
+              <p className="text-[9px] text-muted-foreground">Delay</p>
+            </div>
+          </motion.div>
+
+          {/* Next Action */}
+          <motion.div
+            className="flex items-center justify-between bg-[hsl(220,15%,12%)] rounded-lg p-2.5 border border-[hsl(220,15%,18%)]"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 1 }}
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded bg-primary/20 flex items-center justify-center">
+                <ArrowRight className="w-3 h-3 text-primary" />
+              </div>
+              <span className="text-[10px] text-muted-foreground">Próximo: Adicionar ao grupo Vendas</span>
+            </div>
+            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+          </motion.div>
+        </div>
       </motion.div>
 
-      {/* Floating icons */}
-      {floatingIcons.map((item, index) => (
-        <motion.div
-          key={index}
-          className="absolute -translate-x-1/2 -translate-y-1/2"
-          style={{ 
-            left: `${item.x}%`, 
-            top: `${item.y}%`,
-          }}
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ 
-            opacity: 1, 
-            scale: 1,
-            y: [0, -6, 0],
-          }}
-          transition={{
-            opacity: { delay: item.delay + 0.5, duration: 0.5 },
-            scale: { delay: item.delay + 0.5, duration: 0.5 },
-            y: { delay: item.delay + 1, duration: 3, repeat: Infinity, ease: "easeInOut" }
-          }}
-        >
-          <div className="w-9 h-9 sm:w-10 sm:h-10 lg:w-11 lg:h-11 rounded-lg bg-[hsl(220,20%,10%)] border border-[hsl(220,15%,20%)] flex items-center justify-center shadow-lg backdrop-blur-sm">
-            <item.icon className="w-4 h-4 sm:w-4.5 sm:h-4.5 lg:w-5 lg:h-5 text-primary" />
-          </div>
-        </motion.div>
-      ))}
+      {/* Floating Elements */}
+      <motion.div
+        className="absolute -top-3 -right-3 bg-green-500/20 border border-green-500/30 rounded-lg px-2.5 py-1.5 backdrop-blur-sm"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 1.2 }}
+      >
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-[10px] font-medium text-green-500">Ativo</span>
+        </div>
+      </motion.div>
 
-      {/* Connection lines */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: -1 }}>
-        <defs>
-          <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="hsl(211, 100%, 50%)" stopOpacity="0" />
-            <stop offset="50%" stopColor="hsl(211, 100%, 50%)" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="hsl(211, 100%, 50%)" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {floatingIcons.map((item, index) => (
-          <motion.line
-            key={index}
-            x1="50%"
-            y1="50%"
-            x2={`${item.x}%`}
-            y2={`${item.y}%`}
-            stroke="url(#lineGradient)"
-            strokeWidth="1"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ delay: item.delay + 0.8, duration: 0.8 }}
-          />
-        ))}
-      </svg>
-
-      {/* Particle effects */}
-      {[...Array(5)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-1 h-1 rounded-full bg-primary/40"
-          style={{
-            left: `${30 + Math.random() * 40}%`,
-            top: `${30 + Math.random() * 40}%`,
-          }}
-          animate={{
-            opacity: [0, 1, 0],
-            scale: [0, 1.5, 0],
-          }}
-          transition={{
-            duration: 2 + Math.random() * 2,
-            repeat: Infinity,
-            delay: i * 0.5,
-            ease: "easeInOut",
-          }}
-        />
-      ))}
+      <motion.div
+        className="absolute -bottom-2 -left-2 bg-[hsl(220,15%,10%)] border border-[hsl(220,15%,20%)] rounded-lg px-2.5 py-1.5 backdrop-blur-sm"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 1.4 }}
+      >
+        <span className="text-[10px] text-muted-foreground">Delay inteligente: 45-90s</span>
+      </motion.div>
     </div>
   );
 };
