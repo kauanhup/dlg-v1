@@ -220,15 +220,33 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Validate amount matches
+    // SECURITY: Validate amount matches - BLOCK if mismatch
     if (amount) {
       const webhookAmount = Number(amount)
       const orderAmount = Number(existingOrder.amount)
       if (Math.abs(webhookAmount - orderAmount) > 0.01) {
-        console.error(`SECURITY WARNING: Amount mismatch: webhook=${webhookAmount}, order=${orderAmount}`)
-      } else {
-        console.log('Amount validation passed:', webhookAmount)
+        console.error(`SECURITY BLOCK: Amount mismatch: webhook=${webhookAmount}, order=${orderAmount}`)
+        
+        // Mark order as requiring review instead of completing
+        await supabase
+          .from('orders')
+          .update({ 
+            status: 'pending', 
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', externalId)
+        
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Amount mismatch - transaction blocked for review',
+            expected: orderAmount,
+            received: webhookAmount
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        )
       }
+      console.log('Amount validation passed:', webhookAmount)
     }
 
     // Map PixUp status to determine action

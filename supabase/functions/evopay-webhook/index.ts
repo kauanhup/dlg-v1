@@ -291,15 +291,33 @@ serve(async (req) => {
       );
     }
 
-    // Validate amount matches
+    // SECURITY: Validate amount matches - BLOCK if mismatch
     if (amount) {
       const webhookAmount = Number(amount);
       const orderAmount = Number(order.amount);
       if (Math.abs(webhookAmount - orderAmount) > 0.01) {
-        console.warn(`Amount mismatch warning: webhook=${webhookAmount}, order=${orderAmount}`);
-      } else {
-        console.log('Amount validation passed:', webhookAmount);
+        console.error(`SECURITY BLOCK: Amount mismatch: webhook=${webhookAmount}, order=${orderAmount}`);
+        
+        // Mark order as requiring review instead of completing
+        await supabase
+          .from('orders')
+          .update({ 
+            status: 'pending', 
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', orderId);
+        
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Amount mismatch - transaction blocked for review',
+            expected: orderAmount,
+            received: webhookAmount
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
+      console.log('Amount validation passed:', webhookAmount);
     }
 
     // Map EvoPay status to our status
