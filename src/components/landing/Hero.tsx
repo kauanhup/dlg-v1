@@ -25,7 +25,7 @@ const Hero = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
-              Automação profissional para crescer no Telegram com{" "}
+              Cresça no Telegram com{" "}
               <TypewriterText 
                 texts={["segurança", "rapidez", "inteligência"]}
                 typingSpeed={80}
