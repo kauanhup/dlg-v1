@@ -52,7 +52,7 @@ const containerVariants = {
       delayChildren: 0.1,
     },
   },
-} as const;
+};
 
 const cardVariants = {
   hidden: { opacity: 0, y: 24 },
@@ -61,10 +61,10 @@ const cardVariants = {
     y: 0,
     transition: {
       duration: 0.5,
-      ease: [0.25, 0.46, 0.45, 0.94],
+      ease: "easeOut" as const,
     },
   },
-} as const;
+};
 
 const FeaturesContent = () => {
   return (
