@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { AnimatedText } from "@/components/ui/animated-shiny-text";
 import { motion } from "framer-motion";
-import botDashboard1 from "@/assets/bot-dashboard-1.png";
+import { BotDashboardPreview } from "./BotPreviews";
 
 const Hero = () => {
   return (
@@ -76,21 +76,13 @@ const Hero = () => {
               <div className="absolute -inset-4 bg-gradient-to-r from-primary/30 via-primary/10 to-transparent rounded-3xl blur-2xl" />
               
               {/* Screenshot container */}
-              <div className="relative bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl overflow-hidden shadow-2xl">
-                <img
-                  src={botDashboard1}
-                  alt="DLG Connect Bot Dashboard"
-                  className="w-full h-auto"
-                  draggable={false}
-                />
-                
-                {/* Overlay gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-background/20 via-transparent to-transparent pointer-events-none" />
+              <div className="relative">
+                <BotDashboardPreview />
               </div>
 
               {/* Floating badges */}
               <motion.div
-                className="absolute -top-4 -right-4 bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium shadow-lg"
+                className="absolute -top-4 -right-4 bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium shadow-lg z-10"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.8 }}
@@ -99,7 +91,7 @@ const Hero = () => {
               </motion.div>
 
               <motion.div
-                className="absolute -bottom-4 -left-4 bg-card border border-border px-4 py-2 rounded-full text-sm font-medium shadow-lg flex items-center gap-2"
+                className="absolute -bottom-4 -left-4 bg-card border border-border px-4 py-2 rounded-full text-sm font-medium shadow-lg flex items-center gap-2 z-10"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: 1 }}

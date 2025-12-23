@@ -1,7 +1,5 @@
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
-import botDashboard1 from "@/assets/bot-dashboard-1.png";
-import botDashboard2 from "@/assets/bot-dashboard-2.png";
-import botDashboard3 from "@/assets/bot-dashboard-3.png";
+import { BotDashboardPreview, BotActionsPreview, BotAccountsPreview } from "./BotPreviews";
 import { motion } from "framer-motion";
 
 const BotShowcase = () => {
@@ -44,16 +42,13 @@ const BotShowcase = () => {
           </div>
         }
       >
-        <img
-          src={botDashboard1}
-          alt="Dashboard do Bot DLG Connect"
-          className="w-full h-full object-cover object-left-top"
-          draggable={false}
-        />
+        <div className="w-full h-full flex items-center justify-center p-4">
+          <BotDashboardPreview />
+        </div>
       </ContainerScroll>
 
-      {/* Additional Screenshots Grid */}
-      <div className="container mx-auto px-4 pb-20">
+      {/* Additional Previews Grid */}
+      <div className="container mx-auto px-4 pb-20 -mt-32">
         <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
           <motion.div 
             className="relative group"
@@ -63,17 +58,11 @@ const BotShowcase = () => {
             viewport={{ once: true }}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative bg-card border border-border rounded-2xl overflow-hidden shadow-2xl">
-              <img
-                src={botDashboard2}
-                alt="Configurações de transferência"
-                className="w-full h-auto"
-                draggable={false}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4">
-                <h3 className="text-lg font-semibold text-foreground mb-1">Transferência Inteligente</h3>
-                <p className="text-sm text-muted-foreground">Configure delays e limites para máxima segurança</p>
+            <div className="relative">
+              <BotActionsPreview />
+              <div className="mt-4 text-center">
+                <h3 className="text-lg font-semibold text-foreground mb-1">Central de Ações</h3>
+                <p className="text-sm text-muted-foreground">Extraia, adicione e gerencie membros automaticamente</p>
               </div>
             </div>
           </motion.div>
@@ -86,17 +75,11 @@ const BotShowcase = () => {
             viewport={{ once: true }}
           >
             <div className="absolute inset-0 bg-gradient-to-l from-primary/20 to-transparent rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative bg-card border border-border rounded-2xl overflow-hidden shadow-2xl">
-              <img
-                src={botDashboard3}
-                alt="Analytics e estatísticas"
-                className="w-full h-auto"
-                draggable={false}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4">
-                <h3 className="text-lg font-semibold text-foreground mb-1">Analytics Completo</h3>
-                <p className="text-sm text-muted-foreground">Acompanhe o crescimento em tempo real</p>
+            <div className="relative">
+              <BotAccountsPreview />
+              <div className="mt-4 text-center">
+                <h3 className="text-lg font-semibold text-foreground mb-1">Gerenciamento de Contas</h3>
+                <p className="text-sm text-muted-foreground">Conecte múltiplas contas e monitore o status em tempo real</p>
               </div>
             </div>
           </motion.div>
