@@ -100,17 +100,17 @@ const BotShowcase = () => {
       <div className="container mx-auto px-4 mb-16 sm:mb-24 lg:mb-32">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-20 items-center">
           {/* Left - Text */}
-          <RevealSection className="text-center lg:text-left">
+          <RevealSection className="text-center lg:text-center lg:pl-8 xl:pl-16">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-display font-bold text-foreground mb-4 sm:mb-6 leading-tight">
               Extraia e adicione membros{" "}
               <span className="text-green-500">automaticamente</span>
             </h2>
-            <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 max-w-lg mx-auto lg:mx-0">
+            <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 max-w-lg mx-auto">
               Configure suas automações com delays inteligentes e limites seguros. Acompanhe o progresso em tempo real.
             </p>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4 max-w-md mx-auto lg:mx-0">
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4 max-w-md mx-auto">
               {[
                 { icon: Users, label: "Extração de Membros", value: "De qualquer grupo público" },
                 { icon: Clock, label: "Delays Seguros", value: "Evita flood e ban" },
