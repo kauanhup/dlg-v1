@@ -2,25 +2,25 @@ import { motion } from "framer-motion";
 import { Users, Zap, Shield, Send, MessageCircle, UserPlus } from "lucide-react";
 
 const floatingIcons = [
-  { icon: Users, delay: 0, x: 20, y: 30 },
-  { icon: Send, delay: 0.2, x: 80, y: 15 },
-  { icon: Shield, delay: 0.4, x: 65, y: 70 },
-  { icon: MessageCircle, delay: 0.6, x: 15, y: 65 },
-  { icon: UserPlus, delay: 0.8, x: 45, y: 85 },
+  { icon: Users, delay: 0, x: 15, y: 25 },
+  { icon: Send, delay: 0.2, x: 85, y: 20 },
+  { icon: Shield, delay: 0.4, x: 75, y: 65 },
+  { icon: MessageCircle, delay: 0.6, x: 10, y: 60 },
+  { icon: UserPlus, delay: 0.8, x: 50, y: 80 },
 ];
 
 const stats = [
-  { value: "50K+", label: "Membros Transferidos", color: "from-green-500 to-emerald-500" },
+  { value: "50K+", label: "Membros", color: "from-green-500 to-emerald-500" },
   { value: "99.9%", label: "Uptime", color: "from-primary to-blue-500" },
   { value: "< 1s", label: "Velocidade", color: "from-yellow-500 to-orange-500" },
 ];
 
 export const HeroVisual = () => {
   return (
-    <div className="relative w-full h-[400px] lg:h-[500px]">
+    <div className="relative w-full aspect-square max-w-[450px] mx-auto">
       {/* Central glowing orb */}
       <motion.div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 lg:w-64 lg:h-64"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 sm:w-40 sm:h-40 lg:w-52 lg:h-52"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 1, ease: "easeOut" }}
@@ -34,13 +34,13 @@ export const HeroVisual = () => {
         
         {/* Middle ring */}
         <motion.div
-          className="absolute inset-4 rounded-full border border-primary/20"
+          className="absolute inset-3 sm:inset-4 rounded-full border border-primary/20"
           animate={{ rotate: -360 }}
           transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
         />
         
         {/* Inner glow */}
-        <div className="absolute inset-8 rounded-full bg-gradient-to-br from-primary/20 via-primary/10 to-transparent blur-xl" />
+        <div className="absolute inset-6 sm:inset-8 rounded-full bg-gradient-to-br from-primary/20 via-primary/10 to-transparent blur-xl" />
         
         {/* Center icon */}
         <motion.div
@@ -48,8 +48,8 @@ export const HeroVisual = () => {
           animate={{ scale: [1, 1.05, 1] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         >
-          <div className="w-20 h-20 lg:w-28 lg:h-28 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-2xl shadow-primary/30">
-            <Zap className="w-10 h-10 lg:w-14 lg:h-14 text-white" />
+          <div className="w-14 h-14 sm:w-18 sm:h-18 lg:w-24 lg:h-24 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-2xl shadow-primary/30">
+            <Zap className="w-7 h-7 sm:w-9 sm:h-9 lg:w-12 lg:h-12 text-white" />
           </div>
         </motion.div>
       </motion.div>
@@ -64,7 +64,7 @@ export const HeroVisual = () => {
           animate={{ 
             opacity: 1, 
             scale: 1,
-            y: [0, -10, 0],
+            y: [0, -8, 0],
           }}
           transition={{
             opacity: { delay: item.delay + 0.5, duration: 0.5 },
@@ -72,8 +72,8 @@ export const HeroVisual = () => {
             y: { delay: item.delay + 1, duration: 3, repeat: Infinity, ease: "easeInOut" }
           }}
         >
-          <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl bg-[hsl(220,20%,10%)] border border-[hsl(220,15%,20%)] flex items-center justify-center shadow-lg backdrop-blur-sm">
-            <item.icon className="w-5 h-5 lg:w-6 lg:h-6 text-primary" />
+          <div className="w-10 h-10 sm:w-11 sm:h-11 lg:w-12 lg:h-12 rounded-lg lg:rounded-xl bg-[hsl(220,20%,10%)] border border-[hsl(220,15%,20%)] flex items-center justify-center shadow-lg backdrop-blur-sm">
+            <item.icon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5 text-primary" />
           </div>
         </motion.div>
       ))}
@@ -103,20 +103,20 @@ export const HeroVisual = () => {
         ))}
       </svg>
 
-      {/* Stats cards */}
-      <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-3 lg:gap-6">
+      {/* Stats cards - positioned at bottom */}
+      <div className="absolute -bottom-4 sm:-bottom-6 left-1/2 -translate-x-1/2 flex justify-center gap-2 sm:gap-3 lg:gap-4 w-full max-w-full px-2">
         {stats.map((stat, index) => (
           <motion.div
             key={index}
-            className="bg-[hsl(220,20%,8%)]/90 backdrop-blur-md border border-[hsl(220,15%,18%)] rounded-xl px-4 py-3 lg:px-6 lg:py-4"
-            initial={{ opacity: 0, y: 30 }}
+            className="bg-[hsl(220,20%,8%)]/90 backdrop-blur-md border border-[hsl(220,15%,18%)] rounded-lg sm:rounded-xl px-3 py-2 sm:px-4 sm:py-3"
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 + index * 0.15, duration: 0.5 }}
           >
-            <p className={`text-xl lg:text-2xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
+            <p className={`text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
               {stat.value}
             </p>
-            <p className="text-[10px] lg:text-xs text-muted-foreground whitespace-nowrap">
+            <p className="text-[8px] sm:text-[9px] lg:text-[10px] text-muted-foreground whitespace-nowrap">
               {stat.label}
             </p>
           </motion.div>
@@ -124,13 +124,13 @@ export const HeroVisual = () => {
       </div>
 
       {/* Particle effects */}
-      {[...Array(8)].map((_, i) => (
+      {[...Array(6)].map((_, i) => (
         <motion.div
           key={i}
           className="absolute w-1 h-1 rounded-full bg-primary/50"
           style={{
-            left: `${20 + Math.random() * 60}%`,
-            top: `${20 + Math.random() * 60}%`,
+            left: `${25 + Math.random() * 50}%`,
+            top: `${25 + Math.random() * 50}%`,
           }}
           animate={{
             opacity: [0, 1, 0],
@@ -139,7 +139,7 @@ export const HeroVisual = () => {
           transition={{
             duration: 2 + Math.random() * 2,
             repeat: Infinity,
-            delay: i * 0.3,
+            delay: i * 0.4,
             ease: "easeInOut",
           }}
         />

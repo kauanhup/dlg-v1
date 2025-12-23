@@ -68,7 +68,7 @@ const Hero = () => {
 
           {/* Right side - Visual */}
           <motion.div
-            className="relative hidden lg:block"
+            className="relative mt-8 lg:mt-0"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
