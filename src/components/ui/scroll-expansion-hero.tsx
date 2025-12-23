@@ -149,6 +149,7 @@ const ScrollExpandMedia = ({
         ref={sectionRef}
         className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden"
       >
+        {/* Background Image */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: `url(${bgImageSrc})` }}
@@ -159,6 +160,7 @@ const ScrollExpandMedia = ({
         <div className="relative z-10 flex flex-col items-center w-full">
           <div className="w-full flex flex-col items-center justify-start min-h-screen py-10">
             <div className="flex flex-col items-center text-center w-full gap-8">
+              {/* Media Container */}
               <div
                 className="relative rounded-xl overflow-hidden shadow-2xl transition-all duration-100"
                 style={{
@@ -230,26 +232,29 @@ const ScrollExpandMedia = ({
                   </div>
                 )}
 
-                <div className="flex flex-col items-center text-center relative z-10 mt-4 transition-none">
+                {/* Date and Scroll Indicator inside media */}
+                <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center text-center z-10">
                   {date && (
                     <p
-                      className="text-2xl text-primary"
+                      className="text-xl text-primary font-semibold"
                       style={{ transform: `translateX(-${textTranslateX}vw)` }}
                     >
                       {date}
                     </p>
                   )}
                   {scrollToExpand && (
-                    <p
-                      className="text-primary/80 font-medium text-center"
+                    <motion.p
+                      className="text-muted-foreground font-medium text-center text-sm mt-2"
                       style={{ transform: `translateX(${textTranslateX}vw)` }}
+                      animate={{ opacity: scrollProgress < 0.5 ? 1 : 0 }}
                     >
                       {scrollToExpand}
-                    </p>
+                    </motion.p>
                   )}
                 </div>
               </div>
 
+              {/* Title Split Animation */}
               <div
                 className={`flex items-center justify-center text-center gap-4 w-full relative z-10 transition-none flex-col ${
                   textBlend ? 'mix-blend-difference' : 'mix-blend-normal'
@@ -270,6 +275,7 @@ const ScrollExpandMedia = ({
               </div>
             </div>
 
+            {/* Children Content */}
             <motion.section
               className="flex flex-col w-full px-8 py-10 md:px-16 lg:py-20"
               initial={{ opacity: 0 }}
