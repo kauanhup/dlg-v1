@@ -761,6 +761,7 @@ const Checkout = () => {
 
       // Create order first (payment needs order_id)
       // Include upgrade info if this is an upgrade purchase
+      // CRITICAL: Include plan snapshot for subscription orders to prevent admin changes affecting pending orders
       const orderInsertData: any = {
         user_id: user.id,
         product_name: productName,
@@ -770,6 +771,13 @@ const Checkout = () => {
         status: 'pending',
         payment_method: selectedPaymentMethod,
       };
+      
+      // Add plan snapshot for subscription orders (IMMUTABLE after creation)
+      if (isPlanPurchase && plan) {
+        orderInsertData.plan_period_days = plan.period;
+        orderInsertData.plan_id_snapshot = plan.id;
+        orderInsertData.plan_features_snapshot = plan.features;
+      }
       
       // Add upgrade info if applicable
       if (isUpgrade && activeSubscription) {

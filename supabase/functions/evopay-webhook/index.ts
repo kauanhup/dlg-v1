@@ -391,14 +391,21 @@ serve(async (req) => {
         console.log('Order completion result:', JSON.stringify(rpcResult));
       }
 
-      // Register webhook as processed
+      // Register webhook as processed with conflict handling (idempotency safety)
       if (transactionId) {
-        await supabase.from('processed_webhooks').insert({
-          transaction_id: transactionId,
-          gateway: 'evopay',
-          order_id: orderId,
-          webhook_payload: body
-        });
+        const { error: insertError } = await supabase
+          .from('processed_webhooks')
+          .insert({
+            transaction_id: transactionId,
+            gateway: 'evopay',
+            order_id: orderId,
+            webhook_payload: body
+          });
+        
+        // Log if insert failed (likely constraint violation from race condition)
+        if (insertError) {
+          console.log('processed_webhooks insert handled (likely duplicate):', insertError.code);
+        }
       }
     }
 

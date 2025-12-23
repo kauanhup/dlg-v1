@@ -325,6 +325,9 @@ export type Database = {
           created_at: string
           id: string
           payment_method: string | null
+          plan_features_snapshot: Json | null
+          plan_id_snapshot: string | null
+          plan_period_days: number | null
           product_name: string
           product_type: string
           quantity: number
@@ -339,6 +342,9 @@ export type Database = {
           created_at?: string
           id?: string
           payment_method?: string | null
+          plan_features_snapshot?: Json | null
+          plan_id_snapshot?: string | null
+          plan_period_days?: number | null
           product_name: string
           product_type: string
           quantity?: number
@@ -353,6 +359,9 @@ export type Database = {
           created_at?: string
           id?: string
           payment_method?: string | null
+          plan_features_snapshot?: Json | null
+          plan_id_snapshot?: string | null
+          plan_period_days?: number | null
           product_name?: string
           product_type?: string
           quantity?: number
