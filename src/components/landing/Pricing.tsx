@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { motion, useInView } from "framer-motion";
 
 interface Plan {
   id: string;
@@ -28,16 +29,19 @@ const formatPeriod = (days: number) => {
   return `${days} dias`;
 };
 
+// Smooth easing curve
+const smoothEase = [0.22, 1, 0.36, 1] as const;
+
 const Pricing = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [ready, setReady] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setReady(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const isInView = useInView(sectionRef, { 
+    once: false, 
+    amount: 0.15,
+    margin: "-50px 0px -50px 0px"
+  });
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -94,13 +98,13 @@ const Pricing = () => {
     const make = (): P => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      v: Math.random() * 0.25 + 0.05,
-      o: Math.random() * 0.35 + 0.15,
+      v: Math.random() * 0.2 + 0.04,
+      o: Math.random() * 0.3 + 0.1,
     });
 
     const init = () => {
       ps = [];
-      const count = Math.floor((canvas.width * canvas.height) / 12000);
+      const count = Math.floor((canvas.width * canvas.height) / 14000);
       for (let i = 0; i < count; i++) ps.push(make());
     };
 
@@ -111,11 +115,11 @@ const Pricing = () => {
         if (p.y < 0) {
           p.x = Math.random() * canvas.width;
           p.y = canvas.height + Math.random() * 40;
-          p.v = Math.random() * 0.25 + 0.05;
-          p.o = Math.random() * 0.35 + 0.15;
+          p.v = Math.random() * 0.2 + 0.04;
+          p.o = Math.random() * 0.3 + 0.1;
         }
-        ctx.fillStyle = `rgba(139,92,246,${p.o * 0.5})`;
-        ctx.fillRect(p.x, p.y, 0.7, 2.2);
+        ctx.fillStyle = `rgba(139,92,246,${p.o * 0.4})`;
+        ctx.fillRect(p.x, p.y, 0.6, 2);
       });
       raf = requestAnimationFrame(draw);
     };
@@ -148,85 +152,38 @@ const Pricing = () => {
 
   return (
     <section
+      ref={sectionRef}
       id="pricing"
-      data-locked
-      className={`relative min-h-screen overflow-hidden py-24 sm:py-32 ${ready ? "is-ready" : ""}`}
-      style={{
-        "--bg": "hsl(var(--background))",
-        "--text": "hsl(var(--foreground))",
-        "--muted": "hsl(var(--muted-foreground))",
-        "--accent-line": "rgba(139, 92, 246, 0.15)",
-        "--glow": "linear-gradient(90deg, rgba(139,92,246,0.4), rgba(168,85,247,0.4))",
-        "--card": "rgba(15, 15, 20, 0.6)",
-        "--card-pop": "rgba(139, 92, 246, 0.08)",
-        "--card-muted": "rgba(10, 10, 15, 0.8)",
-        "--border": "rgba(139, 92, 246, 0.2)",
-        "--btn-primary-bg": "hsl(var(--primary))",
-        "--btn-primary-fg": "hsl(var(--primary-foreground))",
-        "--btn-ghost-border": "rgba(139, 92, 246, 0.3)",
-        "--btn-ghost-hover": "rgba(139, 92, 246, 0.1)",
-      } as React.CSSProperties}
+      className="relative min-h-screen overflow-hidden py-24 sm:py-32"
     >
-      <style>{`
-        @media (prefers-color-scheme: light){section[data-locked]{background:var(--bg);color:var(--text);color-scheme:dark}}
-        
-        .accent-lines{position:absolute;inset:0;pointer-events:none;opacity:.7}
-        .accent-lines .hline,.accent-lines .vline{position:absolute;background:var(--accent-line);animation-fill-mode:forwards}
-        .accent-lines .hline{left:0;right:0;height:1px;transform:scaleX(0);transform-origin:50% 50%}
-        .accent-lines .vline{top:0;bottom:0;width:1px;transform:scaleY(0);transform-origin:50% 0%}
-        .is-ready .accent-lines .hline:nth-of-type(1){top:18%;animation:drawX .6s ease .08s forwards}
-        .is-ready .accent-lines .hline:nth-of-type(2){top:50%;animation:drawX .6s ease .16s forwards}
-        .is-ready .accent-lines .hline:nth-of-type(3){top:82%;animation:drawX .6s ease .24s forwards}
-        .is-ready .accent-lines .vline:nth-of-type(1){left:18%;animation:drawY .7s ease .20s forwards}
-        .is-ready .accent-lines .vline:nth-of-type(2){left:50%;animation:drawY .7s ease .28s forwards}
-        .is-ready .accent-lines .vline:nth-of-type(3){left:82%;animation:drawY .7s ease .36s forwards}
-        @keyframes drawX{to{transform:scaleX(1)}}
-        @keyframes drawY{to{transform:scaleY(1)}}
-        .kicker,.title,.subtitle{opacity:0;transform:translateY(8px)}
-        .is-ready .kicker{animation:kIn .5s ease .08s forwards;letter-spacing:.22em}
-        .is-ready .title{animation:tIn .6s cubic-bezier(.22,1,.36,1) .16s forwards}
-        .is-ready .subtitle{animation:sIn .6s ease .26s forwards}
-        @keyframes kIn{to{opacity:.9;transform:none;letter-spacing:.14em}}
-        @keyframes tIn{to{opacity:1;transform:none}}
-        @keyframes sIn{to{opacity:1;transform:none}}
-        .card{background:var(--card);border:1px solid var(--border);border-radius:16px}
-        .card-pop{background:var(--card-pop);border:1px solid hsl(var(--primary) / 0.4);border-radius:16px;transform:scale(1.02);box-shadow:0 10px 30px rgba(139,92,246,.2);backdrop-filter:blur(6px)}
-        .card-muted{background:var(--card-muted)}
-        .card-animate{opacity:0;transform:translateY(12px)}
-        .is-ready .card-animate{animation:fadeUp .6s ease forwards}
-        @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
-        .btn-primary{width:100%;border-radius:12px;padding:12px 20px;font-weight:600;font-size:14px;background:var(--btn-primary-bg);color:var(--btn-primary-fg);transition:transform .15s ease,filter .15s ease,background .2s ease}
-        .btn-primary:hover{filter:brightness(1.1)}
-        .btn-primary:active{transform:translateY(1px)}
-        .btn-ghost{width:100%;border-radius:12px;padding:12px 20px;font-weight:600;font-size:14px;color:hsl(var(--foreground));border:1px solid var(--btn-ghost-border);background:transparent;transition:background .2s ease,transform .15s ease}
-        .btn-ghost:hover{background:var(--btn-ghost-hover)}
-        .btn-ghost:active{transform:translateY(1px)}
-        .btn-link{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;font-weight:600;font-size:14px;color:hsl(var(--primary));background:transparent;border:none;border-radius:12px;transition:background .2s ease,transform .15s ease}
-        .btn-link:hover{background:rgba(139,92,246,0.1)}
-        .btn-link:active{transform:translateY(1px)}
-      `}</style>
-
-      <div className="vignette" />
-
-
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" />
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
         <div className="flex flex-col items-center">
-          <div className="mx-auto max-w-xl text-center">
-            <h2 className="title font-display text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+          <motion.div 
+            className="mx-auto max-w-xl text-center"
+            initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
+            animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 30, filter: "blur(10px)" }}
+            transition={{ duration: 0.7, ease: smoothEase }}
+          >
+            <h2 className="font-display text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
               Planos e Preços
             </h2>
-          </div>
+          </motion.div>
 
           {isLoading ? (
             <div className="flex justify-center items-center py-20">
               <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
           ) : plans.length === 0 ? (
-            <div className="text-center py-20 text-muted-foreground">
+            <motion.div 
+              className="text-center py-20 text-muted-foreground"
+              initial={{ opacity: 0 }}
+              animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+              transition={{ duration: 0.5 }}
+            >
               Nenhum plano disponível no momento.
-            </div>
+            </motion.div>
           ) : (
             <div className={`mt-10 sm:mt-14 grid w-full gap-4 sm:gap-6 lg:gap-8 px-2 sm:px-0 ${
               plans.length === 1 ? 'grid-cols-1 max-w-md mx-auto' :
@@ -240,10 +197,20 @@ const Pricing = () => {
                 const hasPromo = plan.promotional_price !== null && plan.promotional_price < plan.price;
 
                 return (
-                  <div
+                  <motion.div
                     key={plan.id}
-                    className={`card-animate relative flex flex-col ${isPopular ? "card-pop" : "card"} p-6`}
-                    style={{ animationDelay: `${0.3 + index * 0.1}s` }}
+                    className={`relative flex flex-col p-6 rounded-2xl border backdrop-blur-sm transition-all duration-300 ${
+                      isPopular 
+                        ? "bg-primary/5 border-primary/40 scale-[1.02] shadow-lg shadow-primary/20" 
+                        : "bg-card/60 border-border hover:border-primary/30"
+                    }`}
+                    initial={{ opacity: 0, y: 40, filter: "blur(10px)" }}
+                    animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 40, filter: "blur(10px)" }}
+                    transition={{ duration: 0.6, delay: 0.15 + index * 0.08, ease: smoothEase }}
+                    whileHover={{ 
+                      y: -4, 
+                      transition: { duration: 0.25, ease: smoothEase } 
+                    }}
                   >
                     <div>
                       <h3 className="text-lg font-semibold text-foreground">{plan.name}</h3>
@@ -277,24 +244,42 @@ const Pricing = () => {
                     )}
 
                     <Link to="/comprar" className="mt-6 block">
-                      <button className={isPopular ? "btn-primary" : "btn-ghost"}>
+                      <motion.button 
+                        className={`w-full rounded-xl px-5 py-3 font-semibold text-sm transition-all duration-300 ${
+                          isPopular 
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md" 
+                            : "bg-transparent border border-primary/30 text-foreground hover:bg-primary/10 hover:border-primary/50"
+                        }`}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        transition={{ duration: 0.2 }}
+                      >
                         {effectivePrice === 0 ? 'Testar Grátis' : 'Escolher Plano'}
-                      </button>
+                      </motion.button>
                     </Link>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
           )}
 
-          <div className="mt-8 sm:mt-10 text-center">
+          <motion.div 
+            className="mt-8 sm:mt-10 text-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            transition={{ duration: 0.5, delay: 0.4, ease: smoothEase }}
+          >
             <Link to="/comprar">
-              <button className="btn-link">
+              <motion.button 
+                className="inline-flex items-center gap-2 px-6 py-3 font-semibold text-sm text-primary bg-transparent rounded-xl transition-all duration-300 hover:bg-primary/10"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+              >
                 Ver todos os planos
                 <span className="text-lg">→</span>
-              </button>
+              </motion.button>
             </Link>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

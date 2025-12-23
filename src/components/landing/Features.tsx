@@ -1,19 +1,29 @@
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { Play } from "lucide-react";
+import { useRef } from "react";
+
+// Smooth easing curve
+const smoothEase = [0.22, 1, 0.36, 1] as const;
 
 const Features = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { 
+    once: false, 
+    amount: 0.3,
+    margin: "-80px 0px -80px 0px"
+  });
+  
   // Replace this URL with your video when ready
   const videoUrl = ""; // Add your video URL here
 
   return (
-    <section id="features" className="py-20 sm:py-28 bg-background">
+    <section id="features" className="py-20 sm:py-28 bg-background" ref={ref}>
       <div className="container mx-auto px-4 sm:px-6">
         <motion.div 
           className="text-center max-w-2xl mx-auto mb-12"
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          initial={{ opacity: 0, y: 40, filter: "blur(10px)" }}
+          animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 40, filter: "blur(10px)" }}
+          transition={{ duration: 0.7, ease: smoothEase }}
         >
           
           <h2 className="text-3xl sm:text-4xl font-display font-bold mb-4">
@@ -27,10 +37,9 @@ const Features = () => {
         {/* Video Container */}
         <motion.div
           className="w-full max-w-3xl mx-auto"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
+          initial={{ opacity: 0, y: 50, scale: 0.95, filter: "blur(12px)" }}
+          animate={isInView ? { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" } : { opacity: 0, y: 50, scale: 0.95, filter: "blur(12px)" }}
+          transition={{ duration: 0.8, delay: 0.15, ease: smoothEase }}
         >
           <div className="relative aspect-[16/9] rounded-2xl overflow-hidden border border-border bg-card/50 backdrop-blur-sm shadow-2xl shadow-primary/10">
             {videoUrl ? (
@@ -54,7 +63,7 @@ const Features = () => {
                       "0 0 0 0 rgba(59, 130, 246, 0)"
                     ]
                   }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                 >
                   <Play className="w-8 h-8 text-primary ml-1" />
                 </motion.div>
