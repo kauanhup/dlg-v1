@@ -395,6 +395,15 @@ serve(async (req: Request): Promise<Response> => {
         );
       }
 
+      // BUG FIX: Mark code as used immediately after successful verification
+      // This prevents code reuse even before password reset is completed
+      await supabaseAdmin
+        .from('verification_codes')
+        .update({ used: true })
+        .eq('id', existingCode.id);
+
+      console.log(`Code verified and marked as used for: ${emailClean}`);
+
       return new Response(
         JSON.stringify({ success: true, message: "Código verificado" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -424,57 +433,28 @@ serve(async (req: Request): Promise<Response> => {
 
       const emailClean = email.trim().toLowerCase();
 
-      // Verify code exists and check failed attempts (same logic as verify_code)
+      // Verify code exists - NOTE: code is now marked as 'used' after verify_code
+      // So we need to check for used=true codes that were recently verified
       const { data: codeData } = await supabaseAdmin
         .from('verification_codes')
         .select('*')
         .eq('user_email', emailClean)
         .eq('type', 'password_reset')
-        .eq('used', false)
+        .eq('used', true) // Code should be marked as used after verify_code
         .gt('expires_at', new Date().toISOString())
         .maybeSingle();
 
       if (!codeData) {
         return new Response(
-          JSON.stringify({ success: false, error: "Código inválido ou expirado" }),
+          JSON.stringify({ success: false, error: "Código inválido ou expirado. Verifique o código novamente." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Check if max attempts exceeded
-      if (codeData.failed_attempts && codeData.failed_attempts >= MAX_CODE_VERIFICATION_ATTEMPTS) {
-        await supabaseAdmin
-          .from('verification_codes')
-          .update({ used: true })
-          .eq('id', codeData.id);
-
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: "Código bloqueado por excesso de tentativas. Solicite um novo código.",
-            code: "CODE_BLOCKED"
-          }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Check if the code matches - increment failed_attempts if not
+      // Verify the code matches (additional security check)
       if (codeData.code !== code) {
-        await supabaseAdmin
-          .from('verification_codes')
-          .update({ failed_attempts: (codeData.failed_attempts || 0) + 1 })
-          .eq('id', codeData.id);
-
-        const attemptsLeft = MAX_CODE_VERIFICATION_ATTEMPTS - (codeData.failed_attempts || 0) - 1;
-        
         return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: attemptsLeft > 0 
-              ? `Código incorreto. ${attemptsLeft} tentativa(s) restante(s).`
-              : "Código incorreto. Solicite um novo código.",
-            attemptsLeft
-          }),
+          JSON.stringify({ success: false, error: "Código incorreto" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
