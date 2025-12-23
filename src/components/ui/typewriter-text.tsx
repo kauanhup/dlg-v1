@@ -60,9 +60,11 @@ export function TypewriterText({
   }, [displayText, isDeleting, isPaused, textIndex, texts, typingSpeed, deletingSpeed, pauseTime]);
 
   return (
-    <span className={cn("inline-block", className)}>
-      {displayText}
-      <span className="animate-pulse ml-0.5 inline-block w-[3px] h-[1em] bg-current align-middle" />
+    <span className={cn("inline-flex items-baseline", className)}>
+      <span>{displayText}</span>
+      <span 
+        className="inline-block w-[3px] h-[0.85em] bg-primary ml-0.5 animate-blink" 
+      />
     </span>
   );
 }

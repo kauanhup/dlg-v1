@@ -110,6 +110,10 @@ export default {
           "87.5%": { inset: "0 0 35px 0" },
           "100%": { inset: "0 35px 35px 0" },
         },
+        "blink": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.35s cubic-bezier(0.33, 1, 0.68, 1)",
@@ -117,6 +121,7 @@ export default {
         "pulse-slow": "pulse-slow 4s ease-in-out infinite",
         "float": "float 4s ease-in-out infinite",
         "luma-spin": "luma-spin 2.5s ease-in-out infinite",
+        "blink": "blink 1s step-end infinite",
       },
     },
   },
