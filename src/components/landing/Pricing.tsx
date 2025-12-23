@@ -222,15 +222,9 @@ const Pricing = () => {
       <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
         <div className="flex flex-col items-center">
           <div className="mx-auto max-w-xl text-center">
-            <span className="kicker mb-3 inline-block text-xs font-semibold uppercase tracking-[.18em] text-primary">
-              Preços
-            </span>
             <h2 className="title font-display text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
               Planos e Preços
             </h2>
-            <p className="subtitle mt-4 text-base text-muted-foreground sm:text-lg">
-              Escolha o plano ideal para o crescimento do seu grupo
-            </p>
           </div>
 
           {isLoading ? (
