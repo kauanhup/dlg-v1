@@ -225,8 +225,35 @@ export const useUserDashboard = (userId: string | undefined) => {
     userEstrangeiras: getSessionFilesByType('estrangeiras').length,
   };
 
+  // Calculate license info from license data (moved from Dashboard.tsx)
+  const getLicenseInfo = () => {
+    if (!license) return null;
+    
+    const startDate = new Date(license.start_date);
+    const endDate = new Date(license.end_date);
+    const now = new Date();
+    const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+    const totalDays = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+    
+    const formatDate = (date: Date) => {
+      return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+    
+    return {
+      plan: license.plan_name,
+      expiresAt: formatDate(endDate),
+      daysLeft,
+      totalDays,
+      activatedAt: formatDate(startDate),
+      status: license.status
+    };
+  };
+
+  const licenseInfo = getLicenseInfo();
+
   return {
     license,
+    licenseInfo,
     sessionFiles,
     orders,
     combos,
