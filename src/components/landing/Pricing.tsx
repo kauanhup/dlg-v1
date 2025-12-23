@@ -1,8 +1,6 @@
-import { useState, useEffect } from "react";
-import { Check, Sparkles, Zap, Crown } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useRef, useState } from "react";
+import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Plan {
@@ -30,17 +28,16 @@ const formatPeriod = (days: number) => {
   return `${days} dias`;
 };
 
-const planIcons = [Zap, Sparkles, Crown, Sparkles];
-const planColors = [
-  { bg: "from-blue-500/10 to-blue-500/5", border: "border-blue-500/20", accent: "text-blue-500", glow: "shadow-blue-500/20" },
-  { bg: "from-primary/10 to-primary/5", border: "border-primary/30", accent: "text-primary", glow: "shadow-primary/30" },
-  { bg: "from-yellow-500/10 to-yellow-500/5", border: "border-yellow-500/20", accent: "text-yellow-500", glow: "shadow-yellow-500/20" },
-  { bg: "from-purple-500/10 to-purple-500/5", border: "border-purple-500/20", accent: "text-purple-500", glow: "shadow-purple-500/20" },
-];
-
 const Pricing = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [ready, setReady] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -77,177 +74,258 @@ const Pricing = () => {
     fetchPlans();
   }, []);
 
+  // Particles animation
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+
+    const setSize = () => {
+      const rect = canvas.parentElement?.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.floor(rect?.width ?? window.innerWidth));
+      canvas.height = Math.max(1, Math.floor(rect?.height ?? window.innerHeight));
+    };
+    setSize();
+
+    type P = { x: number; y: number; v: number; o: number };
+    let ps: P[] = [];
+    let raf = 0;
+
+    const make = (): P => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      v: Math.random() * 0.25 + 0.05,
+      o: Math.random() * 0.35 + 0.15,
+    });
+
+    const init = () => {
+      ps = [];
+      const count = Math.floor((canvas.width * canvas.height) / 12000);
+      for (let i = 0; i < count; i++) ps.push(make());
+    };
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ps.forEach((p) => {
+        p.y -= p.v;
+        if (p.y < 0) {
+          p.x = Math.random() * canvas.width;
+          p.y = canvas.height + Math.random() * 40;
+          p.v = Math.random() * 0.25 + 0.05;
+          p.o = Math.random() * 0.35 + 0.15;
+        }
+        ctx.fillStyle = `rgba(139,92,246,${p.o * 0.5})`;
+        ctx.fillRect(p.x, p.y, 0.7, 2.2);
+      });
+      raf = requestAnimationFrame(draw);
+    };
+
+    const onResize = () => {
+      setSize();
+      init();
+    };
+
+    const ro = new ResizeObserver(onResize);
+    ro.observe(canvas.parentElement || document.body);
+
+    init();
+    raf = requestAnimationFrame(draw);
+
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
   const getPopularIndex = () => {
     if (plans.length === 0) return -1;
     if (plans.length <= 2) return plans.length - 1;
     if (plans.length === 3) return 1;
-    return 2; // Third plan for 4 plans
+    return 2;
   };
 
   const popularIndex = getPopularIndex();
 
   return (
-    <section id="pricing" className="py-24 sm:py-32 relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-card/30 to-background" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-3xl" />
-      
-      <div className="container mx-auto px-4 sm:px-6 relative z-10">
-        <motion.div 
-          className="text-center max-w-2xl mx-auto mb-16"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-        >
-          <h2 className="text-4xl sm:text-5xl font-display font-bold mb-5 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-            Escolha seu plano
-          </h2>
-          <p className="text-muted-foreground text-lg">
-            Invista no crescimento do seu grupo. Sem mensalidade, sem surpresas.
-          </p>
-        </motion.div>
+    <section
+      id="pricing"
+      data-locked
+      className={`relative min-h-screen overflow-hidden py-24 sm:py-32 ${ready ? "is-ready" : ""}`}
+      style={{
+        "--bg": "hsl(var(--background))",
+        "--text": "hsl(var(--foreground))",
+        "--muted": "hsl(var(--muted-foreground))",
+        "--accent-line": "rgba(139, 92, 246, 0.15)",
+        "--glow": "linear-gradient(90deg, rgba(139,92,246,0.4), rgba(168,85,247,0.4))",
+        "--card": "rgba(15, 15, 20, 0.6)",
+        "--card-pop": "rgba(139, 92, 246, 0.08)",
+        "--card-muted": "rgba(10, 10, 15, 0.8)",
+        "--border": "rgba(139, 92, 246, 0.2)",
+        "--btn-primary-bg": "hsl(var(--primary))",
+        "--btn-primary-fg": "hsl(var(--primary-foreground))",
+        "--btn-ghost-border": "rgba(139, 92, 246, 0.3)",
+        "--btn-ghost-hover": "rgba(139, 92, 246, 0.1)",
+      } as React.CSSProperties}
+    >
+      <style>{`
+        @media (prefers-color-scheme: light){section[data-locked]{background:var(--bg);color:var(--text);color-scheme:dark}}
+        
+        .accent-lines{position:absolute;inset:0;pointer-events:none;opacity:.7}
+        .accent-lines .hline,.accent-lines .vline{position:absolute;background:var(--accent-line);animation-fill-mode:forwards}
+        .accent-lines .hline{left:0;right:0;height:1px;transform:scaleX(0);transform-origin:50% 50%}
+        .accent-lines .vline{top:0;bottom:0;width:1px;transform:scaleY(0);transform-origin:50% 0%}
+        .is-ready .accent-lines .hline:nth-of-type(1){top:18%;animation:drawX .6s ease .08s forwards}
+        .is-ready .accent-lines .hline:nth-of-type(2){top:50%;animation:drawX .6s ease .16s forwards}
+        .is-ready .accent-lines .hline:nth-of-type(3){top:82%;animation:drawX .6s ease .24s forwards}
+        .is-ready .accent-lines .vline:nth-of-type(1){left:18%;animation:drawY .7s ease .20s forwards}
+        .is-ready .accent-lines .vline:nth-of-type(2){left:50%;animation:drawY .7s ease .28s forwards}
+        .is-ready .accent-lines .vline:nth-of-type(3){left:82%;animation:drawY .7s ease .36s forwards}
+        @keyframes drawX{to{transform:scaleX(1)}}
+        @keyframes drawY{to{transform:scaleY(1)}}
+        .kicker,.title,.subtitle{opacity:0;transform:translateY(8px)}
+        .is-ready .kicker{animation:kIn .5s ease .08s forwards;letter-spacing:.22em}
+        .is-ready .title{animation:tIn .6s cubic-bezier(.22,1,.36,1) .16s forwards}
+        .is-ready .subtitle{animation:sIn .6s ease .26s forwards}
+        @keyframes kIn{to{opacity:.9;transform:none;letter-spacing:.14em}}
+        @keyframes tIn{to{opacity:1;transform:none}}
+        @keyframes sIn{to{opacity:1;transform:none}}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:16px}
+        .card-pop{background:var(--card-pop);border:1px solid hsl(var(--primary) / 0.4);border-radius:16px;transform:scale(1.02);box-shadow:0 10px 30px rgba(139,92,246,.2);backdrop-filter:blur(6px)}
+        .card-muted{background:var(--card-muted)}
+        .card-animate{opacity:0;transform:translateY(12px)}
+        .is-ready .card-animate{animation:fadeUp .6s ease forwards}
+        @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+        .btn-primary{width:100%;border-radius:12px;padding:10px 16px;font-weight:600;font-size:14px;background:var(--btn-primary-bg);color:var(--btn-primary-fg);transition:transform .15s ease,filter .15s ease,background .2s ease}
+        .btn-primary:hover{filter:brightness(1.1)}
+        .btn-primary:active{transform:translateY(1px)}
+        .btn-ghost{width:100%;border-radius:12px;padding:10px 16px;font-weight:600;font-size:14px;color:var(--text);border:1px solid var(--btn-ghost-border);background:transparent;transition:background .2s ease,transform .15s ease}
+        .btn-ghost:hover{background:var(--btn-ghost-hover)}
+        .btn-ghost:active{transform:translateY(1px)}
+        .chip{position:relative;border:1px solid var(--border);background:rgba(139,92,246,.15);color:hsl(var(--primary));border-radius:9999px;padding:6px 12px;font-size:12px;font-weight:500}
+        .chip::before{content:"";position:absolute;inset:0;border-radius:9999px;background:var(--glow);filter:blur(2px);opacity:0.5}
+        .vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(80% 60% at 50% 12%, rgba(139,92,246,.08), transparent 60%)}
+      `}</style>
 
-        {isLoading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : plans.length === 0 ? (
-          <div className="text-center py-20 text-muted-foreground">
-            Nenhum plano disponível no momento.
-          </div>
-        ) : (
-          <div className={`grid grid-cols-1 md:grid-cols-2 ${plans.length >= 3 ? 'lg:grid-cols-3' : ''} ${plans.length >= 4 ? 'xl:grid-cols-4' : ''} gap-6 max-w-7xl mx-auto`}>
-            {plans.map((plan, index) => {
-              const isPopular = index === popularIndex;
-              const effectivePrice = plan.promotional_price ?? plan.price;
-              const hasPromo = plan.promotional_price !== null && plan.promotional_price < plan.price;
-              const colors = planColors[index % planColors.length];
-              const Icon = planIcons[index % planIcons.length];
+      <div className="vignette" />
 
-              return (
-                <motion.div
-                  key={plan.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  whileHover={{ y: -8, transition: { duration: 0.3 } }}
-                  className={`relative group`}
-                >
-                  {/* Card */}
-                  <div className={`relative h-full p-6 rounded-2xl border-2 transition-all duration-500 bg-gradient-to-b ${colors.bg} backdrop-blur-sm ${
-                    isPopular 
-                      ? `border-primary shadow-2xl ${colors.glow}` 
-                      : `${colors.border} hover:border-primary/40 hover:shadow-xl hover:${colors.glow}`
-                  }`}>
-                    
-                    {/* Popular Badge */}
+      <div className="accent-lines">
+        <span className="hline" />
+        <span className="hline" />
+        <span className="hline" />
+        <span className="vline" />
+        <span className="vline" />
+        <span className="vline" />
+      </div>
+
+      <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" />
+
+      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="flex flex-col items-center">
+          <div className="mx-auto max-w-xl text-center">
+            <span className="kicker mb-3 inline-block text-xs font-semibold uppercase tracking-[.18em] text-primary">
+              Preços
+            </span>
+            <h2 className="title font-display text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              Planos e Preços
+            </h2>
+            <p className="subtitle mt-4 text-base text-muted-foreground sm:text-lg">
+              Escolha o plano ideal para o crescimento do seu grupo
+            </p>
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : plans.length === 0 ? (
+            <div className="text-center py-20 text-muted-foreground">
+              Nenhum plano disponível no momento.
+            </div>
+          ) : (
+            <div className={`mt-14 grid w-full gap-6 sm:gap-8 ${
+              plans.length === 1 ? 'grid-cols-1 max-w-md mx-auto' :
+              plans.length === 2 ? 'grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto' :
+              plans.length === 3 ? 'grid-cols-1 md:grid-cols-3' :
+              'grid-cols-1 md:grid-cols-2 xl:grid-cols-4'
+            }`}>
+              {plans.map((plan, index) => {
+                const isPopular = index === popularIndex;
+                const effectivePrice = plan.promotional_price ?? plan.price;
+                const hasPromo = plan.promotional_price !== null && plan.promotional_price < plan.price;
+
+                return (
+                  <div
+                    key={plan.id}
+                    className={`card-animate relative flex flex-col ${isPopular ? "card-pop" : "card"} p-6`}
+                    style={{ animationDelay: `${0.3 + index * 0.1}s` }}
+                  >
                     {isPopular && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
-                        <motion.span 
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/30"
-                          animate={{ scale: [1, 1.02, 1] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        >
-                          <Sparkles className="w-3 h-3" />
-                          MAIS POPULAR
-                        </motion.span>
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <div className="relative">
+                          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-primary/60 to-purple-500/60 blur-sm" />
+                          <div className="chip relative flex items-center gap-1.5">
+                            <span className="relative z-10 flex items-center gap-1">
+                              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                              Mais Popular
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     )}
 
-                    {/* Icon */}
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colors.bg} border ${colors.border} flex items-center justify-center mb-5 ${isPopular ? 'mt-2' : ''}`}>
-                      <Icon className={`w-6 h-6 ${colors.accent}`} />
-                    </div>
-
-                    {/* Plan Name */}
-                    <h3 className="font-display font-bold text-xl mb-2 text-foreground">{plan.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-5">{formatPeriod(plan.period)} de acesso</p>
-
-                    {/* Price */}
-                    <div className="mb-6">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-sm text-muted-foreground">R$</span>
-                        {hasPromo ? (
-                          <>
-                            <span className={`text-4xl font-display font-bold ${colors.accent}`}>{formatPrice(effectivePrice)}</span>
-                            <span className="text-sm text-muted-foreground line-through ml-2">R$ {formatPrice(plan.price)}</span>
-                          </>
-                        ) : (
-                          <span className="text-4xl font-display font-bold text-foreground">{formatPrice(effectivePrice)}</span>
+                    <div className={isPopular ? "mt-4" : ""}>
+                      <h3 className="text-lg font-semibold text-foreground">{plan.name}</h3>
+                      <div className="mt-3 flex items-baseline gap-1">
+                        <span className="text-3xl font-bold text-foreground">R$ {formatPrice(effectivePrice)}</span>
+                        {hasPromo && (
+                          <span className="ml-2 text-sm text-muted-foreground line-through">
+                            R$ {formatPrice(plan.price)}
+                          </span>
                         )}
                       </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {formatPeriod(plan.period)} de acesso
+                      </p>
                       {hasPromo && (
-                        <motion.span 
-                          className="inline-block mt-2 px-2 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-medium"
-                          animate={{ opacity: [1, 0.7, 1] }}
-                          transition={{ duration: 1.5, repeat: Infinity }}
-                        >
+                        <span className="mt-2 inline-block rounded-md bg-green-500/10 px-2 py-1 text-xs font-medium text-green-500">
                           Economia de R$ {formatPrice(plan.price - effectivePrice)}
-                        </motion.span>
+                        </span>
                       )}
                     </div>
 
-                    {/* Features */}
                     {plan.features && plan.features.length > 0 && (
-                      <ul className="space-y-3 mb-6">
+                      <ul className="mt-6 flex-1 space-y-3">
                         {plan.features.map((feature, i) => (
-                          <motion.li 
-                            key={i} 
-                            className="flex items-start gap-3 text-sm"
-                            initial={{ opacity: 0, x: -10 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.3 + i * 0.05 }}
-                          >
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                              isPopular ? 'bg-primary/20' : colors.bg
-                            } border ${isPopular ? 'border-primary/30' : colors.border}`}>
-                              <Check className={`w-3 h-3 ${isPopular ? 'text-primary' : colors.accent}`} />
-                            </div>
-                            <span className="text-muted-foreground">{feature}</span>
-                          </motion.li>
+                          <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                            {feature}
+                          </li>
                         ))}
                       </ul>
                     )}
 
-                    {/* CTA Button */}
-                    <Link to="/comprar" className="w-full block mt-auto">
-                      <Button 
-                        className={`w-full h-12 font-semibold transition-all duration-300 ${
-                          isPopular 
-                            ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30' 
-                            : 'hover:bg-primary hover:text-primary-foreground'
-                        }`}
-                        variant={isPopular ? "default" : "outline"}
-                      >
+                    <Link to="/comprar" className="mt-6 block">
+                      <button className={isPopular ? "btn-primary" : "btn-ghost"}>
                         {effectivePrice === 0 ? 'Testar Grátis' : 'Escolher Plano'}
-                      </Button>
+                      </button>
                     </Link>
                   </div>
-                </motion.div>
-              );
-            })}
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mt-10">
+            <Link to="/comprar">
+              <button className="btn-ghost inline-flex items-center gap-2 px-6">
+                Ver todos os planos disponíveis
+                <span className="text-lg">→</span>
+              </button>
+            </Link>
           </div>
-        )}
-
-        {/* Bottom CTA */}
-        <motion.div
-          className="flex justify-center mt-12"
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.5, duration: 0.5 }}
-        >
-          <Link to="/comprar">
-            <Button variant="ghost" className="text-primary hover:text-primary/80 hover:bg-primary/5 gap-2">
-              Ver todos os planos disponíveis
-              <span className="text-lg">→</span>
-            </Button>
-          </Link>
-        </motion.div>
-
+        </div>
       </div>
     </section>
   );
