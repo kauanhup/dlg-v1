@@ -8,15 +8,7 @@
     <priority>1.0</priority>
   </url>
   
-  <!-- Login / Cadastro -->
-  <url>
-    <loc>https://dlgconnect.com/login</loc>
-    <lastmod>2025-01-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  
-  <!-- Comprar -->
+  <!-- Comprar / Planos -->
   <url>
     <loc>https://dlgconnect.com/comprar</loc>
     <lastmod>2025-01-01</lastmod>
@@ -24,35 +16,27 @@
     <priority>0.9</priority>
   </url>
   
-  <!-- Recuperar Senha -->
+  <!-- Login / Cadastro -->
   <url>
-    <loc>https://dlgconnect.com/recuperar-senha</loc>
-    <lastmod>2025-01-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <!-- Dashboard -->
-  <url>
-    <loc>https://dlgconnect.com/dashboard</loc>
-    <lastmod>2025-01-01</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  
-  <!-- Checkout -->
-  <url>
-    <loc>https://dlgconnect.com/checkout</loc>
+    <loc>https://dlgconnect.com/login</loc>
     <lastmod>2025-01-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   
-  <!-- Pagamentos -->
+  <!-- Recuperar Senha -->
   <url>
-    <loc>https://dlgconnect.com/pagamentos</loc>
+    <loc>https://dlgconnect.com/recuperar-senha</loc>
     <lastmod>2025-01-01</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.4</priority>
+  </url>
+  
+  <!-- Política de Privacidade -->
+  <url>
+    <loc>https://dlgconnect.com/politica-privacidade</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
 </urlset>

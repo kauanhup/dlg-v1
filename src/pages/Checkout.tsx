@@ -470,60 +470,81 @@ const Checkout = () => {
     };
   }, [orderId, navigate, toast, isPlanPurchase]);
 
+  // UNIFIED: Free plans now go through the same flow as paid plans
+  // Creates order with amount=0 and calls complete_order_atomic via webhook simulation
   const handleFreeActivation = async () => {
-    if (!user) return;
+    if (!user || !isPlanPurchase || !plan) return;
 
     setIsProcessing(true);
     
     try {
-      if (isPlanPurchase && plan) {
-        // Check subscription limit if set
-        if (plan.max_subscriptions_per_user !== null) {
-          const { count, error: countError } = await supabase
-            .from('user_subscriptions')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .eq('plan_id', plan.id);
+      // Check subscription limit if set (frontend check - backend also validates)
+      if (plan.max_subscriptions_per_user !== null) {
+        const { count, error: countError } = await supabase
+          .from('user_subscriptions')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('plan_id', plan.id);
 
-          if (countError) throw countError;
+        if (countError) throw countError;
 
-          if (count !== null && count >= plan.max_subscriptions_per_user) {
-            toast.error("Limite atingido", `Você já utilizou este plano o máximo de ${plan.max_subscriptions_per_user} vez(es).`);
-            setIsProcessing(false);
-            return;
-          }
+        if (count !== null && count >= plan.max_subscriptions_per_user) {
+          toast.error("Limite atingido", `Você já utilizou este plano o máximo de ${plan.max_subscriptions_per_user} vez(es).`);
+          setIsProcessing(false);
+          return;
         }
-
-        // Create subscription for free plan
-        const startDate = new Date();
-        const nextBillingDate = plan.period > 0 
-          ? new Date(startDate.getTime() + plan.period * 24 * 60 * 60 * 1000) 
-          : null;
-
-        const { error: subError } = await supabase.from('user_subscriptions').insert({
-          user_id: user.id,
-          plan_id: plan.id,
-          status: 'active',
-          start_date: startDate.toISOString(),
-          next_billing_date: nextBillingDate?.toISOString() || null,
-        });
-
-        if (subError) throw subError;
-
-        // Create license
-        const { error: licenseError } = await supabase.from('licenses').insert({
-          user_id: user.id,
-          plan_name: plan.name,
-          status: 'active',
-          start_date: startDate.toISOString(),
-          end_date: nextBillingDate?.toISOString() || new Date(startDate.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-        });
-
-        if (licenseError) console.error('License error:', licenseError);
-
-        toast.success("Plano ativado!", "Seu plano gratuito foi ativado com sucesso.");
-        setTimeout(() => navigate('/dashboard'), 1500);
       }
+
+      // Create order with amount = 0 (unified flow)
+      const orderInsertData: any = {
+        user_id: user.id,
+        product_name: plan.name,
+        product_type: 'subscription',
+        quantity: 1,
+        amount: 0,
+        status: 'pending',
+        payment_method: 'free',
+        plan_period_days: plan.period,
+        plan_id_snapshot: plan.id,
+        plan_features_snapshot: plan.features,
+        order_version: 2,
+      };
+      
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert(orderInsertData)
+        .select('id')
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Create payment record with amount = 0
+      await supabase.from('payments').insert({
+        user_id: user.id,
+        order_id: orderData.id,
+        amount: 0,
+        payment_method: 'free',
+        status: 'paid',
+        paid_at: new Date().toISOString(),
+      });
+
+      // Call complete_order_atomic to finalize (same as paid orders)
+      const { data: result, error: rpcError } = await supabase.rpc('complete_order_atomic', {
+        _order_id: orderData.id,
+        _user_id: user.id,
+        _product_type: 'subscription',
+        _quantity: 1,
+      });
+
+      if (rpcError) throw rpcError;
+      
+      const resultTyped = result as { success: boolean; error?: string };
+      if (!resultTyped?.success) {
+        throw new Error(resultTyped?.error || 'Erro ao ativar plano');
+      }
+
+      toast.success("Plano ativado!", "Seu plano gratuito foi ativado com sucesso.");
+      setTimeout(() => navigate('/dashboard'), 1500);
     } catch (error) {
       console.error('Error activating free plan:', error);
       toast.error("Erro", "Não foi possível ativar o plano. Tente novamente.");
