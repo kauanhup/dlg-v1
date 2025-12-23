@@ -14,9 +14,22 @@ const DownloadBotButton = ({ className }: DownloadBotButtonProps) => {
 
   const [filePath, setFilePath] = useState<string | null>(null);
 
+  const [downloadEnabled, setDownloadEnabled] = useState(true);
+
   useEffect(() => {
     const fetchBotFile = async () => {
       try {
+        // Check if download is enabled
+        const { data: settingData } = await supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'allow_bot_download')
+          .maybeSingle();
+        
+        if (settingData) {
+          setDownloadEnabled(settingData.value === 'true');
+        }
+
         const { data, error } = await supabase
           .from('bot_files')
           .select('file_path')
@@ -52,6 +65,11 @@ const DownloadBotButton = ({ className }: DownloadBotButtonProps) => {
   };
 
   const handleDownload = async () => {
+    if (!downloadEnabled) {
+      toast.error("Downloads temporariamente desabilitados");
+      return;
+    }
+    
     if (!filePath) {
       toast.error("Bot não disponível no momento");
       return;
@@ -71,7 +89,7 @@ const DownloadBotButton = ({ className }: DownloadBotButtonProps) => {
       onClick={handleDownload}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      disabled={isLoading}
+      disabled={isLoading || !downloadEnabled}
       className={cn(
         "cursor-pointer group relative inline-flex items-center gap-2 px-6 py-3 bg-foreground/90 text-background rounded-3xl hover:bg-foreground/80 transition-all duration-200 font-semibold shadow-md disabled:opacity-50 disabled:cursor-not-allowed",
         className
