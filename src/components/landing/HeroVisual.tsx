@@ -2,11 +2,11 @@ import { motion } from "framer-motion";
 import { Users, Zap, Shield, Send, MessageCircle, UserPlus } from "lucide-react";
 
 const floatingIcons = [
-  { icon: Users, delay: 0, x: 15, y: 25 },
-  { icon: Send, delay: 0.2, x: 85, y: 20 },
-  { icon: Shield, delay: 0.4, x: 75, y: 65 },
-  { icon: MessageCircle, delay: 0.6, x: 10, y: 60 },
-  { icon: UserPlus, delay: 0.8, x: 50, y: 80 },
+  { icon: Users, delay: 0, x: 12, y: 18 },
+  { icon: Send, delay: 0.2, x: 78, y: 12 },
+  { icon: Shield, delay: 0.4, x: 72, y: 58 },
+  { icon: MessageCircle, delay: 0.6, x: 8, y: 52 },
+  { icon: UserPlus, delay: 0.8, x: 45, y: 72 },
 ];
 
 const stats = [
@@ -17,10 +17,10 @@ const stats = [
 
 export const HeroVisual = () => {
   return (
-    <div className="relative w-full aspect-square max-w-[450px] mx-auto">
+    <div className="relative w-full h-[320px] sm:h-[380px] lg:h-[420px] flex items-center justify-center">
       {/* Central glowing orb */}
       <motion.div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 sm:w-40 sm:h-40 lg:w-52 lg:h-52"
+        className="relative w-36 h-36 sm:w-44 sm:h-44 lg:w-56 lg:h-56"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 1, ease: "easeOut" }}
@@ -54,12 +54,15 @@ export const HeroVisual = () => {
         </motion.div>
       </motion.div>
 
-      {/* Floating icons */}
+      {/* Floating icons - positioned relative to the visual center */}
       {floatingIcons.map((item, index) => (
         <motion.div
           key={index}
-          className="absolute"
-          style={{ left: `${item.x}%`, top: `${item.y}%` }}
+          className="absolute -translate-x-1/2 -translate-y-1/2"
+          style={{ 
+            left: `${item.x}%`, 
+            top: `${item.y}%`,
+          }}
           initial={{ opacity: 0, scale: 0 }}
           animate={{ 
             opacity: 1, 
@@ -104,7 +107,7 @@ export const HeroVisual = () => {
       </svg>
 
       {/* Stats cards - positioned at bottom */}
-      <div className="absolute -bottom-4 sm:-bottom-6 left-1/2 -translate-x-1/2 flex justify-center gap-2 sm:gap-3 lg:gap-4 w-full max-w-full px-2">
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex justify-center gap-2 sm:gap-3 lg:gap-4">
         {stats.map((stat, index) => (
           <motion.div
             key={index}
