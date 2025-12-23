@@ -712,14 +712,6 @@ const Checkout = () => {
         const combosData = combosResult.data;
         const inventoryData = inventoryResult.data;
 
-        // Validar estoque primeiro (fail fast)
-        const availableStock = inventoryData?.quantity || 0;
-        if (availableStock < quantity) {
-          toast.error("Estoque insuficiente", `Apenas ${availableStock} sessions disponíveis deste tipo.`);
-          setIsProcessing(false);
-          return;
-        }
-
         // Verificar se o preço corresponde a um combo válido
         const matchingCombo = combosData?.find(c => c.quantity === quantity);
         
@@ -796,16 +788,57 @@ const Checkout = () => {
       if (orderError) throw orderError;
       setOrderId(orderData.id);
 
-      // OTIMIZADO: Criar payment em background (não bloqueia o PIX)
-      supabase.from('payments').insert({
+      // SEGURANÇA: Para compras de sessions, reservar atomicamente ANTES de gerar PIX
+      // Isso previne race conditions onde dois usuários compram as mesmas sessions
+      if (isSessionPurchase && sessionInfo) {
+        const { data: reserveResultRaw, error: reserveError } = await supabase.rpc('reserve_sessions_atomic', {
+          p_session_type: sessionInfo.fileType,
+          p_quantity: quantity,
+          p_order_id: orderData.id
+        });
+
+        // Cast to typed response
+        const reserveResult = reserveResultRaw as { 
+          success: boolean; 
+          error?: string; 
+          reserved_count: number; 
+          available_count?: number;
+          session_ids?: string[];
+        } | null;
+
+        if (reserveError || !reserveResult?.success) {
+          // Cancelar a order se não conseguiu reservar
+          await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderData.id);
+          
+          const errorMsg = reserveResult?.error || reserveError?.message || 'Erro ao reservar sessions';
+          const availableCount = reserveResult?.available_count || 0;
+          
+          toast.error(
+            "Estoque insuficiente", 
+            availableCount > 0 
+              ? `Apenas ${availableCount} sessions disponíveis. Reduza a quantidade e tente novamente.`
+              : errorMsg
+          );
+          setOrderId(null);
+          setIsProcessing(false);
+          return;
+        }
+
+        console.log('[Checkout] Sessions reservadas atomicamente:', reserveResult.reserved_count);
+      }
+
+      // Criar payment (await para garantir que foi criado antes do PIX)
+      const { error: paymentError } = await supabase.from('payments').insert({
         user_id: user.id,
         order_id: orderData.id,
         amount: amount,
         payment_method: selectedPaymentMethod,
         status: 'pending',
-      }).then(({ error }) => {
-        if (error) console.error('Payment record error:', error);
       });
+      
+      if (paymentError) {
+        console.error('Payment record error:', paymentError);
+      }
 
       // Handle EvoPay PIX payment
       if (selectedPaymentMethod === 'evopay') {
@@ -915,6 +948,12 @@ const Checkout = () => {
     setIsProcessing(true);
     
     try {
+      // Liberar reservas de sessions (se houver)
+      if (isSessionPurchase) {
+        await supabase.rpc('release_session_reservation', { p_order_id: orderId });
+        console.log('[Checkout] Reservas liberadas para order:', orderId);
+      }
+
       // Update order status to cancelled
       const { error: orderError } = await supabase
         .from('orders')
