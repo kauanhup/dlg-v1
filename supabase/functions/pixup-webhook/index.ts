@@ -276,14 +276,21 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Register webhook as processed
+      // Register webhook as processed with conflict handling (idempotency safety)
       if (transactionId) {
-        await supabase.from('processed_webhooks').insert({
-          transaction_id: transactionId,
-          gateway: 'pixup',
-          order_id: existingOrder.id,
-          webhook_payload: payload
-        });
+        const { error: insertError } = await supabase
+          .from('processed_webhooks')
+          .insert({
+            transaction_id: transactionId,
+            gateway: 'pixup',
+            order_id: existingOrder.id,
+            webhook_payload: payload
+          });
+        
+        // Log if insert failed (likely constraint violation from race condition)
+        if (insertError) {
+          console.log('processed_webhooks insert handled (likely duplicate):', insertError.code);
+        }
       }
       
       console.log('Order completed successfully:', JSON.stringify(result))
@@ -309,14 +316,20 @@ Deno.serve(async (req) => {
         .update({ status: newStatus })
         .eq('order_id', externalId)
 
-      // Register webhook as processed
+      // Register webhook as processed with conflict handling
       if (transactionId) {
-        await supabase.from('processed_webhooks').insert({
-          transaction_id: transactionId,
-          gateway: 'pixup',
-          order_id: existingOrder.id,
-          webhook_payload: payload
-        });
+        const { error: insertError } = await supabase
+          .from('processed_webhooks')
+          .insert({
+            transaction_id: transactionId,
+            gateway: 'pixup',
+            order_id: existingOrder.id,
+            webhook_payload: payload
+          });
+        
+        if (insertError) {
+          console.log('processed_webhooks insert handled (likely duplicate):', insertError.code);
+        }
       }
 
       console.log(`=== PIXUP WEBHOOK END - Order ${externalId} updated to ${newStatus} ===`)

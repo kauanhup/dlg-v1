@@ -1,7 +1,22 @@
 # 📋 AUDITORIA FINAL - DLG Connect
 
 **Última Atualização:** 2025-12-23  
-**Status:** ✅ PRODUÇÃO - VALIDADO COM TESTES DE STRESS
+**Status:** ✅ PRODUÇÃO - ARQUITETURA IMUTÁVEL IMPLEMENTADA
+
+---
+
+## 0. MUDANÇAS ARQUITETURAIS (2025-12-23)
+
+### Plan Snapshot System
+- **Colunas adicionadas em `orders`:** `plan_period_days`, `plan_id_snapshot`, `plan_features_snapshot`
+- **`complete_order_atomic` v2.0:** Usa snapshot ao invés de buscar plano em tempo real
+- **Fallback:** Ordens legadas sem snapshot ainda funcionam (busca por nome/preço)
+- **Resultado:** Alterações administrativas NÃO afetam compras em andamento
+
+### Webhook Hardening
+- INSERT em `processed_webhooks` agora trata conflitos explicitamente
+- Erros de constraint violation são logados mas não propagados
+- Elimina efeitos colaterais silenciosos
 
 ---
 
