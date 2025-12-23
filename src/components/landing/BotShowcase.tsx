@@ -2,6 +2,7 @@ import { BotDashboardPreview, BotActionsPreview, BotAccountsPreview } from "./Bo
 import { motion, useInView } from "framer-motion";
 import { Users, Clock } from "lucide-react";
 import { useRef } from "react";
+import { SubtleDivider } from "./SubtleDivider";
 
 // GPU-optimized easing
 const gpuEase = [0.33, 1, 0.68, 1] as const;
@@ -96,6 +97,9 @@ const BotShowcase = () => {
         </div>
       </div>
 
+      {/* Divider 1 */}
+      <SubtleDivider variant="default" />
+
       {/* Section 2: Actions - Inverted */}
       <div className="container mx-auto px-4 mb-16 sm:mb-24 lg:mb-32">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-20 items-center">
@@ -149,6 +153,9 @@ const BotShowcase = () => {
           </RevealSection>
         </div>
       </div>
+
+      {/* Divider 2 */}
+      <SubtleDivider variant="glow" />
 
       {/* Section 3: Accounts */}
       <div className="container mx-auto px-4">
