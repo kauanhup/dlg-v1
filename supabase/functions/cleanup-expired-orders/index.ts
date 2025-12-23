@@ -60,6 +60,55 @@ Deno.serve(async (req) => {
       try {
         console.log(`Cancelling order ${order.id} (created: ${order.created_at})`);
 
+        // CRITICAL: First release any reserved sessions for this order
+        const { data: releasedSessions, error: releaseError } = await supabase
+          .from('session_files')
+          .update({ 
+            status: 'available',
+            reserved_for_order: null,
+            reserved_at: null
+          })
+          .eq('reserved_for_order', order.id)
+          .eq('status', 'reserved')
+          .select('id, type');
+
+        if (releaseError) {
+          console.error(`Error releasing sessions for order ${order.id}:`, releaseError);
+          errors.push(`Session release for order ${order.id}: ${releaseError.message}`);
+        } else if (releasedSessions && releasedSessions.length > 0) {
+          console.log(`Released ${releasedSessions.length} sessions for order ${order.id}`);
+          
+          // Sync inventory for released sessions
+          const brReleased = releasedSessions.filter(s => s.type === 'brasileiras').length;
+          const extReleased = releasedSessions.filter(s => s.type === 'estrangeiras').length;
+          
+          if (brReleased > 0) {
+            const { count: brCount } = await supabase
+              .from('session_files')
+              .select('*', { count: 'exact', head: true })
+              .eq('type', 'brasileiras')
+              .eq('status', 'available');
+            
+            await supabase
+              .from('sessions_inventory')
+              .update({ quantity: brCount || 0, updated_at: new Date().toISOString() })
+              .eq('type', 'brasileiras');
+          }
+          
+          if (extReleased > 0) {
+            const { count: extCount } = await supabase
+              .from('session_files')
+              .select('*', { count: 'exact', head: true })
+              .eq('type', 'estrangeiras')
+              .eq('status', 'available');
+            
+            await supabase
+              .from('sessions_inventory')
+              .update({ quantity: extCount || 0, updated_at: new Date().toISOString() })
+              .eq('type', 'estrangeiras');
+          }
+        }
+
         // Cancel the order
         const { error: orderError } = await supabase
           .from('orders')
