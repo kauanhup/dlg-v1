@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.notify-expiring-licenses]
 verify_jwt = false
+
+[functions.reconcile-sessions]
+verify_jwt = false
