@@ -100,16 +100,6 @@ const Pricing = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.7, ease: "easeOut" }}
         >
-          <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6"
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-          >
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-primary">Planos Flexíveis</span>
-          </motion.div>
           <h2 className="text-4xl sm:text-5xl font-display font-bold mb-5 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
             Escolha seu plano
           </h2>
@@ -258,31 +248,6 @@ const Pricing = () => {
           </Link>
         </motion.div>
 
-        {/* Trust Badges */}
-        <motion.div 
-          className="flex flex-wrap justify-center gap-6 mt-12"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.7, duration: 0.6 }}
-        >
-          {[
-            { icon: "💳", text: "Pagamento via PIX" },
-            { icon: "⚡", text: "Entrega Imediata" },
-            { icon: "🔒", text: "100% Seguro" },
-            { icon: "✨", text: "Sem Mensalidade" },
-          ].map((badge, i) => (
-            <motion.div
-              key={badge.text}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 border border-border/50"
-              whileHover={{ scale: 1.05, backgroundColor: "rgba(var(--primary), 0.05)" }}
-              transition={{ duration: 0.2 }}
-            >
-              <span className="text-lg">{badge.icon}</span>
-              <span className="text-sm text-muted-foreground">{badge.text}</span>
-            </motion.div>
-          ))}
-        </motion.div>
       </div>
     </section>
   );
