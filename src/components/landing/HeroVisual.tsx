@@ -2,24 +2,24 @@ import { motion } from "framer-motion";
 import { Users, Zap, Shield, Clock, Send, UserPlus } from "lucide-react";
 
 const floatingFeatures = [
-  { icon: Clock, label: "Delay Inteligente", delay: 0, x: 8, y: 20 },
-  { icon: Users, label: "Multi-Contas", delay: 0.2, x: 75, y: 8 },
-  { icon: Shield, label: "Anti-Ban", delay: 0.4, x: 78, y: 75 },
-  { icon: Send, label: "Extração", delay: 0.6, x: 5, y: 70 },
-  { icon: UserPlus, label: "Adicionar", delay: 0.8, x: 45, y: 92 },
+  { icon: Clock, label: "Delay Inteligente", delay: 0, x: 5, y: 18 },
+  { icon: Users, label: "Multi-Contas", delay: 0.2, x: 72, y: 6 },
+  { icon: Shield, label: "Anti-Ban", delay: 0.4, x: 78, y: 72 },
+  { icon: Send, label: "Extração", delay: 0.6, x: 3, y: 68 },
+  { icon: UserPlus, label: "Adicionar", delay: 0.8, x: 40, y: 90 },
 ];
 
 export const HeroVisual = () => {
   return (
-    <div className="relative w-full max-w-xs sm:max-w-sm lg:max-w-md mx-auto h-[280px] sm:h-[320px] lg:h-[360px] flex items-center justify-center">
+    <div className="relative w-full max-w-[240px] xs:max-w-xs sm:max-w-sm lg:max-w-md mx-auto h-[220px] xs:h-[260px] sm:h-[320px] lg:h-[360px] flex items-center justify-center">
       {/* Background glow */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-40 h-40 sm:w-52 sm:h-52 lg:w-64 lg:h-64 rounded-full bg-primary/10 blur-3xl" />
+        <div className="w-32 h-32 xs:w-40 xs:h-40 sm:w-52 sm:h-52 lg:w-64 lg:h-64 rounded-full bg-primary/10 blur-3xl" />
       </div>
 
       {/* Central glowing orb */}
       <motion.div
-        className="relative w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48"
+        className="relative w-24 h-24 xs:w-28 xs:h-28 sm:w-40 sm:h-40 lg:w-48 lg:h-48"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 1, ease: "easeOut" }}
@@ -38,21 +38,21 @@ export const HeroVisual = () => {
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         >
           {/* Dot on ring */}
-          <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-primary shadow-lg shadow-primary/50" />
+          <div className="absolute -top-0.5 sm:-top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary shadow-lg shadow-primary/50" />
         </motion.div>
         
         {/* Middle ring */}
         <motion.div
-          className="absolute inset-4 sm:inset-5 rounded-full border border-primary/25"
+          className="absolute inset-3 xs:inset-4 sm:inset-5 rounded-full border border-primary/25"
           animate={{ rotate: -360 }}
           transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
         >
           {/* Dot on ring */}
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary/70" />
+          <div className="absolute -bottom-0.5 sm:-bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-primary/70" />
         </motion.div>
         
         {/* Inner glow */}
-        <div className="absolute inset-6 sm:inset-8 rounded-full bg-gradient-to-br from-primary/30 via-primary/15 to-transparent blur-xl" />
+        <div className="absolute inset-4 xs:inset-6 sm:inset-8 rounded-full bg-gradient-to-br from-primary/30 via-primary/15 to-transparent blur-xl" />
         
         {/* Telegram airplane */}
         <motion.div
@@ -62,7 +62,7 @@ export const HeroVisual = () => {
         >
           <svg 
             viewBox="0 0 24 24" 
-            className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 drop-shadow-[0_0_20px_rgba(55,174,226,0.5)]"
+            className="w-8 h-8 xs:w-10 xs:h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 drop-shadow-[0_0_20px_rgba(55,174,226,0.5)]"
           >
             <defs>
               <linearGradient id="telegramGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -78,11 +78,11 @@ export const HeroVisual = () => {
         </motion.div>
       </motion.div>
 
-      {/* Floating feature badges */}
+      {/* Floating feature badges - Hidden on very small screens */}
       {floatingFeatures.map((item, index) => (
         <motion.div
           key={index}
-          className="absolute"
+          className="absolute hidden xs:block"
           style={{ 
             left: `${item.x}%`, 
             top: `${item.y}%`,
@@ -99,17 +99,17 @@ export const HeroVisual = () => {
             y: { delay: item.delay + 1, duration: 3.5, repeat: Infinity, ease: "easeInOut" }
           }}
         >
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-[hsl(220,20%,8%)]/90 border border-[hsl(220,15%,22%)] shadow-xl backdrop-blur-md hover:border-primary/30 transition-colors">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-primary/15 flex items-center justify-center">
-              <item.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
+          <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 py-1 sm:px-2.5 sm:py-1.5 md:px-3 md:py-2 rounded-lg sm:rounded-xl bg-[hsl(220,20%,8%)]/90 border border-[hsl(220,15%,22%)] shadow-xl backdrop-blur-md hover:border-primary/30 transition-colors">
+            <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-md sm:rounded-lg bg-primary/15 flex items-center justify-center">
+              <item.icon className="w-2 h-2 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 text-primary" />
             </div>
-            <span className="text-[10px] sm:text-xs font-medium text-foreground/90 whitespace-nowrap">{item.label}</span>
+            <span className="text-[8px] sm:text-[10px] md:text-xs font-medium text-foreground/90 whitespace-nowrap">{item.label}</span>
           </div>
         </motion.div>
       ))}
 
-      {/* Connection lines */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: -1 }}>
+      {/* Connection lines - Hidden on very small screens */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none hidden xs:block" style={{ zIndex: -1 }}>
         <defs>
           <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="hsl(211, 100%, 50%)" stopOpacity="0" />
@@ -137,7 +137,7 @@ export const HeroVisual = () => {
       {[...Array(6)].map((_, i) => (
         <motion.div
           key={i}
-          className="absolute w-1 h-1 rounded-full bg-primary/50"
+          className="absolute w-0.5 h-0.5 sm:w-1 sm:h-1 rounded-full bg-primary/50"
           style={{
             left: `${40 + Math.random() * 20}%`,
             top: `${40 + Math.random() * 20}%`,
