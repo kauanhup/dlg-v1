@@ -35,8 +35,10 @@ const Header = () => {
         if (data) {
           setFilePath(data.file_path);
         }
-      } catch {
-        // Silent fail
+      } catch (error) {
+        console.error('Failed to fetch bot config:', error);
+        // Set download as disabled on error to prevent false positives
+        setDownloadEnabled(false);
       }
     };
 
