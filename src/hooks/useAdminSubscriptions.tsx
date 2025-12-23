@@ -235,6 +235,12 @@ export const useAdminSubscriptions = () => {
 
   const createPlan = async (data: { name: string; price: number; promotional_price?: number | null; period: number; features: string[]; max_subscriptions_per_user?: number | null }) => {
     try {
+      // Validate max_subscriptions_per_user
+      const maxSubs = data.max_subscriptions_per_user;
+      if (maxSubs !== null && maxSubs !== undefined && maxSubs < 1) {
+        return { success: false, error: 'Limite de assinaturas deve ser pelo menos 1' };
+      }
+
       const { data: newPlan, error } = await supabase
         .from('subscription_plans')
         .insert({ 
@@ -244,7 +250,7 @@ export const useAdminSubscriptions = () => {
           period: data.period,
           features: data.features,
           is_active: true,
-          max_subscriptions_per_user: data.max_subscriptions_per_user ?? null
+          max_subscriptions_per_user: maxSubs ?? null
         })
         .select()
         .single();
@@ -498,7 +504,7 @@ export const useAdminSubscriptions = () => {
         .from('orders')
         .select('*')
         .eq('id', payment.order_id)
-        .single();
+        .maybeSingle();
 
       if (orderError || !orderData) {
         console.error('[confirmPayment] Error fetching order:', orderError);
@@ -514,7 +520,7 @@ export const useAdminSubscriptions = () => {
           .from('subscription_plans')
           .select('*')
           .eq('name', orderData.product_name)
-          .single();
+          .maybeSingle();
 
         if (planError || !planData) {
           console.error('[confirmPayment] Plan not found:', planError);
