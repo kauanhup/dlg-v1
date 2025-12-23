@@ -6,6 +6,9 @@ import { TypewriterText } from "@/components/ui/typewriter-text";
 import { motion } from "framer-motion";
 import { HeroVisual } from "./HeroVisual";
 
+// Smooth easing curve for buttery animations
+const smoothEase = [0.22, 1, 0.36, 1] as const;
+
 const Hero = () => {
   return (
     <section className="pt-20 pb-12 sm:pt-24 sm:pb-16 md:pt-28 md:pb-20 relative overflow-hidden min-h-[85vh] flex items-center">
@@ -21,9 +24,9 @@ const Hero = () => {
             {/* Title */}
             <motion.h1
               className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-display font-bold tracking-tight mb-6 leading-normal pb-1"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+              initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 0.8, ease: smoothEase }}
             >
               Cresça no Telegram com{" "}
               <TypewriterText 
@@ -38,9 +41,9 @@ const Hero = () => {
             {/* Subtitle */}
             <motion.p
               className="text-sm sm:text-base font-medium text-muted-foreground mb-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+              initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 0.8, delay: 0.15, ease: smoothEase }}
             >
               Sem gambiarra. Sem scripts quebrados. Sem risco desnecessário.
             </motion.p>
@@ -49,21 +52,21 @@ const Hero = () => {
             {/* CTA Buttons */}
             <motion.div 
               className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+              initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 0.8, delay: 0.3, ease: smoothEase }}
             >
               <Link to="/comprar" className="w-full sm:w-auto">
                 <motion.div
-                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileHover={{ scale: 1.03, y: -2 }}
                   whileTap={{ scale: 0.98 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: 0.25, ease: smoothEase }}
                 >
                   <Button size="lg" className="w-full sm:w-auto sm:min-w-[180px] h-12 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300">
                     Começar Agora
                     <motion.span
                       animate={{ x: [0, 4, 0] }}
-                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                      transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
                     >
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </motion.span>
@@ -72,9 +75,9 @@ const Hero = () => {
               </Link>
               <Link to="/login" className="w-full sm:w-auto">
                 <motion.div
-                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileHover={{ scale: 1.03, y: -2 }}
                   whileTap={{ scale: 0.98 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: 0.25, ease: smoothEase }}
                 >
                   <Button variant="outline" size="lg" className="w-full sm:w-auto sm:min-w-[180px] h-12 hover:shadow-lg transition-all duration-300">
                     Já tenho licença
@@ -87,9 +90,9 @@ const Hero = () => {
           {/* Right side - Visual */}
           <motion.div
             className="relative mt-8 lg:mt-0"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+            initial={{ opacity: 0, scale: 0.92, filter: "blur(12px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            transition={{ duration: 1, delay: 0.4, ease: smoothEase }}
           >
             <HeroVisual />
           </motion.div>

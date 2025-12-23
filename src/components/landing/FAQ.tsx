@@ -4,7 +4,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
 
 const faqs = [
   {
@@ -53,40 +54,26 @@ const faqs = [
   },
 ];
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.06,
-      delayChildren: 0.1,
-    },
-  },
-} as const;
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.4,
-      ease: [0.25, 0.46, 0.45, 0.94],
-    },
-  },
-} as const;
+// Smooth easing curve
+const smoothEase = [0.22, 1, 0.36, 1] as const;
 
 const FAQ = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { 
+    once: false, 
+    amount: 0.2,
+    margin: "-100px 0px -100px 0px"
+  });
+
   return (
-    <section id="faq" className="py-20 sm:py-28 bg-card">
+    <section id="faq" className="py-20 sm:py-28 bg-card" ref={ref}>
       <div className="container mx-auto px-4 sm:px-6">
         <div className="max-w-2xl mx-auto">
           <motion.div 
             className="text-center mb-12"
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+            initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
+            animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 30, filter: "blur(10px)" }}
+            transition={{ duration: 0.7, ease: smoothEase }}
           >
             <p className="text-primary text-sm font-medium mb-3">FAQ</p>
             <h2 className="text-3xl sm:text-4xl font-display font-bold">
@@ -95,17 +82,25 @@ const FAQ = () => {
           </motion.div>
 
           <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
+            initial={{ opacity: 0 }}
+            animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: 0.5, delay: 0.1, ease: smoothEase }}
           >
             <Accordion type="single" collapsible className="space-y-2">
               {faqs.map((faq, index) => (
-                <motion.div key={index} variants={itemVariants}>
+                <motion.div 
+                  key={index}
+                  initial={{ opacity: 0, y: 20, filter: "blur(6px)" }}
+                  animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 20, filter: "blur(6px)" }}
+                  transition={{ 
+                    duration: 0.5, 
+                    delay: 0.1 + index * 0.04, 
+                    ease: smoothEase 
+                  }}
+                >
                   <AccordionItem 
                     value={`item-${index}`}
-                    className="border border-border rounded-lg px-4 bg-background data-[state=open]:border-primary/30 transition-colors"
+                    className="border border-border rounded-lg px-4 bg-background data-[state=open]:border-primary/30 transition-colors duration-300"
                   >
                     <AccordionTrigger className="text-left hover:no-underline py-4 text-sm font-medium">
                       {faq.question}
