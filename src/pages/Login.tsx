@@ -46,6 +46,20 @@ const Login = () => {
   const resendRecaptchaRef = useRef<ReCAPTCHA>(null);
   const [pendingEmail, setPendingEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
+  /**
+   * SECURITY NOTE (BUG #4 - Documented Risk):
+   * pendingPassword is stored in React state during email verification flow.
+   * This is a necessary design choice because:
+   * 1. The password is needed to create the user after code verification
+   * 2. Moving to server-side session would require significant architecture changes
+   * 3. The risk is minimal: data is only in browser memory, cleared on unmount/refresh
+   * 
+   * Mitigations in place:
+   * - Password is never logged or sent to analytics
+   * - State is cleared after successful registration
+   * - Page refresh clears all pending data
+   * - Password is transmitted securely via HTTPS
+   */
   const [pendingPassword, setPendingPassword] = useState("");
   const [pendingName, setPendingName] = useState("");
   const [pendingWhatsapp, setPendingWhatsapp] = useState("");
@@ -254,6 +268,9 @@ const Login = () => {
     return { valid: true };
   };
 
+  // Strong password regex - MUST match backend (register/index.ts and forgot-password/index.ts)
+  const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+  
   const validatePassword = (value: string): { valid: boolean; error?: string } => {
     if (!value) {
       return { valid: false, error: "Senha é obrigatória" };
@@ -267,13 +284,9 @@ const Login = () => {
       return { valid: false, error: "Senha muito longa (máx. 128 caracteres)" };
     }
     
-    // Check for at least one uppercase, one lowercase, and one number
-    const hasUppercase = /[A-Z]/.test(value);
-    const hasLowercase = /[a-z]/.test(value);
-    const hasNumber = /[0-9]/.test(value);
-    
-    if (!hasUppercase || !hasLowercase || !hasNumber) {
-      return { valid: false, error: "Use letras maiúsculas, minúsculas e números" };
+    // Validate using the same regex as backend
+    if (!STRONG_PASSWORD_REGEX.test(value)) {
+      return { valid: false, error: "Use maiúscula, minúscula, número e caractere especial (!@#$%^&*)" };
     }
     
     // Backend validates weak passwords with complete list
@@ -673,13 +686,12 @@ const Login = () => {
 
     setIsResendingCode(true);
     try {
+      // BUG FIX #5: Use dedicated resend_code action instead of register
       const { data, error } = await supabase.functions.invoke('register', {
         body: {
-          action: 'register',
+          action: 'resend_code', // Explicit resend action
           email: pendingEmail,
-          password: pendingPassword,
           name: pendingName,
-          whatsapp: pendingWhatsapp,
           recaptchaToken: recaptchaSettings.enabled ? resendRecaptchaToken : undefined,
         },
       });

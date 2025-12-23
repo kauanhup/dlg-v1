@@ -22,7 +22,7 @@ interface RegisterRequest {
   whatsapp: string;
   honeypot?: string;
   verificationCode?: string;
-  action?: 'register' | 'verify_code';
+  action?: 'register' | 'verify_code' | 'resend_code'; // Added resend_code action
   recaptchaToken?: string;
 }
 
@@ -229,6 +229,87 @@ serve(async (req: Request): Promise<Response> => {
           code: "RATE_LIMITED"
         });
       }
+    }
+
+    // ==========================================
+    // ACTION: RESEND_CODE (Explicit resend - BUG FIX #5)
+    // Same logic as register but explicitly for resending
+    // ==========================================
+    if (action === 'resend_code') {
+      if (!email) {
+        return jsonResponse({ success: false, error: "Email é obrigatório" });
+      }
+
+      const emailClean = email.trim().toLowerCase();
+
+      // Check email verification is enabled
+      if (!requireEmailConfirmation) {
+        return jsonResponse({ success: false, error: "Verificação de email não está habilitada" });
+      }
+
+      if (!gatewayData?.resend_api_key) {
+        return jsonResponse({ success: false, error: "Serviço de email não configurado" });
+      }
+
+      // Generate new code
+      const newVerificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+      // Delete existing codes and create new one
+      await supabaseAdmin
+        .from('verification_codes')
+        .delete()
+        .eq('user_email', emailClean)
+        .eq('type', 'email_verification');
+
+      await supabaseAdmin.from('verification_codes').insert({
+        user_email: emailClean,
+        code: newVerificationCode,
+        type: 'email_verification',
+        expires_at: expiresAt.toISOString(),
+        used: false,
+      });
+
+      // Send email
+      const fromEmail = `${gatewayData.resend_from_name || 'DLG Connect'} <${gatewayData.resend_from_email || 'noreply@resend.dev'}>`;
+      const templateTitle = gatewayData.email_template_title || '✉️ Verificação de Email';
+      const templateGreeting = (gatewayData.email_template_greeting || 'Olá!').replace('{name}', name?.trim() || '');
+      const templateMessage = gatewayData.email_template_message || 'Seu código de verificação é:';
+      const templateExpiryText = gatewayData.email_template_expiry_text || 'Este código expira em 15 minutos.';
+      const templateFooter = gatewayData.email_template_footer || 'DLG Connect - Sistema de Gestão';
+      const templateBgColor = gatewayData.email_template_bg_color || '#0a0a0a';
+      const templateAccentColor = gatewayData.email_template_accent_color || '#4ade80';
+      
+      try {
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: ${templateBgColor}; color: #fff;">
+            <h1 style="color: ${templateAccentColor};">${templateTitle}</h1>
+            <p>${templateGreeting}</p>
+            <p>${templateMessage}</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <div style="background: #111; padding: 20px 40px; border-radius: 12px; display: inline-block;">
+                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: ${templateAccentColor};">${newVerificationCode}</span>
+              </div>
+            </div>
+            <p style="color: #888; font-size: 14px;">${templateExpiryText}</p>
+            <p style="color: #888; font-size: 14px;">Se você não solicitou este cadastro, ignore este email.</p>
+            <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
+            <p style="color: #666; font-size: 12px;">${templateFooter}</p>
+          </div>
+        `;
+        
+        await sendEmail(gatewayData.resend_api_key, fromEmail, emailClean, `${templateTitle.replace(/✉️\s*/, '')} - ${gatewayData.resend_from_name || 'DLG Connect'}`, html);
+        console.log(`Resend code sent to: ${emailClean}`);
+      } catch (emailError) {
+        console.error('Error resending email:', emailError);
+        return jsonResponse({ success: false, error: "Erro ao reenviar código" });
+      }
+
+      return jsonResponse({ 
+        success: true, 
+        requiresEmailConfirmation: true,
+        message: "Código reenviado para seu email."
+      });
     }
 
     // ==========================================

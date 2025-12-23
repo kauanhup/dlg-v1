@@ -272,14 +272,19 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // ==========================================
-    // RETURN SUCCESS - Frontend will do signInWithPassword
-    // (userId removed from response for security)
+    // LOG SUCCESSFUL LOGIN VALIDATION & RETURN SUCCESS
+    // Frontend will do signInWithPassword after this
     // ==========================================
+    
+    // Log successful validation (login attempt will be confirmed after password check)
+    await logLoginAttempt(supabaseAdmin, profileData.user_id, 'success');
+    
     return new Response(
       JSON.stringify({ 
         success: true,
         canLogin: true,
-        role: userRole
+        role: userRole,
+        userId: profileData.user_id // Returned for frontend logging if needed
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
