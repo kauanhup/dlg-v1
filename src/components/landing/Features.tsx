@@ -26,13 +26,13 @@ const Features = () => {
 
         {/* Video Container */}
         <motion.div
-          className="w-full max-w-6xl mx-auto"
+          className="w-full max-w-3xl mx-auto"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7, ease: "easeOut" }}
         >
-          <div className="relative aspect-video rounded-2xl overflow-hidden border border-border bg-card/50 backdrop-blur-sm shadow-2xl shadow-primary/10">
+          <div className="relative aspect-[16/9] rounded-2xl overflow-hidden border border-border bg-card/50 backdrop-blur-sm shadow-2xl shadow-primary/10">
             {videoUrl ? (
               <video
                 src={videoUrl}
