@@ -51,19 +51,8 @@ export const HeroVisual = () => {
           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary/70" />
         </motion.div>
         
-        {/* Inner glow */}
-        <div className="absolute inset-6 sm:inset-8 rounded-full bg-gradient-to-br from-primary/30 via-primary/15 to-transparent blur-xl" />
-        
-        {/* Center icon */}
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center"
-          animate={{ scale: [1, 1.08, 1] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/80 flex items-center justify-center shadow-2xl shadow-primary/40 border border-primary/30">
-            <Zap className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white drop-shadow-lg" />
-          </div>
-        </motion.div>
+        {/* Inner glow center */}
+        <div className="absolute inset-8 sm:inset-10 lg:inset-12 rounded-full bg-gradient-to-br from-primary/40 via-primary/20 to-transparent blur-lg" />
       </motion.div>
 
       {/* Floating feature badges */}
