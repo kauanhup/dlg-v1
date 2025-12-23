@@ -8,24 +8,48 @@ import { motion } from "framer-motion";
 
 const faqs = [
   {
-    question: "Como funciona o sistema?",
-    answer: "O sistema conecta suas contas Telegram e automatiza a extração de membros de grupos fonte, transferindo-os para seus grupos destino com delays inteligentes."
+    question: "O DLG Connect é um bot ou um software?",
+    answer: "É um software de automação com interface gráfica, pensado para uso profissional. Você não precisa rodar script no terminal nem mexer em código."
   },
   {
-    question: "É seguro usar?",
-    answer: "Sim. Implementamos limites de adições por dia, delays customizáveis, rotação automática e verificação de privacidade para minimizar riscos."
+    question: "Preciso ter conhecimento técnico para usar?",
+    answer: "Não. O sistema já vem com limites e configurações de segurança pré-definidas para evitar erros comuns. Quem nunca usou automação consegue aprender rápido."
   },
   {
-    question: "Como conecto minhas contas?",
-    answer: "Você pode conectar via upload do arquivo de session ou inserindo o código de verificação. O processo leva menos de 2 minutos."
+    question: "O uso do sistema pode gerar banimento?",
+    answer: "Qualquer automação envolve risco se usada de forma irresponsável. O DLG Connect foi desenvolvido para reduzir ao máximo esse risco, com delays, limites e rotação inteligente — mas o uso consciente é responsabilidade do usuário."
   },
   {
-    question: "E se uma conta for banida?",
-    answer: "Nosso dashboard mostra o status em tempo real. Se uma conta entrar em cooldown, o sistema redistribui as tarefas automaticamente."
+    question: "Como funciona o teste gratuito?",
+    answer: "O teste gratuito tem tempo e limites reduzidos, apenas para você conhecer o sistema e o fluxo de funcionamento. Ele não é feito para uso em escala."
   },
   {
-    question: "Qual a diferença entre os planos?",
-    answer: "Os planos variam em quantidade de contas e limite de adições diárias. O plano Vitalício oferece acesso ilimitado para sempre."
+    question: "Posso usar várias contas do Telegram?",
+    answer: "Sim. Nos planos pagos, é possível conectar múltiplas contas (sessions) e gerenciá-las pelo dashboard, respeitando os limites de segurança do sistema."
+  },
+  {
+    question: "Posso configurar os delays manualmente?",
+    answer: "Nos planos pagos, sim. No teste gratuito, os delays são fixos, justamente para evitar uso incorreto."
+  },
+  {
+    question: "O sistema funciona em qual dispositivo?",
+    answer: "O software é executado em computador. Você faz login na sua conta e utiliza conforme o plano contratado."
+  },
+  {
+    question: "Vocês fornecem contas ou números do Telegram?",
+    answer: "Não. O DLG Connect é uma ferramenta de automação. As contas utilizadas são de responsabilidade do usuário."
+  },
+  {
+    question: "Posso cancelar ou mudar de plano depois?",
+    answer: "Sim. Você pode fazer upgrade de plano a qualquer momento, diretamente pela sua conta."
+  },
+  {
+    question: "O pagamento é seguro?",
+    answer: "Sim. Os pagamentos são processados via PIX, com liberação rápida do acesso após a confirmação."
+  },
+  {
+    question: "Onde posso tirar dúvidas ou falar com o suporte?",
+    answer: "O suporte é feito diretamente pelo WhatsApp, de forma humana e sem robô. Entre em contato: (65) 99649-8222"
   },
 ];
 
