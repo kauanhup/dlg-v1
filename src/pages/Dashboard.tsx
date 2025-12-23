@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DownloadBotButton } from "@/components/ui/download-bot-button";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
+import { LicenseExpirationBanner } from "@/components/LicenseExpirationBanner";
 import {
   Popover,
   PopoverContent,
@@ -748,6 +749,7 @@ const Dashboard = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [expirationBannerDismissed, setExpirationBannerDismissed] = useState(false);
 
   const handlePasswordChange = async () => {
     if (newPassword.length < 8) {
@@ -1134,51 +1136,16 @@ const Dashboard = () => {
         <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         
         {/* License Expiration Warning Banner */}
-        {licenseInfo && licenseInfo.status === 'active' && licenseInfo.daysLeft <= 7 && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={cn(
-              "mb-6 p-4 rounded-lg border flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row",
-              licenseInfo.daysLeft <= 3 
-                ? "bg-destructive/10 border-destructive/30" 
-                : "bg-warning/10 border-warning/30"
-            )}
-          >
-            <div className="flex items-start sm:items-center gap-3">
-              <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
-                licenseInfo.daysLeft <= 3 ? "bg-destructive/20" : "bg-warning/20"
-              )}>
-                <AlertTriangle className={cn(
-                  "w-5 h-5",
-                  licenseInfo.daysLeft <= 3 ? "text-destructive" : "text-warning"
-                )} />
-              </div>
-              <div>
-                <h4 className={cn(
-                  "font-semibold text-sm",
-                  licenseInfo.daysLeft <= 3 ? "text-destructive" : "text-warning"
-                )}>
-                  {licenseInfo.daysLeft === 0 
-                    ? 'Sua licença expira hoje!' 
-                    : `Sua licença expira em ${licenseInfo.daysLeft} ${licenseInfo.daysLeft === 1 ? 'dia' : 'dias'}`}
-                </h4>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Renove agora para garantir acesso ininterrupto ao bot e suporte.
-                </p>
-              </div>
-            </div>
-            <Button 
-              onClick={() => navigate('/comprar')}
-              size="sm"
-              variant={licenseInfo.daysLeft <= 3 ? "destructive" : "default"}
-              className="w-full sm:w-auto flex-shrink-0"
-            >
-              Renovar Agora
-            </Button>
-          </motion.div>
-        )}
+        <LicenseExpirationBanner 
+          licenseInfo={licenseInfo ? {
+            status: licenseInfo.status,
+            daysLeft: licenseInfo.daysLeft,
+            expiresAt: license?.end_date || null,
+            planName: licenseInfo.plan
+          } : null}
+          onDismiss={() => setExpirationBannerDismissed(true)}
+          dismissed={expirationBannerDismissed}
+        />
         
         {/* Licenças */}
 {activeTab === "licencas" && (

@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.create-payment-with-fallback]
 verify_jwt = false
+
+[functions.notify-expiring-licenses]
+verify_jwt = false

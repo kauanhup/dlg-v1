@@ -781,6 +781,7 @@ export type Database = {
       user_subscriptions: {
         Row: {
           created_at: string
+          expiration_notified_at: string | null
           id: string
           next_billing_date: string | null
           plan_id: string
@@ -791,6 +792,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          expiration_notified_at?: string | null
           id?: string
           next_billing_date?: string | null
           plan_id: string
@@ -801,6 +803,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          expiration_notified_at?: string | null
           id?: string
           next_billing_date?: string | null
           plan_id?: string
