@@ -208,14 +208,6 @@ const Pricing = () => {
 
       <div className="vignette" />
 
-      <div className="accent-lines">
-        <span className="hline" />
-        <span className="hline" />
-        <span className="hline" />
-        <span className="vline" />
-        <span className="vline" />
-        <span className="vline" />
-      </div>
 
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" />
 
