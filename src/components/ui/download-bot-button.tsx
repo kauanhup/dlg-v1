@@ -81,7 +81,7 @@ const DownloadBotButton = ({ className }: DownloadBotButtonProps) => {
       return;
     }
     
-    window.open(signedUrl, '_blank');
+    window.location.href = signedUrl;
   };
 
   return (
