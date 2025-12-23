@@ -80,7 +80,7 @@ export function PixelCursorTrail() {
     <div
       ref={containerRef}
       onMouseMove={handleMouseMove}
-      className="absolute inset-0 z-[5] pointer-events-auto"
+      className="fixed inset-0 z-[100] pointer-events-auto"
       style={{ cursor: 'none' }}
     >
       {pixels.map((pixel, index) => {

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { TypewriterText } from "@/components/ui/typewriter-text";
-import { PixelCursorTrail } from "@/components/ui/pixel-trail";
 import { motion } from "framer-motion";
 import { BotDashboardPreview } from "./BotPreviews";
 
@@ -14,9 +13,6 @@ const Hero = () => {
       <div className="absolute inset-0 z-0">
         <AnimatedShaderBackground className="w-full h-full" />
       </div>
-
-      {/* Pixel Trail Effect */}
-      <PixelCursorTrail />
       
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
