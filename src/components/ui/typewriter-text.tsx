@@ -60,10 +60,10 @@ export function TypewriterText({
   }, [displayText, isDeleting, isPaused, textIndex, texts, typingSpeed, deletingSpeed, pauseTime]);
 
   return (
-    <span className={cn("inline-flex items-baseline", className)}>
-      <span>{displayText}</span>
+    <span className={cn("inline-flex items-baseline leading-relaxed pb-1", className)}>
+      <span className="leading-[1.3]">{displayText}</span>
       <span 
-        className="inline-block w-[3px] h-[0.85em] bg-primary ml-0.5 animate-blink" 
+        className="inline-block w-[3px] h-[0.8em] bg-primary ml-0.5 animate-blink" 
       />
     </span>
   );
