@@ -45,15 +45,6 @@ const Hero = () => {
               Sem gambiarra. Sem scripts quebrados. Sem risco desnecessário.
             </motion.p>
 
-            {/* Description */}
-            <motion.p 
-              className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 mb-8 sm:mb-10"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-            >
-              Gerencie múltiplas contas, extraia e transfira membros com limites inteligentes, delays seguros e controle total do processo.
-            </motion.p>
 
             {/* CTA Buttons */}
             <motion.div 
