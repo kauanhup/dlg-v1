@@ -593,11 +593,38 @@ export const useAdminSessions = () => {
   };
 
   // ==========================================
-  // LIFECYCLE
+  // LIFECYCLE & REAL-TIME SUBSCRIPTIONS
   // ==========================================
   
   useEffect(() => {
     fetchData();
+  }, [fetchData]);
+
+  // Real-time subscription for session changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-sessions-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'session_files' },
+        () => {
+          console.log('[useAdminSessions] session_files changed - refetching');
+          fetchData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sessions_inventory' },
+        () => {
+          console.log('[useAdminSessions] sessions_inventory changed - refetching');
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchData]);
 
   // ==========================================

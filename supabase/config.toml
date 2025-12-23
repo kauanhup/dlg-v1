@@ -32,3 +32,9 @@ verify_jwt = false
 
 [functions.expire-subscriptions]
 verify_jwt = false
+
+[functions.sync-sessions-inventory]
+verify_jwt = false
+
+[functions.cleanup-expired-reservations]
+verify_jwt = false

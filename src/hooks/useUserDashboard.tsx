@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface License {
   id: string;
@@ -74,7 +75,7 @@ export const useUserDashboard = (userId: string | undefined) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!userId) return;
     
     setIsLoading(true);
@@ -150,7 +151,7 @@ export const useUserDashboard = (userId: string | undefined) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userId]);
 
   const downloadSessionFile = async (fileId: string, filePath: string, fileName: string) => {
     try {
@@ -207,9 +208,133 @@ export const useUserDashboard = (userId: string | undefined) => {
     }
   };
 
+  // Initial fetch
   useEffect(() => {
     fetchData();
-  }, [userId]);
+  }, [fetchData]);
+
+  // Real-time subscriptions for live updates
+  useEffect(() => {
+    if (!userId) return;
+
+    // Orders real-time updates (for payment confirmations)
+    const ordersChannel = supabase
+      .channel(`user-orders-${userId}`)
+      .on(
+        'postgres_changes',
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'orders',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          console.log('[useUserDashboard] Order updated:', payload);
+          
+          // If order was completed, show notification
+          if (payload.new && (payload.new as any).status === 'completed') {
+            toast.success('Pagamento confirmado! Seus produtos estão disponíveis.', {
+              duration: 7000
+            });
+          }
+          
+          // Refetch to get updated data
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    // Session files updates (when admin uploads or user purchases)
+    const sessionsChannel = supabase
+      .channel(`user-sessions-${userId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'session_files' },
+        () => {
+          console.log('[useUserDashboard] Session files changed - refetching');
+          fetchData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sessions_inventory' },
+        () => {
+          console.log('[useUserDashboard] Inventory changed - refetching');
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    // License updates (when admin modifies subscription)
+    const licenseChannel = supabase
+      .channel(`user-license-${userId}`)
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'licenses',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          console.log('[useUserDashboard] License updated:', payload);
+          toast.info('Suas informações de licença foram atualizadas.');
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    // Admin broadcast channel (for when admin updates user's subscription)
+    const adminBroadcastChannel = supabase
+      .channel(`user-${userId}-admin-updates`)
+      .on('broadcast', { event: 'subscription-updated' }, (payload) => {
+        console.log('[useUserDashboard] Admin updated subscription:', payload);
+        toast.info('Suas informações foram atualizadas pelo administrador.');
+        fetchData();
+      })
+      .subscribe();
+
+    // Cleanup
+    return () => {
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(sessionsChannel);
+      supabase.removeChannel(licenseChannel);
+      supabase.removeChannel(adminBroadcastChannel);
+    };
+  }, [userId, fetchData]);
+
+  // Polling for orders (backup for real-time)
+  useEffect(() => {
+    if (!userId) return;
+
+    // Poll orders every 15 seconds for payment status
+    const pollOrders = async () => {
+      const { data: ordersData } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (ordersData) {
+        // Check if any order status changed
+        const completedNew = ordersData.filter(o => 
+          o.status === 'completed' && 
+          !orders.find(existing => existing.id === o.id && existing.status === 'completed')
+        );
+        
+        if (completedNew.length > 0) {
+          toast.success('Pagamento confirmado! Seus produtos estão disponíveis.');
+          fetchData();
+        } else {
+          setOrders(ordersData);
+        }
+      }
+    };
+
+    const interval = setInterval(pollOrders, 15000);
+    return () => clearInterval(interval);
+  }, [userId, orders, fetchData]);
 
   const getCombosByType = (type: string) => combos.filter(c => c.type === type);
   const getInventoryByType = (type: string) => inventory.find(i => i.type === type);

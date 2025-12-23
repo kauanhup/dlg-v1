@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAdminSessions, SessionCombo } from "@/hooks/useAdminSessions";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -17,6 +18,7 @@ import {
   Settings,
   Layers,
   ArrowUpRight,
+  Database,
 } from "lucide-react";
 
 // Sub-components
@@ -266,6 +268,41 @@ export const SessionsSection = () => {
     }
   };
 
+  // Full sync via edge function (calls the server to recalculate from DB)
+  const handleFullSync = async () => {
+    setIsRefreshing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        toast.error("Sessão expirada - faça login novamente");
+        setIsRefreshing(false);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('sync-sessions-inventory', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) {
+        console.error('Sync edge function error:', error);
+        toast.error("Erro ao sincronizar inventário");
+      } else if (data?.success) {
+        toast.success(`Inventário sincronizado: BR=${data.brasileiras}, EXT=${data.estrangeiras}`);
+        await refetch();
+      } else {
+        toast.error(data?.error || "Erro desconhecido na sincronização");
+      }
+    } catch (error) {
+      console.error('Sync error:', error);
+      toast.error("Erro ao sincronizar inventário");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const handleAddCombo = async (type: string) => {
     const result = await addDbCombo(type, 10, 49.90);
     if (result.success) {
@@ -391,6 +428,17 @@ export const SessionsSection = () => {
               className="hidden"
               id="session-upload"
             />
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={handleFullSync} 
+              disabled={isRefreshing || isLoading}
+              className="w-full xs:w-auto"
+              title="Sincroniza o inventário com a contagem real de arquivos no banco"
+            >
+              <Database className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
+              Sync DB
+            </Button>
             <Button 
               size="sm" 
               variant="outline" 

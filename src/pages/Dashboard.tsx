@@ -812,6 +812,84 @@ const Dashboard = () => {
       setShowMaintenanceModal(true);
     }
   }, [settingsLoading, systemSettings.maintenanceMode, isAdmin]);
+
+  // Real-time maintenance mode check - force logout non-admin users
+  useEffect(() => {
+    if (isAdmin) return; // Admin not affected
+
+    const channel = supabase
+      .channel('maintenance-mode-check')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'system_settings' },
+        (payload) => {
+          const newValue = (payload.new as any)?.value;
+          const key = (payload.new as any)?.key;
+          
+          if (key === 'maintenance_mode' && newValue === 'true') {
+            console.log('[Dashboard] Maintenance mode enabled - logging out');
+            setShowMaintenanceModal(true);
+            
+            // Force logout after 5 seconds
+            setTimeout(async () => {
+              await supabase.auth.signOut();
+              navigate('/login');
+            }, 5000);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin, navigate]);
+
+  // Periodic check for maintenance mode (backup for real-time)
+  useEffect(() => {
+    if (isAdmin) return;
+
+    const checkMaintenance = async () => {
+      const { data } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'maintenance_mode')
+        .maybeSingle();
+
+      if (data?.value === 'true') {
+        setShowMaintenanceModal(true);
+        setTimeout(async () => {
+          await supabase.auth.signOut();
+          navigate('/login');
+        }, 5000);
+      }
+    };
+
+    // Check every 30 seconds
+    const interval = setInterval(checkMaintenance, 30000);
+    return () => clearInterval(interval);
+  }, [isAdmin, navigate]);
+
+  // License expiration warnings
+  useEffect(() => {
+    if (!licenseInfo || licenseInfo.status !== 'active') return;
+
+    const daysLeft = licenseInfo.daysLeft;
+
+    if (daysLeft === 0) {
+      toast.error('Sua licença expira hoje! Renove agora para não perder acesso.', {
+        duration: 10000
+      });
+    } else if (daysLeft <= 3 && daysLeft > 0) {
+      toast.warning(`Sua licença expira em ${daysLeft} ${daysLeft === 1 ? 'dia' : 'dias'}. Renove para evitar interrupções.`, {
+        duration: 7000
+      });
+    } else if (daysLeft <= 7 && daysLeft > 3) {
+      toast.info(`Sua licença expira em ${daysLeft} dias.`, {
+        duration: 5000
+      });
+    }
+  }, [licenseInfo]);
   const handleAvatarChange = async (avatar: typeof avatars[0]) => {
     setSelectedAvatarId(avatar.id);
     await updateProfile({ avatar: avatar.alt });
@@ -1054,6 +1132,53 @@ const Dashboard = () => {
         
         {/* Content */}
         <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        
+        {/* License Expiration Warning Banner */}
+        {licenseInfo && licenseInfo.status === 'active' && licenseInfo.daysLeft <= 7 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={cn(
+              "mb-6 p-4 rounded-lg border flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row",
+              licenseInfo.daysLeft <= 3 
+                ? "bg-destructive/10 border-destructive/30" 
+                : "bg-warning/10 border-warning/30"
+            )}
+          >
+            <div className="flex items-start sm:items-center gap-3">
+              <div className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
+                licenseInfo.daysLeft <= 3 ? "bg-destructive/20" : "bg-warning/20"
+              )}>
+                <AlertTriangle className={cn(
+                  "w-5 h-5",
+                  licenseInfo.daysLeft <= 3 ? "text-destructive" : "text-warning"
+                )} />
+              </div>
+              <div>
+                <h4 className={cn(
+                  "font-semibold text-sm",
+                  licenseInfo.daysLeft <= 3 ? "text-destructive" : "text-warning"
+                )}>
+                  {licenseInfo.daysLeft === 0 
+                    ? 'Sua licença expira hoje!' 
+                    : `Sua licença expira em ${licenseInfo.daysLeft} ${licenseInfo.daysLeft === 1 ? 'dia' : 'dias'}`}
+                </h4>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Renove agora para garantir acesso ininterrupto ao bot e suporte.
+                </p>
+              </div>
+            </div>
+            <Button 
+              onClick={() => navigate('/comprar')}
+              size="sm"
+              variant={licenseInfo.daysLeft <= 3 ? "destructive" : "default"}
+              className="w-full sm:w-auto flex-shrink-0"
+            >
+              Renovar Agora
+            </Button>
+          </motion.div>
+        )}
         
         {/* Licenças */}
 {activeTab === "licencas" && (
