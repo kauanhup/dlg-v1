@@ -29,6 +29,9 @@ interface AuditLogEntry {
   details: Record<string, unknown>;
 }
 
+// deno-lint-ignore no-explicit-any
+type SupabaseClientAny = any;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -36,7 +39,7 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const supabase: SupabaseClientAny = createClient(supabaseUrl, supabaseServiceKey);
 
   const SYSTEM_USER_ID = "00000000-0000-0000-0000-000000000000";
   const startTime = Date.now();
@@ -48,62 +51,48 @@ Deno.serve(async (req) => {
   try {
     // ============================================================
     // 1. PAYMENTS PAID BUT ORDER NOT COMPLETED
-    // Detecção: payment.status = 'paid' AND order.status != 'completed'
-    // Correção: Executar complete_order_atomic via RPC
     // ============================================================
     const paidPaymentsWithIncompleteOrders = await reconcilePaymentsPaidOrdersIncomplete(supabase, SYSTEM_USER_ID, auditLogs);
     results.push(paidPaymentsWithIncompleteOrders);
 
     // ============================================================
     // 2. ORDERS COMPLETED BUT LICENSE MISSING
-    // Detecção: order.status = 'completed' AND order.product_type = 'subscription' AND NOT EXISTS license
-    // Correção: Criar license baseada no snapshot da order
     // ============================================================
     const ordersCompletedNoLicense = await reconcileOrdersCompletedNoLicense(supabase, SYSTEM_USER_ID, auditLogs);
     results.push(ordersCompletedNoLicense);
 
     // ============================================================
     // 3. LICENSE ACTIVE BUT SUBSCRIPTION MISSING
-    // Detecção: license.status = 'active' AND NOT EXISTS user_subscription.status = 'active'
-    // Correção: Criar user_subscription correspondente
     // ============================================================
     const licensesWithoutSubscription = await reconcileLicensesWithoutSubscription(supabase, SYSTEM_USER_ID, auditLogs);
     results.push(licensesWithoutSubscription);
 
     // ============================================================
     // 4. SUBSCRIPTION ACTIVE BUT LICENSE MISSING
-    // Detecção: user_subscription.status = 'active' AND NOT EXISTS license.status = 'active'
-    // Correção: Criar license correspondente
     // ============================================================
     const subscriptionsWithoutLicense = await reconcileSubscriptionsWithoutLicense(supabase, SYSTEM_USER_ID, auditLogs);
     results.push(subscriptionsWithoutLicense);
 
     // ============================================================
     // 5. ORDERS PENDING/EXPIRED WITH SIDE EFFECTS
-    // Detecção: order.status IN ('cancelled', 'expired') AND EXISTS session_files.reserved_for_order
-    // Correção: Liberar reservas
     // ============================================================
     const expiredOrdersWithReservations = await reconcileExpiredOrdersWithReservations(supabase, SYSTEM_USER_ID, auditLogs);
     results.push(expiredOrdersWithReservations);
 
     // ============================================================
-    // 6. SESSION ORPHANS (delegate to existing reconcile-sessions logic)
+    // 6. SESSION ORPHANS
     // ============================================================
     const orphanedSessions = await reconcileOrphanedSessions(supabase, SYSTEM_USER_ID, auditLogs);
     results.push(orphanedSessions);
 
     // ============================================================
     // 7. LICENSES EXPIRED BUT STATUS STILL ACTIVE
-    // Detecção: license.end_date < NOW() AND license.status = 'active'
-    // Correção: Marcar como expired
     // ============================================================
     const expiredLicensesStillActive = await reconcileExpiredLicenses(supabase, SYSTEM_USER_ID, auditLogs);
     results.push(expiredLicensesStillActive);
 
     // ============================================================
     // 8. SUBSCRIPTIONS EXPIRED BUT STATUS STILL ACTIVE
-    // Detecção: user_subscription.next_billing_date < NOW() AND status = 'active'
-    // Correção: Marcar como expired
     // ============================================================
     const expiredSubscriptionsStillActive = await reconcileExpiredSubscriptions(supabase, SYSTEM_USER_ID, auditLogs);
     results.push(expiredSubscriptionsStillActive);
@@ -124,12 +113,28 @@ Deno.serve(async (req) => {
     }
 
     // ============================================================
-    // GENERATE SUMMARY
+    // STORE RUN HISTORY
     // ============================================================
     const totalDetected = results.reduce((sum, r) => sum + r.detected, 0);
     const totalCorrected = results.reduce((sum, r) => sum + r.corrected, 0);
     const totalUncorrectable = results.reduce((sum, r) => sum + r.uncorrectable.length, 0);
     const elapsedMs = Date.now() - startTime;
+
+    await supabase.from("reconciliation_runs").insert({
+      started_at: new Date(startTime).toISOString(),
+      completed_at: new Date().toISOString(),
+      duration_ms: elapsedMs,
+      total_detected: totalDetected,
+      total_corrected: totalCorrected,
+      total_uncorrectable: totalUncorrectable,
+      categories: results.map(r => ({
+        category: r.category,
+        detected: r.detected,
+        corrected: r.corrected,
+        uncorrectable: r.uncorrectable.length
+      })),
+      status: "completed"
+    });
 
     const summary = {
       success: true,
@@ -161,7 +166,20 @@ Deno.serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("[reconciliation-global] FATAL ERROR:", error);
 
-    // Log the fatal error
+    await supabase.from("reconciliation_runs").insert({
+      started_at: new Date(startTime).toISOString(),
+      completed_at: new Date().toISOString(),
+      duration_ms: Date.now() - startTime,
+      status: "failed",
+      error: errorMessage,
+      categories: results.map(r => ({
+        category: r.category,
+        detected: r.detected,
+        corrected: r.corrected,
+        uncorrectable: r.uncorrectable.length
+      }))
+    });
+
     await supabase.from("audit_logs").insert({
       user_id: SYSTEM_USER_ID,
       action: "reconciliation_fatal_error",
@@ -189,7 +207,7 @@ Deno.serve(async (req) => {
 // ============================================================
 
 async function reconcilePaymentsPaidOrdersIncomplete(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClientAny,
   systemUserId: string,
   auditLogs: AuditLogEntry[]
 ): Promise<ReconciliationResult> {
@@ -203,7 +221,6 @@ async function reconcilePaymentsPaidOrdersIncomplete(
 
   console.log("[reconciliation-global] Checking payments paid but orders not completed...");
 
-  // Find payments that are paid but their orders are not completed
   const { data: paidPayments, error } = await supabase
     .from("payments")
     .select(`
@@ -239,18 +256,9 @@ async function reconcilePaymentsPaidOrdersIncomplete(
   console.log(`[reconciliation-global] Found ${paidPayments.length} payments paid with incomplete orders`);
 
   for (const payment of paidPayments) {
-    const order = payment.orders as unknown as {
-      id: string;
-      status: string;
-      product_type: string;
-      product_name: string;
-      quantity: number;
-      plan_period_days: number | null;
-      plan_id_snapshot: string | null;
-    };
+    const order = payment.orders;
 
     try {
-      // Call complete_order_atomic to fix the inconsistency
       const { data: rpcResult, error: rpcError } = await supabase.rpc("complete_order_atomic", {
         _order_id: order.id,
         _user_id: payment.user_id,
@@ -325,7 +333,7 @@ async function reconcilePaymentsPaidOrdersIncomplete(
 }
 
 async function reconcileOrdersCompletedNoLicense(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClientAny,
   systemUserId: string,
   auditLogs: AuditLogEntry[]
 ): Promise<ReconciliationResult> {
@@ -339,7 +347,6 @@ async function reconcileOrdersCompletedNoLicense(
 
   console.log("[reconciliation-global] Checking completed subscription orders without licenses...");
 
-  // Find completed subscription orders
   const { data: completedOrders, error } = await supabase
     .from("orders")
     .select("id, user_id, product_name, product_type, plan_period_days, plan_id_snapshot, updated_at")
@@ -355,7 +362,6 @@ async function reconcileOrdersCompletedNoLicense(
     return result;
   }
 
-  // Get all user_ids that have active licenses
   const { data: activeLicenses, error: licError } = await supabase
     .from("licenses")
     .select("user_id, plan_name, status")
@@ -366,10 +372,11 @@ async function reconcileOrdersCompletedNoLicense(
     return result;
   }
 
-  const usersWithLicenses = new Set((activeLicenses || []).map(l => l.user_id));
+  // deno-lint-ignore no-explicit-any
+  const usersWithLicenses = new Set((activeLicenses || []).map((l: any) => l.user_id));
 
-  // Find orders without corresponding licenses
-  const ordersWithoutLicense = completedOrders.filter(o => !usersWithLicenses.has(o.user_id));
+  // deno-lint-ignore no-explicit-any
+  const ordersWithoutLicense = completedOrders.filter((o: any) => !usersWithLicenses.has(o.user_id));
 
   if (ordersWithoutLicense.length === 0) {
     console.log("[reconciliation-global] All completed subscription orders have licenses");
@@ -379,14 +386,13 @@ async function reconcileOrdersCompletedNoLicense(
   result.detected = ordersWithoutLicense.length;
   console.log(`[reconciliation-global] Found ${ordersWithoutLicense.length} completed orders without licenses`);
 
-  for (const order of ordersWithoutLicense) {
-    // Calculate dates based on snapshot
-    const periodDays = order.plan_period_days || 30; // Default fallback
+  // deno-lint-ignore no-explicit-any
+  for (const order of ordersWithoutLicense as any[]) {
+    const periodDays = order.plan_period_days || 30;
     const startDate = new Date(order.updated_at);
     const endDate = new Date(startDate.getTime() + periodDays * 24 * 60 * 60 * 1000);
 
     try {
-      // Create the missing license
       const { error: insertError } = await supabase
         .from("licenses")
         .insert({
@@ -446,7 +452,7 @@ async function reconcileOrdersCompletedNoLicense(
 }
 
 async function reconcileLicensesWithoutSubscription(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClientAny,
   systemUserId: string,
   auditLogs: AuditLogEntry[]
 ): Promise<ReconciliationResult> {
@@ -460,7 +466,6 @@ async function reconcileLicensesWithoutSubscription(
 
   console.log("[reconciliation-global] Checking active licenses without subscriptions...");
 
-  // Get active licenses
   const { data: activeLicenses, error: licError } = await supabase
     .from("licenses")
     .select("id, user_id, plan_name, start_date, end_date")
@@ -470,7 +475,6 @@ async function reconcileLicensesWithoutSubscription(
     return result;
   }
 
-  // Get active subscriptions
   const { data: activeSubscriptions, error: subError } = await supabase
     .from("user_subscriptions")
     .select("user_id, plan_id")
@@ -480,10 +484,11 @@ async function reconcileLicensesWithoutSubscription(
     return result;
   }
 
-  const usersWithSubscriptions = new Set((activeSubscriptions || []).map(s => s.user_id));
+  // deno-lint-ignore no-explicit-any
+  const usersWithSubscriptions = new Set((activeSubscriptions || []).map((s: any) => s.user_id));
 
-  // Find licenses without subscriptions
-  const licensesWithoutSub = activeLicenses.filter(l => !usersWithSubscriptions.has(l.user_id));
+  // deno-lint-ignore no-explicit-any
+  const licensesWithoutSub = activeLicenses.filter((l: any) => !usersWithSubscriptions.has(l.user_id));
 
   if (licensesWithoutSub.length === 0) {
     return result;
@@ -492,14 +497,15 @@ async function reconcileLicensesWithoutSubscription(
   result.detected = licensesWithoutSub.length;
   console.log(`[reconciliation-global] Found ${licensesWithoutSub.length} active licenses without subscriptions`);
 
-  // Get plan mapping
   const { data: plans } = await supabase
     .from("subscription_plans")
     .select("id, name");
 
-  const planNameToId = new Map((plans || []).map(p => [p.name, p.id]));
+  // deno-lint-ignore no-explicit-any
+  const planNameToId = new Map((plans || []).map((p: any) => [p.name, p.id]));
 
-  for (const license of licensesWithoutSub) {
+  // deno-lint-ignore no-explicit-any
+  for (const license of licensesWithoutSub as any[]) {
     const planId = planNameToId.get(license.plan_name);
 
     if (!planId) {
@@ -560,7 +566,7 @@ async function reconcileLicensesWithoutSubscription(
 }
 
 async function reconcileSubscriptionsWithoutLicense(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClientAny,
   systemUserId: string,
   auditLogs: AuditLogEntry[]
 ): Promise<ReconciliationResult> {
@@ -574,7 +580,6 @@ async function reconcileSubscriptionsWithoutLicense(
 
   console.log("[reconciliation-global] Checking active subscriptions without licenses...");
 
-  // Get active subscriptions with plan info
   const { data: activeSubscriptions, error: subError } = await supabase
     .from("user_subscriptions")
     .select(`
@@ -594,7 +599,6 @@ async function reconcileSubscriptionsWithoutLicense(
     return result;
   }
 
-  // Get active licenses
   const { data: activeLicenses, error: licError } = await supabase
     .from("licenses")
     .select("user_id")
@@ -604,10 +608,11 @@ async function reconcileSubscriptionsWithoutLicense(
     return result;
   }
 
-  const usersWithLicenses = new Set((activeLicenses || []).map(l => l.user_id));
+  // deno-lint-ignore no-explicit-any
+  const usersWithLicenses = new Set((activeLicenses || []).map((l: any) => l.user_id));
 
-  // Find subscriptions without licenses
-  const subsWithoutLicense = activeSubscriptions.filter(s => !usersWithLicenses.has(s.user_id));
+  // deno-lint-ignore no-explicit-any
+  const subsWithoutLicense = activeSubscriptions.filter((s: any) => !usersWithLicenses.has(s.user_id));
 
   if (subsWithoutLicense.length === 0) {
     return result;
@@ -616,8 +621,9 @@ async function reconcileSubscriptionsWithoutLicense(
   result.detected = subsWithoutLicense.length;
   console.log(`[reconciliation-global] Found ${subsWithoutLicense.length} active subscriptions without licenses`);
 
-  for (const sub of subsWithoutLicense) {
-    const plan = sub.subscription_plans as unknown as { id: string; name: string; period: number } | null;
+  // deno-lint-ignore no-explicit-any
+  for (const sub of subsWithoutLicense as any[]) {
+    const plan = sub.subscription_plans;
 
     if (!plan) {
       result.uncorrectable.push({
@@ -677,7 +683,7 @@ async function reconcileSubscriptionsWithoutLicense(
 }
 
 async function reconcileExpiredOrdersWithReservations(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClientAny,
   systemUserId: string,
   auditLogs: AuditLogEntry[]
 ): Promise<ReconciliationResult> {
@@ -691,7 +697,6 @@ async function reconcileExpiredOrdersWithReservations(
 
   console.log("[reconciliation-global] Checking cancelled/expired orders with active reservations...");
 
-  // Find orders that are cancelled/expired but still have reserved sessions
   const { data: invalidReservations, error } = await supabase
     .from("session_files")
     .select(`
@@ -719,10 +724,10 @@ async function reconcileExpiredOrdersWithReservations(
   result.detected = invalidReservations.length;
   console.log(`[reconciliation-global] Found ${invalidReservations.length} sessions reserved for invalid orders`);
 
-  const sessionIds = invalidReservations.map(s => s.id);
+  // deno-lint-ignore no-explicit-any
+  const sessionIds = invalidReservations.map((s: any) => s.id);
 
   try {
-    // Release all in batch
     const { error: updateError } = await supabase
       .from("session_files")
       .update({
@@ -733,7 +738,8 @@ async function reconcileExpiredOrdersWithReservations(
       .in("id", sessionIds);
 
     if (updateError) {
-      for (const session of invalidReservations) {
+      // deno-lint-ignore no-explicit-any
+      for (const session of invalidReservations as any[]) {
         result.uncorrectable.push({
           id: session.id,
           reason: `Update failed: ${updateError.message}`
@@ -742,8 +748,9 @@ async function reconcileExpiredOrdersWithReservations(
     } else {
       result.corrected = invalidReservations.length;
       
-      for (const session of invalidReservations) {
-        const order = session.orders as unknown as { id: string; status: string };
+      // deno-lint-ignore no-explicit-any
+      for (const session of invalidReservations as any[]) {
+        const order = session.orders;
         result.details.push({
           id: session.id,
           issue: `Session reserved for ${order.status} order`,
@@ -765,7 +772,8 @@ async function reconcileExpiredOrdersWithReservations(
       }
 
       // Sync inventory
-      const typeGroups = invalidReservations.reduce((acc, s) => {
+      // deno-lint-ignore no-explicit-any
+      const typeGroups = invalidReservations.reduce((acc: any, s: any) => {
         acc[s.type] = (acc[s.type] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
@@ -787,7 +795,8 @@ async function reconcileExpiredOrdersWithReservations(
     }
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Unknown error";
-    for (const session of invalidReservations) {
+    // deno-lint-ignore no-explicit-any
+    for (const session of invalidReservations as any[]) {
       result.uncorrectable.push({
         id: session.id,
         reason: `Exception: ${errorMsg}`
@@ -799,7 +808,7 @@ async function reconcileExpiredOrdersWithReservations(
 }
 
 async function reconcileOrphanedSessions(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClientAny,
   systemUserId: string,
   auditLogs: AuditLogEntry[]
 ): Promise<ReconciliationResult> {
@@ -816,7 +825,6 @@ async function reconcileOrphanedSessions(
   const RESERVATION_TIMEOUT_MINUTES = 30;
   const cutoffTime = new Date(Date.now() - RESERVATION_TIMEOUT_MINUTES * 60 * 1000).toISOString();
 
-  // Find sessions reserved but with expired timeout OR no order
   const { data: orphanedSessions, error } = await supabase
     .from("session_files")
     .select("id, file_name, type, reserved_for_order, reserved_at")
@@ -832,8 +840,8 @@ async function reconcileOrphanedSessions(
     return result;
   }
 
-  // Filter out sessions with valid pending orders
-  const orderIds = [...new Set(orphanedSessions.map(s => s.reserved_for_order).filter(Boolean))] as string[];
+  // deno-lint-ignore no-explicit-any
+  const orderIds = [...new Set(orphanedSessions.map((s: any) => s.reserved_for_order).filter(Boolean))] as string[];
   
   let validOrderIds = new Set<string>();
   if (orderIds.length > 0) {
@@ -843,11 +851,12 @@ async function reconcileOrphanedSessions(
       .in("id", orderIds)
       .eq("status", "pending");
     
-    validOrderIds = new Set((pendingOrders || []).map(o => o.id));
+    // deno-lint-ignore no-explicit-any
+    validOrderIds = new Set((pendingOrders || []).map((o: any) => o.id));
   }
 
-  // Sessions are orphaned if they have no order, or order is not pending, or timeout exceeded
-  const trulyOrphaned = orphanedSessions.filter(s => {
+  // deno-lint-ignore no-explicit-any
+  const trulyOrphaned = orphanedSessions.filter((s: any) => {
     if (!s.reserved_for_order) return true;
     if (!validOrderIds.has(s.reserved_for_order)) return true;
     if (s.reserved_at && new Date(s.reserved_at) < new Date(cutoffTime)) return true;
@@ -869,10 +878,12 @@ async function reconcileOrphanedSessions(
         reserved_for_order: null,
         reserved_at: null
       })
-      .in("id", trulyOrphaned.map(s => s.id));
+      // deno-lint-ignore no-explicit-any
+      .in("id", trulyOrphaned.map((s: any) => s.id));
 
     if (updateError) {
-      for (const session of trulyOrphaned) {
+      // deno-lint-ignore no-explicit-any
+      for (const session of trulyOrphaned as any[]) {
         result.uncorrectable.push({
           id: session.id,
           reason: `Update failed: ${updateError.message}`
@@ -881,7 +892,8 @@ async function reconcileOrphanedSessions(
     } else {
       result.corrected = trulyOrphaned.length;
       
-      for (const session of trulyOrphaned) {
+      // deno-lint-ignore no-explicit-any
+      for (const session of trulyOrphaned as any[]) {
         result.details.push({
           id: session.id,
           issue: "Orphaned reservation",
@@ -904,7 +916,8 @@ async function reconcileOrphanedSessions(
     }
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Unknown error";
-    for (const session of trulyOrphaned) {
+    // deno-lint-ignore no-explicit-any
+    for (const session of trulyOrphaned as any[]) {
       result.uncorrectable.push({
         id: session.id,
         reason: `Exception: ${errorMsg}`
@@ -916,7 +929,7 @@ async function reconcileOrphanedSessions(
 }
 
 async function reconcileExpiredLicenses(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClientAny,
   systemUserId: string,
   auditLogs: AuditLogEntry[]
 ): Promise<ReconciliationResult> {
@@ -949,10 +962,12 @@ async function reconcileExpiredLicenses(
     const { error: updateError } = await supabase
       .from("licenses")
       .update({ status: "expired", updated_at: now })
-      .in("id", expiredLicenses.map(l => l.id));
+      // deno-lint-ignore no-explicit-any
+      .in("id", expiredLicenses.map((l: any) => l.id));
 
     if (updateError) {
-      for (const lic of expiredLicenses) {
+      // deno-lint-ignore no-explicit-any
+      for (const lic of expiredLicenses as any[]) {
         result.uncorrectable.push({
           id: lic.id,
           reason: `Update failed: ${updateError.message}`
@@ -961,7 +976,8 @@ async function reconcileExpiredLicenses(
     } else {
       result.corrected = expiredLicenses.length;
       
-      for (const lic of expiredLicenses) {
+      // deno-lint-ignore no-explicit-any
+      for (const lic of expiredLicenses as any[]) {
         result.details.push({
           id: lic.id,
           issue: "License expired but status active",
@@ -984,7 +1000,8 @@ async function reconcileExpiredLicenses(
     }
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Unknown error";
-    for (const lic of expiredLicenses) {
+    // deno-lint-ignore no-explicit-any
+    for (const lic of expiredLicenses as any[]) {
       result.uncorrectable.push({
         id: lic.id,
         reason: `Exception: ${errorMsg}`
@@ -996,7 +1013,7 @@ async function reconcileExpiredLicenses(
 }
 
 async function reconcileExpiredSubscriptions(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClientAny,
   systemUserId: string,
   auditLogs: AuditLogEntry[]
 ): Promise<ReconciliationResult> {
@@ -1029,10 +1046,12 @@ async function reconcileExpiredSubscriptions(
     const { error: updateError } = await supabase
       .from("user_subscriptions")
       .update({ status: "expired", updated_at: now })
-      .in("id", expiredSubs.map(s => s.id));
+      // deno-lint-ignore no-explicit-any
+      .in("id", expiredSubs.map((s: any) => s.id));
 
     if (updateError) {
-      for (const sub of expiredSubs) {
+      // deno-lint-ignore no-explicit-any
+      for (const sub of expiredSubs as any[]) {
         result.uncorrectable.push({
           id: sub.id,
           reason: `Update failed: ${updateError.message}`
@@ -1041,7 +1060,8 @@ async function reconcileExpiredSubscriptions(
     } else {
       result.corrected = expiredSubs.length;
       
-      for (const sub of expiredSubs) {
+      // deno-lint-ignore no-explicit-any
+      for (const sub of expiredSubs as any[]) {
         result.details.push({
           id: sub.id,
           issue: "Subscription expired but status active",
@@ -1064,7 +1084,8 @@ async function reconcileExpiredSubscriptions(
     }
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Unknown error";
-    for (const sub of expiredSubs) {
+    // deno-lint-ignore no-explicit-any
+    for (const sub of expiredSubs as any[]) {
       result.uncorrectable.push({
         id: sub.id,
         reason: `Exception: ${errorMsg}`
