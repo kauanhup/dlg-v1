@@ -262,8 +262,6 @@ const BotShowcase = () => {
               {[
                 { label: "Sessions .session", delay: 0 },
                 { label: "Código 2FA", delay: 0.1 },
-                { label: "Proxy Suporte", delay: 0.2 },
-                { label: "Auto-Reconexão", delay: 0.3 },
               ].map((tag, index) => (
                 <motion.span 
                   key={tag.label}
