@@ -211,20 +211,35 @@ const BotShowcase = () => {
       {/* Section 3: Accounts */}
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          {/* Left - Text */}
+          {/* Left - Preview */}
+          <motion.div
+            variants={fadeInLeft}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            className="relative"
+          >
+            <motion.div 
+              className="absolute -inset-4 bg-gradient-to-r from-yellow-500/20 via-yellow-500/5 to-transparent rounded-3xl blur-2xl"
+              animate={pulseGlow}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div 
+              className="relative"
+              animate={floatAnimation}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <BotAccountsPreview />
+            </motion.div>
+          </motion.div>
+
+          {/* Right - Text */}
           <motion.div
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
-            className="order-2 lg:order-1"
           >
-            <motion.span 
-              variants={fadeInUp}
-              className="inline-block px-3 py-1 mb-4 text-xs font-medium tracking-wide uppercase bg-yellow-500/10 text-yellow-500 rounded-full border border-yellow-500/20"
-            >
-              Gerenciamento
-            </motion.span>
             <motion.h2 
               variants={fadeInUp}
               className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight"
@@ -245,8 +260,8 @@ const BotShowcase = () => {
               variants={staggerContainer}
             >
               {[
-                { icon: Users, label: "Multi-Contas", value: "Sem limite de contas" },
-                { icon: Shield, label: "Status em Tempo Real", value: "Ativo, Flood, Banido" },
+                { icon: Zap, label: "Conexão Instantânea", value: "Via session ou código" },
+                { icon: Shield, label: "Proteção Anti-Ban", value: "Rotação inteligente" },
               ].map((stat, index) => (
                 <motion.div 
                   key={stat.label} 
@@ -267,28 +282,6 @@ const BotShowcase = () => {
                   </div>
                 </motion.div>
               ))}
-            </motion.div>
-          </motion.div>
-
-          {/* Right - Preview */}
-          <motion.div
-            variants={fadeInRight}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            className="order-1 lg:order-2 relative"
-          >
-            <motion.div 
-              className="absolute -inset-4 bg-gradient-to-r from-yellow-500/20 via-yellow-500/5 to-transparent rounded-3xl blur-2xl"
-              animate={pulseGlow}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            />
-            <motion.div 
-              className="relative"
-              animate={floatAnimation}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <BotAccountsPreview />
             </motion.div>
           </motion.div>
         </div>
