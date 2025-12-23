@@ -113,6 +113,13 @@ export type Database = {
             foreignKeyName: "gateway_logs_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "health_pending_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gateway_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -324,6 +331,7 @@ export type Database = {
           amount: number
           created_at: string
           id: string
+          order_version: number | null
           payment_method: string | null
           plan_features_snapshot: Json | null
           plan_id_snapshot: string | null
@@ -341,6 +349,7 @@ export type Database = {
           amount: number
           created_at?: string
           id?: string
+          order_version?: number | null
           payment_method?: string | null
           plan_features_snapshot?: Json | null
           plan_id_snapshot?: string | null
@@ -358,6 +367,7 @@ export type Database = {
           amount?: number
           created_at?: string
           id?: string
+          order_version?: number | null
           payment_method?: string | null
           plan_features_snapshot?: Json | null
           plan_id_snapshot?: string | null
@@ -429,6 +439,13 @@ export type Database = {
             foreignKeyName: "payments_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "health_pending_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -467,6 +484,13 @@ export type Database = {
           webhook_payload?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "processed_webhooks_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "health_pending_orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "processed_webhooks_order_id_fkey"
             columns: ["order_id"]
@@ -545,6 +569,45 @@ export type Database = {
         }
         Relationships: []
       }
+      reconciliation_runs: {
+        Row: {
+          categories: Json | null
+          completed_at: string | null
+          duration_ms: number | null
+          error: string | null
+          id: string
+          started_at: string
+          status: string | null
+          total_corrected: number | null
+          total_detected: number | null
+          total_uncorrectable: number | null
+        }
+        Insert: {
+          categories?: Json | null
+          completed_at?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          started_at?: string
+          status?: string | null
+          total_corrected?: number | null
+          total_detected?: number | null
+          total_uncorrectable?: number | null
+        }
+        Update: {
+          categories?: Json | null
+          completed_at?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          started_at?: string
+          status?: string | null
+          total_corrected?: number | null
+          total_detected?: number | null
+          total_uncorrectable?: number | null
+        }
+        Relationships: []
+      }
       session_combos: {
         Row: {
           created_at: string
@@ -620,7 +683,21 @@ export type Database = {
             foreignKeyName: "session_files_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "health_pending_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_files_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_files_reserved_for_order_fkey"
+            columns: ["reserved_for_order"]
+            isOneToOne: false
+            referencedRelation: "health_pending_orders"
             referencedColumns: ["id"]
           },
           {
@@ -782,6 +859,13 @@ export type Database = {
             foreignKeyName: "fk_user_sessions_order"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "health_pending_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_user_sessions_order"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -866,7 +950,160 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      health_dashboard_summary: {
+        Row: {
+          checked_at: string | null
+          divergent_users: number | null
+          licenses_should_expire: number | null
+          orphaned_reservations: number | null
+          payments_without_completion: number | null
+          pending_orders_alert: number | null
+          reconciliations_24h: number | null
+        }
+        Relationships: []
+      }
+      health_license_subscription_divergence: {
+        Row: {
+          active_licenses: number | null
+          active_subscriptions: number | null
+          status: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      health_licenses_should_expire: {
+        Row: {
+          end_date: string | null
+          hours_overdue: number | null
+          id: string | null
+          plan_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          end_date?: string | null
+          hours_overdue?: never
+          id?: string | null
+          plan_name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          end_date?: string | null
+          hours_overdue?: never
+          id?: string | null
+          plan_name?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      health_orphaned_reservations: {
+        Row: {
+          file_name: string | null
+          issue: string | null
+          minutes_reserved: number | null
+          order_status: string | null
+          reserved_at: string | null
+          reserved_for_order: string | null
+          session_id: string | null
+          type: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_files_reserved_for_order_fkey"
+            columns: ["reserved_for_order"]
+            isOneToOne: false
+            referencedRelation: "health_pending_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_files_reserved_for_order_fkey"
+            columns: ["reserved_for_order"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_payments_without_completion: {
+        Row: {
+          amount: number | null
+          minutes_since_payment: number | null
+          order_id: string | null
+          order_status: string | null
+          paid_at: string | null
+          payment_id: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "health_pending_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_pending_orders: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          id: string | null
+          minutes_pending: number | null
+          product_name: string | null
+          product_type: string | null
+          severity: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          id?: string | null
+          minutes_pending?: never
+          product_name?: string | null
+          product_type?: string | null
+          severity?: never
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          id?: string | null
+          minutes_pending?: never
+          product_name?: string | null
+          product_type?: string | null
+          severity?: never
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      health_recent_reconciliations: {
+        Row: {
+          action: string | null
+          created_at: string | null
+          details: Json | null
+          resource: string | null
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string | null
+          details?: Json | null
+          resource?: string | null
+        }
+        Update: {
+          action?: string | null
+          created_at?: string | null
+          details?: Json | null
+          resource?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
@@ -901,6 +1138,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      order_status:
+        | "pending"
+        | "completed"
+        | "cancelled"
+        | "expired"
+        | "refunded"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1029,6 +1272,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      order_status: [
+        "pending",
+        "completed",
+        "cancelled",
+        "expired",
+        "refunded",
+      ],
     },
   },
 } as const
