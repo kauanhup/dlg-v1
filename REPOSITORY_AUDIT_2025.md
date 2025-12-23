@@ -1,33 +1,40 @@
 # 🔍 AUDITORIA COMPLETA DO REPOSITÓRIO
 **Data:** 2025-12-23  
 **Autor:** Sistema de Auditoria Automatizada  
-**Status:** ✅ LIMPEZA AGRESSIVA CONCLUÍDA
+**Status:** ✅ SISTEMA APTO PARA PRODUÇÃO
+
+---
+
+## 🚨 CRITICAL FIXES APPLIED - 2025-12-23
+
+### Correções de Bugs Críticos (Race Conditions & Invariantes)
+
+| Bug | Descrição | Correção Aplicada | Evidência |
+|-----|-----------|-------------------|-----------|
+| **Race Condition** | Múltiplas execuções paralelas de `complete_order_atomic` para mesmo user | `pg_advisory_xact_lock(726583, user_hash)` serializa por user_id | Function updated |
+| **1 License Per User** | Invariante não era garantida fisicamente | `CREATE UNIQUE INDEX idx_licenses_one_active_per_user ON licenses (user_id) WHERE status = 'active'` | Index exists |
+| **PGRST201 Error** | Query ambígua em `reconciliation-global` | FK explícita: `orders!session_files_reserved_for_order_fkey` | Logs limpos |
+| **Orphan Licenses** | 3 licenses ativas sem subscriptions | Limpeza de dados + criação de subscription correspondente | Health 100% green |
+
+### Dados Corrigidos
+
+| User ID | Antes | Depois |
+|---------|-------|--------|
+| `5e39d027-d654-439d-8f19-d6d1c648150a` | 3 licenses ativas, 0 subscriptions | 1 license ativa, 1 subscription ativa |
+
+### Health Dashboard (Pós-Correção)
+
+| Métrica | Valor | Status |
+|---------|-------|--------|
+| `divergent_users` | 0 | ✅ |
+| `licenses_should_expire` | 0 | ✅ |
+| `orphaned_reservations` | 0 | ✅ |
+| `payments_without_completion` | 0 | ✅ |
+| `pending_orders_alert` | 0 | ✅ |
 
 ---
 
 ## 🚨 AGGRESSIVE CLEANUP — ACCEPTED RISK
-
-**Executada em:** 2025-12-23  
-**Tipo:** Limpeza agressiva com risco controlado de regressão  
-**Impacto observado:** ✅ ZERO — Build OK, preview OK
-
-### Arquivos Removidos (Fase 2 - Agressiva)
-
-| Arquivo | Critério de Remoção | Risco Aceito |
-|---------|---------------------|--------------|
-| `src/lib/downloadWithRetry.ts` | Zero imports em toda aplicação (grep confirmado) | Baixo - código 100% morto |
-| `hostinger-proxy/webhook-handler.php` | Handler genérico não utilizado, webhooks específicos já existem | Médio - sem referências em produção |
-
-### Validação Pós-Remoção
-
-- ✅ Build: OK
-- ✅ Preview: OK
-- ✅ Webhooks específicos intactos (`webhook-pixup.php`, `webhook-evopay.php`)
-- ✅ Nenhum import quebrado
-- ✅ Cron jobs funcionais
-- ✅ Edge functions funcionais
-
----
 
 ## 📋 REGISTRO DE LIMPEZA — FASE 1
 

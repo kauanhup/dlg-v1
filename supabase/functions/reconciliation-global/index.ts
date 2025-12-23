@@ -697,6 +697,9 @@ async function reconcileExpiredOrdersWithReservations(
 
   console.log("[reconciliation-global] Checking cancelled/expired orders with active reservations...");
 
+  // FIX: Use explicit FK to avoid PGRST201 ambiguous relationship error
+  // session_files has 2 FKs to orders: order_id and reserved_for_order
+  // We need to use reserved_for_order FK for this query
   const { data: invalidReservations, error } = await supabase
     .from("session_files")
     .select(`
@@ -704,16 +707,16 @@ async function reconcileExpiredOrdersWithReservations(
       file_name,
       type,
       reserved_for_order,
-      orders!inner (
+      orders!session_files_reserved_for_order_fkey (
         id,
         status
       )
     `)
     .eq("status", "reserved")
-    .in("orders.status", ["cancelled", "expired", "refunded"]);
+    .not("reserved_for_order", "is", null);
 
   if (error) {
-    console.error("[reconciliation-global] Error fetching invalid reservations:", error);
+    console.error("[reconciliation-global] Error fetching reserved sessions:", error);
     return result;
   }
 
@@ -721,11 +724,22 @@ async function reconcileExpiredOrdersWithReservations(
     return result;
   }
 
-  result.detected = invalidReservations.length;
-  console.log(`[reconciliation-global] Found ${invalidReservations.length} sessions reserved for invalid orders`);
+  // Filter to only sessions reserved for cancelled/expired/refunded orders
+  // deno-lint-ignore no-explicit-any
+  const sessionsWithInvalidOrders = invalidReservations.filter((s: any) => {
+    const order = s.orders;
+    return order && ["cancelled", "expired", "refunded"].includes(order.status);
+  });
+
+  if (sessionsWithInvalidOrders.length === 0) {
+    return result;
+  }
+
+  result.detected = sessionsWithInvalidOrders.length;
+  console.log(`[reconciliation-global] Found ${sessionsWithInvalidOrders.length} sessions reserved for invalid orders`);
 
   // deno-lint-ignore no-explicit-any
-  const sessionIds = invalidReservations.map((s: any) => s.id);
+  const sessionIds = sessionsWithInvalidOrders.map((s: any) => s.id);
 
   try {
     const { error: updateError } = await supabase
@@ -739,17 +753,17 @@ async function reconcileExpiredOrdersWithReservations(
 
     if (updateError) {
       // deno-lint-ignore no-explicit-any
-      for (const session of invalidReservations as any[]) {
+      for (const session of sessionsWithInvalidOrders as any[]) {
         result.uncorrectable.push({
           id: session.id,
           reason: `Update failed: ${updateError.message}`
         });
       }
     } else {
-      result.corrected = invalidReservations.length;
+      result.corrected = sessionsWithInvalidOrders.length;
       
       // deno-lint-ignore no-explicit-any
-      for (const session of invalidReservations as any[]) {
+      for (const session of sessionsWithInvalidOrders as any[]) {
         const order = session.orders;
         result.details.push({
           id: session.id,
@@ -773,7 +787,7 @@ async function reconcileExpiredOrdersWithReservations(
 
       // Sync inventory
       // deno-lint-ignore no-explicit-any
-      const typeGroups = invalidReservations.reduce((acc: any, s: any) => {
+      const typeGroups = sessionsWithInvalidOrders.reduce((acc: any, s: any) => {
         acc[s.type] = (acc[s.type] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
@@ -796,7 +810,7 @@ async function reconcileExpiredOrdersWithReservations(
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Unknown error";
     // deno-lint-ignore no-explicit-any
-    for (const session of invalidReservations as any[]) {
+    for (const session of sessionsWithInvalidOrders as any[]) {
       result.uncorrectable.push({
         id: session.id,
         reason: `Exception: ${errorMsg}`
