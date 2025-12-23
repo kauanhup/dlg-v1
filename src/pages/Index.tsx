@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { Header, Hero, BotShowcase, Features, Pricing, FAQ, CTA, Footer } from "@/components/landing";
 import SEO from "@/components/SEO";
-import { PixelCursorTrail } from "@/components/ui/pixel-trail";
 
 const Index = () => {
   // Força tema escuro na página inicial
@@ -24,10 +23,7 @@ const Index = () => {
         description="Sistema de automação avançado para crescimento de grupos Telegram. Extração e transferência de membros com segurança. Gerencie múltiplas contas."
         canonical="/"
       />
-      <div className="min-h-screen bg-background relative">
-        {/* Pixel Trail Effect - Full Page */}
-        <PixelCursorTrail />
-        
+      <div className="min-h-screen bg-background">
         <Header />
         <main>
           <Hero />
