@@ -1,86 +1,176 @@
-import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { BotDashboardPreview, BotActionsPreview, BotAccountsPreview } from "./BotPreviews";
 import { motion } from "framer-motion";
+import { Shield, Zap, Users, Clock } from "lucide-react";
 
 const BotShowcase = () => {
   return (
-    <section className="relative overflow-hidden bg-background">
-      <ContainerScroll
-        titleComponent={
-          <div className="flex flex-col items-center">
-            <motion.span 
-              className="inline-block px-4 py-1.5 mb-4 text-xs font-medium tracking-wide uppercase bg-primary/10 text-primary rounded-full border border-primary/20"
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              viewport={{ once: true }}
-            >
-              Interface Profissional
-            </motion.span>
-            <motion.h2 
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground mb-4"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              viewport={{ once: true }}
-            >
-              Controle{" "}
-              <span className="bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
-                total
-              </span>{" "}
-              na palma da mão
-            </motion.h2>
-            <motion.p 
-              className="text-muted-foreground text-base sm:text-lg max-w-xl text-center"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              viewport={{ once: true }}
-            >
-              Dashboard intuitivo com todas as ferramentas que você precisa para gerenciar suas contas e grupos.
-            </motion.p>
-          </div>
-        }
-      >
-        <div className="w-full h-full flex items-center justify-center p-4">
-          <BotDashboardPreview />
-        </div>
-      </ContainerScroll>
-
-      {/* Additional Previews Grid */}
-      <div className="container mx-auto px-4 pb-20 -mt-32">
-        <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-          <motion.div 
-            className="relative group"
+    <section className="relative overflow-hidden bg-background py-20 lg:py-32">
+      {/* Section 1: Dashboard */}
+      <div className="container mx-auto px-4 mb-32">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          {/* Left - Text */}
+          <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
+            className="order-2 lg:order-1"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative">
-              <BotActionsPreview />
-              <div className="mt-4 text-center">
-                <h3 className="text-lg font-semibold text-foreground mb-1">Central de Ações</h3>
-                <p className="text-sm text-muted-foreground">Extraia, adicione e gerencie membros automaticamente</p>
-              </div>
+            <span className="inline-block px-3 py-1 mb-4 text-xs font-medium tracking-wide uppercase bg-primary/10 text-primary rounded-full border border-primary/20">
+              Dashboard
+            </span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight">
+              Monitore todas as suas{" "}
+              <span className="text-primary">contas</span>{" "}
+              em tempo real
+            </h2>
+            <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg">
+              Visualize o status de cada conta, saúde do sistema e limites diários de adições em uma interface intuitiva e profissional.
+            </p>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { icon: Shield, label: "Saúde das Contas", value: "Monitoramento 24/7" },
+                { icon: Zap, label: "Limites Inteligentes", value: "Proteção anti-ban" },
+              ].map((stat) => (
+                <div key={stat.label} className="flex items-start gap-3">
+                  <div className="h-10 w-10 bg-primary/10 border border-primary/20 flex items-center justify-center rounded-lg flex-shrink-0">
+                    <stat.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{stat.label}</p>
+                    <p className="text-xs text-muted-foreground">{stat.value}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </motion.div>
 
-          <motion.div 
-            className="relative group"
+          {/* Right - Preview */}
+          <motion.div
             initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: true }}
+            className="order-1 lg:order-2 relative"
+          >
+            <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 via-primary/5 to-transparent rounded-3xl blur-2xl opacity-60" />
+            <div className="relative">
+              <BotDashboardPreview />
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Section 2: Actions - Inverted */}
+      <div className="container mx-auto px-4 mb-32">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          {/* Left - Preview */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
+            className="relative"
           >
-            <div className="absolute inset-0 bg-gradient-to-l from-primary/20 to-transparent rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute -inset-4 bg-gradient-to-l from-green-500/20 via-green-500/5 to-transparent rounded-3xl blur-2xl opacity-60" />
+            <div className="relative">
+              <BotActionsPreview />
+            </div>
+          </motion.div>
+
+          {/* Right - Text */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: true }}
+          >
+            <span className="inline-block px-3 py-1 mb-4 text-xs font-medium tracking-wide uppercase bg-green-500/10 text-green-500 rounded-full border border-green-500/20">
+              Central de Ações
+            </span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight">
+              Extraia e adicione membros{" "}
+              <span className="text-green-500">automaticamente</span>
+            </h2>
+            <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg">
+              Configure suas automações com delays inteligentes e limites seguros. Acompanhe o progresso em tempo real.
+            </p>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { icon: Users, label: "Extração de Membros", value: "De qualquer grupo" },
+                { icon: Clock, label: "Delays Seguros", value: "Evita flood e ban" },
+              ].map((stat) => (
+                <div key={stat.label} className="flex items-start gap-3">
+                  <div className="h-10 w-10 bg-green-500/10 border border-green-500/20 flex items-center justify-center rounded-lg flex-shrink-0">
+                    <stat.icon className="h-5 w-5 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{stat.label}</p>
+                    <p className="text-xs text-muted-foreground">{stat.value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Section 3: Accounts */}
+      <div className="container mx-auto px-4">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          {/* Left - Text */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="order-2 lg:order-1"
+          >
+            <span className="inline-block px-3 py-1 mb-4 text-xs font-medium tracking-wide uppercase bg-yellow-500/10 text-yellow-500 rounded-full border border-yellow-500/20">
+              Gerenciamento
+            </span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight">
+              Múltiplas contas em{" "}
+              <span className="text-yellow-500">um só lugar</span>
+            </h2>
+            <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg">
+              Conecte várias contas do Telegram, monitore status e gerencie tudo de forma centralizada. Suporte para sessions e códigos de verificação.
+            </p>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { icon: Users, label: "Multi-Contas", value: "Sem limite de contas" },
+                { icon: Shield, label: "Status em Tempo Real", value: "Ativo, Flood, Banido" },
+              ].map((stat) => (
+                <div key={stat.label} className="flex items-start gap-3">
+                  <div className="h-10 w-10 bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center rounded-lg flex-shrink-0">
+                    <stat.icon className="h-5 w-5 text-yellow-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{stat.label}</p>
+                    <p className="text-xs text-muted-foreground">{stat.value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Right - Preview */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: true }}
+            className="order-1 lg:order-2 relative"
+          >
+            <div className="absolute -inset-4 bg-gradient-to-r from-yellow-500/20 via-yellow-500/5 to-transparent rounded-3xl blur-2xl opacity-60" />
             <div className="relative">
               <BotAccountsPreview />
-              <div className="mt-4 text-center">
-                <h3 className="text-lg font-semibold text-foreground mb-1">Gerenciamento de Contas</h3>
-                <p className="text-sm text-muted-foreground">Conecte múltiplas contas e monitore o status em tempo real</p>
-              </div>
             </div>
           </motion.div>
         </div>
