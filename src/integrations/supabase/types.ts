@@ -493,6 +493,8 @@ export type Database = {
           file_path: string
           id: string
           order_id: string | null
+          reserved_at: string | null
+          reserved_for_order: string | null
           sold_at: string | null
           status: string
           type: string
@@ -504,6 +506,8 @@ export type Database = {
           file_path: string
           id?: string
           order_id?: string | null
+          reserved_at?: string | null
+          reserved_for_order?: string | null
           sold_at?: string | null
           status?: string
           type: string
@@ -515,6 +519,8 @@ export type Database = {
           file_path?: string
           id?: string
           order_id?: string | null
+          reserved_at?: string | null
+          reserved_for_order?: string | null
           sold_at?: string | null
           status?: string
           type?: string
@@ -525,6 +531,13 @@ export type Database = {
           {
             foreignKeyName: "session_files_order_id_fkey"
             columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_files_reserved_for_order_fkey"
+            columns: ["reserved_for_order"]
             isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]

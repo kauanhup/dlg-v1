@@ -370,6 +370,19 @@ export const useAdminSubscriptions = () => {
             // Continue anyway - subscription was updated successfully
           }
         }
+
+        // BROADCAST: Notify user's dashboard to refresh
+        try {
+          const channel = supabase.channel(`user-${subscription.user_id}-admin-updates`);
+          await channel.send({
+            type: 'broadcast',
+            event: 'subscription-updated',
+            payload: { action: data.status, subscription_id: subId }
+          });
+          await supabase.removeChannel(channel);
+        } catch (broadcastError) {
+          console.error('Broadcast error (non-blocking):', broadcastError);
+        }
       }
 
       setSubscriptions(prev => prev.map(sub => 

@@ -620,6 +620,23 @@ const Checkout = () => {
       return;
     }
 
+    // FIX: Check pending orders limit (max 3)
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const { data: pendingOrders, error: pendingError } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('status', 'pending')
+      .gte('created_at', thirtyMinutesAgo);
+
+    if (!pendingError && pendingOrders && pendingOrders.length >= 3) {
+      toast.error(
+        "Limite de pedidos pendentes", 
+        "Você já tem 3 pedidos aguardando pagamento. Finalize ou aguarde expiração (30min) antes de criar novos."
+      );
+      return;
+    }
+
     // Handle free products
     if (isFreeProduct) {
       await handleFreeActivation();
