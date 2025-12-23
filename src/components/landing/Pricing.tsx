@@ -195,15 +195,15 @@ const Pricing = () => {
         .card-animate{opacity:0;transform:translateY(12px)}
         .is-ready .card-animate{animation:fadeUp .6s ease forwards}
         @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
-        .btn-primary{width:100%;border-radius:12px;padding:10px 16px;font-weight:600;font-size:14px;background:var(--btn-primary-bg);color:var(--btn-primary-fg);transition:transform .15s ease,filter .15s ease,background .2s ease}
+        .btn-primary{width:100%;border-radius:12px;padding:12px 20px;font-weight:600;font-size:14px;background:var(--btn-primary-bg);color:var(--btn-primary-fg);transition:transform .15s ease,filter .15s ease,background .2s ease}
         .btn-primary:hover{filter:brightness(1.1)}
         .btn-primary:active{transform:translateY(1px)}
-        .btn-ghost{width:100%;border-radius:12px;padding:10px 16px;font-weight:600;font-size:14px;color:var(--text);border:1px solid var(--btn-ghost-border);background:transparent;transition:background .2s ease,transform .15s ease}
+        .btn-ghost{width:100%;border-radius:12px;padding:12px 20px;font-weight:600;font-size:14px;color:hsl(var(--foreground));border:1px solid var(--btn-ghost-border);background:transparent;transition:background .2s ease,transform .15s ease}
         .btn-ghost:hover{background:var(--btn-ghost-hover)}
         .btn-ghost:active{transform:translateY(1px)}
-        .chip{position:relative;border:1px solid var(--border);background:rgba(139,92,246,.15);color:hsl(var(--primary));border-radius:9999px;padding:6px 12px;font-size:12px;font-weight:500}
-        .chip::before{content:"";position:absolute;inset:0;border-radius:9999px;background:var(--glow);filter:blur(2px);opacity:0.5}
-        .vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(80% 60% at 50% 12%, rgba(139,92,246,.08), transparent 60%)}
+        .btn-link{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;font-weight:600;font-size:14px;color:hsl(var(--primary));background:transparent;border:none;border-radius:12px;transition:background .2s ease,transform .15s ease}
+        .btn-link:hover{background:rgba(139,92,246,0.1)}
+        .btn-link:active{transform:translateY(1px)}
       `}</style>
 
       <div className="vignette" />
@@ -242,11 +242,11 @@ const Pricing = () => {
               Nenhum plano disponível no momento.
             </div>
           ) : (
-            <div className={`mt-14 grid w-full gap-6 sm:gap-8 ${
+            <div className={`mt-10 sm:mt-14 grid w-full gap-4 sm:gap-6 lg:gap-8 px-2 sm:px-0 ${
               plans.length === 1 ? 'grid-cols-1 max-w-md mx-auto' :
-              plans.length === 2 ? 'grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto' :
-              plans.length === 3 ? 'grid-cols-1 md:grid-cols-3' :
-              'grid-cols-1 md:grid-cols-2 xl:grid-cols-4'
+              plans.length === 2 ? 'grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto' :
+              plans.length === 3 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' :
+              'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
             }`}>
               {plans.map((plan, index) => {
                 const isPopular = index === popularIndex;
@@ -301,10 +301,10 @@ const Pricing = () => {
             </div>
           )}
 
-          <div className="mt-10">
+          <div className="mt-8 sm:mt-10 text-center">
             <Link to="/comprar">
-              <button className="btn-ghost inline-flex items-center gap-2 px-6">
-                Ver todos os planos disponíveis
+              <button className="btn-link">
+                Ver todos os planos
                 <span className="text-lg">→</span>
               </button>
             </Link>
