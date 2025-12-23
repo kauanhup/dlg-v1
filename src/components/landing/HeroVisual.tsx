@@ -54,29 +54,27 @@ export const HeroVisual = () => {
         {/* Inner glow */}
         <div className="absolute inset-6 sm:inset-8 rounded-full bg-gradient-to-br from-primary/30 via-primary/15 to-transparent blur-xl" />
         
-        {/* Telegram logo center */}
+        {/* Telegram airplane */}
         <motion.div
           className="absolute inset-0 flex items-center justify-center"
-          animate={{ scale: [1, 1.06, 1] }}
+          animate={{ scale: [1, 1.08, 1] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         >
-          <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br from-[hsl(220,15%,12%)] to-[hsl(220,15%,8%)] flex items-center justify-center shadow-2xl shadow-primary/30 border border-[hsl(220,15%,20%)]">
-            <svg 
-              viewBox="0 0 24 24" 
-              className="w-8 h-8 sm:w-9 sm:h-9 lg:w-11 lg:h-11"
-            >
-              <defs>
-                <linearGradient id="telegramGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#37AEE2" />
-                  <stop offset="100%" stopColor="#1E96C8" />
-                </linearGradient>
-              </defs>
-              <path 
-                fill="url(#telegramGradient)"
-                d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.303.953-.14.579.192l-8.533 7.701h-.002l.002.001-.314 4.692c.46 0 .663-.211.921-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.785l3.019-14.228c.309-1.239-.473-1.8-1.282-1.434z"
-              />
-            </svg>
-          </div>
+          <svg 
+            viewBox="0 0 24 24" 
+            className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 drop-shadow-[0_0_20px_rgba(55,174,226,0.5)]"
+          >
+            <defs>
+              <linearGradient id="telegramGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#37AEE2" />
+                <stop offset="100%" stopColor="#1E96C8" />
+              </linearGradient>
+            </defs>
+            <path 
+              fill="url(#telegramGradient)"
+              d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.303.953-.14.579.192l-8.533 7.701h-.002l.002.001-.314 4.692c.46 0 .663-.211.921-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.785l3.019-14.228c.309-1.239-.473-1.8-1.282-1.434z"
+            />
+          </svg>
         </motion.div>
       </motion.div>
 
