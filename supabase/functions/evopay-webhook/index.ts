@@ -163,14 +163,26 @@ serve(async (req) => {
 
     console.log('EvoPay settings found:', !!settings, 'Error:', settingsError?.message || 'none');
 
-    // Verify signature if both are present
-    if (settings?.evopay_api_key && signature) {
+    // Verify signature if API key is configured
+    if (settings?.evopay_api_key) {
+      if (!signature) {
+        console.error('SECURITY BLOCK: Missing EvoPay webhook signature - request rejected');
+        return new Response(
+          JSON.stringify({ success: false, error: 'Missing signature' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        );
+      }
+      
       const isValid = await verifyWebhookSignature(rawBody, signature, settings.evopay_api_key);
       if (!isValid) {
-        console.warn('SECURITY WARNING: Invalid EvoPay webhook signature');
-      } else {
-        console.log('EvoPay webhook signature verified successfully');
+        console.error('SECURITY BLOCK: Invalid EvoPay webhook signature - request rejected');
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid signature' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        );
       }
+      
+      console.log('EvoPay webhook signature verified successfully');
     }
 
     if (!transactionId && !externalId && !qrCodeText) {
