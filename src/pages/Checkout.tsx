@@ -532,7 +532,7 @@ const Checkout = () => {
     }
   };
 
-  // Helper function to generate PIX for an existing order (used when recovering pending orders)
+  // Helper function to generate PIX for an existing order with automatic fallback
   const generatePixForOrder = async (existingOrderId: string, amount: number, productName: string, quantity: number) => {
     const expTime = new Date();
     expTime.setMinutes(expTime.getMinutes() + PIX_EXPIRATION_MINUTES);
@@ -540,88 +540,51 @@ const Checkout = () => {
 
     const description = isPlanPurchase ? `Licença: ${productName}` : `${quantity}x ${productName}`;
 
-    if (selectedPaymentMethod === 'evopay') {
-      const { data: evoResponse, error: evoError } = await supabase.functions.invoke('evopay', {
-        body: {
-          action: 'create_pix',
-          amount: amount,
-          external_id: existingOrderId,
-          description: description,
-        },
-      });
+    console.log('[Checkout] Generating PIX with fallback for order:', existingOrderId);
 
-      if (evoError) {
-        console.error('[Checkout] EvoPay PIX generation error:', evoError);
-        toast.error("Gateway indisponível", "Não foi possível gerar o PIX. Tente novamente.");
-        setExpirationTime(null);
-        return;
-      }
-      
-      const pixCode = evoResponse?.data?.pixCode;
-      const qrCodeBase64 = evoResponse?.data?.qrCodeBase64;
-      
-      if (pixCode) {
-        console.log('[Checkout] EvoPay PIX generated successfully');
-        setPixData({
-          pixCode: pixCode,
-          qrCodeBase64: qrCodeBase64,
-          transactionId: evoResponse.data.transactionId || evoResponse.data.id,
-          expiresAt: undefined,
-        });
-
-        // Update payment with PIX code AND qr_code_base64 (await to ensure it's saved)
-        await supabase.from('payments').update({
-          pix_code: pixCode,
-          qr_code_base64: qrCodeBase64 || null,
-        } as any).eq('order_id', existingOrderId);
-
-        toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
-      } else {
-        console.log('[Checkout] EvoPay returned no PIX code');
-        toast.warning("Gateway não configurado", "Aguarde aprovação manual do admin.");
-        setExpirationTime(null);
-      }
-      return;
-    }
-
-    // PixUp
-    const { data: pixResponse, error: pixError } = await supabase.functions.invoke('pixup', {
+    // Use the new fallback edge function
+    const { data: response, error } = await supabase.functions.invoke('create-payment-with-fallback', {
       body: {
-        action: 'create_pix',
+        order_id: existingOrderId,
         amount: amount,
-        external_id: existingOrderId,
         description: description,
       },
     });
 
-    if (pixError) {
-      console.error('[Checkout] PixUp generation error:', pixError);
-      toast.error("Gateway indisponível", "Não foi possível gerar o PIX. Tente novamente.");
+    if (error) {
+      console.error('[Checkout] Fallback function error:', error);
+      toast.error("Erro de conexão", "Não foi possível conectar ao sistema de pagamento. Tente novamente.");
       setExpirationTime(null);
       return;
     }
-    
-    const pixCode = pixResponse?.data?.pixCode || pixResponse?.data?.qrcode;
-    const qrCodeBase64 = pixResponse?.data?.qrCodeBase64 || pixResponse?.data?.qrcode_base64;
+
+    if (!response?.success) {
+      console.error('[Checkout] All gateways failed:', response);
+      
+      // Show user-friendly message
+      toast.error(
+        "Sistema indisponível", 
+        response?.error || "Nossos sistemas de pagamento estão temporariamente indisponíveis. Seu pedido foi registrado e entraremos em contato em breve."
+      );
+      setExpirationTime(null);
+      return;
+    }
+
+    // Success - set PIX data
+    const pixCode = response.pixCode;
+    const qrCodeBase64 = response.qrCodeBase64;
     
     if (pixCode) {
-      console.log('[Checkout] PixUp PIX generated successfully');
+      console.log('[Checkout] PIX generated successfully via:', response.gateway_used);
       setPixData({
         pixCode: pixCode,
         qrCodeBase64: qrCodeBase64,
-        transactionId: pixResponse.data.transactionId || pixResponse.data.id,
-        expiresAt: pixResponse.data.expiresAt,
+        transactionId: response.transactionId,
+        expiresAt: undefined,
       });
-
-      // Update payment with PIX code AND qr_code_base64 (await to ensure it's saved)
-      await supabase.from('payments').update({
-        pix_code: pixCode,
-        qr_code_base64: qrCodeBase64 || null,
-      } as any).eq('order_id', existingOrderId);
-
-      toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
+      toast.success("PIX gerado!", `Escaneie o QR Code ou copie o código para pagar. (${response.gateway_used})`);
     } else {
-      console.log('[Checkout] PixUp returned no PIX code');
+      console.log('[Checkout] No PIX code returned');
       toast.warning("Gateway não configurado", "Aguarde aprovação manual do admin.");
       setExpirationTime(null);
     }
@@ -832,7 +795,7 @@ const Checkout = () => {
         user_id: user.id,
         order_id: orderData.id,
         amount: amount,
-        payment_method: selectedPaymentMethod,
+        payment_method: 'pending', // Will be updated by fallback function
         status: 'pending',
       });
       
@@ -840,55 +803,16 @@ const Checkout = () => {
         console.error('Payment record error:', paymentError);
       }
 
-      // Handle EvoPay PIX payment
-      if (selectedPaymentMethod === 'evopay') {
-        const { data: evoResponse, error: evoError } = await supabase.functions.invoke('evopay', {
-          body: {
-            action: 'create_pix',
-            amount: amount,
-            external_id: orderData.id,
-            description: isPlanPurchase ? `Licença: ${productName}` : `${quantity}x ${productName}`,
-          },
-        });
+      // Use fallback function for PIX generation with automatic gateway failover
+      const description = isPlanPurchase ? `Licença: ${productName}` : `${quantity}x ${productName}`;
+      
+      console.log('[Checkout] Generating PIX with fallback for new order:', orderData.id);
 
-        const expTime = new Date();
-        expTime.setMinutes(expTime.getMinutes() + PIX_EXPIRATION_MINUTES);
-        setExpirationTime(expTime);
-
-        if (evoError) {
-          console.error('EvoPay PIX generation error:', evoError);
-          toast.error("Gateway indisponível", "Pedido criado. Configure o gateway PIX ou aguarde aprovação manual.");
-        } else if (evoResponse?.data?.pixCode) {
-          const transactionId = evoResponse.data.transactionId || evoResponse.data.id;
-          const qrCodeBase64 = evoResponse.data.qrCodeBase64;
-          
-          setPixData({
-            pixCode: evoResponse.data.pixCode,
-            qrCodeBase64: qrCodeBase64,
-            transactionId: transactionId,
-            expiresAt: undefined,
-          });
-
-          // Store PIX code AND qrCodeBase64 in background
-          supabase.from('payments').update({
-            pix_code: evoResponse.data.pixCode,
-            qr_code_base64: qrCodeBase64 || null,
-          } as any).eq('order_id', orderData.id);
-
-          toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
-        } else {
-          toast.warning("Gateway não configurado", "Pedido criado. Aguarde aprovação manual do admin.");
-        }
-        return;
-      }
-
-      // Handle PIX payment (PixUp)
-      const { data: pixResponse, error: pixError } = await supabase.functions.invoke('pixup', {
+      const { data: response, error: fallbackError } = await supabase.functions.invoke('create-payment-with-fallback', {
         body: {
-          action: 'create_pix',
+          order_id: orderData.id,
           amount: amount,
-          external_id: orderData.id,
-          description: isPlanPurchase ? `Licença: ${productName}` : `${quantity}x ${productName}`,
+          description: description,
         },
       });
 
@@ -897,27 +821,25 @@ const Checkout = () => {
       expTime.setMinutes(expTime.getMinutes() + PIX_EXPIRATION_MINUTES);
       setExpirationTime(expTime);
 
-      if (pixError) {
-        console.error('PIX generation error:', pixError);
-        toast.error("Gateway indisponível", "Pedido criado. Configure o gateway PIX ou aguarde aprovação manual.");
-      } else if (pixResponse?.data?.pixCode || pixResponse?.data?.qrcode) {
-        const pixCode = pixResponse.data.pixCode || pixResponse.data.qrcode;
-        const qrCodeBase64 = pixResponse.data.qrCodeBase64 || pixResponse.data.qrcode_base64;
-        
+      if (fallbackError) {
+        console.error('[Checkout] Fallback function error:', fallbackError);
+        toast.error("Gateway indisponível", "Pedido criado. Tente gerar o PIX novamente.");
+      } else if (!response?.success) {
+        console.error('[Checkout] All gateways failed:', response);
+        // Show user-friendly message - admin already notified by fallback function
+        toast.error(
+          "Sistema temporariamente indisponível", 
+          response?.error || "Seu pedido foi registrado. Entraremos em contato em breve."
+        );
+      } else if (response?.pixCode) {
+        console.log('[Checkout] PIX generated successfully via:', response.gateway_used);
         setPixData({
-          pixCode: pixCode,
-          qrCodeBase64: qrCodeBase64,
-          transactionId: pixResponse.data.transactionId || pixResponse.data.id,
-          expiresAt: pixResponse.data.expiresAt,
+          pixCode: response.pixCode,
+          qrCodeBase64: response.qrCodeBase64,
+          transactionId: response.transactionId,
+          expiresAt: undefined,
         });
-
-        // Update payment with PIX code AND qrCodeBase64 in background
-        supabase.from('payments').update({
-          pix_code: pixCode,
-          qr_code_base64: qrCodeBase64 || null,
-        } as any).eq('order_id', orderData.id);
-
-        toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
+        toast.success("PIX gerado!", `Escaneie o QR Code ou copie o código para pagar.`);
       } else {
         toast.warning("Gateway não configurado", "Pedido criado. Aguarde aprovação manual do admin.");
       }
