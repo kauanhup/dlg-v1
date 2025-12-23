@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { Check, CreditCard, ArrowLeft, Copy, CheckCircle2, Loader2, Clock, Crown, Sparkles, ShieldCheck, Wallet, ExternalLink, Gift } from "lucide-react";
+import { Check, CreditCard, ArrowLeft, Copy, CheckCircle2, Loader2, Clock, Crown, Sparkles, ShieldCheck, Wallet, ExternalLink, Gift, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { MorphingSquare } from "@/components/ui/morphing-square";
@@ -179,6 +179,23 @@ const Checkout = () => {
   const planPrice = isUpgrade ? calculateFinalPrice(basePlanPrice) : basePlanPrice;
   const upgradeCredit = isUpgrade ? activeSubscription.credit_value : 0;
   const isFreeProduct = (isSessionPurchase && sessionInfo?.price === 0) || (isPlanPurchase && planPrice === 0);
+
+  // Warning before leaving checkout with pending payment
+  useEffect(() => {
+    if (pixData && paymentStatus === 'pending') {
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        e.preventDefault();
+        e.returnValue = 'Você tem um pagamento pendente. Tem certeza que deseja sair?';
+        return e.returnValue;
+      };
+
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      };
+    }
+  }, [pixData, paymentStatus]);
 
   // Countdown timer logic
   useEffect(() => {

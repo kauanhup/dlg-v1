@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import { logAdminAction, AuditActions } from "@/lib/auditLog";
 
 // Profile update validation schema
 const profileUpdateSchema = z.object({
@@ -80,40 +81,31 @@ export const useAdminUsers = () => {
     }
   };
 
-  const updateUserRole = async (userId: string, newRole: 'admin' | 'user') => {
-    try {
-      // Use upsert to handle cases where user might not have a role entry
-      const { error } = await supabase
-        .from('user_roles')
-        .upsert({ user_id: userId, role: newRole }, { onConflict: 'user_id' });
+  // updateUserRole is defined below with additional security checks
 
-      if (error) throw error;
-
-      // Update local state
-      setUsers(prev => prev.map(user => 
-        user.user_id === userId ? { ...user, role: newRole } : user
-      ));
-
-      return { success: true };
-    } catch (err) {
-      console.error('Error updating role:', err);
-      return { success: false, error: 'Erro ao atualizar role' };
-    }
-  };
-
-  const banUser = async (userId: string, banned: boolean = true) => {
+  const banUser = async (userId: string, banned: boolean = true, banReason?: string) => {
     try {
       // Use edge function to ban user AND invalidate sessions
       const { data, error } = await supabase.functions.invoke('admin-actions', {
         body: {
           action: 'ban_user',
           userId,
-          banned
+          banned,
+          banReason
         }
       });
 
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'Erro ao banir usuário');
+
+      // Log the action
+      await logAdminAction(
+        banned ? AuditActions.BAN_USER : AuditActions.UNBAN_USER,
+        userId,
+        { banned: !banned },
+        { banned, ban_reason: banReason },
+        banReason
+      );
 
       // Update local state
       setUsers(prev => prev.map(user => 
@@ -124,6 +116,55 @@ export const useAdminUsers = () => {
     } catch (err) {
       console.error('Error banning user:', err);
       return { success: false, error: 'Erro ao banir usuário' };
+    }
+  };
+
+  const updateUserRole = async (userId: string, newRole: 'admin' | 'user') => {
+    try {
+      // Get current user to prevent self-demotion
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (currentUser?.id === userId) {
+        return { success: false, error: 'Você não pode alterar seu próprio role!' };
+      }
+
+      // Get current role for audit log
+      const currentUserData = users.find(u => u.user_id === userId);
+      const oldRole = currentUserData?.role || 'user';
+
+      // If removing admin, check if not the last one
+      if (newRole === 'user' && oldRole === 'admin') {
+        const adminCount = users.filter(u => u.role === 'admin').length;
+        if (adminCount <= 1) {
+          return { success: false, error: 'Sistema deve ter pelo menos 1 administrador!' };
+        }
+      }
+
+      // Use upsert to handle cases where user might not have a role entry
+      const { error } = await supabase
+        .from('user_roles')
+        .upsert({ user_id: userId, role: newRole }, { onConflict: 'user_id' });
+
+      if (error) throw error;
+
+      // Log the action
+      await logAdminAction(
+        AuditActions.CHANGE_ROLE,
+        userId,
+        { role: oldRole },
+        { role: newRole },
+        `Alteração de role para ${newRole}`
+      );
+
+      // Update local state
+      setUsers(prev => prev.map(user => 
+        user.user_id === userId ? { ...user, role: newRole } : user
+      ));
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error updating role:', err);
+      return { success: false, error: 'Erro ao atualizar role' };
     }
   };
 
