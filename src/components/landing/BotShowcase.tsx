@@ -254,33 +254,50 @@ const BotShowcase = () => {
               Conecte várias contas do Telegram, monitore status e gerencie tudo de forma centralizada. Suporte para sessions e códigos de verificação.
             </motion.p>
 
-            {/* Stats */}
+            {/* Animated Feature Tags */}
             <motion.div 
-              className="grid grid-cols-2 gap-4"
+              className="flex flex-wrap gap-3"
               variants={staggerContainer}
             >
               {[
-                { icon: Zap, label: "Conexão Instantânea", value: "Via session ou código" },
-                { icon: Shield, label: "Proteção Anti-Ban", value: "Rotação inteligente" },
-              ].map((stat, index) => (
-                <motion.div 
-                  key={stat.label} 
-                  className="flex items-start gap-3 group cursor-default"
+                { label: "Sessions .session", delay: 0 },
+                { label: "Código 2FA", delay: 0.1 },
+                { label: "Proxy Suporte", delay: 0.2 },
+                { label: "Auto-Reconexão", delay: 0.3 },
+              ].map((tag, index) => (
+                <motion.span 
+                  key={tag.label}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-sm font-medium cursor-default"
                   variants={fadeInUp}
-                  whileHover={{ x: 4, transition: { duration: 0.2 } }}
+                  whileHover={{ 
+                    scale: 1.05, 
+                    backgroundColor: "rgba(234, 179, 8, 0.2)",
+                    borderColor: "rgba(234, 179, 8, 0.4)",
+                    transition: { duration: 0.2 } 
+                  }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ 
+                    opacity: 1, 
+                    scale: 1,
+                    transition: { delay: tag.delay, duration: 0.4, type: "spring", stiffness: 200 }
+                  }}
+                  viewport={{ once: true }}
                 >
-                  <motion.div 
-                    className="h-10 w-10 bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center rounded-lg flex-shrink-0 transition-all duration-300 group-hover:bg-yellow-500/20 group-hover:border-yellow-500/40 group-hover:shadow-lg group-hover:shadow-yellow-500/10"
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <stat.icon className="h-5 w-5 text-yellow-500" />
-                  </motion.div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground transition-colors duration-300">{stat.label}</p>
-                    <p className="text-xs text-muted-foreground transition-colors duration-300 group-hover:text-muted-foreground/80">{stat.value}</p>
-                  </div>
-                </motion.div>
+                  <motion.span
+                    className="w-2 h-2 rounded-full bg-yellow-500"
+                    animate={{ 
+                      scale: [1, 1.3, 1],
+                      opacity: [1, 0.7, 1]
+                    }}
+                    transition={{ 
+                      duration: 2, 
+                      repeat: Infinity, 
+                      delay: index * 0.3,
+                      ease: "easeInOut"
+                    }}
+                  />
+                  {tag.label}
+                </motion.span>
               ))}
             </motion.div>
           </motion.div>
