@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Shield, Zap, Users, Clock, Activity, Lock } from "lucide-react";
+import { Shield, Zap, Users, Clock, Activity, Lock, CheckCircle, Sparkles } from "lucide-react";
 
 const features = [
   { icon: Shield, text: "Monitoramento 24/7" },
@@ -8,44 +8,50 @@ const features = [
   { icon: Zap, text: "Limites inteligentes" },
   { icon: Users, text: "Multi-Contas" },
   { icon: Clock, text: "Delays Automáticos" },
+  { icon: CheckCircle, text: "100% Seguro" },
+  { icon: Sparkles, text: "Interface Profissional" },
 ];
 
 export const SectionDivider = () => {
   return (
-    <div className="relative py-6 sm:py-8 overflow-hidden bg-background">
+    <div className="relative py-4 overflow-hidden bg-gradient-to-r from-background via-[hsl(220,15%,6%)] to-background">
+      {/* Top border line */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      
+      {/* Bottom border line */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      
       {/* Gradient fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-background to-transparent z-10" />
-      <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-background to-transparent z-10" />
+      <div className="absolute left-0 top-0 bottom-0 w-24 sm:w-40 bg-gradient-to-r from-background to-transparent z-10" />
+      <div className="absolute right-0 top-0 bottom-0 w-24 sm:w-40 bg-gradient-to-l from-background to-transparent z-10" />
       
       {/* Scrolling container */}
       <div className="flex overflow-hidden">
         <motion.div
-          className="flex gap-6 sm:gap-8"
-          animate={{ x: [0, -1200] }}
+          className="flex gap-4 sm:gap-6"
+          animate={{ x: ["0%", "-50%"] }}
           transition={{
             x: {
               repeat: Infinity,
               repeatType: "loop",
-              duration: 25,
+              duration: 30,
               ease: "linear",
             },
           }}
         >
           {/* Duplicate items for seamless loop */}
-          {[...features, ...features, ...features].map((feature, index) => (
+          {[...features, ...features].map((feature, index) => (
             <div
               key={index}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-[hsl(220,15%,10%)] border border-[hsl(220,15%,18%)] whitespace-nowrap flex-shrink-0"
+              className="flex items-center gap-2 px-4 py-2 whitespace-nowrap flex-shrink-0 group"
             >
-              <feature.icon className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-foreground/80">{feature.text}</span>
+              <feature.icon className="w-4 h-4 text-primary/70 group-hover:text-primary transition-colors" />
+              <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">{feature.text}</span>
+              <span className="text-primary/30 ml-4">•</span>
             </div>
           ))}
         </motion.div>
       </div>
-      
-      {/* Subtle line */}
-      <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/10 to-transparent -translate-y-1/2 -z-10" />
     </div>
   );
 };
