@@ -20,7 +20,7 @@ const Hero = () => {
           <div className="text-center lg:text-left">
             {/* Title */}
             <motion.h1
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-display font-bold tracking-tight mb-6 leading-tight"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-display font-bold tracking-tight mb-6 leading-normal pb-1"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -31,7 +31,7 @@ const Hero = () => {
                 typingSpeed={80}
                 deletingSpeed={40}
                 pauseTime={2500}
-                className="bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent"
+                className="bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent inline-block pb-1"
               />
             </motion.h1>
 
