@@ -19,8 +19,8 @@ const Hero = () => {
       
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
-          {/* Left side - Text content */}
-          <div className="text-center lg:text-left order-2 lg:order-1">
+          {/* Left side - Text content - Always first on mobile */}
+          <div className="text-center lg:text-left">
             {/* Title */}
             <motion.h1
               className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-display font-bold tracking-tight mb-4 sm:mb-6 leading-tight sm:leading-normal"
@@ -79,9 +79,9 @@ const Hero = () => {
             </motion.div>
           </div>
 
-          {/* Right side - Visual */}
+          {/* Right side - Visual - Below text on mobile */}
           <motion.div
-            className="relative mt-4 sm:mt-6 lg:mt-0 order-1 lg:order-2"
+            className="relative hidden sm:block lg:mt-0"
             style={{ willChange: "transform, opacity" }}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
