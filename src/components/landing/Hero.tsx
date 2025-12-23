@@ -2,7 +2,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
-import { GooeyText } from "@/components/ui/gooey-text-morphing";
+import { TypewriterText } from "@/components/ui/typewriter-text";
 import { motion } from "framer-motion";
 import { BotDashboardPreview } from "./BotPreviews";
 
@@ -26,12 +26,12 @@ const Hero = () => {
               transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
               Automação profissional para crescer no Telegram com{" "}
-              <GooeyText 
+              <TypewriterText 
                 texts={["segurança", "rapidez", "inteligência"]}
-                morphTime={1.5}
-                cooldownTime={2}
-                className="inline-block"
-                textClassName="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-display font-bold leading-tight bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent"
+                typingSpeed={80}
+                deletingSpeed={40}
+                pauseTime={2500}
+                className="bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent"
               />
             </motion.h1>
 
