@@ -46,7 +46,7 @@ export const BotDashboardPreview = () => {
   return (
     <div className="relative group">
       {/* Outer glow */}
-      <div className="absolute -inset-2 bg-gradient-to-r from-primary/40 via-blue-500/30 to-primary/40 rounded-[28px] blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+      <div className="absolute -inset-2 bg-gradient-to-r from-primary/40 via-blue-500/30 to-primary/40 rounded-[20px] blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
       
       {/* Floating badge */}
       <motion.div
@@ -58,176 +58,95 @@ export const BotDashboardPreview = () => {
       >
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-[10px] font-semibold text-green-400">Sistema Online</span>
+          <span className="text-[10px] font-semibold text-green-400">Online</span>
         </div>
       </motion.div>
       
-      {/* Main container */}
-      <div className="relative bg-gradient-to-br from-[hsl(220,20%,10%)] via-[hsl(220,20%,7%)] to-[hsl(220,25%,4%)] rounded-[24px] overflow-hidden border border-[hsl(220,15%,20%)] shadow-[0_30px_100px_-20px_rgba(0,0,0,0.9)]">
-        {/* Top bar - browser style */}
-        <div className="bg-[hsl(220,20%,12%)] border-b border-[hsl(220,15%,18%)] px-4 py-2.5 flex items-center gap-3">
+      {/* Main container - Simplified */}
+      <div className="relative bg-gradient-to-br from-[hsl(220,20%,10%)] via-[hsl(220,20%,7%)] to-[hsl(220,25%,4%)] rounded-[20px] overflow-hidden border border-[hsl(220,15%,20%)] shadow-2xl">
+        {/* Top bar */}
+        <div className="bg-[hsl(220,20%,12%)] border-b border-[hsl(220,15%,18%)] px-4 py-2 flex items-center gap-3">
           <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-500/80" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-            <div className="w-3 h-3 rounded-full bg-green-500/80" />
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
           </div>
           <div className="flex-1 flex justify-center">
-            <div className="bg-[hsl(220,15%,8%)] rounded-md px-4 py-1 text-[10px] text-gray-400 flex items-center gap-2 border border-[hsl(220,15%,15%)]">
-              <span className="text-green-500">●</span>
+            <div className="bg-[hsl(220,15%,8%)] rounded-md px-3 py-1 text-[9px] text-gray-400 flex items-center gap-1.5 border border-[hsl(220,15%,15%)]">
+              <span className="text-green-500 text-[8px]">●</span>
               dlgconnect.app
             </div>
           </div>
         </div>
 
-        <div className="flex">
-          {/* Sidebar */}
-          <aside className="w-52 bg-gradient-to-b from-[hsl(220,20%,9%)] to-[hsl(220,20%,5%)] border-r border-[hsl(220,15%,16%)] flex flex-col">
-            {/* Logo */}
-            <div className="border-b border-[hsl(220,15%,16%)] px-4 py-4">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 bg-white rounded-xl flex items-center justify-center p-1 shadow-lg">
-                  <img src={logo} alt="DLG" className="h-full w-full object-contain" />
-                </div>
-                <div>
-                  <h2 className="text-xs font-bold text-white tracking-wide">DLG CONNECT</h2>
-                  <p className="text-[9px] text-gray-500">Automação Telegram</p>
-                </div>
-              </div>
+        {/* Content */}
+        <div className="p-4 space-y-3">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-sm font-bold text-white">Dashboard</h1>
+              <p className="text-[9px] text-gray-400">Visão geral</p>
             </div>
+            <button className="h-7 px-3 text-[9px] font-semibold bg-gradient-to-r from-primary to-primary/80 text-white rounded-lg flex items-center gap-1.5 shadow-lg shadow-primary/20">
+              <Zap className="h-3 w-3" />
+              Nova Ação
+            </button>
+          </div>
 
-            {/* Nav */}
-            <nav className="flex-1 py-3 px-3">
-              <div className="space-y-1">
-                {menuItems.map((item) => (
-                  <div
-                    key={item.title}
-                    className={`flex items-center gap-3 px-3 py-2 text-xs rounded-lg transition-all ${
-                      item.active
-                        ? "bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/20"
-                        : "text-gray-400 hover:bg-[hsl(220,15%,12%)] hover:text-gray-300"
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span className="font-medium">{item.title}</span>
+          {/* Stats Grid - 2x2 */}
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: "Contas Ativas", value: "12", icon: Users, color: "text-green-500", bg: "bg-green-500/10" },
+              { label: "Em Flood", value: "3", icon: Clock, color: "text-yellow-500", bg: "bg-yellow-500/10" },
+              { label: "Adições Hoje", value: "847", icon: Zap, color: "text-primary", bg: "bg-primary/10" },
+              { label: "Extrações", value: "2.4k", icon: Users, color: "text-purple-500", bg: "bg-purple-500/10" },
+            ].map((stat) => (
+              <div key={stat.label} className="bg-[hsl(220,20%,8%)] border border-[hsl(220,15%,14%)] p-3 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <div className={`h-8 w-8 ${stat.bg} flex items-center justify-center rounded-lg`}>
+                    <stat.icon className={`h-4 w-4 ${stat.color}`} />
                   </div>
-                ))}
+                  <div>
+                    <p className={`text-base font-bold ${stat.color}`}>{stat.value}</p>
+                    <p className="text-[8px] text-gray-400">{stat.label}</p>
+                  </div>
+                </div>
               </div>
-            </nav>
+            ))}
+          </div>
 
-            {/* Status */}
-            <div className="border-t border-[hsl(220,15%,16%)] px-4 py-3">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse shadow-lg shadow-green-500/50" />
-                <span className="text-[10px] text-gray-400">Sistema Online</span>
-              </div>
+          {/* Account Health - Simplified */}
+          <div className="bg-[hsl(220,20%,8%)] border border-[hsl(220,15%,14%)] rounded-xl overflow-hidden">
+            <div className="bg-[hsl(220,15%,12%)] border-b border-[hsl(220,15%,14%)] px-3 py-2 flex items-center gap-2">
+              <Shield className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[10px] font-semibold text-white">Saúde das Contas</span>
             </div>
-          </aside>
-
-          {/* Main Content */}
-          <div className="flex-1 p-5 space-y-4 min-w-0">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-base font-bold text-white">Dashboard</h1>
-                <p className="text-[10px] text-gray-400">Visão geral do sistema</p>
-              </div>
-              <button className="h-8 px-4 text-[10px] font-semibold bg-gradient-to-r from-primary to-primary/80 text-white rounded-lg flex items-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow">
-                <Zap className="h-3.5 w-3.5" />
-                Nova Ação
-              </button>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-4 gap-3">
+            <div className="p-3 space-y-2">
               {[
-                { label: "Ativas", value: "12", icon: Users, color: "text-green-500", bg: "bg-green-500/10" },
-                { label: "Flood", value: "5", icon: Clock, color: "text-yellow-500", bg: "bg-yellow-500/10" },
-                { label: "7 Dias", value: "8", icon: Calendar, color: "text-primary", bg: "bg-primary/10" },
-                { label: "Banidas", value: "2", icon: Ban, color: "text-red-500", bg: "bg-red-500/10" },
-              ].map((stat) => (
-                <div key={stat.label} className="bg-[hsl(220,20%,8%)] border border-[hsl(220,15%,14%)] p-3 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className={`h-8 w-8 ${stat.bg} border border-current/20 flex items-center justify-center rounded-lg`}>
-                      <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                { phone: "+55 11 9****-1234", health: 95, status: "online" },
+                { phone: "+55 21 9****-5678", health: 87, status: "online" },
+                { phone: "+55 11 9****-9012", health: 62, status: "flood" },
+              ].map((account, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="h-6 w-6 bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,16%)] flex items-center justify-center rounded-lg">
+                    <Phone className="h-3 w-3 text-gray-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-[9px] font-medium text-white">{account.phone}</p>
+                      <span className={`text-[8px] font-bold ${account.health >= 80 ? 'text-green-500' : account.health >= 50 ? 'text-yellow-500' : 'text-red-500'}`}>
+                        {account.health}%
+                      </span>
                     </div>
-                    <div>
-                      <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
-                      <p className="text-[8px] text-gray-400">{stat.label}</p>
+                    <div className="h-1 bg-[hsl(220,15%,14%)] rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${account.health >= 80 ? 'bg-green-500' : account.health >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                        style={{ width: `${account.health}%` }}
+                      />
                     </div>
                   </div>
                 </div>
               ))}
-            </div>
-
-            {/* Accounts Status */}
-            <div className="grid grid-cols-2 gap-3">
-              {/* Account Health Monitor */}
-              <div className="bg-[hsl(220,20%,8%)] border border-[hsl(220,15%,14%)] rounded-xl overflow-hidden">
-                <div className="bg-[hsl(220,15%,12%)] border-b border-[hsl(220,15%,14%)] px-3 py-2 flex items-center gap-2">
-                  <Shield className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-[10px] font-semibold text-white">Saúde das Contas</span>
-                </div>
-                <div className="divide-y divide-[hsl(220,15%,12%)]">
-                  {accounts.map((account, i) => {
-                    const StatusIcon = getStatusIcon(account.status);
-                    return (
-                      <div key={i} className="flex items-center gap-3 px-3 py-2.5">
-                        <div className="h-7 w-7 bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,16%)] flex items-center justify-center rounded-lg">
-                          <Phone className="h-3 w-3 text-gray-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-[10px] font-medium text-white">{account.phone}</p>
-                            <StatusIcon className={`h-3 w-3 ${getStatusColor(account.status)}`} />
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className="h-1.5 flex-1 bg-[hsl(220,15%,14%)] rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full ${getHealthColor(account.health)} transition-all duration-500`}
-                                style={{ width: `${account.health}%` }}
-                              />
-                            </div>
-                            <span className="text-[8px] text-gray-400 font-medium">{account.health}%</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Daily Limits */}
-              <div className="bg-[hsl(220,20%,8%)] border border-[hsl(220,15%,14%)] rounded-xl overflow-hidden">
-                <div className="bg-[hsl(220,15%,12%)] border-b border-[hsl(220,15%,14%)] px-3 py-2 flex items-center gap-2">
-                  <Zap className="h-3.5 w-3.5 text-green-500" />
-                  <span className="text-[10px] font-semibold text-white">Limite Diário</span>
-                </div>
-                <div className="divide-y divide-[hsl(220,15%,12%)]">
-                  {accounts.map((account, i) => (
-                    <div key={i} className="flex items-center gap-3 px-3 py-2.5">
-                      <div className="h-7 w-7 bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,16%)] flex items-center justify-center rounded-lg">
-                        <Users className="h-3 w-3 text-gray-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="text-[10px] font-medium text-white">{account.phone}</p>
-                          <span className={`text-[9px] font-bold ${account.todayAdded >= account.limit ? 'text-red-500' : 'text-green-500'}`}>
-                            {account.todayAdded}/{account.limit}
-                          </span>
-                        </div>
-                        <div className="mt-1">
-                          <div className="h-1.5 bg-[hsl(220,15%,14%)] rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full transition-all duration-500 ${account.todayAdded >= account.limit ? 'bg-red-500' : 'bg-green-500'}`}
-                              style={{ width: `${(account.todayAdded / account.limit) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -235,6 +154,7 @@ export const BotDashboardPreview = () => {
     </div>
   );
 };
+
 
 export const BotActionsPreview = () => {
   return (
