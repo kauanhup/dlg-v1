@@ -8,7 +8,7 @@ import { HeroVisual } from "./HeroVisual";
 
 const Hero = () => {
   return (
-    <section className="pt-24 pb-16 sm:pt-32 sm:pb-20 md:pt-36 md:pb-24 relative overflow-hidden min-h-[90vh] flex items-center">
+    <section className="pt-20 pb-12 sm:pt-24 sm:pb-16 md:pt-28 md:pb-20 relative overflow-hidden min-h-[85vh] flex items-center">
       {/* Animated Background */}
       <div className="absolute inset-0 z-0">
         <AnimatedShaderBackground className="w-full h-full" />
