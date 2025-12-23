@@ -1,5 +1,6 @@
 import { Users, Clock, Calendar, Ban, Zap, Shield, Phone, Wifi, WifiOff, Home, Settings, Activity } from "lucide-react";
 import { motion } from "framer-motion";
+import logo from "@/assets/logo.png";
 
 // Static preview data
 const accounts = [
@@ -43,19 +44,19 @@ const getHealthColor = (health: number) => {
 
 export const BotDashboardPreview = () => {
   return (
-    <div className="bg-[hsl(220,20%,4%)] rounded-lg overflow-hidden border border-[hsl(220,15%,12%)] shadow-2xl scale-[0.85] origin-top-left w-[118%]">
+    <div className="bg-gradient-to-br from-[hsl(220,20%,6%)] to-[hsl(220,20%,3%)] rounded-2xl overflow-hidden border border-[hsl(220,15%,15%)] shadow-2xl scale-[0.8] origin-top-left w-[125%]">
       <div className="flex">
         {/* Sidebar */}
-        <aside className="w-44 bg-[hsl(220,20%,7%)] border-r border-[hsl(220,15%,12%)] flex flex-col">
+        <aside className="w-44 bg-gradient-to-b from-[hsl(220,20%,8%)] to-[hsl(220,20%,5%)] border-r border-[hsl(220,15%,15%)] flex flex-col">
           {/* Logo */}
-          <div className="border-b border-[hsl(220,15%,12%)] px-3 py-3">
+          <div className="border-b border-[hsl(220,15%,15%)] px-3 py-3">
             <div className="flex items-center gap-2">
-              <div className="h-7 w-7 bg-white rounded flex items-center justify-center">
-                <span className="text-[hsl(211,100%,50%)] font-bold text-xs">DLG</span>
+              <div className="h-7 w-7 bg-white rounded-lg flex items-center justify-center p-0.5">
+                <img src={logo} alt="DLG" className="h-full w-full object-contain" />
               </div>
               <div>
                 <h2 className="text-[10px] font-bold text-white">DLG CONNECT</h2>
-                <p className="text-[8px] text-gray-400">Automação Telegram</p>
+                <p className="text-[8px] text-gray-500">Automação Telegram</p>
               </div>
             </div>
           </div>
@@ -66,10 +67,10 @@ export const BotDashboardPreview = () => {
               {menuItems.map((item) => (
                 <div
                   key={item.title}
-                  className={`flex items-center gap-2 px-2 py-1.5 text-[10px] ${
+                  className={`flex items-center gap-2 px-2 py-1.5 text-[10px] rounded-md transition-colors ${
                     item.active
-                      ? "bg-[hsl(211,100%,50%)] text-white"
-                      : "text-gray-400 hover:bg-[hsl(220,15%,10%)]"
+                      ? "bg-gradient-to-r from-[hsl(211,100%,50%)] to-[hsl(211,100%,45%)] text-white shadow-sm"
+                      : "text-gray-400 hover:bg-[hsl(220,15%,12%)]"
                   }`}
                 >
                   <item.icon className="h-3 w-3" />
@@ -80,10 +81,10 @@ export const BotDashboardPreview = () => {
           </nav>
 
           {/* Status */}
-          <div className="border-t border-[hsl(220,15%,12%)] px-3 py-2">
+          <div className="border-t border-[hsl(220,15%,15%)] px-3 py-2">
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-[8px] text-gray-400">Sistema Online</span>
+              <span className="text-[8px] text-gray-500">Sistema Online</span>
             </div>
           </div>
         </aside>

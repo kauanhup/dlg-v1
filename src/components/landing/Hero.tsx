@@ -67,39 +67,25 @@ const Hero = () => {
           {/* Right side - Bot Screenshot */}
           <motion.div
             className="relative hidden lg:block"
-            initial={{ opacity: 0, x: 40, rotateY: -10 }}
-            animate={{ opacity: 1, x: 0, rotateY: 0 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+            style={{ perspective: "1000px" }}
           >
-            <div className="relative">
-              {/* Glow effect */}
-              <div className="absolute -inset-4 bg-gradient-to-r from-primary/30 via-primary/10 to-transparent rounded-3xl blur-2xl" />
+            <motion.div 
+              className="relative"
+              initial={{ rotateY: -8, rotateX: 5 }}
+              animate={{ rotateY: 0, rotateX: 0 }}
+              transition={{ duration: 1.2, delay: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
+              {/* Subtle glow */}
+              <div className="absolute -inset-8 bg-gradient-to-br from-primary/20 via-transparent to-primary/10 rounded-[40px] blur-3xl opacity-50" />
               
-              {/* Screenshot container */}
-              <div className="relative">
+              {/* Preview container with perspective */}
+              <div className="relative rounded-2xl overflow-hidden shadow-[0_20px_80px_-20px_rgba(0,0,0,0.5)]">
                 <BotDashboardPreview />
               </div>
-
-              {/* Floating badges */}
-              <motion.div
-                className="absolute -top-4 -right-4 bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium shadow-lg z-10"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.8 }}
-              >
-                v2.0 PRO
-              </motion.div>
-
-              <motion.div
-                className="absolute -bottom-4 -left-4 bg-card border border-border px-4 py-2 rounded-full text-sm font-medium shadow-lg flex items-center gap-2 z-10"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 1 }}
-              >
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                100% Seguro
-              </motion.div>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </div>
