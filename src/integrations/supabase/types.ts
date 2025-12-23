@@ -878,6 +878,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      release_session_reservation: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
+      reserve_sessions_atomic: {
+        Args: { p_order_id: string; p_quantity: number; p_session_type: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "user"
