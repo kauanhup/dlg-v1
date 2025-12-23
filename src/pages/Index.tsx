@@ -3,6 +3,7 @@ import { Header, Hero, BotShowcase, Features, Pricing, FAQ, CTA, Footer } from "
 import { SectionDivider } from "@/components/landing/SectionDivider";
 import RotatingDivider from "@/components/landing/RotatingDivider";
 import SEO from "@/components/SEO";
+import PageTransition from "@/components/PageTransition";
 
 const Index = () => {
   // Força tema escuro na página inicial
@@ -19,7 +20,7 @@ const Index = () => {
   }, []);
 
   return (
-    <>
+    <PageTransition>
       <SEO 
         title="Automação Profissional para Telegram"
         description="Sistema de automação avançado para crescimento de grupos Telegram. Extração e transferência de membros com segurança. Gerencie múltiplas contas."
@@ -39,7 +40,7 @@ const Index = () => {
         </main>
         <Footer />
       </div>
-    </>
+    </PageTransition>
   );
 };
 

@@ -5,6 +5,7 @@ import { Header, Footer } from "@/components/landing";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUpgradeCredit } from "@/hooks/useUpgradeCredit";
+import PageTransition from "@/components/PageTransition";
 
 interface Plan {
   id: string;
@@ -140,6 +141,7 @@ const Buy = () => {
   const popularIndex = getPopularIndex();
 
   return (
+    <PageTransition>
     <div 
       className={`min-h-screen bg-background ${ready ? "is-ready" : ""}`}
       style={{
@@ -370,6 +372,7 @@ const Buy = () => {
 
       <Footer />
     </div>
+    </PageTransition>
   );
 };
 
