@@ -699,6 +699,41 @@ const Checkout = () => {
           return;
         }
       } else if (isPlanPurchase && plan) {
+        // SECURITY: Re-validate plan price before creating order
+        // This prevents race condition where admin changes price during checkout
+        const { data: currentPlan, error: planCheckError } = await supabase
+          .from('subscription_plans')
+          .select('price, promotional_price, is_active')
+          .eq('id', plan.id)
+          .single();
+
+        if (planCheckError || !currentPlan) {
+          toast.error("Erro", "Plano não encontrado. Recarregue a página.");
+          setIsProcessing(false);
+          return;
+        }
+
+        if (!currentPlan.is_active) {
+          toast.error("Plano indisponível", "Este plano foi desativado. Escolha outro plano.");
+          setIsProcessing(false);
+          setTimeout(() => navigate('/comprar'), 1500);
+          return;
+        }
+
+        // Calculate current price and compare with what user expects to pay
+        const currentBasePrice = currentPlan.promotional_price ?? currentPlan.price;
+        const currentFinalPrice = isUpgrade ? calculateFinalPrice(currentBasePrice) : currentBasePrice;
+        
+        if (Math.abs(currentFinalPrice - planPrice) > 0.01) {
+          toast.error(
+            "Preço alterado", 
+            "O preço do plano foi alterado. Recarregue a página para ver o novo valor."
+          );
+          setPlan({ ...plan, price: currentPlan.price, promotional_price: currentPlan.promotional_price });
+          setIsProcessing(false);
+          return;
+        }
+
         // FIX: Validate subscription limit for PAID plans too (not just free)
         if (plan.max_subscriptions_per_user !== null) {
           const { count, error: countError } = await supabase
@@ -716,7 +751,7 @@ const Checkout = () => {
           }
         }
 
-        amount = planPrice;
+        amount = currentFinalPrice; // Use the validated current price
         productName = plan.name;
         productType = 'subscription';
         quantity = 1;
