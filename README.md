@@ -308,7 +308,6 @@ dlg-connect/
 │   ├── .htaccess
 │   ├── proxy-pixup.php
 │   ├── webhook-evopay.php
-│   ├── webhook-handler.php
 │   ├── webhook-pixup.php
 │   └── README.md
 │
