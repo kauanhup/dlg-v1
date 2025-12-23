@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 export interface SystemSettings {
   maintenanceMode: boolean;
   allowRegistration: boolean;
+  allowBotDownload: boolean;
 }
 
 export const useSystemSettings = () => {
-  const [settings, setSettings] = useState<SystemSettings>({
+const [settings, setSettings] = useState<SystemSettings>({
     maintenanceMode: false,
     allowRegistration: true,
+    allowBotDownload: true,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -24,6 +26,7 @@ export const useSystemSettings = () => {
       const settingsMap: SystemSettings = {
         maintenanceMode: false,
         allowRegistration: true,
+        allowBotDownload: true,
       };
 
       data?.forEach((setting) => {
@@ -32,6 +35,9 @@ export const useSystemSettings = () => {
         }
         if (setting.key === 'allow_registrations') {
           settingsMap.allowRegistration = setting.value === 'true';
+        }
+        if (setting.key === 'allow_bot_download') {
+          settingsMap.allowBotDownload = setting.value === 'true';
         }
       });
 
@@ -76,6 +82,9 @@ export const useSystemSettings = () => {
       if (key === 'allow_registrations') {
         setSettings(prev => ({ ...prev, allowRegistration: value }));
       }
+      if (key === 'allow_bot_download') {
+        setSettings(prev => ({ ...prev, allowBotDownload: value }));
+      }
 
       return { success: true };
     } catch (err) {
@@ -111,6 +120,9 @@ export const useSystemSettings = () => {
   // Allow registration can update directly (no session invalidation needed)
   const setAllowRegistration = (value: boolean) => updateSetting('allow_registrations', value);
 
+  // Allow bot download can update directly
+  const setAllowBotDownload = (value: boolean) => updateSetting('allow_bot_download', value);
+
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -120,6 +132,7 @@ export const useSystemSettings = () => {
     isLoading,
     setMaintenanceMode,
     setAllowRegistration,
+    setAllowBotDownload,
     refetch: fetchSettings,
   };
 };

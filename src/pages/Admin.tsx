@@ -3610,13 +3610,26 @@ const ApiSection = () => {
 // Bot Management Section
 const BotManagementSection = () => {
   const { botFile, botHistory, isLoading, isUploading, isActivating: hookIsActivating, uploadBotFile, deleteBotFile, getDownloadUrl, setActiveVersion, versionExists } = useAdminBot();
+  const { settings: systemSettings, setAllowBotDownload } = useSystemSettings();
   const [version, setVersion] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; path: string; version: string } | null>(null);
   const [activateConfirm, setActivateConfirm] = useState<{ id: string; version: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
+  const [isTogglingDownload, setIsTogglingDownload] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleToggleDownload = async () => {
+    setIsTogglingDownload(true);
+    const result = await setAllowBotDownload(!systemSettings.allowBotDownload);
+    if (result.success) {
+      toast.success(systemSettings.allowBotDownload ? 'Download do bot desabilitado' : 'Download do bot habilitado');
+    } else {
+      toast.error(result.error || 'Erro ao alterar configuração');
+    }
+    setIsTogglingDownload(false);
+  };
 
   const handleDownloadActive = async () => {
     const url = await getDownloadUrl();
@@ -3704,9 +3717,32 @@ const BotManagementSection = () => {
 
   return (
     <motion.div {...fadeIn} className="space-y-6">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-foreground">Gerenciar Bot</h2>
-        <p className="text-sm text-muted-foreground">Upload do executável DLGConnect.exe</p>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Gerenciar Bot</h2>
+          <p className="text-sm text-muted-foreground">Upload do executável DLGConnect.exe</p>
+        </div>
+        
+        {/* Toggle Download Permission */}
+        <div className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg">
+          <div className="flex items-center gap-2">
+            <Download className={`w-4 h-4 ${systemSettings.allowBotDownload ? 'text-success' : 'text-muted-foreground'}`} />
+            <span className="text-sm font-medium text-foreground">Permitir Download</span>
+          </div>
+          <button
+            onClick={handleToggleDownload}
+            disabled={isTogglingDownload}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+              systemSettings.allowBotDownload ? 'bg-success' : 'bg-muted'
+            } ${isTogglingDownload ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                systemSettings.allowBotDownload ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       {/* Current Bot File */}
