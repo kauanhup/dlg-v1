@@ -28,8 +28,8 @@ const Index = () => {
         <Header />
         <main>
           <Hero />
-          <SectionDivider />
           <BotShowcase />
+          <SectionDivider />
           <Features />
           <Pricing />
           <FAQ />
