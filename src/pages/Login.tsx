@@ -225,6 +225,10 @@ const Login = () => {
     return data.role;
   };
 
+  /**
+   * FIX F2: Log login attempts via edge function (service_role), not client RLS
+   * This prevents users from manipulating their own login_history
+   */
   const logLoginAttempt = async (userId: string, status: 'success' | 'failed', failureReason?: string) => {
     try {
       // Get browser/device info
@@ -235,12 +239,15 @@ const Login = () => {
       else if (userAgent.includes('Safari')) device = 'Safari';
       else if (userAgent.includes('Edge')) device = 'Microsoft Edge';
 
-      await supabase.from('login_history').insert({
-        user_id: userId,
-        device,
-        location: 'Brasil',
-        status,
-        failure_reason: failureReason || null,
+      // FIX F2: Call edge function instead of direct insert
+      await supabase.functions.invoke('login', {
+        body: {
+          action: 'log_result',
+          userId,
+          status,
+          failureReason: failureReason || undefined,
+          device,
+        },
       });
     } catch (error) {
       console.error('Error logging login attempt:', error);

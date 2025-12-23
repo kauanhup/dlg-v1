@@ -10,6 +10,12 @@ interface LoginValidationRequest {
   email: string;
   honeypot?: string;
   recaptchaToken?: string;
+  // NEW: Action for logging login result
+  action?: 'validate' | 'log_result';
+  userId?: string;
+  status?: 'success' | 'failed';
+  failureReason?: string;
+  device?: string;
 }
 
 // Rate limit configuration
@@ -28,12 +34,15 @@ const RATE_LIMIT_WINDOW_MINUTES = 15;
  * - Verificar se usuário existe (via profiles)
  * - Verificar se usuário está banido
  * - Rate limiting por usuário
- * - Registrar tentativa de login (login_history)
+ * - Registrar tentativa de login (login_history) - APENAS via action 'log_result'
  * 
  * NÃO FAZ:
  * - signInWithPassword (isso é responsabilidade do frontend)
  * - Criar sessão
  * - Retornar tokens
+ * 
+ * FIX F1: Não registra 'success' prematuramente. Frontend chama log_result após signInWithPassword.
+ * FIX F2: Toda inserção em login_history é feita aqui via service_role, não pelo cliente.
  */
 serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight
@@ -48,14 +57,52 @@ serve(async (req: Request): Promise<Response> => {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     
     const body: LoginValidationRequest = await req.json();
-    const { email, honeypot, recaptchaToken } = body;
+    const { email, honeypot, recaptchaToken, action = 'validate', userId, status, failureReason, device } = body;
 
     // Get client IP from headers
     const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
                   || req.headers.get('x-real-ip') 
                   || 'unknown';
 
-    // Log without sensitive data
+    // ==========================================
+    // ACTION: LOG_RESULT (FIX F1 + F2)
+    // Called by frontend AFTER signInWithPassword to log the final result
+    // Only service_role can insert into login_history
+    // ==========================================
+    if (action === 'log_result') {
+      if (!userId || !status) {
+        return new Response(
+          JSON.stringify({ success: false, error: "userId e status são obrigatórios" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Validate userId exists in profiles (prevent fake logs)
+      const { data: profileCheck } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!profileCheck) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Usuário não encontrado" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Log the login attempt via service_role (FIX F2 - not client RLS)
+      await logLoginAttempt(supabaseAdmin, userId, status as 'success' | 'failed', device || 'Web Browser', failureReason);
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ==========================================
+    // ACTION: VALIDATE (default - original behavior)
+    // ==========================================
 
     // ==========================================
     // IP-BASED RATE LIMITING (PRIMEIRO CHECK)
@@ -258,8 +305,8 @@ serve(async (req: Request): Promise<Response> => {
     if (profileData.banned === true) {
       // Login blocked: user is banned
       
-      // Log failed login attempt
-      await logLoginAttempt(supabaseAdmin, profileData.user_id, 'failed', 'Conta suspensa');
+      // Log failed login attempt (banned user trying to login)
+      await logLoginAttempt(supabaseAdmin, profileData.user_id, 'failed', 'Web Browser', 'Conta suspensa');
       
       return new Response(
         JSON.stringify({ 
@@ -272,19 +319,16 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // ==========================================
-    // LOG SUCCESSFUL LOGIN VALIDATION & RETURN SUCCESS
-    // Frontend will do signInWithPassword after this
+    // VALIDATION PASSED - Return success
+    // FIX F1: DO NOT log success here. Frontend will call log_result after signInWithPassword
     // ==========================================
-    
-    // Log successful validation (login attempt will be confirmed after password check)
-    await logLoginAttempt(supabaseAdmin, profileData.user_id, 'success');
     
     return new Response(
       JSON.stringify({ 
         success: true,
         canLogin: true,
         role: userRole,
-        userId: profileData.user_id // Returned for frontend logging if needed
+        userId: profileData.user_id // Returned so frontend can call log_result
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -297,17 +341,18 @@ serve(async (req: Request): Promise<Response> => {
   }
 });
 
-// Helper function to log login attempts (for known users)
+// Helper function to log login attempts (for known users) - ONLY via service_role
 async function logLoginAttempt(
   supabaseAdmin: any, 
   userId: string, 
   status: 'success' | 'failed', 
+  device: string = 'Web Browser',
   failureReason?: string
 ) {
   try {
     await supabaseAdmin.from('login_history').insert({
       user_id: userId,
-      device: 'Web Browser',
+      device,
       location: 'Brasil',
       status,
       failure_reason: failureReason || null,
