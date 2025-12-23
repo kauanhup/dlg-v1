@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.reconcile-sessions]
 verify_jwt = false
+
+[functions.reconciliation-global]
+verify_jwt = false
