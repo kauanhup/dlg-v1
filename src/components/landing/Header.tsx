@@ -6,10 +6,22 @@ import { toast } from "sonner";
 
 const Header = () => {
   const [filePath, setFilePath] = useState<string | null>(null);
+  const [downloadEnabled, setDownloadEnabled] = useState(true);
 
   useEffect(() => {
-    const fetchBotFile = async () => {
+    const fetchBotConfig = async () => {
       try {
+        // Check if download is enabled
+        const { data: settingData } = await supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'allow_bot_download')
+          .maybeSingle();
+        
+        if (settingData) {
+          setDownloadEnabled(settingData.value === 'true');
+        }
+
         const { data, error } = await supabase
           .from('bot_files')
           .select('file_path')
@@ -28,10 +40,15 @@ const Header = () => {
       }
     };
 
-    fetchBotFile();
+    fetchBotConfig();
   }, []);
 
   const handleDownload = async () => {
+    if (!downloadEnabled) {
+      toast.error("Downloads temporariamente desabilitados");
+      return;
+    }
+    
     if (!filePath) {
       toast.error("Bot não disponível no momento");
       return;
