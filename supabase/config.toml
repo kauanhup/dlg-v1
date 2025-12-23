@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.cleanup-expired-reservations]
 verify_jwt = false
+
+[functions.create-payment-with-fallback]
+verify_jwt = false
