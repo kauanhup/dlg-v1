@@ -3,10 +3,12 @@
 import { useRef, ReactNode } from "react";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 
+// GPU-optimized easing - smooth and performant
+const gpuEase = [0.33, 1, 0.68, 1] as const; // cubic-bezier for 60fps
+
 interface ScrollRevealProps {
   children: ReactNode;
   className?: string;
-  delay?: number;
   duration?: number;
   direction?: "up" | "down" | "left" | "right" | "none";
   distance?: number;
@@ -17,10 +19,9 @@ interface ScrollRevealProps {
 export const ScrollReveal = ({
   children,
   className = "",
-  delay = 0,
-  duration = 0.6,
+  duration = 0.3,
   direction = "up",
-  distance = 40,
+  distance = 24,
   once = false,
   threshold = 0.2,
 }: ScrollRevealProps) => {
@@ -28,44 +29,31 @@ export const ScrollReveal = ({
   const isInView = useInView(ref, { 
     once, 
     amount: threshold,
-    margin: "-50px 0px -50px 0px"
+    margin: "-40px 0px -40px 0px"
   });
 
-  const getInitialPosition = () => {
+  const getTransform = () => {
     switch (direction) {
-      case "up": return { y: distance, x: 0 };
-      case "down": return { y: -distance, x: 0 };
-      case "left": return { x: distance, y: 0 };
-      case "right": return { x: -distance, y: 0 };
-      case "none": return { x: 0, y: 0 };
+      case "up": return { y: distance };
+      case "down": return { y: -distance };
+      case "left": return { x: distance };
+      case "right": return { x: -distance };
+      case "none": return {};
     }
   };
 
-  const initial = getInitialPosition();
+  const initial = getTransform();
 
   return (
     <motion.div
       ref={ref}
       className={className}
-      initial={{ 
-        opacity: 0, 
-        ...initial,
-        filter: "blur(8px)"
-      }}
-      animate={isInView ? { 
-        opacity: 1, 
-        x: 0, 
-        y: 0,
-        filter: "blur(0px)"
-      } : { 
-        opacity: 0, 
-        ...initial,
-        filter: "blur(8px)"
-      }}
+      style={{ willChange: "transform, opacity" }}
+      initial={{ opacity: 0, ...initial }}
+      animate={isInView ? { opacity: 1, x: 0, y: 0 } : { opacity: 0, ...initial }}
       transition={{
         duration,
-        delay,
-        ease: [0.25, 0.1, 0.25, 1], // Smooth cubic bezier
+        ease: gpuEase,
       }}
     >
       {children}
@@ -82,7 +70,7 @@ interface ParallaxScrollProps {
 export const ParallaxScroll = ({
   children,
   className = "",
-  speed = 0.5,
+  speed = 0.3,
 }: ParallaxScrollProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
@@ -90,10 +78,14 @@ export const ParallaxScroll = ({
     offset: ["start end", "end start"],
   });
 
-  const y = useTransform(scrollYProgress, [0, 1], [100 * speed, -100 * speed]);
+  const y = useTransform(scrollYProgress, [0, 1], [60 * speed, -60 * speed]);
 
   return (
-    <motion.div ref={ref} style={{ y }} className={className}>
+    <motion.div 
+      ref={ref} 
+      style={{ y, willChange: "transform" }} 
+      className={className}
+    >
       {children}
     </motion.div>
   );
@@ -102,31 +94,29 @@ export const ParallaxScroll = ({
 interface FadeInViewProps {
   children: ReactNode;
   className?: string;
-  delay?: number;
 }
 
 export const FadeInView = ({
   children,
   className = "",
-  delay = 0,
 }: FadeInViewProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { 
     once: false, 
     amount: 0.3,
-    margin: "-100px 0px -100px 0px"
+    margin: "-60px 0px -60px 0px"
   });
 
   return (
     <motion.div
       ref={ref}
       className={className}
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
+      style={{ willChange: "transform, opacity" }}
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.97 }}
       transition={{
-        duration: 0.5,
-        delay,
-        ease: [0.25, 0.1, 0.25, 1],
+        duration: 0.28,
+        ease: gpuEase,
       }}
     >
       {children}
@@ -143,7 +133,7 @@ interface StaggerContainerProps {
 export const StaggerContainer = ({
   children,
   className = "",
-  staggerDelay = 0.1,
+  staggerDelay = 0.05,
 }: StaggerContainerProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: false, amount: 0.2 });
@@ -178,19 +168,15 @@ export const StaggerItem = ({
   return (
     <motion.div
       className={className}
+      style={{ willChange: "transform, opacity" }}
       variants={{
-        hidden: { 
-          opacity: 0, 
-          y: 30,
-          filter: "blur(6px)"
-        },
+        hidden: { opacity: 0, y: 16 },
         visible: { 
           opacity: 1, 
           y: 0,
-          filter: "blur(0px)",
           transition: {
-            duration: 0.5,
-            ease: [0.25, 0.1, 0.25, 1],
+            duration: 0.25,
+            ease: gpuEase,
           },
         },
       }}
