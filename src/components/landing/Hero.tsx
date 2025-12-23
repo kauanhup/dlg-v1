@@ -38,7 +38,7 @@ const Hero = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            Sem gambiarra. Sem scripts quebrados. Sem risco desnecessário.
+            Gerencie múltiplas contas, extraia e transfira membros com limites inteligentes, delays seguros e controle total do processo.
           </motion.p>
 
           {/* CTA Buttons */}
