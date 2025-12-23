@@ -2,16 +2,16 @@ import { motion } from "framer-motion";
 import { Users, Zap, Shield, Clock, Send, UserPlus } from "lucide-react";
 
 const floatingFeatures = [
-  { icon: Clock, label: "Delay Inteligente", delay: 0, x: 12, y: 18 },
-  { icon: Users, label: "Multi-Contas", delay: 0.2, x: 85, y: 12 },
-  { icon: Shield, label: "Anti-Ban", delay: 0.4, x: 88, y: 65 },
-  { icon: Send, label: "Extração", delay: 0.6, x: 8, y: 60 },
-  { icon: UserPlus, label: "Adicionar", delay: 0.8, x: 50, y: 85 },
+  { icon: Clock, label: "Delay Inteligente", delay: 0, x: 15, y: 15 },
+  { icon: Users, label: "Multi-Contas", delay: 0.2, x: 80, y: 10 },
+  { icon: Shield, label: "Anti-Ban", delay: 0.4, x: 82, y: 70 },
+  { icon: Send, label: "Extração", delay: 0.6, x: 12, y: 65 },
+  { icon: UserPlus, label: "Adicionar", delay: 0.8, x: 50, y: 88 },
 ];
 
 export const HeroVisual = () => {
   return (
-    <div className="relative w-full h-[280px] sm:h-[320px] lg:h-[380px] flex items-center justify-center">
+    <div className="relative w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto h-[260px] sm:h-[300px] lg:h-[340px] flex items-center justify-center overflow-hidden">
       {/* Central glowing orb */}
       <motion.div
         className="relative w-28 h-28 sm:w-36 sm:h-36 lg:w-44 lg:h-44"
