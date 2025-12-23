@@ -28,17 +28,17 @@ const RevealSection = ({
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { 
     once: false, 
-    amount: 0.25,
-    margin: "-80px 0px -80px 0px"
+    amount: 0.15,
+    margin: "-50px 0px -50px 0px"
   });
 
   return (
     <motion.div
       ref={ref}
       className={className}
-      initial={{ opacity: 0, y: 50, filter: "blur(12px)" }}
-      animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 50, filter: "blur(12px)" }}
-      transition={{ duration: 0.8, delay, ease: smoothEase }}
+      initial={{ opacity: 0, y: 40, filter: "blur(10px)" }}
+      animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 40, filter: "blur(10px)" }}
+      transition={{ duration: 0.7, delay, ease: smoothEase }}
     >
       {children}
     </motion.div>
@@ -47,12 +47,12 @@ const RevealSection = ({
 
 const BotShowcase = () => {
   return (
-    <section className="relative overflow-hidden bg-background py-20 lg:py-32">
+    <section className="relative overflow-hidden bg-background py-12 sm:py-20 lg:py-32">
       {/* Section 1: Dashboard */}
-      <div className="container mx-auto px-4 mb-32">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      <div className="container mx-auto px-4 mb-16 sm:mb-24 lg:mb-32">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
           {/* Left - Preview */}
-          <RevealSection className="relative">
+          <RevealSection className="relative order-2 lg:order-1">
             <motion.div 
               className="absolute -inset-8 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-3xl blur-3xl"
               animate={pulseGlow}
@@ -68,17 +68,17 @@ const BotShowcase = () => {
           </RevealSection>
 
           {/* Right - Text */}
-          <RevealSection delay={0.1}>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight">
+          <RevealSection delay={0.1} className="order-1 lg:order-2 text-center lg:text-left">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-display font-bold text-foreground mb-4 sm:mb-6 leading-tight">
               Controle total em{" "}
               <span className="text-primary">tempo real</span>
             </h2>
-            <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg">
+            <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 max-w-lg mx-auto lg:mx-0">
               Acompanhe o status de cada conta, monitore a saúde do sistema e gerencie limites diários com uma interface profissional.
             </p>
 
             {/* Animated Stats */}
-            <div className="flex flex-wrap gap-6">
+            <div className="flex flex-wrap justify-center lg:justify-start gap-4 sm:gap-6">
               {[
                 { value: "12", label: "Contas Ativas", color: "text-green-500" },
                 { value: "847", label: "Membros/dia", color: "text-primary" },
@@ -93,10 +93,10 @@ const BotShowcase = () => {
                   transition={{ delay: index * 0.1, duration: 0.5, ease: smoothEase }}
                   whileHover={{ scale: 1.05, transition: { duration: 0.25 } }}
                 >
-                  <p className={`text-3xl sm:text-4xl font-bold ${stat.color} transition-all duration-300 group-hover:drop-shadow-lg`}>
+                  <p className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${stat.color} transition-all duration-300 group-hover:drop-shadow-lg`}>
                     {stat.value}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1 transition-colors duration-300 group-hover:text-foreground">{stat.label}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 transition-colors duration-300 group-hover:text-foreground">{stat.label}</p>
                 </motion.div>
               ))}
             </div>
@@ -105,39 +105,39 @@ const BotShowcase = () => {
       </div>
 
       {/* Section 2: Actions - Inverted */}
-      <div className="container mx-auto px-4 mb-32">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+      <div className="container mx-auto px-4 mb-16 sm:mb-24 lg:mb-32">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-20 items-center">
           {/* Left - Text */}
-          <RevealSection className="order-2 lg:order-1">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight">
+          <RevealSection className="text-center lg:text-left">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-display font-bold text-foreground mb-4 sm:mb-6 leading-tight">
               Extraia e adicione membros{" "}
               <span className="text-green-500">automaticamente</span>
             </h2>
-            <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg">
+            <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 max-w-lg mx-auto lg:mx-0">
               Configure suas automações com delays inteligentes e limites seguros. Acompanhe o progresso em tempo real.
             </p>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4 max-w-md mx-auto lg:mx-0">
               {[
                 { icon: Users, label: "Extração de Membros", value: "De qualquer grupo público" },
                 { icon: Clock, label: "Delays Seguros", value: "Evita flood e ban" },
               ].map((stat) => (
                 <motion.div 
                   key={stat.label} 
-                  className="flex items-start gap-3 group cursor-default"
+                  className="flex items-start gap-2 sm:gap-3 group cursor-default p-2 sm:p-0"
                   whileHover={{ x: 4, transition: { duration: 0.25, ease: smoothEase } }}
                 >
                   <motion.div 
-                    className="h-10 w-10 bg-green-500/10 border border-green-500/20 flex items-center justify-center rounded-lg flex-shrink-0 transition-all duration-300 group-hover:bg-green-500/20 group-hover:border-green-500/40 group-hover:shadow-lg group-hover:shadow-green-500/10"
+                    className="h-8 w-8 sm:h-10 sm:w-10 bg-green-500/10 border border-green-500/20 flex items-center justify-center rounded-lg flex-shrink-0 transition-all duration-300 group-hover:bg-green-500/20 group-hover:border-green-500/40 group-hover:shadow-lg group-hover:shadow-green-500/10"
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     transition={{ duration: 0.25 }}
                   >
-                    <stat.icon className="h-5 w-5 text-green-500" />
+                    <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                   </motion.div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground transition-colors duration-300">{stat.label}</p>
-                    <p className="text-xs text-muted-foreground transition-colors duration-300 group-hover:text-muted-foreground/80">{stat.value}</p>
+                  <div className="text-left">
+                    <p className="text-xs sm:text-sm font-medium text-foreground transition-colors duration-300">{stat.label}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground transition-colors duration-300 group-hover:text-muted-foreground/80">{stat.value}</p>
                   </div>
                 </motion.div>
               ))}
@@ -145,7 +145,7 @@ const BotShowcase = () => {
           </RevealSection>
 
           {/* Right - Preview */}
-          <RevealSection className="order-1 lg:order-2 relative" delay={0.1}>
+          <RevealSection className="relative" delay={0.1}>
             <motion.div 
               className="absolute -inset-4 bg-gradient-to-l from-green-500/20 via-green-500/5 to-transparent rounded-3xl blur-2xl"
               animate={pulseGlow}
@@ -164,9 +164,9 @@ const BotShowcase = () => {
 
       {/* Section 3: Accounts */}
       <div className="container mx-auto px-4">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-20 items-center">
           {/* Left - Preview */}
-          <RevealSection className="relative">
+          <RevealSection className="relative order-2 lg:order-1">
             <motion.div 
               className="absolute -inset-4 bg-gradient-to-r from-yellow-500/20 via-yellow-500/5 to-transparent rounded-3xl blur-2xl"
               animate={pulseGlow}
@@ -182,24 +182,24 @@ const BotShowcase = () => {
           </RevealSection>
 
           {/* Right - Text */}
-          <RevealSection delay={0.1}>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight">
+          <RevealSection delay={0.1} className="order-1 lg:order-2 text-center lg:text-left">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-display font-bold text-foreground mb-4 sm:mb-6 leading-tight">
               Múltiplas contas em{" "}
               <span className="text-yellow-500">um só lugar</span>
             </h2>
-            <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg">
+            <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 max-w-lg mx-auto lg:mx-0">
               Conecte várias contas do Telegram, monitore status e gerencie tudo de forma centralizada. Suporte para sessions e códigos de verificação.
             </p>
 
             {/* Animated Feature Tags */}
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap justify-center lg:justify-start gap-2 sm:gap-3">
               {[
                 { label: "Sessions .session", delay: 0 },
                 { label: "Código 2FA", delay: 0.1 },
               ].map((tag, index) => (
                 <motion.span 
                   key={tag.label}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-sm font-medium cursor-default"
+                  className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs sm:text-sm font-medium cursor-default"
                   initial={{ opacity: 0, scale: 0.9 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: false, amount: 0.5 }}
@@ -212,7 +212,7 @@ const BotShowcase = () => {
                   }}
                 >
                   <motion.span
-                    className="w-2 h-2 rounded-full bg-yellow-500"
+                    className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-yellow-500"
                     animate={{ 
                       scale: [1, 1.3, 1],
                       opacity: [1, 0.7, 1]
