@@ -92,6 +92,7 @@ const BotShowcase = () => {
             <div className="grid grid-cols-2 gap-4">
               {[
                 { icon: Users, label: "Extração de Membros", value: "De qualquer grupo público" },
+                { icon: Clock, label: "Delays Seguros", value: "Evita flood e ban" },
               ].map((stat) => (
                 <div key={stat.label} className="flex items-start gap-3">
                   <div className="h-10 w-10 bg-green-500/10 border border-green-500/20 flex items-center justify-center rounded-lg flex-shrink-0">
