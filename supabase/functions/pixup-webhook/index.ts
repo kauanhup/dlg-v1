@@ -164,14 +164,26 @@ Deno.serve(async (req) => {
                       req.headers.get('x-pixup-signature') ||
                       req.headers.get('x-signature')
 
-    // Verify signature if both signature and secret are present
-    if (settings?.client_secret && signature) {
+    // Verify signature if secret is configured
+    if (settings?.client_secret) {
+      if (!signature) {
+        console.error('SECURITY BLOCK: Missing webhook signature - request rejected')
+        return new Response(
+          JSON.stringify({ success: false, error: 'Missing signature' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        )
+      }
+      
       const isValid = await verifyWebhookSignature(rawBody, signature, settings.client_secret)
       if (!isValid) {
-        console.warn('SECURITY WARNING: Invalid webhook signature')
-      } else {
-        console.log('Webhook signature verified successfully')
+        console.error('SECURITY BLOCK: Invalid webhook signature - request rejected')
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid signature' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        )
       }
+      
+      console.log('Webhook signature verified successfully')
     }
 
     if (!externalId) {
