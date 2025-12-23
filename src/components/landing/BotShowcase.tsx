@@ -72,30 +72,14 @@ const BotShowcase = () => {
       {/* Section 2: Actions - Inverted */}
       <div className="container mx-auto px-4 mb-32">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          {/* Left - Preview */}
+          {/* Left - Text */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="relative"
+            className="order-2 lg:order-1"
           >
-            <div className="absolute -inset-4 bg-gradient-to-l from-green-500/20 via-green-500/5 to-transparent rounded-3xl blur-2xl opacity-60" />
-            <div className="relative">
-              <BotActionsPreview />
-            </div>
-          </motion.div>
-
-          {/* Right - Text */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            viewport={{ once: true }}
-          >
-            <span className="inline-block px-3 py-1 mb-4 text-xs font-medium tracking-wide uppercase bg-green-500/10 text-green-500 rounded-full border border-green-500/20">
-              Central de Ações
-            </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight">
               Extraia e adicione membros{" "}
               <span className="text-green-500">automaticamente</span>
@@ -107,8 +91,7 @@ const BotShowcase = () => {
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4">
               {[
-                { icon: Users, label: "Extração de Membros", value: "De qualquer grupo" },
-                { icon: Clock, label: "Delays Seguros", value: "Evita flood e ban" },
+                { icon: Users, label: "Extração de Membros", value: "De qualquer grupo público" },
               ].map((stat) => (
                 <div key={stat.label} className="flex items-start gap-3">
                   <div className="h-10 w-10 bg-green-500/10 border border-green-500/20 flex items-center justify-center rounded-lg flex-shrink-0">
@@ -120,6 +103,20 @@ const BotShowcase = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          </motion.div>
+
+          {/* Right - Preview */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: true }}
+            className="order-1 lg:order-2 relative"
+          >
+            <div className="absolute -inset-4 bg-gradient-to-l from-green-500/20 via-green-500/5 to-transparent rounded-3xl blur-2xl opacity-60" />
+            <div className="relative">
+              <BotActionsPreview />
             </div>
           </motion.div>
         </div>
