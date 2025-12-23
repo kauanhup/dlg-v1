@@ -24,26 +24,31 @@ const BotShowcase = () => {
               Acompanhe o status de cada conta, monitore a saúde do sistema e gerencie limites diários com uma interface profissional.
             </p>
 
-            {/* Features Grid */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Animated Stats */}
+            <div className="flex flex-wrap gap-6">
               {[
-                { icon: Shield, label: "Monitoramento 24/7", desc: "Status em tempo real" },
-                { icon: Zap, label: "Proteção Anti-Ban", desc: "Limites inteligentes" },
-                { icon: Users, label: "Multi-Contas", desc: "Gerencie todas juntas" },
-                { icon: Clock, label: "Delays Automáticos", desc: "Segurança garantida" },
-              ].map((stat) => (
-                <motion.div 
-                  key={stat.label} 
-                  className="flex items-start gap-3 p-3 rounded-xl bg-[hsl(220,15%,8%)]/50 border border-[hsl(220,15%,15%)] hover:border-primary/30 transition-colors"
-                  whileHover={{ y: -2 }}
+                { value: "12", label: "Contas Ativas", color: "text-green-500" },
+                { value: "847", label: "Membros/dia", color: "text-primary" },
+                { value: "99.9%", label: "Uptime", color: "text-yellow-500" },
+              ].map((stat, index) => (
+                <motion.div
+                  key={stat.label}
+                  className="text-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1, duration: 0.5 }}
+                  viewport={{ once: true }}
                 >
-                  <div className="h-10 w-10 bg-primary/10 border border-primary/20 flex items-center justify-center rounded-lg flex-shrink-0">
-                    <stat.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{stat.label}</p>
-                    <p className="text-xs text-muted-foreground">{stat.desc}</p>
-                  </div>
+                  <motion.p 
+                    className={`text-3xl sm:text-4xl font-bold ${stat.color}`}
+                    initial={{ scale: 0.5 }}
+                    whileInView={{ scale: 1 }}
+                    transition={{ delay: index * 0.1 + 0.2, duration: 0.4, type: "spring" }}
+                    viewport={{ once: true }}
+                  >
+                    {stat.value}
+                  </motion.p>
+                  <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
                 </motion.div>
               ))}
             </div>
