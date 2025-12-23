@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useAdminSessions } from "@/hooks/useAdminSessions";
 import { SessionsSection } from "@/components/admin/sessions";
+import { SystemDebugPanel } from "@/components/admin/debug";
 import { AdminDashboardSection } from "@/components/admin/dashboard";
 import { useAdminOrders } from "@/hooks/useAdminOrders";
 import { useAdminSubscriptions } from "@/hooks/useAdminSubscriptions";
@@ -70,6 +71,7 @@ import {
   Wallet,
   ChevronDown,
   ImageIcon,
+  Bug,
   FileText,
   Activity,
   Sliders
@@ -4056,7 +4058,7 @@ const Admin = () => {
     initials: (user?.user_metadata?.name || "AD").slice(0, 2).toUpperCase(),
   };
 
-  const sidebarTabs = ["overview", "dashboard", "users", "sessions", "bot", "api"];
+  const sidebarTabs = ["overview", "dashboard", "users", "sessions", "bot", "api", "debug"];
 
   const profileNavItems = [
     { label: "Dashboard", icon: <Activity className="h-full w-full" />, onClick: () => setActiveTab("overview") },
@@ -4065,6 +4067,7 @@ const Admin = () => {
     { label: "Sessions", icon: <Globe className="h-full w-full" />, onClick: () => setActiveTab("sessions") },
     { label: "Bot", icon: <HardDrive className="h-full w-full" />, onClick: () => setActiveTab("bot") },
     { label: "API", icon: <Zap className="h-full w-full" />, onClick: () => setActiveTab("api") },
+    { label: "Debug", icon: <Bug className="h-full w-full" />, onClick: () => setActiveTab("debug") },
   ];
 
   const toggleItems = [
@@ -4108,6 +4111,8 @@ const Admin = () => {
         return <BotManagementSection />;
       case "api":
         return <ApiSection />;
+      case "debug":
+        return <SystemDebugPanel />;
       default:
         return <AdminDashboardSection />;
     }
