@@ -96,16 +96,20 @@ const Features = () => {
               key={index}
               variants={cardVariants}
               whileHover={{ 
-                y: -4,
+                y: -6,
                 transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }
               }}
-              className="p-6 rounded-xl border border-border bg-card hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-colors"
+              className="group p-6 rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 cursor-default"
             >
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                <feature.icon className="w-5 h-5 text-primary" />
-              </div>
-              <h3 className="font-display font-semibold mb-2 text-foreground">{feature.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+              <motion.div 
+                className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 transition-all duration-300 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary/20"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ duration: 0.2 }}
+              >
+                <feature.icon className="w-5 h-5 text-primary transition-transform duration-300 group-hover:scale-110" />
+              </motion.div>
+              <h3 className="font-display font-semibold mb-2 text-foreground transition-colors duration-300 group-hover:text-primary">{feature.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed transition-colors duration-300 group-hover:text-muted-foreground/80">{feature.description}</p>
             </motion.div>
           ))}
         </motion.div>

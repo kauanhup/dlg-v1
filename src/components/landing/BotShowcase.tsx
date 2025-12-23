@@ -1,6 +1,50 @@
 import { BotDashboardPreview, BotActionsPreview, BotAccountsPreview } from "./BotPreviews";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { Shield, Zap, Users, Clock } from "lucide-react";
+
+const fadeInUp: Variants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" }
+  }
+};
+
+const fadeInLeft: Variants = {
+  hidden: { opacity: 0, x: -40 },
+  visible: { 
+    opacity: 1, 
+    x: 0,
+    transition: { duration: 0.7, ease: "easeOut" }
+  }
+};
+
+const fadeInRight: Variants = {
+  hidden: { opacity: 0, x: 40 },
+  visible: { 
+    opacity: 1, 
+    x: 0,
+    transition: { duration: 0.7, ease: "easeOut" }
+  }
+};
+
+const staggerContainer: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.2 }
+  }
+};
+
+const floatAnimation = {
+  y: [0, -8, 0],
+};
+
+const pulseGlow = {
+  scale: [1, 1.02, 1],
+  opacity: [0.6, 0.8, 0.6],
+};
 
 const BotShowcase = () => {
   return (
@@ -10,35 +54,52 @@ const BotShowcase = () => {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left - Preview */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
+            variants={fadeInLeft}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
             className="relative"
           >
-            <div className="absolute -inset-8 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-3xl blur-3xl opacity-60" />
-            <div className="relative">
+            <motion.div 
+              className="absolute -inset-8 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-3xl blur-3xl"
+              animate={pulseGlow}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div 
+              className="relative"
+              animate={floatAnimation}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            >
               <BotDashboardPreview />
-            </div>
+            </motion.div>
           </motion.div>
 
           {/* Right - Text */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            viewport={{ once: true }}
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
           >
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight">
+            <motion.h2 
+              variants={fadeInUp}
+              className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight"
+            >
               Controle total em{" "}
               <span className="text-primary">tempo real</span>
-            </h2>
-            <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg">
+            </motion.h2>
+            <motion.p 
+              variants={fadeInUp}
+              className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg"
+            >
               Acompanhe o status de cada conta, monitore a saúde do sistema e gerencie limites diários com uma interface profissional.
-            </p>
+            </motion.p>
 
             {/* Animated Stats */}
-            <div className="flex flex-wrap gap-6">
+            <motion.div 
+              className="flex flex-wrap gap-6"
+              variants={staggerContainer}
+            >
               {[
                 { value: "12", label: "Contas Ativas", color: "text-green-500" },
                 { value: "847", label: "Membros/dia", color: "text-primary" },
@@ -46,25 +107,23 @@ const BotShowcase = () => {
               ].map((stat, index) => (
                 <motion.div
                   key={stat.label}
-                  className="text-center"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.5 }}
-                  viewport={{ once: true }}
+                  className="text-center group cursor-default"
+                  variants={fadeInUp}
+                  whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
                 >
                   <motion.p 
-                    className={`text-3xl sm:text-4xl font-bold ${stat.color}`}
-                    initial={{ scale: 0.5 }}
-                    whileInView={{ scale: 1 }}
-                    transition={{ delay: index * 0.1 + 0.2, duration: 0.4, type: "spring" }}
+                    className={`text-3xl sm:text-4xl font-bold ${stat.color} transition-all duration-300 group-hover:drop-shadow-lg`}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    whileInView={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: index * 0.1 + 0.3, duration: 0.5, type: "spring", stiffness: 200 }}
                     viewport={{ once: true }}
                   >
                     {stat.value}
                   </motion.p>
-                  <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+                  <p className="text-xs text-muted-foreground mt-1 transition-colors duration-300 group-hover:text-foreground">{stat.label}</p>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </div>
@@ -74,51 +133,77 @@ const BotShowcase = () => {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Left - Text */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
             className="order-2 lg:order-1"
           >
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight">
+            <motion.h2 
+              variants={fadeInUp}
+              className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight"
+            >
               Extraia e adicione membros{" "}
               <span className="text-green-500">automaticamente</span>
-            </h2>
-            <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg">
+            </motion.h2>
+            <motion.p 
+              variants={fadeInUp}
+              className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg"
+            >
               Configure suas automações com delays inteligentes e limites seguros. Acompanhe o progresso em tempo real.
-            </p>
+            </motion.p>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-4">
+            <motion.div 
+              className="grid grid-cols-2 gap-4"
+              variants={staggerContainer}
+            >
               {[
                 { icon: Users, label: "Extração de Membros", value: "De qualquer grupo público" },
                 { icon: Clock, label: "Delays Seguros", value: "Evita flood e ban" },
-              ].map((stat) => (
-                <div key={stat.label} className="flex items-start gap-3">
-                  <div className="h-10 w-10 bg-green-500/10 border border-green-500/20 flex items-center justify-center rounded-lg flex-shrink-0">
+              ].map((stat, index) => (
+                <motion.div 
+                  key={stat.label} 
+                  className="flex items-start gap-3 group cursor-default"
+                  variants={fadeInUp}
+                  whileHover={{ x: 4, transition: { duration: 0.2 } }}
+                >
+                  <motion.div 
+                    className="h-10 w-10 bg-green-500/10 border border-green-500/20 flex items-center justify-center rounded-lg flex-shrink-0 transition-all duration-300 group-hover:bg-green-500/20 group-hover:border-green-500/40 group-hover:shadow-lg group-hover:shadow-green-500/10"
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ duration: 0.2 }}
+                  >
                     <stat.icon className="h-5 w-5 text-green-500" />
-                  </div>
+                  </motion.div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">{stat.label}</p>
-                    <p className="text-xs text-muted-foreground">{stat.value}</p>
+                    <p className="text-sm font-medium text-foreground transition-colors duration-300">{stat.label}</p>
+                    <p className="text-xs text-muted-foreground transition-colors duration-300 group-hover:text-muted-foreground/80">{stat.value}</p>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </motion.div>
 
           {/* Right - Preview */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            viewport={{ once: true }}
+            variants={fadeInRight}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
             className="order-1 lg:order-2 relative"
           >
-            <div className="absolute -inset-4 bg-gradient-to-l from-green-500/20 via-green-500/5 to-transparent rounded-3xl blur-2xl opacity-60" />
-            <div className="relative">
+            <motion.div 
+              className="absolute -inset-4 bg-gradient-to-l from-green-500/20 via-green-500/5 to-transparent rounded-3xl blur-2xl"
+              animate={pulseGlow}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div 
+              className="relative"
+              animate={floatAnimation}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            >
               <BotActionsPreview />
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </div>
@@ -128,54 +213,83 @@ const BotShowcase = () => {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Left - Text */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
             className="order-2 lg:order-1"
           >
-            <span className="inline-block px-3 py-1 mb-4 text-xs font-medium tracking-wide uppercase bg-yellow-500/10 text-yellow-500 rounded-full border border-yellow-500/20">
+            <motion.span 
+              variants={fadeInUp}
+              className="inline-block px-3 py-1 mb-4 text-xs font-medium tracking-wide uppercase bg-yellow-500/10 text-yellow-500 rounded-full border border-yellow-500/20"
+            >
               Gerenciamento
-            </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight">
+            </motion.span>
+            <motion.h2 
+              variants={fadeInUp}
+              className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 leading-tight"
+            >
               Múltiplas contas em{" "}
               <span className="text-yellow-500">um só lugar</span>
-            </h2>
-            <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg">
+            </motion.h2>
+            <motion.p 
+              variants={fadeInUp}
+              className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg"
+            >
               Conecte várias contas do Telegram, monitore status e gerencie tudo de forma centralizada. Suporte para sessions e códigos de verificação.
-            </p>
+            </motion.p>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-4">
+            <motion.div 
+              className="grid grid-cols-2 gap-4"
+              variants={staggerContainer}
+            >
               {[
                 { icon: Users, label: "Multi-Contas", value: "Sem limite de contas" },
                 { icon: Shield, label: "Status em Tempo Real", value: "Ativo, Flood, Banido" },
-              ].map((stat) => (
-                <div key={stat.label} className="flex items-start gap-3">
-                  <div className="h-10 w-10 bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center rounded-lg flex-shrink-0">
+              ].map((stat, index) => (
+                <motion.div 
+                  key={stat.label} 
+                  className="flex items-start gap-3 group cursor-default"
+                  variants={fadeInUp}
+                  whileHover={{ x: 4, transition: { duration: 0.2 } }}
+                >
+                  <motion.div 
+                    className="h-10 w-10 bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center rounded-lg flex-shrink-0 transition-all duration-300 group-hover:bg-yellow-500/20 group-hover:border-yellow-500/40 group-hover:shadow-lg group-hover:shadow-yellow-500/10"
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ duration: 0.2 }}
+                  >
                     <stat.icon className="h-5 w-5 text-yellow-500" />
-                  </div>
+                  </motion.div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">{stat.label}</p>
-                    <p className="text-xs text-muted-foreground">{stat.value}</p>
+                    <p className="text-sm font-medium text-foreground transition-colors duration-300">{stat.label}</p>
+                    <p className="text-xs text-muted-foreground transition-colors duration-300 group-hover:text-muted-foreground/80">{stat.value}</p>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </motion.div>
 
           {/* Right - Preview */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            viewport={{ once: true }}
+            variants={fadeInRight}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
             className="order-1 lg:order-2 relative"
           >
-            <div className="absolute -inset-4 bg-gradient-to-r from-yellow-500/20 via-yellow-500/5 to-transparent rounded-3xl blur-2xl opacity-60" />
-            <div className="relative">
+            <motion.div 
+              className="absolute -inset-4 bg-gradient-to-r from-yellow-500/20 via-yellow-500/5 to-transparent rounded-3xl blur-2xl"
+              animate={pulseGlow}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div 
+              className="relative"
+              animate={floatAnimation}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            >
               <BotAccountsPreview />
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </div>

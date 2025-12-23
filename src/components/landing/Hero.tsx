@@ -54,15 +54,32 @@ const Hero = () => {
               transition={{ duration: 0.6, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
               <Link to="/comprar" className="w-full sm:w-auto">
-                <Button size="lg" className="w-full sm:w-auto sm:min-w-[180px] h-12 bg-primary hover:bg-primary/90 text-primary-foreground">
-                  Começar Agora
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
+                <motion.div
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Button size="lg" className="w-full sm:w-auto sm:min-w-[180px] h-12 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300">
+                    Começar Agora
+                    <motion.span
+                      animate={{ x: [0, 4, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </motion.span>
+                  </Button>
+                </motion.div>
               </Link>
               <Link to="/login" className="w-full sm:w-auto">
-                <Button variant="outline" size="lg" className="w-full sm:w-auto sm:min-w-[180px] h-12">
-                  Já tenho licença
-                </Button>
+                <motion.div
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Button variant="outline" size="lg" className="w-full sm:w-auto sm:min-w-[180px] h-12 hover:shadow-lg transition-all duration-300">
+                    Já tenho licença
+                  </Button>
+                </motion.div>
               </Link>
             </motion.div>
           </div>
