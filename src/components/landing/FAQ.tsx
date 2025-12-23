@@ -4,7 +4,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
 
 const faqs = [
   {
@@ -57,58 +58,57 @@ const faqs = [
 const gpuEase = [0.33, 1, 0.68, 1] as const;
 
 const FAQ = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { 
+    once: false, 
+    amount: 0.15,
+    margin: "-60px 0px -60px 0px"
+  });
+
   return (
-    <section id="faq" className="py-24 sm:py-32 lg:py-40 bg-card/30">
+    <section id="faq" className="py-20 sm:py-28 bg-card" ref={ref}>
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-2xl mx-auto">
           <motion.div 
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false, amount: 0.3 }}
-            transition={{ duration: 0.6, ease: gpuEase }}
+            className="text-center mb-12"
+            style={{ willChange: "transform, opacity" }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            transition={{ duration: 0.28, ease: gpuEase }}
           >
-            <motion.span 
-              className="inline-block text-primary text-sm font-semibold tracking-wider uppercase mb-4"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: false }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              FAQ
-            </motion.span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold">
-              Perguntas <span className="text-primary">frequentes</span>
+            <p className="text-primary text-sm font-medium mb-3">FAQ</p>
+            <h2 className="text-3xl sm:text-4xl font-display font-bold">
+              Perguntas frequentes
             </h2>
           </motion.div>
 
           <motion.div
+            style={{ willChange: "opacity" }}
             initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: false, amount: 0.2 }}
-            transition={{ duration: 0.5, ease: gpuEase }}
+            animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: 0.25, ease: gpuEase }}
           >
-            <Accordion type="single" collapsible className="space-y-4">
+            <Accordion type="single" collapsible className="space-y-2">
               {faqs.map((faq, index) => (
                 <motion.div 
                   key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: false, amount: 0.3 }}
+                  style={{ willChange: "transform, opacity" }}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
                   transition={{ 
-                    duration: 0.4, 
-                    delay: index * 0.03, 
+                    duration: 0.25, 
+                    delay: index * 0.025, 
                     ease: gpuEase 
                   }}
                 >
                   <AccordionItem 
                     value={`item-${index}`}
-                    className="border border-border/50 rounded-xl px-6 bg-card/50 backdrop-blur-sm data-[state=open]:border-primary/30 data-[state=open]:bg-card transition-all duration-300"
+                    className="border border-border rounded-lg px-4 bg-background data-[state=open]:border-primary/30 transition-colors duration-200"
                   >
-                    <AccordionTrigger className="text-left hover:no-underline py-5 text-base font-medium text-foreground">
+                    <AccordionTrigger className="text-left hover:no-underline py-4 text-sm font-medium">
                       {faq.question}
                     </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground text-base pb-5 leading-relaxed">
+                    <AccordionContent className="text-muted-foreground text-sm pb-4">
                       {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
