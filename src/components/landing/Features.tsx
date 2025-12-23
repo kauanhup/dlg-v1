@@ -15,7 +15,7 @@ const Features = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          <p className="text-primary text-sm font-medium mb-3">VEJA EM AÇÃO</p>
+          
           <h2 className="text-3xl sm:text-4xl font-display font-bold mb-4">
             Conheça o Bot
           </h2>
