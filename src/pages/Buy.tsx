@@ -1,5 +1,5 @@
 import { Check, Loader2, Gift, ArrowUpCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Header, Footer } from "@/components/landing";
 import { useEffect, useState, useRef } from "react";
@@ -34,7 +34,7 @@ const Buy = () => {
   const [userId, setUserId] = useState<string | undefined>(undefined);
   const [ready, setReady] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
+  const navigate = useNavigate();
   const { activeSubscription, calculateFinalPrice, isValidUpgrade } = useUpgradeCredit(userId);
 
   useEffect(() => {
@@ -363,9 +363,12 @@ const Buy = () => {
 
           {/* Back link */}
           <div className="mt-10 text-center">
-            <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-              ← Voltar para a página inicial
-            </Link>
+            <button 
+              onClick={() => navigate(-1)} 
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              ← Voltar
+            </button>
           </div>
         </div>
       </main>
