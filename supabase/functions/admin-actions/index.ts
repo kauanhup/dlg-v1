@@ -10,6 +10,7 @@ interface AdminActionRequest {
   action: 'ban_user' | 'invalidate_sessions' | 'enable_maintenance';
   userId?: string;
   banned?: boolean;
+  banReason?: string;
   enabled?: boolean;
 }
 
@@ -70,7 +71,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     const body: AdminActionRequest = await req.json();
-    const { action, userId, banned, enabled } = body;
+    const { action, userId, banned, banReason, enabled } = body;
 
     console.log(`Admin action: ${action} by admin: ${user.id}`);
 
@@ -85,10 +86,24 @@ serve(async (req: Request): Promise<Response> => {
         );
       }
 
+      // Build update object
+      const updateData: { banned: boolean; ban_reason?: string | null; banned_at?: string | null } = {
+        banned: banned ?? true
+      };
+      
+      if (banned === true) {
+        updateData.ban_reason = banReason || 'Motivo não especificado';
+        updateData.banned_at = new Date().toISOString();
+      } else {
+        // Clear ban reason when unbanning
+        updateData.ban_reason = null;
+        updateData.banned_at = null;
+      }
+
       // Update banned status in profiles
       const { error: updateError } = await supabaseAdmin
         .from('profiles')
-        .update({ banned: banned ?? true })
+        .update(updateData)
         .eq('user_id', userId);
 
       if (updateError) {

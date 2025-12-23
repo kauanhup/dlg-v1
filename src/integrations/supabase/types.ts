@@ -80,6 +80,44 @@ export type Database = {
         }
         Relationships: []
       }
+      gateway_logs: {
+        Row: {
+          attempt: number | null
+          created_at: string | null
+          error: string | null
+          gateway: string
+          id: string
+          order_id: string | null
+          status: string
+        }
+        Insert: {
+          attempt?: number | null
+          created_at?: string | null
+          error?: string | null
+          gateway: string
+          id?: string
+          order_id?: string | null
+          status: string
+        }
+        Update: {
+          attempt?: number | null
+          created_at?: string | null
+          error?: string | null
+          gateway?: string
+          id?: string
+          order_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gateway_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gateway_settings: {
         Row: {
           client_id: string | null
@@ -394,10 +432,47 @@ export type Database = {
           },
         ]
       }
+      processed_webhooks: {
+        Row: {
+          gateway: string
+          id: string
+          order_id: string | null
+          processed_at: string | null
+          transaction_id: string
+          webhook_payload: Json | null
+        }
+        Insert: {
+          gateway: string
+          id?: string
+          order_id?: string | null
+          processed_at?: string | null
+          transaction_id: string
+          webhook_payload?: Json | null
+        }
+        Update: {
+          gateway?: string
+          id?: string
+          order_id?: string | null
+          processed_at?: string | null
+          transaction_id?: string
+          webhook_payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "processed_webhooks_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar: string | null
+          ban_reason: string | null
           banned: boolean
+          banned_at: string | null
           created_at: string
           email: string
           id: string
@@ -408,7 +483,9 @@ export type Database = {
         }
         Insert: {
           avatar?: string | null
+          ban_reason?: string | null
           banned?: boolean
+          banned_at?: string | null
           created_at?: string
           email: string
           id?: string
@@ -419,7 +496,9 @@ export type Database = {
         }
         Update: {
           avatar?: string | null
+          ban_reason?: string | null
           banned?: boolean
+          banned_at?: string | null
           created_at?: string
           email?: string
           id?: string

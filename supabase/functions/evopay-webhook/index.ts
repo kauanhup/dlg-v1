@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-evopay-signature, x-webhook-signature, x-signature',
 };
 
-// SECURITY: HMAC signature verification for webhook authenticity
+// HMAC signature verification for webhook authenticity
 async function verifyWebhookSignature(payload: string, signature: string | null, secret: string): Promise<boolean> {
   if (!signature || !secret) {
     console.log('Missing signature or secret for webhook verification');
@@ -28,7 +28,6 @@ async function verifyWebhookSignature(payload: string, signature: string | null,
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
     
-    // Timing-safe comparison
     return signature.toLowerCase() === expectedSignature.toLowerCase();
   } catch (error) {
     console.error('Signature verification error:', error);
@@ -80,7 +79,6 @@ async function checkRateLimit(supabase: any, ip: string, endpoint: string, maxRe
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -90,14 +88,12 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get client IP for rate limiting
     const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
                      req.headers.get('x-real-ip') || 
                      'unknown';
 
     console.log('=== EVOPAY WEBHOOK START ===');
     console.log('Client IP:', clientIp);
-    console.log('Request headers:', JSON.stringify(Object.fromEntries(req.headers.entries())));
 
     // Rate limit - 60 requests per minute per IP
     const rateLimit = await checkRateLimit(supabase, clientIp, 'evopay-webhook', 60, 1);
@@ -105,18 +101,10 @@ serve(async (req) => {
       console.error(`Rate limit exceeded for IP: ${clientIp}`);
       return new Response(
         JSON.stringify({ success: false, error: 'Rate limit exceeded' }),
-        { 
-          status: 429, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json',
-            'Retry-After': '60'
-          } 
-        }
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '60' } }
       );
     }
 
-    // Get raw body for signature verification
     const rawBody = await req.text();
     console.log('Raw webhook body:', rawBody);
     
@@ -133,12 +121,37 @@ serve(async (req) => {
     
     console.log('EvoPay webhook received:', JSON.stringify(body));
 
-    // Get signature from headers (multiple possible header names)
+    // EvoPay webhook payload structure
+    const transactionId = body.id || body.transactionId || body.transaction_id;
+    const externalId = body.externalId || body.external_id || body.orderId || body.order_id;
+    const status = body.status;
+    const amount = body.amount || body.value || body.paidAmount;
+    const qrCodeText = body.qrCodeText || body.qr_code_text || body.pixCode || body.pix_code;
+
+    console.log('Parsed webhook data:', { transactionId, externalId, status, amount });
+
+    // IDEMPOTENCY: Check if we've already processed this webhook
+    if (transactionId) {
+      const { data: existingWebhook } = await supabase
+        .from('processed_webhooks')
+        .select('id')
+        .eq('transaction_id', transactionId)
+        .eq('gateway', 'evopay')
+        .maybeSingle();
+
+      if (existingWebhook) {
+        console.log('Webhook already processed:', transactionId);
+        return new Response(
+          JSON.stringify({ success: true, status: 'already_processed' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Get signature from headers
     const signature = req.headers.get('x-evopay-signature') || 
                       req.headers.get('x-webhook-signature') ||
                       req.headers.get('x-signature');
-
-    console.log('Signature header present:', !!signature);
 
     // Fetch EvoPay API key from settings
     const { data: settings, error: settingsError } = await supabase
@@ -150,29 +163,15 @@ serve(async (req) => {
 
     console.log('EvoPay settings found:', !!settings, 'Error:', settingsError?.message || 'none');
 
-    // SECURITY: Verify signature if both are present, but don't reject if gateway doesn't sign
+    // Verify signature if both are present
     if (settings?.evopay_api_key && signature) {
       const isValid = await verifyWebhookSignature(rawBody, signature, settings.evopay_api_key);
-      
       if (!isValid) {
-        console.warn('SECURITY WARNING: Invalid EvoPay webhook signature - but processing anyway');
+        console.warn('SECURITY WARNING: Invalid EvoPay webhook signature');
       } else {
         console.log('EvoPay webhook signature verified successfully');
       }
-    } else if (!signature) {
-      console.log('No signature header - processing webhook without verification');
     }
-
-    // EvoPay webhook payload structure - support multiple field name formats
-    const transactionId = body.id || body.transactionId || body.transaction_id;
-    const externalId = body.externalId || body.external_id || body.orderId || body.order_id;
-    const status = body.status;
-    const amount = body.amount || body.value || body.paidAmount;
-    const qrCodeText = body.qrCodeText || body.qr_code_text || body.pixCode || body.pix_code;
-    const payerDocument = body.payerDocument || body.payer_document || body.cpf;
-    const payerName = body.payerName || body.payer_name || body.name;
-
-    console.log('Parsed webhook data:', { transactionId, externalId, status, amount, qrCodeText: qrCodeText?.substring(0, 50) });
 
     if (!transactionId && !externalId && !qrCodeText) {
       console.log('No identifiable data in webhook, ignoring');
@@ -216,7 +215,7 @@ serve(async (req) => {
       }
     }
 
-    // Strategy 3: Match by evopay_transaction_id (THE CORRECT WAY)
+    // Strategy 3: Match by evopay_transaction_id
     if (!finalPayment && transactionId) {
       const { data: paymentByTransactionId } = await supabase
         .from('payments')
@@ -231,7 +230,7 @@ serve(async (req) => {
       }
     }
 
-    // Strategy 4: Try transaction ID as order_id directly (fallback)
+    // Strategy 4: Try transaction ID as order_id directly
     if (!finalPayment && transactionId) {
       const { data: paymentByTransactionAsOrderId } = await supabase
         .from('payments')
@@ -247,7 +246,7 @@ serve(async (req) => {
     }
 
     if (!finalPayment || !orderId) {
-      console.error('Payment not found for:', { transactionId, externalId, qrCodeText: qrCodeText?.substring(0, 30) });
+      console.error('Payment not found for:', { transactionId, externalId });
       return new Response(
         JSON.stringify({ success: false, error: 'Payment not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -280,7 +279,7 @@ serve(async (req) => {
       );
     }
 
-    // Validate amount matches (with tolerance for rounding)
+    // Validate amount matches
     if (amount) {
       const webhookAmount = Number(amount);
       const orderAmount = Number(order.amount);
@@ -291,7 +290,7 @@ serve(async (req) => {
       }
     }
 
-    // Map EvoPay status to our status - support multiple formats
+    // Map EvoPay status to our status
     const statusLower = (status || '').toLowerCase();
     let newOrderStatus = order.status;
     let newPaymentStatus = 'pending';
@@ -329,39 +328,21 @@ serve(async (req) => {
     console.log(`Updating order ${orderId} to status: ${newOrderStatus}`);
 
     // Update order status
-    const { error: updateOrderError } = await supabase
+    await supabase
       .from('orders')
-      .update({ 
-        status: newOrderStatus,
-        updated_at: new Date().toISOString()
-      })
+      .update({ status: newOrderStatus, updated_at: new Date().toISOString() })
       .eq('id', orderId);
 
-    if (updateOrderError) {
-      console.error('Error updating order:', updateOrderError);
-    } else {
-      console.log('Order status updated successfully');
-    }
-
     // Update payment record
-    const paymentUpdate: any = { 
-      status: newPaymentStatus,
-    };
-    
+    const paymentUpdate: any = { status: newPaymentStatus };
     if (newPaymentStatus === 'paid') {
       paymentUpdate.paid_at = new Date().toISOString();
     }
 
-    const { error: updatePaymentError } = await supabase
+    await supabase
       .from('payments')
       .update(paymentUpdate)
       .eq('order_id', orderId);
-
-    if (updatePaymentError) {
-      console.error('Error updating payment:', updatePaymentError);
-    } else {
-      console.log('Payment status updated successfully');
-    }
 
     // If payment completed, process order fulfillment
     if (newPaymentStatus === 'paid' && order.status !== 'completed') {
@@ -378,6 +359,16 @@ serve(async (req) => {
         console.error('Error completing order:', rpcError);
       } else {
         console.log('Order completion result:', JSON.stringify(rpcResult));
+      }
+
+      // Register webhook as processed
+      if (transactionId) {
+        await supabase.from('processed_webhooks').insert({
+          transaction_id: transactionId,
+          gateway: 'evopay',
+          order_id: orderId,
+          webhook_payload: body
+        });
       }
     }
 

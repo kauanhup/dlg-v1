@@ -27,7 +27,6 @@ async function verifyWebhookSignature(payload: string, signature: string | null,
       .map(b => b.toString(16).padStart(2, '0'))
       .join('')
     
-    // Compare signatures (timing-safe comparison)
     return signature.toLowerCase() === expectedSignature.toLowerCase()
   } catch (error) {
     console.error('Signature verification error:', error)
@@ -35,7 +34,7 @@ async function verifyWebhookSignature(payload: string, signature: string | null,
   }
 }
 
-// IMPROVEMENT: Rate limiting helper
+// Rate limiting helper
 async function checkRateLimit(supabase: any, ip: string, endpoint: string, maxRequests: number = 60, windowMinutes: number = 1): Promise<{ allowed: boolean; remaining: number }> {
   const windowStart = new Date(Date.now() - windowMinutes * 60 * 1000).toISOString();
   
@@ -89,33 +88,23 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get client IP for rate limiting
     const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
                      req.headers.get('x-real-ip') || 
                      'unknown';
 
     console.log('=== PIXUP WEBHOOK START ===')
     console.log('Client IP:', clientIp)
-    console.log('Request headers:', JSON.stringify(Object.fromEntries(req.headers.entries())))
 
-    // IMPROVEMENT: Rate limit - 60 requests per minute per IP
+    // Rate limit - 60 requests per minute per IP
     const rateLimit = await checkRateLimit(supabase, clientIp, 'pixup-webhook', 60, 1);
     if (!rateLimit.allowed) {
       console.error(`Rate limit exceeded for IP: ${clientIp}`);
       return new Response(
         JSON.stringify({ success: false, error: 'Rate limit exceeded' }),
-        { 
-          status: 429, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json',
-            'Retry-After': '60'
-          } 
-        }
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '60' } }
       );
     }
 
-    // Get raw body for signature verification
     const rawBody = await req.text()
     console.log('Raw webhook body:', rawBody)
     
@@ -132,6 +121,34 @@ Deno.serve(async (req) => {
     
     console.log('PixUp Webhook received:', JSON.stringify(payload))
 
+    // PixUp webhook payload structure - data can be inside 'requestBody' wrapper
+    const data = payload.requestBody || payload;
+    
+    const transactionId = data.transactionId || data.transaction_id || data.id
+    const externalId = data.externalId || data.external_id || data.orderId || data.order_id
+    const status = data.status
+    const amount = data.amount || data.value || data.paidAmount || data.paid_amount
+
+    console.log('Parsed webhook data:', { transactionId, externalId, status, amount })
+
+    // IDEMPOTENCY: Check if we've already processed this webhook
+    if (transactionId) {
+      const { data: existingWebhook } = await supabase
+        .from('processed_webhooks')
+        .select('id')
+        .eq('transaction_id', transactionId)
+        .eq('gateway', 'pixup')
+        .maybeSingle();
+
+      if (existingWebhook) {
+        console.log('Webhook already processed:', transactionId);
+        return new Response(
+          JSON.stringify({ success: true, status: 'already_processed' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Fetch webhook secret from gateway settings
     const { data: settings, error: settingsError } = await supabase
       .from('gateway_settings')
@@ -142,55 +159,30 @@ Deno.serve(async (req) => {
 
     console.log('Gateway settings found:', !!settings, 'Error:', settingsError?.message || 'none')
 
-    // Get the webhook signature from headers (multiple possible header names)
+    // Get the webhook signature from headers
     const signature = req.headers.get('x-webhook-signature') || 
                       req.headers.get('x-pixup-signature') ||
                       req.headers.get('x-signature')
 
-    console.log('Signature header present:', !!signature)
-
-    // SECURITY: Verify signature if both signature and secret are present
-    // If no signature is provided, we'll still process (for compatibility with gateways that don't sign)
-    // but we log a warning
+    // Verify signature if both signature and secret are present
     if (settings?.client_secret && signature) {
       const isValid = await verifyWebhookSignature(rawBody, signature, settings.client_secret)
-      
       if (!isValid) {
-        console.warn('SECURITY WARNING: Invalid webhook signature - but processing anyway for testing')
-        // For production, you might want to reject here:
-        // return new Response(...)
+        console.warn('SECURITY WARNING: Invalid webhook signature')
       } else {
         console.log('Webhook signature verified successfully')
       }
-    } else if (signature && !settings?.client_secret) {
-      console.log('Signature provided but no secret configured - skipping verification')
-    } else if (!signature) {
-      console.log('No signature header - processing webhook without verification')
     }
-
-    // PixUp webhook payload structure - data can be inside 'requestBody' wrapper
-    const data = payload.requestBody || payload;
-    
-    const transactionId = data.transactionId || data.transaction_id || data.id
-    const externalId = data.externalId || data.external_id || data.orderId || data.order_id
-    const status = data.status
-    const amount = data.amount || data.value || data.paidAmount || data.paid_amount
-    const paidAt = data.paidAt || data.paid_at || data.dateApproval || data.confirmedAt || data.confirmed_at
-    const payerDocument = data.creditParty?.taxId || data.payerDocument || data.payer_document || data.cpf
-    const payerName = data.creditParty?.name || data.payerName || data.payer_name || data.name
-
-    console.log('Parsed webhook data:', { transactionId, externalId, status, amount, paidAt })
 
     if (!externalId) {
       console.error('No externalId (order_id) in webhook payload')
-      console.log('Available payload keys:', Object.keys(payload))
       return new Response(
         JSON.stringify({ success: false, error: 'Missing externalId' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
-    // SECURITY: Validate that the order exists and is in pending state
+    // Validate that the order exists
     const { data: existingOrder, error: orderCheckError } = await supabase
       .from('orders')
       .select('id, status, amount, user_id, product_type, quantity')
@@ -207,7 +199,7 @@ Deno.serve(async (req) => {
 
     console.log('Found order:', existingOrder)
 
-    // SECURITY: Only process if order is still pending or paid (not completed)
+    // Only process if order is still pending or paid (not completed)
     if (existingOrder.status === 'completed' || existingOrder.status === 'cancelled' || existingOrder.status === 'refunded') {
       console.log(`Order ${externalId} already finalized with status: ${existingOrder.status}`)
       return new Response(
@@ -216,18 +208,15 @@ Deno.serve(async (req) => {
       )
     }
 
-    // SECURITY: Validate amount matches (with tolerance for rounding)
+    // Validate amount matches
     if (amount) {
       const webhookAmount = Number(amount)
       const orderAmount = Number(existingOrder.amount)
       if (Math.abs(webhookAmount - orderAmount) > 0.01) {
         console.error(`SECURITY WARNING: Amount mismatch: webhook=${webhookAmount}, order=${orderAmount}`)
-        // Log but don't reject - some gateways send amounts in different formats
       } else {
         console.log('Amount validation passed:', webhookAmount)
       }
-    } else {
-      console.log('No amount in webhook - skipping amount validation')
     }
 
     // Map PixUp status to determine action
@@ -238,11 +227,10 @@ Deno.serve(async (req) => {
     const isCancelled = ['expired', 'cancelled', 'canceled', 'expirado', 'cancelado'].includes(statusLower)
     const isRefunded = ['refunded', 'reembolsado'].includes(statusLower)
 
-    // If payment is confirmed, go straight to order completion (which handles status properly)
+    // If payment is confirmed, complete the order
     if (isPaid) {
       console.log('Payment confirmed - triggering order completion...')
       
-      // Call the atomic order completion function - this will set order to 'completed'
       const { data: result, error: completeError } = await supabase.rpc('complete_order_atomic', {
         _order_id: existingOrder.id,
         _user_id: existingOrder.user_id,
@@ -256,6 +244,16 @@ Deno.serve(async (req) => {
           JSON.stringify({ success: false, error: 'Failed to complete order: ' + completeError.message }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
         )
+      }
+
+      // Register webhook as processed
+      if (transactionId) {
+        await supabase.from('processed_webhooks').insert({
+          transaction_id: transactionId,
+          gateway: 'pixup',
+          order_id: existingOrder.id,
+          webhook_payload: payload
+        });
       }
       
       console.log('Order completed successfully:', JSON.stringify(result))
@@ -271,22 +269,24 @@ Deno.serve(async (req) => {
     if (isCancelled || isRefunded) {
       const newStatus = isRefunded ? 'refunded' : 'cancelled'
       
-      const { error: orderError } = await supabase
+      await supabase
         .from('orders')
         .update({ status: newStatus, updated_at: new Date().toISOString() })
         .eq('id', externalId)
 
-      if (orderError) {
-        console.error('Error updating order:', orderError)
-      }
-
-      const { error: paymentError } = await supabase
+      await supabase
         .from('payments')
         .update({ status: newStatus })
         .eq('order_id', externalId)
 
-      if (paymentError) {
-        console.error('Error updating payment:', paymentError)
+      // Register webhook as processed
+      if (transactionId) {
+        await supabase.from('processed_webhooks').insert({
+          transaction_id: transactionId,
+          gateway: 'pixup',
+          order_id: existingOrder.id,
+          webhook_payload: payload
+        });
       }
 
       console.log(`=== PIXUP WEBHOOK END - Order ${externalId} updated to ${newStatus} ===`)
