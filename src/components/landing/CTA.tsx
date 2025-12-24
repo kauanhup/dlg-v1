@@ -10,18 +10,8 @@ const CTA = () => {
 
   return (
     <section className="py-24 sm:py-32 relative overflow-hidden" ref={ref}>
-      {/* Smooth background gradient from dark to background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[hsl(222,47%,9%)] via-[hsl(222,47%,11%)] to-background pointer-events-none" />
-      
-      {/* Subtle center glow */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        initial={{ opacity: 0 }}
-        animate={isInView ? { opacity: 1 } : {}}
-        transition={{ duration: 0.4 }}
-      >
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[200px] bg-primary/5 rounded-full blur-[80px]" />
-      </motion.div>
+      {/* Dark background */}
+      <div className="absolute inset-0 bg-background pointer-events-none" />
 
       <div className="container mx-auto px-4 sm:px-6 relative">
         <motion.div 
