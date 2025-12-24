@@ -128,9 +128,17 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
 
   return (
     <div className={cn("fixed top-0 left-0 right-0 z-[9999]", className)}>
-      <div className="flex justify-center px-2 sm:px-4 pt-3 sm:pt-4">
+      <div className={cn(
+        "flex justify-center px-2 sm:px-4 transition-all duration-300",
+        isScrolled ? "pt-2" : "pt-3 sm:pt-4"
+      )}>
         <motion.div 
-          className="flex items-center gap-0.5 sm:gap-1 border backdrop-blur-lg px-1.5 sm:px-2 py-1.5 sm:py-2 rounded-full shadow-lg bg-background/90 border-border"
+          className={cn(
+            "flex items-center gap-0.5 sm:gap-1 border backdrop-blur-lg px-1.5 sm:px-2 rounded-full shadow-lg transition-all duration-300",
+            isScrolled 
+              ? "py-1 bg-background/95 border-border/80 scale-[0.9]" 
+              : "py-1.5 sm:py-2 bg-background/90 border-border"
+          )}
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.4, ease: "easeOut" }}

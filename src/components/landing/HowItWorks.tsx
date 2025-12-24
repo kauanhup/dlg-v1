@@ -190,14 +190,9 @@ const HowItWorks = () => {
             >
               {/* Content */}
               <div className="flex-1 text-center lg:text-left">
-                <div className="inline-flex items-center gap-4 mb-6">
-                  <span className="text-6xl sm:text-7xl font-display font-bold bg-gradient-to-b from-primary/30 to-transparent bg-clip-text text-transparent">
-                    {step.step}
-                  </span>
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                    <step.icon className="w-6 h-6 text-primary" />
-                  </div>
-                </div>
+                <span className="text-6xl sm:text-7xl font-display font-bold bg-gradient-to-b from-primary/30 to-transparent bg-clip-text text-transparent mb-6">
+                  {step.step}
+                </span>
                 <h3 className="text-2xl sm:text-3xl font-display font-semibold mb-4">
                   {step.title}
                 </h3>
