@@ -1,95 +1,66 @@
 import { motion } from "framer-motion";
-import { Users, Zap, Shield, Clock, Send, Monitor, Rocket } from "lucide-react";
+import { Users, Zap, Shield, Clock, Send, Monitor, Rocket, LucideIcon } from "lucide-react";
 
-// Floating badge with fluid animations - reduced delays for smoothness
-const Badge = ({ 
-  icon: Icon, 
+// SVG Badge component that renders inside the SVG
+const SVGBadge = ({ 
+  x, 
+  y, 
   label, 
   delay,
-  floatOffset = 0
+  anchor = "start" // "start" = left, "middle" = center, "end" = right
 }: { 
-  icon: React.ElementType; 
+  x: number;
+  y: number;
   label: string; 
   delay: number;
-  floatOffset?: number;
-}) => (
-  <motion.div
-    className="group relative flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-background/95 backdrop-blur-sm border border-border/50 shadow-lg cursor-default overflow-hidden"
-    initial={{ opacity: 0, scale: 0.8, y: 15 }}
-    animate={{ 
-      opacity: 1, 
-      scale: 1, 
-      y: [0, -4, 0],
-    }}
-    transition={{ 
-      opacity: { duration: 0.3, delay: delay * 0.5 },
-      scale: { duration: 0.4, delay: delay * 0.5, type: "spring", stiffness: 400, damping: 20 },
-      y: {
-        duration: 2.5 + floatOffset,
-        delay: delay * 0.5 + 0.3,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }
-    }}
-    whileHover={{ 
-      scale: 1.08, 
-      y: -6,
-      boxShadow: "0 10px 30px -8px hsl(var(--primary) / 0.4)",
-      borderColor: "hsl(var(--primary) / 0.6)"
-    }}
-    whileTap={{ scale: 0.95 }}
-  >
-    {/* Shimmer sweep effect */}
-    <motion.div
-      className="absolute inset-0 -translate-x-full"
-      style={{
-        background: "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent)"
-      }}
-      animate={{ x: ["-100%", "200%"] }}
-      transition={{
-        duration: 1.5,
-        delay: delay * 0.5 + 1,
-        repeat: Infinity,
-        repeatDelay: 3,
-        ease: "easeInOut"
-      }}
-    />
-    
-    {/* Icon container */}
-    <motion.div 
-      className="relative w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center"
-      animate={{ 
-        boxShadow: [
-          "0 0 0 0 hsl(var(--primary) / 0.3)",
-          "0 0 0 6px hsl(var(--primary) / 0)",
-        ]
-      }}
-      transition={{
-        duration: 1.8,
-        repeat: Infinity,
-        delay: delay * 0.5 + 0.5,
-        ease: "easeOut"
-      }}
-    >
-      <motion.div
-        animate={{ 
-          rotate: [0, 5, -5, 0],
-          scale: [1, 1.05, 1]
-        }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          delay: delay * 0.5,
-          ease: "easeInOut"
-        }}
+  anchor?: "start" | "middle" | "end";
+}) => {
+  // Calculate text offset based on anchor
+  const getXOffset = () => {
+    switch (anchor) {
+      case "end": return -8;
+      case "middle": return 0;
+      default: return 8;
+    }
+  };
+
+  return (
+    <g>
+      {/* Badge background */}
+      <motion.rect
+        x={anchor === "end" ? x - 110 : anchor === "middle" ? x - 55 : x}
+        y={y - 28}
+        width="110"
+        height="24"
+        rx="6"
+        fill="hsl(var(--background))"
+        fillOpacity="0.95"
+        stroke="hsl(var(--border))"
+        strokeOpacity="0.5"
+        strokeWidth="1"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, delay: delay * 0.5 }}
+        style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.3))" }}
+      />
+      {/* Badge text */}
+      <motion.text
+        x={anchor === "end" ? x - 55 : anchor === "middle" ? x : x + 55}
+        y={y - 12}
+        textAnchor="middle"
+        fill="hsl(var(--foreground))"
+        fontSize="11"
+        fontWeight="600"
+        fontFamily="system-ui, sans-serif"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, delay: delay * 0.5 + 0.1 }}
       >
-        <Icon className="w-3 h-3 sm:w-4 sm:h-4 text-primary relative z-10" />
-      </motion.div>
-    </motion.div>
-    
-    <span className="relative text-[10px] sm:text-xs font-semibold text-foreground whitespace-nowrap">{label}</span>
-  </motion.div>
-);
+        {label}
+      </motion.text>
+    </g>
+  );
+};
 
 // Enhanced animated line with smooth energy particles
 const AnimatedLine = ({ 
@@ -254,9 +225,30 @@ const FloatingParticle = ({
   />
 );
 
+// Mobile badge component
+const MobileBadge = ({ 
+  icon: Icon, 
+  label, 
+  delay 
+}: { 
+  icon: LucideIcon; 
+  label: string; 
+  delay: number;
+}) => (
+  <motion.div
+    className="flex items-center gap-1 px-2 py-1 rounded-md bg-background/95 backdrop-blur-sm border border-border/50 shadow-md"
+    initial={{ opacity: 0, y: 15, scale: 0.9 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    transition={{ duration: 0.3, delay, type: "spring", stiffness: 300 }}
+  >
+    <Icon className="w-2.5 h-2.5 xs:w-3 xs:h-3 text-primary" />
+    <span className="text-[9px] xs:text-[10px] font-medium text-foreground">{label}</span>
+  </motion.div>
+);
+
 export const HeroVisual = () => {
   return (
-    <div className="relative w-full max-w-[320px] sm:max-w-[380px] lg:max-w-[420px] mx-auto h-[300px] xs:h-[340px] sm:h-[400px] flex items-center justify-center">
+    <div className="relative w-full max-w-[320px] sm:max-w-[400px] md:max-w-[450px] lg:max-w-[500px] mx-auto h-[280px] xs:h-[320px] sm:h-[400px] md:h-[450px] flex items-center justify-center">
       {/* Animated ambient glow */}
       <motion.div 
         className="absolute inset-0 flex items-center justify-center pointer-events-none"
@@ -282,10 +274,10 @@ export const HeroVisual = () => {
         <div className="w-24 sm:w-36 h-24 sm:h-36 rounded-full bg-gradient-to-r from-primary/10 via-transparent to-primary/10 blur-[40px] sm:blur-[50px]" />
       </motion.div>
 
-      {/* Mind map SVG lines - responsive viewBox */}
+      {/* Mind map SVG - everything inside including badges */}
       <svg 
         className="absolute inset-0 w-full h-full hidden sm:block" 
-        viewBox="0 0 420 400"
+        viewBox="0 0 500 450"
         fill="none"
         preserveAspectRatio="xMidYMid meet"
       >
@@ -315,52 +307,67 @@ export const HeroVisual = () => {
         </defs>
         
         <g filter="url(#glow)">
-          {/* Delay Inteligente */}
-          <AnimatedLine d="M 210 200 C 260 160, 320 100, 378 72" delay={0.1} />
+          {/* Lines from center (250, 225) to each badge dot */}
+          {/* Delay Inteligente - top right */}
+          <AnimatedLine d="M 250 225 Q 320 160, 420 80" delay={0.1} />
           
-          {/* Multi-Contas */}
-          <AnimatedLine d="M 210 200 C 280 180, 350 160, 399 144" delay={0.15} />
+          {/* Multi-Contas - right upper */}
+          <AnimatedLine d="M 250 225 Q 350 190, 450 160" delay={0.15} />
           
-          {/* Modo PC */}
-          <AnimatedLine d="M 210 200 C 280 210, 360 220, 412 232" delay={0.2} />
+          {/* Modo PC - right middle */}
+          <AnimatedLine d="M 250 225 Q 360 230, 460 250" delay={0.2} />
           
-          {/* Anti-Ban */}
-          <AnimatedLine d="M 210 200 C 260 250, 330 300, 386 336" delay={0.25} />
+          {/* Anti-Ban - right lower */}
+          <AnimatedLine d="M 250 225 Q 340 300, 430 360" delay={0.25} />
           
-          {/* Extração */}
-          <AnimatedLine d="M 210 200 C 150 170, 80 130, 21 104" delay={0.3} />
+          {/* Extração - left upper */}
+          <AnimatedLine d="M 250 225 Q 160 170, 70 100" delay={0.3} />
           
-          {/* Crescimento */}
-          <AnimatedLine d="M 210 200 C 160 250, 100 290, 63 328" delay={0.35} />
+          {/* Crescimento - left lower */}
+          <AnimatedLine d="M 250 225 Q 150 300, 80 370" delay={0.35} />
           
-          {/* Automação */}
-          <AnimatedLine d="M 210 200 C 215 260, 225 320, 231 368" delay={0.4} />
+          {/* Automação - bottom center */}
+          <AnimatedLine d="M 250 225 Q 250 310, 250 400" delay={0.4} />
         </g>
 
         {/* Floating particles around center */}
         <g filter="url(#strongGlow)">
-          <FloatingParticle startX={195} startY={210} delay={0.5} />
-          <FloatingParticle startX={225} startY={215} delay={0.8} />
-          <FloatingParticle startX={200} startY={185} delay={1.1} />
-          <FloatingParticle startX={220} startY={190} delay={1.4} />
+          <FloatingParticle startX={235} startY={235} delay={0.5} />
+          <FloatingParticle startX={265} startY={240} delay={0.8} />
+          <FloatingParticle startX={240} startY={210} delay={1.1} />
+          <FloatingParticle startX={260} startY={215} delay={1.4} />
         </g>
 
-        {/* Pulsing node dots at badge positions */}
+        {/* Pulsing dots at line endpoints */}
         <g filter="url(#glow)">
-          <PulsingDot cx={378} cy={72} delay={0.3} />
-          <PulsingDot cx={399} cy={144} delay={0.35} />
-          <PulsingDot cx={412} cy={232} delay={0.4} />
-          <PulsingDot cx={386} cy={336} delay={0.45} />
-          <PulsingDot cx={21} cy={104} delay={0.5} />
-          <PulsingDot cx={63} cy={328} delay={0.55} />
-          <PulsingDot cx={231} cy={368} delay={0.6} />
+          <PulsingDot cx={420} cy={80} delay={0.3} />
+          <PulsingDot cx={450} cy={160} delay={0.35} />
+          <PulsingDot cx={460} cy={250} delay={0.4} />
+          <PulsingDot cx={430} cy={360} delay={0.45} />
+          <PulsingDot cx={70} cy={100} delay={0.5} />
+          <PulsingDot cx={80} cy={370} delay={0.55} />
+          <PulsingDot cx={250} cy={400} delay={0.6} />
         </g>
+
+        {/* Badges positioned above/below each dot */}
+        {/* Right side badges - anchor end (text to left of dot) */}
+        <SVGBadge x={420} y={55} label="⏱ Delay Inteligente" delay={0.4} anchor="middle" />
+        <SVGBadge x={450} y={135} label="👥 Multi-Contas" delay={0.45} anchor="middle" />
+        <SVGBadge x={460} y={225} label="🖥 Modo PC" delay={0.5} anchor="middle" />
+        <SVGBadge x={430} y={390} label="🛡 Anti-Ban" delay={0.55} anchor="middle" />
+        
+        {/* Left side badges */}
+        <SVGBadge x={70} y={75} label="📤 Extração" delay={0.6} anchor="middle" />
+        <SVGBadge x={80} y={400} label="🚀 Crescimento" delay={0.65} anchor="middle" />
+        
+        {/* Bottom center badge */}
+        <SVGBadge x={250} y={430} label="⚡ Automação" delay={0.7} anchor="middle" />
         
         {/* Central pulsing rings */}
         <motion.circle
-          cx="210"
-          cy="200"
-          r="45"
+          cx="250"
+          cy="225"
+          r="50"
           fill="none"
           stroke="hsl(var(--primary))"
           strokeWidth="1.5"
@@ -508,82 +515,12 @@ export const HeroVisual = () => {
         </motion.div>
       </motion.div>
 
-      {/* Badges - Desktop/Tablet - positioned exactly on SVG dots */}
-      {/* viewBox is 420x400, so we convert dot coordinates to percentages */}
-      
-      {/* Delay Inteligente - dot at (378, 72) → 90%, 18% */}
-      <div className="absolute hidden sm:block" style={{ left: '90%', top: '18%', transform: 'translate(-50%, -120%)' }}>
-        <Badge icon={Clock} label="Delay Inteligente" delay={0.4} floatOffset={0} />
-      </div>
-
-      {/* Multi-Contas - dot at (399, 144) → 95%, 36% */}
-      <div className="absolute hidden sm:block" style={{ left: '95%', top: '36%', transform: 'translate(-50%, -120%)' }}>
-        <Badge icon={Users} label="Multi-Contas" delay={0.45} floatOffset={0.3} />
-      </div>
-
-      {/* Modo PC - dot at (412, 232) → 98%, 58% */}
-      <div className="absolute hidden sm:block" style={{ left: '98%', top: '58%', transform: 'translate(-50%, -120%)' }}>
-        <Badge icon={Monitor} label="Modo PC" delay={0.5} floatOffset={0.6} />
-      </div>
-
-      {/* Anti-Ban - dot at (386, 336) → 92%, 84% */}
-      <div className="absolute hidden sm:block" style={{ left: '92%', top: '84%', transform: 'translate(-50%, -120%)' }}>
-        <Badge icon={Shield} label="Anti-Ban" delay={0.55} floatOffset={0.2} />
-      </div>
-
-      {/* Extração - dot at (21, 104) → 5%, 26% */}
-      <div className="absolute hidden sm:block" style={{ left: '5%', top: '26%', transform: 'translate(-50%, -120%)' }}>
-        <Badge icon={Send} label="Extração" delay={0.6} floatOffset={0.5} />
-      </div>
-
-      {/* Crescimento - dot at (63, 328) → 15%, 82% */}
-      <div className="absolute hidden sm:block" style={{ left: '15%', top: '82%', transform: 'translate(-50%, -120%)' }}>
-        <Badge icon={Rocket} label="Crescimento" delay={0.65} floatOffset={0.4} />
-      </div>
-
-      {/* Automação - dot at (231, 368) → 55%, 92% */}
-      <div className="absolute hidden sm:block" style={{ left: '55%', top: '92%', transform: 'translate(-50%, -120%)' }}>
-        <Badge icon={Zap} label="Automação" delay={0.7} floatOffset={0.1} />
-      </div>
-
       {/* Mobile layout - compact badges at bottom */}
       <div className="absolute bottom-0 left-0 right-0 flex flex-wrap justify-center gap-1.5 xs:gap-2 sm:hidden px-2">
-        <motion.div
-          className="flex items-center gap-1 px-2 py-1 rounded-md bg-background/95 backdrop-blur-sm border border-border/50 shadow-md"
-          initial={{ opacity: 0, y: 15, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.3, delay: 0.2, type: "spring", stiffness: 300 }}
-        >
-          <Clock className="w-2.5 h-2.5 xs:w-3 xs:h-3 text-primary" />
-          <span className="text-[9px] xs:text-[10px] font-medium text-foreground">Delay</span>
-        </motion.div>
-        <motion.div
-          className="flex items-center gap-1 px-2 py-1 rounded-md bg-background/95 backdrop-blur-sm border border-border/50 shadow-md"
-          initial={{ opacity: 0, y: 15, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.3, delay: 0.25, type: "spring", stiffness: 300 }}
-        >
-          <Shield className="w-2.5 h-2.5 xs:w-3 xs:h-3 text-primary" />
-          <span className="text-[9px] xs:text-[10px] font-medium text-foreground">Anti-Ban</span>
-        </motion.div>
-        <motion.div
-          className="flex items-center gap-1 px-2 py-1 rounded-md bg-background/95 backdrop-blur-sm border border-border/50 shadow-md"
-          initial={{ opacity: 0, y: 15, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.3, delay: 0.3, type: "spring", stiffness: 300 }}
-        >
-          <Zap className="w-2.5 h-2.5 xs:w-3 xs:h-3 text-primary" />
-          <span className="text-[9px] xs:text-[10px] font-medium text-foreground">Automação</span>
-        </motion.div>
-        <motion.div
-          className="flex items-center gap-1 px-2 py-1 rounded-md bg-background/95 backdrop-blur-sm border border-border/50 shadow-md"
-          initial={{ opacity: 0, y: 15, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.3, delay: 0.35, type: "spring", stiffness: 300 }}
-        >
-          <Users className="w-2.5 h-2.5 xs:w-3 xs:h-3 text-primary" />
-          <span className="text-[9px] xs:text-[10px] font-medium text-foreground">Multi-Contas</span>
-        </motion.div>
+        <MobileBadge icon={Clock} label="Delay" delay={0.2} />
+        <MobileBadge icon={Shield} label="Anti-Ban" delay={0.25} />
+        <MobileBadge icon={Zap} label="Automação" delay={0.3} />
+        <MobileBadge icon={Users} label="Multi-Contas" delay={0.35} />
       </div>
     </div>
   );
