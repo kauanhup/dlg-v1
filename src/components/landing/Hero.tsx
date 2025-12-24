@@ -40,7 +40,7 @@ const Hero = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.05, ease: gpuEase }}
             >
-              <span className="block bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent pb-1">
+              <span className="block bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent pb-1 whitespace-nowrap">
                 Cresça no Telegram
               </span>
               <span className="block mt-1 sm:mt-2">
