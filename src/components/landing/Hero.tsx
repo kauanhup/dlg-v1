@@ -31,36 +31,42 @@ const Hero = () => {
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
           {/* Left side - Text content */}
-          <div className="text-center lg:text-left space-y-6 sm:space-y-8">
+          <div className="text-center lg:text-left space-y-5 sm:space-y-6">
             {/* Title */}
             <motion.h1
-              className="text-4xl xs:text-5xl sm:text-6xl md:text-6xl lg:text-6xl xl:text-7xl font-display tracking-tighter leading-[0.95]"
+              className="text-4xl xs:text-5xl sm:text-6xl md:text-6xl lg:text-6xl xl:text-7xl font-display tracking-[-0.04em] leading-[1.05]"
               style={{ willChange: "transform, opacity" }}
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.05, ease: gpuEase }}
             >
-              <span className="block text-foreground">Cresça no Telegram</span>
-              <span className="block mt-1 sm:mt-2">
-                <span className="text-foreground">com </span>
-                <TypewriterText 
-                  texts={["segurança", "rapidez", "inteligência"]}
-                  typingSpeed={80}
-                  deletingSpeed={40}
-                  pauseTime={2500}
-                />
+              <span className="block bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
+                Cresça no Telegram
+              </span>
+              <span className="block mt-2 sm:mt-3">
+                <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">com </span>
+                <span className="bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent">
+                  <TypewriterText 
+                    texts={["segurança", "rapidez", "inteligência"]}
+                    typingSpeed={80}
+                    deletingSpeed={40}
+                    pauseTime={2500}
+                  />
+                </span>
               </span>
             </motion.h1>
 
             {/* Subtitle */}
             <motion.p
-              className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed"
+              className="text-base sm:text-lg md:text-xl text-muted-foreground/80 max-w-lg mx-auto lg:mx-0 leading-[1.6] font-medium tracking-[-0.01em]"
               style={{ willChange: "transform, opacity" }}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: 0.12, ease: gpuEase }}
             >
-              Sem gambiarra. Sem scripts quebrados. <span className="text-foreground font-medium">Sem risco.</span>
+              Automação profissional para Telegram.
+              <br className="hidden sm:block" />
+              <span className="text-foreground/90">Sem gambiarra. Sem risco.</span>
             </motion.p>
 
             {/* CTA Buttons */}
