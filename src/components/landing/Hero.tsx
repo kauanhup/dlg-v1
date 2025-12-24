@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { TypewriterText } from "@/components/ui/typewriter-text";
 import { HeroVisual } from "./HeroVisual";
 
@@ -12,9 +11,11 @@ const gpuEase = [0.33, 1, 0.68, 1] as const;
 const Hero = () => {
   return (
     <section className="pt-20 pb-8 sm:pt-24 sm:pb-12 md:pt-28 md:pb-16 lg:pb-20 relative overflow-hidden min-h-[80vh] sm:min-h-[85vh] flex items-center">
-      {/* Animated Background */}
+      {/* Simple Gradient Light Background */}
       <div className="absolute inset-0 z-0">
-        <AnimatedShaderBackground className="w-full h-full" />
+        <div className="absolute inset-0 bg-background" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/10 rounded-full blur-[120px] opacity-60" />
+        <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px] opacity-40" />
       </div>
       
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
