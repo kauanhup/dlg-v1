@@ -10,6 +10,8 @@ const CTA = () => {
 
   return (
     <section className="py-20 sm:py-28 relative overflow-hidden" ref={ref}>
+      {/* Gradient transition from FAQ */}
+      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-card to-transparent pointer-events-none" />
       {/* Background glow */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
