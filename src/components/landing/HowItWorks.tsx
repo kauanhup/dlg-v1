@@ -11,7 +11,7 @@ import botDashboard1 from "@/assets/bot-dashboard-1.png";
 import botDashboard2 from "@/assets/bot-dashboard-2.png";
 import botDashboard3 from "@/assets/bot-dashboard-3.png";
 
-const YOUTUBE_TUTORIAL_URL = "https://youtube.com"; // Substitua pelo link real do vídeo
+const YOUTUBE_TUTORIAL_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"; // Link do tutorial
 
 const steps = [
   {
