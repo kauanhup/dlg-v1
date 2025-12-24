@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface TypewriterTextProps {
   texts: string[];
@@ -13,9 +14,9 @@ interface TypewriterTextProps {
 
 export function TypewriterText({
   texts,
-  typingSpeed = 100,
-  deletingSpeed = 50,
-  pauseTime = 2000,
+  typingSpeed = 80,
+  deletingSpeed = 40,
+  pauseTime = 2500,
   className,
 }: TypewriterTextProps) {
   const [displayText, setDisplayText] = React.useState("");
@@ -60,14 +61,18 @@ export function TypewriterText({
   }, [displayText, isDeleting, isPaused, textIndex, texts, typingSpeed, deletingSpeed, pauseTime]);
 
   return (
-    <span className={cn("inline-flex items-baseline leading-relaxed pb-1", className)}>
-      <span className="leading-[1.3]">{displayText}</span>
-      <span 
-        className="inline-block w-[3px] h-[0.85em] bg-current ml-0.5 rounded-sm animate-pulse" 
-        style={{
-          boxShadow: "0 0 8px currentColor, 0 0 12px currentColor",
-          animation: "blink 1s ease-in-out infinite"
-        }}
+    <span className={cn("inline-flex items-baseline", className)}>
+      <motion.span 
+        className="bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        {displayText}
+      </motion.span>
+      <motion.span 
+        className="inline-block w-[2px] sm:w-[3px] h-[0.8em] bg-primary ml-1 rounded-full"
+        animate={{ opacity: [1, 0, 1] }}
+        transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
       />
     </span>
   );
