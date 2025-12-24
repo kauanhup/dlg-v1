@@ -482,7 +482,20 @@ const Checkout = () => {
         const { data: session } = await supabase.auth.getSession();
         if (!session?.session?.access_token) return;
 
-        const response = await supabase.functions.invoke('pixup', {
+        // Check which gateway was used by looking at the payment record
+        const { data: payment } = await supabase
+          .from('payments')
+          .select('payment_method, evopay_transaction_id')
+          .eq('order_id', orderId)
+          .maybeSingle();
+
+        // Determine gateway based on payment method or transaction ID
+        const isEvoPay = payment?.payment_method?.includes('evopay') || !!payment?.evopay_transaction_id;
+        const gateway = isEvoPay ? 'evopay' : 'pixup';
+        
+        console.log(`[Polling] Using gateway: ${gateway}, transactionId: ${pixData.transactionId}`);
+
+        const response = await supabase.functions.invoke(gateway, {
           body: { 
             action: 'check_pix_status', 
             orderId,
