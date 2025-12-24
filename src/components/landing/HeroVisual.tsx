@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
-import { Users, Zap, Shield, Clock, Send, Monitor } from "lucide-react";
-import logoImg from "@/assets/logo.png";
+import { Users, Zap, Shield, Clock, Send, Monitor, Rocket } from "lucide-react";
 
 const Badge = ({ 
   icon: Icon, 
@@ -196,17 +195,10 @@ export const HeroVisual = () => {
         <Badge icon={Send} label="Extração" delay={0.6} />
       </div>
 
-      {/* Logo - bottom left with white background */}
-      <motion.div
-        className="absolute hidden sm:flex bottom-[15%] left-[15%]"
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, delay: 0.65 }}
-      >
-        <div className="w-10 h-10 rounded-full bg-white border-2 border-primary/30 shadow-lg flex items-center justify-center overflow-hidden">
-          <img src={logoImg} alt="Logo" className="w-6 h-6 object-contain" />
-        </div>
-      </motion.div>
+      {/* Crescimento - bottom left */}
+      <div className="absolute hidden sm:block bottom-[18%] left-[12%]">
+        <Badge icon={Rocket} label="Crescimento" delay={0.65} />
+      </div>
 
       {/* Automação - bottom center */}
       <div className="absolute hidden sm:block bottom-[5%] left-[52%]">
