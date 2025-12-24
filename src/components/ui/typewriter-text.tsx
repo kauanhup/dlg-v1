@@ -14,9 +14,9 @@ interface TypewriterTextProps {
 
 export function TypewriterText({
   texts,
-  typingSpeed = 80,
-  deletingSpeed = 40,
-  pauseTime = 2500,
+  typingSpeed = 70,
+  deletingSpeed = 35,
+  pauseTime = 2800,
   className,
 }: TypewriterTextProps) {
   const [displayText, setDisplayText] = React.useState("");
@@ -62,17 +62,13 @@ export function TypewriterText({
 
   return (
     <span className={cn("inline-flex items-baseline", className)}>
-      <motion.span 
-        className="bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
+      <span className="text-primary font-bold">
         {displayText}
-      </motion.span>
+      </span>
       <motion.span 
-        className="inline-block w-[2px] sm:w-[3px] h-[0.8em] bg-primary ml-1 rounded-full"
-        animate={{ opacity: [1, 0, 1] }}
-        transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
+        className="inline-block w-[3px] h-[0.85em] bg-primary ml-0.5 rounded-sm"
+        animate={{ opacity: [1, 0.3, 1] }}
+        transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut" }}
       />
     </span>
   );

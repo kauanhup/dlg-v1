@@ -1,81 +1,109 @@
 import { motion } from "framer-motion";
 import { Users, Zap, Shield, Clock, Send } from "lucide-react";
+import logoImg from "@/assets/logo.png";
 
 const features = [
-  { icon: Clock, label: "Delay Inteligente", angle: -60 },
-  { icon: Users, label: "Multi-Contas", angle: -15 },
-  { icon: Shield, label: "Anti-Ban", angle: 30 },
-  { icon: Send, label: "Extração", angle: 165 },
-  { icon: Zap, label: "Automação", angle: 120 },
+  { icon: Clock, label: "Delay Inteligente", x: 85, y: 12 },
+  { icon: Users, label: "Multi-Contas", x: 92, y: 35 },
+  { icon: Shield, label: "Anti-Ban", x: 88, y: 60 },
+  { icon: Send, label: "Extração", x: 8, y: 48 },
+  { icon: Zap, label: "Automação", x: 55, y: 85 },
 ];
 
+// Generate smooth curved path
+const getCurvedPath = (startX: number, startY: number, endX: number, endY: number) => {
+  const midX = (startX + endX) / 2;
+  const controlY = Math.min(startY, endY) - 10;
+  return `M ${startX} ${startY} Q ${midX} ${controlY} ${endX} ${endY}`;
+};
+
 export const HeroVisual = () => {
-  const radius = 140;
-  const centerX = 50;
-  const centerY = 50;
+  const centerX = 45;
+  const centerY = 45;
 
   return (
-    <div className="relative w-full max-w-[280px] sm:max-w-sm lg:max-w-md mx-auto h-[300px] sm:h-[360px] lg:h-[400px] flex items-center justify-center">
+    <div className="relative w-full max-w-[320px] sm:max-w-[380px] lg:max-w-[440px] mx-auto h-[320px] sm:h-[380px] lg:h-[420px] flex items-center justify-center">
       {/* Subtle ambient glow */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="w-48 h-48 sm:w-64 sm:h-64 rounded-full bg-primary/8 blur-[60px]" />
       </div>
 
-      {/* SVG Mind Map Lines */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100">
+      {/* SVG Curved Lines */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
         <defs>
-          <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.15" />
+          <linearGradient id="curveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.5" />
+            <stop offset="50%" stopColor="hsl(var(--primary))" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.1" />
+          </linearGradient>
+          <linearGradient id="curveGradReverse" x1="100%" y1="0%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.5" />
+            <stop offset="50%" stopColor="hsl(var(--primary))" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.1" />
           </linearGradient>
         </defs>
         
         {features.map((item, index) => {
-          const angleRad = (item.angle * Math.PI) / 180;
-          const endX = centerX + Math.cos(angleRad) * 38;
-          const endY = centerY + Math.sin(angleRad) * 38;
+          const isLeft = item.x < 50;
+          const path = getCurvedPath(centerX, centerY, item.x, item.y);
           
           return (
-            <motion.line
+            <motion.path
               key={index}
-              x1={centerX}
-              y1={centerY}
-              x2={endX}
-              y2={endY}
-              stroke="url(#lineGrad)"
-              strokeWidth="0.5"
+              d={path}
+              fill="none"
+              stroke={isLeft ? "url(#curveGradReverse)" : "url(#curveGrad)"}
+              strokeWidth="0.4"
               strokeLinecap="round"
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.3 + index * 0.1 }}
+              transition={{ duration: 1, delay: 0.2 + index * 0.12, ease: "easeOut" }}
             />
           );
         })}
         
-        {/* Connection dots at endpoints */}
-        {features.map((item, index) => {
-          const angleRad = (item.angle * Math.PI) / 180;
-          const dotX = centerX + Math.cos(angleRad) * 38;
-          const dotY = centerY + Math.sin(angleRad) * 38;
-          
-          return (
-            <motion.circle
-              key={`dot-${index}`}
-              cx={dotX}
-              cy={dotY}
-              r="1"
-              fill="hsl(var(--primary))"
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 0.8 }}
-              transition={{ duration: 0.3, delay: 0.6 + index * 0.1 }}
-            />
-          );
-        })}
+        {/* Line to logo (bottom left) */}
+        <motion.path
+          d={getCurvedPath(centerX, centerY, 12, 78)}
+          fill="none"
+          stroke="url(#curveGradReverse)"
+          strokeWidth="0.4"
+          strokeLinecap="round"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 1, delay: 0.8, ease: "easeOut" }}
+        />
+        
+        {/* Connection dots */}
+        {features.map((item, index) => (
+          <motion.circle
+            key={`dot-${index}`}
+            cx={item.x}
+            cy={item.y}
+            r="0.8"
+            fill="hsl(var(--primary))"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 0.7 }}
+            transition={{ duration: 0.3, delay: 0.8 + index * 0.1 }}
+          />
+        ))}
+        
+        {/* Logo dot */}
+        <motion.circle
+          cx={12}
+          cy={78}
+          r="0.8"
+          fill="hsl(var(--primary))"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 0.7 }}
+          transition={{ duration: 0.3, delay: 1.2 }}
+        />
       </svg>
 
       {/* Central Telegram Icon */}
       <motion.div 
-        className="relative z-10"
+        className="absolute z-10"
+        style={{ left: '45%', top: '45%', transform: 'translate(-50%, -50%)' }}
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -93,10 +121,10 @@ export const HeroVisual = () => {
         <div className="absolute -inset-6 sm:-inset-8 rounded-full bg-primary/10 blur-xl" />
         
         {/* Icon container */}
-        <div className="relative w-20 h-20 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full bg-gradient-to-br from-background via-background to-muted/30 border border-border/50 flex items-center justify-center shadow-xl shadow-black/20">
+        <div className="relative w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full bg-gradient-to-br from-background via-background to-muted/30 border border-border/50 flex items-center justify-center shadow-xl shadow-black/20">
           <svg 
             viewBox="0 0 24 24" 
-            className="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16"
+            className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14"
             style={{ filter: "drop-shadow(0 0 16px hsl(var(--primary) / 0.4))" }}
           >
             <defs>
@@ -113,37 +141,45 @@ export const HeroVisual = () => {
         </div>
       </motion.div>
 
-      {/* Feature badges positioned around */}
-      {features.map((item, index) => {
-        const angleRad = (item.angle * Math.PI) / 180;
-        const x = 50 + Math.cos(angleRad) * 42;
-        const y = 50 + Math.sin(angleRad) * 42;
-        
-        return (
-          <motion.div
-            key={index}
-            className="absolute z-20 hidden sm:flex"
-            style={{ 
-              left: `${x}%`, 
-              top: `${y}%`,
-              transform: "translate(-50%, -50%)"
-            }}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, delay: 0.5 + index * 0.1 }}
-            whileHover={{ scale: 1.05, y: -2 }}
-          >
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/90 backdrop-blur-sm border border-border/60 shadow-lg shadow-black/10 hover:border-primary/30 transition-colors duration-300">
-              <div className="w-6 h-6 rounded-md bg-primary/15 flex items-center justify-center">
-                <item.icon className="w-3.5 h-3.5 text-primary" />
-              </div>
-              <span className="text-xs font-medium text-foreground whitespace-nowrap">
-                {item.label}
-              </span>
+      {/* Logo badge (bottom left) */}
+      <motion.div
+        className="absolute z-20 hidden sm:flex"
+        style={{ left: '12%', top: '78%', transform: 'translate(-50%, -50%)' }}
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, delay: 1 }}
+        whileHover={{ scale: 1.05 }}
+      >
+        <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-background/90 backdrop-blur-sm border border-border/60 shadow-lg shadow-black/10 hover:border-primary/30 transition-colors duration-300 overflow-hidden">
+          <img src={logoImg} alt="Logo" className="w-6 h-6 sm:w-8 sm:h-8 object-contain" />
+        </div>
+      </motion.div>
+
+      {/* Feature badges */}
+      {features.map((item, index) => (
+        <motion.div
+          key={index}
+          className="absolute z-20 hidden sm:flex"
+          style={{ 
+            left: `${item.x}%`, 
+            top: `${item.y}%`,
+            transform: "translate(-50%, -50%)"
+          }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
+          whileHover={{ scale: 1.05, y: -2 }}
+        >
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/90 backdrop-blur-sm border border-border/60 shadow-lg shadow-black/10 hover:border-primary/30 transition-colors duration-300">
+            <div className="w-6 h-6 rounded-md bg-primary/15 flex items-center justify-center">
+              <item.icon className="w-3.5 h-3.5 text-primary" />
             </div>
-          </motion.div>
-        );
-      })}
+            <span className="text-xs font-medium text-foreground whitespace-nowrap">
+              {item.label}
+            </span>
+          </div>
+        </motion.div>
+      ))}
 
       {/* Mobile: Show badges in simpler layout */}
       <div className="absolute bottom-0 left-0 right-0 flex flex-wrap justify-center gap-2 sm:hidden">
