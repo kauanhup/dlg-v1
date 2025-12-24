@@ -92,10 +92,11 @@ export const HeroVisual = () => {
         />
       </div>
 
-      {/* Mind map SVG lines */}
+      {/* Mind map SVG lines - viewBox matches container dimensions */}
       <svg 
         className="absolute inset-0 w-full h-full hidden sm:block" 
-        viewBox="0 0 420 400"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
         fill="none"
       >
         <defs>
@@ -105,37 +106,39 @@ export const HeroVisual = () => {
           </linearGradient>
         </defs>
         
-        {/* Lines connecting to badges - distributed around the center */}
-        {/* Top right - Delay Inteligente */}
-        <AnimatedLine d="M 210 200 Q 280 140, 350 80" delay={0.1} />
+        {/* Center is at approximately 50%, 50% */}
+        {/* Lines going from center to badge positions */}
         
-        {/* Right upper - Multi-Contas */}
-        <AnimatedLine d="M 210 200 Q 300 180, 370 155" delay={0.15} />
+        {/* Extração - top left (0%, 18%) */}
+        <AnimatedLine d="M 50 50 Q 35 35, 15 22" delay={0.1} />
         
-        {/* Right middle - Modo PC */}
-        <AnimatedLine d="M 210 200 Q 300 210, 380 230" delay={0.2} />
+        {/* Delay Inteligente - top right (95%, 12%) */}
+        <AnimatedLine d="M 50 50 Q 65 35, 85 18" delay={0.15} />
         
-        {/* Right lower - Anti-Ban */}
-        <AnimatedLine d="M 210 200 Q 280 270, 350 320" delay={0.25} />
+        {/* Multi-Contas - right upper (100%, 32%) */}
+        <AnimatedLine d="M 50 50 Q 70 45, 90 38" delay={0.2} />
         
-        {/* Top left - Extração */}
-        <AnimatedLine d="M 210 200 Q 140 140, 55 95" delay={0.3} />
+        {/* Modo PC - right middle (98%, 52%) */}
+        <AnimatedLine d="M 50 50 Q 70 52, 88 55" delay={0.25} />
         
-        {/* Bottom left - Crescimento */}
-        <AnimatedLine d="M 210 200 Q 140 270, 85 320" delay={0.35} />
+        {/* Crescimento - bottom left (5%, 85%) */}
+        <AnimatedLine d="M 50 50 Q 35 65, 20 78" delay={0.3} />
         
-        {/* Bottom center - Automação */}
-        <AnimatedLine d="M 210 200 Q 210 280, 210 360" delay={0.4} />
+        {/* Anti-Ban - bottom right (92%, 85%) */}
+        <AnimatedLine d="M 50 50 Q 65 65, 82 78" delay={0.35} />
+        
+        {/* Automação - bottom center (50%, 95%) */}
+        <AnimatedLine d="M 50 50 Q 50 70, 50 88" delay={0.4} />
         
         {/* Central pulsing ring - only if not reduced motion */}
         {!prefersReducedMotion && (
           <motion.circle
-            cx="210"
-            cy="200"
-            r="45"
+            cx="50"
+            cy="50"
+            r="12"
             fill="none"
             stroke="hsl(var(--primary))"
-            strokeWidth="1"
+            strokeWidth="0.3"
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ 
               scale: [0.9, 1.3, 1.5],
