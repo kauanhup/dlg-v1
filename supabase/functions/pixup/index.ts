@@ -621,6 +621,14 @@ async function saveGatewayWeights(supabase: any, params: {
 async function saveCredentials(supabase: any, params: { client_id: string; client_secret?: string; webhook_url?: string; is_active?: boolean }) {
   const { client_id, client_secret, webhook_url, is_active } = params;
 
+  console.log('saveCredentials called with:', { 
+    client_id, 
+    has_client_secret: !!client_secret, 
+    client_secret_length: client_secret?.length,
+    webhook_url, 
+    is_active 
+  });
+
   if (!client_id) {
     return new Response(
       JSON.stringify({ error: 'client_id is required' }),
@@ -629,6 +637,7 @@ async function saveCredentials(supabase: any, params: { client_id: string; clien
   }
 
   const settingsId = await getOrCreateSettingsId(supabase);
+  console.log('Settings ID:', settingsId);
 
   // Check if we have a secret already
   const { data: existing } = await supabase
@@ -636,6 +645,11 @@ async function saveCredentials(supabase: any, params: { client_id: string; clien
     .select('client_secret')
     .eq('id', settingsId)
     .single();
+
+  console.log('Existing secret check:', { 
+    has_existing: !!existing?.client_secret,
+    existing_length: existing?.client_secret?.length
+  });
 
   // If no existing secret and no new secret provided, error
   if (!existing?.client_secret && !client_secret) {
@@ -660,19 +674,35 @@ async function saveCredentials(supabase: any, params: { client_id: string; clien
   // The admin controls is_active via the toggle, not automatically based on secret changes
   if (client_secret) {
     updateData.client_secret = client_secret;
+    console.log('Will update client_secret (length:', client_secret.length, ')');
+  } else {
+    console.log('No client_secret provided, keeping existing');
   }
+
+  console.log('Updating with data:', { 
+    ...updateData, 
+    client_secret: updateData.client_secret ? '***REDACTED***' : undefined 
+  });
   
-  const { error } = await supabase
+  const { error, data: updateResult } = await supabase
     .from('gateway_settings')
     .update(updateData)
-    .eq('id', settingsId);
+    .eq('id', settingsId)
+    .select('client_id, client_secret, is_active, webhook_url')
+    .single();
 
   if (error) {
     console.error('Error saving credentials:', error);
     throw new Error('Failed to save credentials');
   }
 
-  console.log('Credentials saved successfully');
+  console.log('Credentials saved successfully. Verify:', {
+    client_id: updateResult?.client_id,
+    has_secret: !!updateResult?.client_secret,
+    secret_length: updateResult?.client_secret?.length,
+    is_active: updateResult?.is_active
+  });
+
   return new Response(
     JSON.stringify({ success: true, message: 'Credentials saved successfully' }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
