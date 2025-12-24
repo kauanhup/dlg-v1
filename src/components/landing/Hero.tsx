@@ -22,8 +22,8 @@ const Hero = () => {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,hsl(var(--primary)/0.15),transparent)]" />
       </div>
       
-      {/* BGPattern */}
-      <BGPattern variant="grid" mask="fade-edges" size={60} fill="hsl(217 91% 60% / 0.08)" />
+      {/* BGPattern - Dots with fade-center */}
+      <BGPattern variant="dots" mask="fade-center" size={20} fill="hsl(217 91% 60% / 0.25)" />
       
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
