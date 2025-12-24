@@ -5,17 +5,27 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { BotDashboardPreview, BotActionsPreview, BotAccountsPreview } from "./BotPreviews";
+import { BotActionsPreview, BotAccountsPreview } from "./BotPreviews";
+import appContasImg from "@/assets/app-contas.jpg";
 
 const YOUTUBE_TUTORIAL_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"; // Link do tutorial
 
-const steps = [
+interface StepType {
+  step: string;
+  title: string;
+  description: string;
+  icon: typeof Users;
+  preview?: React.ComponentType;
+  image?: string;
+}
+
+const steps: StepType[] = [
   {
     step: "01",
     title: "Gerencie suas Contas",
     description: "Conecte suas contas Telegram e monitore o status de cada uma em tempo real. Veja quais estão ativas, em float ou banidas.",
     icon: Users,
-    preview: BotDashboardPreview,
+    image: appContasImg,
   },
   {
     step: "02",
@@ -219,13 +229,23 @@ const HowItWorks = () => {
                 </motion.div>
               </div>
 
-              {/* Preview Component */}
+              {/* Preview Component or Image */}
               <div className="flex-1 w-full flex justify-center">
                 <motion.div 
+                  className="relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl shadow-primary/10"
                   whileHover={{ scale: 1.02, y: -5 }}
                   transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <step.preview />
+                  {step.image ? (
+                    <img 
+                      src={step.image} 
+                      alt={step.title}
+                      className="w-full max-w-xl h-auto object-cover rounded-2xl"
+                      loading="lazy"
+                    />
+                  ) : step.preview ? (
+                    <step.preview />
+                  ) : null}
                 </motion.div>
               </div>
             </motion.div>
