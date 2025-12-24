@@ -128,24 +128,12 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
 
   return (
     <div className={cn("fixed top-0 left-0 right-0 z-[9999]", className)}>
-      <div className={cn(
-        "flex justify-center px-2 sm:px-4 transition-all duration-300 ease-out",
-        isScrolled ? "pt-1.5 sm:pt-2" : "pt-3 sm:pt-4"
-      )}>
+      <div className="flex justify-center px-2 sm:px-4 pt-3 sm:pt-4">
         <motion.div 
-          className={cn(
-            "flex items-center gap-0.5 sm:gap-1 border backdrop-blur-lg px-1.5 sm:px-2 rounded-full shadow-lg relative transition-all duration-300 ease-out",
-            isScrolled 
-              ? "py-0.5 sm:py-1 bg-background/95 border-border/80 scale-[0.88] shadow-xl" 
-              : "py-1.5 sm:py-2 bg-background/80 border-border"
-          )}
+          className="flex items-center gap-0.5 sm:gap-1 border backdrop-blur-lg px-1.5 sm:px-2 py-1.5 sm:py-2 rounded-full shadow-lg bg-background/90 border-border"
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{
-            type: "spring",
-            stiffness: 260,
-            damping: 20,
-          }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
         >
           {/* Navigation Items */}
           {navItems.map((item) => {
@@ -159,46 +147,21 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
               <>
                 {isActive && (
                   <motion.div
-                    className="absolute inset-0 rounded-full -z-10 overflow-hidden"
-                    initial={{ opacity: 0 }}
-                    animate={{ 
-                      opacity: [0.3, 0.5, 0.3],
-                      scale: [1, 1.03, 1]
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut"
-                    }}
-                  >
-                    <div className="absolute inset-0 bg-primary/25 rounded-full blur-md" />
-                  </motion.div>
+                    layoutId="activeTab"
+                    className="absolute inset-0 bg-primary/15 rounded-full -z-10"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
                 )}
 
                 <Icon className="w-4 h-4 sm:hidden" strokeWidth={2.5} />
-                <span className={cn(
-                  "hidden sm:inline relative z-10 transition-all duration-300",
-                  isScrolled ? "text-xs" : "text-sm"
-                )}>{item.name}</span>
-        
-                <AnimatePresence>
-                  {isHovered && !isActive && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      className="absolute inset-0 bg-primary/10 rounded-full -z-10"
-                    />
-                  )}
-                </AnimatePresence>
+                <span className="hidden sm:inline text-sm">{item.name}</span>
               </>
             )
 
             const linkClasses = cn(
-              "relative cursor-pointer font-medium rounded-full transition-all duration-300 flex items-center justify-center",
+              "relative cursor-pointer font-medium rounded-full transition-colors duration-200 flex items-center justify-center text-sm px-3 sm:px-4 py-2",
               "text-muted-foreground hover:text-foreground",
-              isActive && "text-foreground",
-              isScrolled ? "text-xs px-2 sm:px-3 py-1.5" : "text-xs sm:text-sm px-2.5 sm:px-4 py-2"
+              isActive && "text-foreground"
             )
 
             if (isAnchor) {
@@ -231,10 +194,7 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
           })}
 
           {/* Divider */}
-          <div className={cn(
-            "w-px bg-border mx-1 sm:mx-2 transition-all duration-300",
-            isScrolled ? "h-4" : "h-6"
-          )} />
+          <div className="w-px h-6 bg-border mx-1 sm:mx-2" />
 
           {/* Action Items (Pages) */}
           {actionItems.map((item) => {
@@ -243,20 +203,16 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
 
             const content = (
               <>
-                <Icon className={cn("transition-all duration-300", isScrolled ? "w-3.5 h-3.5" : "w-4 h-4")} strokeWidth={2} />
-                <span className={cn(
-                  "hidden sm:inline transition-all duration-300",
-                  isScrolled ? "text-xs" : "text-sm"
-                )}>{item.name}</span>
+                <Icon className="w-4 h-4" strokeWidth={2} />
+                <span className="hidden sm:inline text-sm">{item.name}</span>
               </>
             )
 
             const classes = cn(
-              "relative cursor-pointer font-medium rounded-full transition-all duration-300 flex items-center gap-1.5",
+              "relative cursor-pointer font-medium rounded-full transition-colors duration-200 flex items-center gap-1.5 text-sm px-3 sm:px-4 py-2",
               isComprar 
                 ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary",
-              isScrolled ? "text-xs px-2 sm:px-3 py-1.5" : "text-xs sm:text-sm px-2.5 sm:px-4 py-2"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
             )
 
             if (item.onClick) {

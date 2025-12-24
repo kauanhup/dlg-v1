@@ -5,7 +5,7 @@ const Header = () => {
   const navItems = [
     { name: "Início", url: "/", icon: Home },
     { name: "Recursos", url: "#features", icon: Layers },
-    { name: "Passos", url: "#download", icon: Download },
+    { name: "Tutorial", url: "#download", icon: Download },
     { name: "Planos", url: "#pricing", icon: CreditCard },
     { name: "FAQ", url: "#faq", icon: HelpCircle },
     { name: "Entrar", url: "/login", icon: LogIn, isPage: true },
