@@ -126,12 +126,11 @@ export const HeroVisual = () => {
       ))}
 
       {/* Connection lines */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none hidden xs:block" style={{ zIndex: -1 }}>
+      <svg className="absolute inset-0 w-full h-full pointer-events-none hidden xs:block" style={{ zIndex: 1 }}>
         <defs>
-          <linearGradient id="lineGradientPro" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0" />
-            <stop offset="50%" stopColor="hsl(var(--primary))" stopOpacity="0.12" />
-            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+          <linearGradient id="lineGradientPro" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.1" />
           </linearGradient>
         </defs>
         {floatingFeatures.map((item, index) => (
@@ -141,12 +140,12 @@ export const HeroVisual = () => {
             y1="50%"
             x2={`${item.x + 10}%`}
             y2={`${item.y + 4}%`}
-            stroke="url(#lineGradientPro)"
+            stroke="hsl(var(--primary))"
             strokeWidth="1"
-            strokeDasharray="4 4"
+            strokeOpacity="0.35"
             initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 0.6 }}
-            transition={{ duration: 0.5, delay: item.delay, ease: gpuEase }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 0.6, delay: item.delay, ease: gpuEase }}
           />
         ))}
       </svg>
