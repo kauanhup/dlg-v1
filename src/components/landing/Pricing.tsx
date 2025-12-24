@@ -155,8 +155,12 @@ const Pricing = () => {
     <section
       ref={sectionRef}
       id="pricing"
-      className="relative min-h-screen overflow-hidden py-24 sm:py-32"
+      className="relative min-h-screen overflow-hidden"
     >
+      {/* Gradient transition from HowItWorks */}
+      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
+      
+      <div className="py-24 sm:py-32">
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" />
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
@@ -280,6 +284,7 @@ const Pricing = () => {
             </Link>
           </motion.div>
         </div>
+      </div>
       </div>
     </section>
   );
