@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Users, Zap, Shield, Clock, Send, Monitor, Rocket } from "lucide-react";
 
-// Floating badge with enhanced animations
+// Floating badge with fluid animations - reduced delays for smoothness
 const Badge = ({ 
   icon: Icon, 
   label, 
@@ -14,121 +14,84 @@ const Badge = ({
   floatOffset?: number;
 }) => (
   <motion.div
-    className="group relative flex items-center gap-2 px-3 py-2 rounded-xl bg-background/95 backdrop-blur-sm border border-border/50 shadow-lg cursor-default overflow-hidden"
-    initial={{ opacity: 0, scale: 0.5, y: 30, rotate: -10 }}
+    className="group relative flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-background/95 backdrop-blur-sm border border-border/50 shadow-lg cursor-default overflow-hidden"
+    initial={{ opacity: 0, scale: 0.8, y: 15 }}
     animate={{ 
       opacity: 1, 
       scale: 1, 
-      y: [0, -6, 0],
-      rotate: 0
+      y: [0, -4, 0],
     }}
     transition={{ 
-      opacity: { duration: 0.4, delay },
-      scale: { duration: 0.5, delay, type: "spring", stiffness: 300, damping: 15 },
-      rotate: { duration: 0.5, delay },
+      opacity: { duration: 0.3, delay: delay * 0.5 },
+      scale: { duration: 0.4, delay: delay * 0.5, type: "spring", stiffness: 400, damping: 20 },
       y: {
-        duration: 3 + floatOffset,
-        delay: delay + 0.5,
+        duration: 2.5 + floatOffset,
+        delay: delay * 0.5 + 0.3,
         repeat: Infinity,
         ease: "easeInOut"
       }
     }}
     whileHover={{ 
-      scale: 1.12, 
-      y: -8,
-      boxShadow: "0 12px 40px -8px hsl(var(--primary) / 0.5)",
-      borderColor: "hsl(var(--primary) / 0.8)"
+      scale: 1.08, 
+      y: -6,
+      boxShadow: "0 10px 30px -8px hsl(var(--primary) / 0.4)",
+      borderColor: "hsl(var(--primary) / 0.6)"
     }}
     whileTap={{ scale: 0.95 }}
   >
-    {/* Animated gradient border */}
-    <motion.div
-      className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-      style={{
-        background: "linear-gradient(135deg, hsl(var(--primary) / 0.2), transparent, hsl(var(--primary) / 0.2))",
-        backgroundSize: "200% 200%"
-      }}
-      animate={{
-        backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"]
-      }}
-      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-    />
-    
     {/* Shimmer sweep effect */}
     <motion.div
       className="absolute inset-0 -translate-x-full"
       style={{
-        background: "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.15), transparent)"
+        background: "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent)"
       }}
       animate={{ x: ["-100%", "200%"] }}
       transition={{
-        duration: 2,
-        delay: delay + 2,
+        duration: 1.5,
+        delay: delay * 0.5 + 1,
         repeat: Infinity,
-        repeatDelay: 4,
+        repeatDelay: 3,
         ease: "easeInOut"
       }}
     />
     
-    {/* Icon container with multi-layer effects */}
+    {/* Icon container */}
     <motion.div 
-      className="relative w-7 h-7 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center"
+      className="relative w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center"
       animate={{ 
         boxShadow: [
-          "0 0 0 0 hsl(var(--primary) / 0.4)",
-          "0 0 0 8px hsl(var(--primary) / 0)",
+          "0 0 0 0 hsl(var(--primary) / 0.3)",
+          "0 0 0 6px hsl(var(--primary) / 0)",
         ]
       }}
       transition={{
-        duration: 2,
+        duration: 1.8,
         repeat: Infinity,
-        delay: delay + 1,
+        delay: delay * 0.5 + 0.5,
         ease: "easeOut"
       }}
     >
-      {/* Inner glow */}
-      <motion.div
-        className="absolute inset-0 rounded-lg bg-primary/20"
-        animate={{ opacity: [0.3, 0.6, 0.3] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-      />
-      
       <motion.div
         animate={{ 
-          rotate: [0, 8, -8, 0],
-          scale: [1, 1.1, 1]
+          rotate: [0, 5, -5, 0],
+          scale: [1, 1.05, 1]
         }}
         transition={{
-          duration: 4,
+          duration: 3,
           repeat: Infinity,
-          delay: delay,
+          delay: delay * 0.5,
           ease: "easeInOut"
         }}
       >
-        <Icon className="w-4 h-4 text-primary relative z-10" />
+        <Icon className="w-3 h-3 sm:w-4 sm:h-4 text-primary relative z-10" />
       </motion.div>
     </motion.div>
     
-    <span className="relative text-xs font-semibold text-foreground whitespace-nowrap">{label}</span>
-    
-    {/* Sparkle effect */}
-    <motion.div
-      className="absolute top-1 right-2 w-1 h-1 rounded-full bg-primary"
-      animate={{ 
-        opacity: [0, 1, 0],
-        scale: [0, 1, 0]
-      }}
-      transition={{
-        duration: 1.5,
-        delay: delay + 3,
-        repeat: Infinity,
-        repeatDelay: 3
-      }}
-    />
+    <span className="relative text-[10px] sm:text-xs font-semibold text-foreground whitespace-nowrap">{label}</span>
   </motion.div>
 );
 
-// Enhanced animated line with multiple energy particles
+// Enhanced animated line with smooth energy particles
 const AnimatedLine = ({ 
   d, 
   delay 
@@ -146,7 +109,7 @@ const AnimatedLine = ({
       fill="none"
       initial={{ pathLength: 0, opacity: 0 }}
       animate={{ pathLength: 1, opacity: 1 }}
-      transition={{ duration: 1.2, delay, ease: "easeOut" }}
+      transition={{ duration: 0.8, delay: delay * 0.5, ease: "easeOut" }}
     />
     
     {/* Glowing overlay line */}
@@ -159,63 +122,41 @@ const AnimatedLine = ({
       initial={{ pathLength: 0, opacity: 0 }}
       animate={{ 
         pathLength: 1, 
-        opacity: [0, 0.6, 0.3]
+        opacity: [0, 0.5, 0.25]
       }}
       transition={{ 
-        pathLength: { duration: 1.2, delay },
-        opacity: { duration: 2, delay: delay + 1, repeat: Infinity, ease: "easeInOut" }
+        pathLength: { duration: 0.8, delay: delay * 0.5 },
+        opacity: { duration: 1.5, delay: delay * 0.5 + 0.5, repeat: Infinity, ease: "easeInOut" }
       }}
-      style={{ filter: "blur(3px)" }}
+      style={{ filter: "blur(2px)" }}
     />
     
-    {/* Primary energy particle */}
+    {/* Energy particle */}
     <motion.circle
-      r="4"
+      r="3"
       fill="hsl(var(--primary))"
-      style={{ filter: "blur(1px)" }}
+      style={{ filter: "blur(0.5px)" }}
       initial={{ opacity: 0 }}
-      animate={{ opacity: [0, 1, 1, 0] }}
+      animate={{ opacity: [0, 0.8, 0.8, 0] }}
       transition={{
-        duration: 2,
-        delay: delay + 1.5,
+        duration: 1.5,
+        delay: delay * 0.5 + 0.8,
         repeat: Infinity,
-        repeatDelay: 2.5,
+        repeatDelay: 2,
         ease: "easeInOut"
       }}
     >
       <animateMotion
-        dur="2s"
+        dur="1.5s"
         repeatCount="indefinite"
-        begin={`${delay + 1.5}s`}
-        path={d}
-      />
-    </motion.circle>
-    
-    {/* Secondary smaller particle */}
-    <motion.circle
-      r="2"
-      fill="hsl(var(--primary))"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: [0, 0.7, 0.7, 0] }}
-      transition={{
-        duration: 2,
-        delay: delay + 2,
-        repeat: Infinity,
-        repeatDelay: 3,
-        ease: "easeInOut"
-      }}
-    >
-      <animateMotion
-        dur="2s"
-        repeatCount="indefinite"
-        begin={`${delay + 2}s`}
+        begin={`${delay * 0.5 + 0.8}s`}
         path={d}
       />
     </motion.circle>
   </g>
 );
 
-// Enhanced pulsing node with sparkle
+// Pulsing node with smooth animation
 const PulsingDot = ({ 
   cx, 
   cy, 
@@ -226,7 +167,7 @@ const PulsingDot = ({
   delay: number;
 }) => (
   <g>
-    {/* Outer pulse ring 1 */}
+    {/* Outer pulse ring */}
     <motion.circle 
       cx={cx} 
       cy={cy} 
@@ -236,36 +177,14 @@ const PulsingDot = ({
       strokeWidth="1"
       initial={{ scale: 1, opacity: 0 }}
       animate={{ 
-        scale: [1, 3, 4],
-        opacity: [0.5, 0.2, 0]
-      }}
-      transition={{
-        duration: 2.5,
-        delay: delay + 0.3,
-        repeat: Infinity,
-        repeatDelay: 1,
-        ease: "easeOut"
-      }}
-    />
-    
-    {/* Outer pulse ring 2 (offset) */}
-    <motion.circle 
-      cx={cx} 
-      cy={cy} 
-      r="4" 
-      fill="none"
-      stroke="hsl(var(--primary))"
-      strokeWidth="0.5"
-      initial={{ scale: 1, opacity: 0 }}
-      animate={{ 
         scale: [1, 2.5, 3.5],
         opacity: [0.4, 0.15, 0]
       }}
       transition={{
-        duration: 2.5,
-        delay: delay + 1.3,
+        duration: 2,
+        delay: delay * 0.5 + 0.2,
         repeat: Infinity,
-        repeatDelay: 1,
+        repeatDelay: 0.5,
         ease: "easeOut"
       }}
     />
@@ -279,12 +198,12 @@ const PulsingDot = ({
       fillOpacity="0.9"
       initial={{ scale: 0, opacity: 0 }}
       animate={{ 
-        scale: [1, 1.2, 1],
+        scale: [1, 1.15, 1],
         opacity: 1
       }}
       transition={{ 
-        scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
-        opacity: { delay, duration: 0.3 }
+        scale: { duration: 1.5, repeat: Infinity, ease: "easeInOut" },
+        opacity: { delay: delay * 0.5, duration: 0.2 }
       }}
       style={{ filter: "blur(0.5px)" }}
     />
@@ -298,7 +217,7 @@ const PulsingDot = ({
       fillOpacity="0.8"
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
-      transition={{ delay: delay + 0.1, type: "spring", stiffness: 400 }}
+      transition={{ delay: delay * 0.5 + 0.1, type: "spring", stiffness: 400 }}
     />
   </g>
 );
@@ -318,18 +237,18 @@ const FloatingParticle = ({
     cy={startY}
     r="1.5"
     fill="hsl(var(--primary))"
-    fillOpacity="0.6"
+    fillOpacity="0.5"
     initial={{ opacity: 0 }}
     animate={{
-      opacity: [0, 0.6, 0],
-      cy: [startY, startY - 30],
-      cx: [startX, startX + (Math.random() - 0.5) * 20]
+      opacity: [0, 0.5, 0],
+      cy: [startY, startY - 25],
+      cx: [startX, startX + (Math.random() - 0.5) * 15]
     }}
     transition={{
-      duration: 3,
-      delay,
+      duration: 2.5,
+      delay: delay * 0.5,
       repeat: Infinity,
-      repeatDelay: 2,
+      repeatDelay: 1.5,
       ease: "easeOut"
     }}
   />
@@ -337,52 +256,38 @@ const FloatingParticle = ({
 
 export const HeroVisual = () => {
   return (
-    <div className="relative w-full max-w-[380px] lg:max-w-[420px] mx-auto h-[360px] sm:h-[400px] flex items-center justify-center">
+    <div className="relative w-full max-w-[320px] sm:max-w-[380px] lg:max-w-[420px] mx-auto h-[300px] xs:h-[340px] sm:h-[400px] flex items-center justify-center">
       {/* Animated ambient glow */}
       <motion.div 
         className="absolute inset-0 flex items-center justify-center pointer-events-none"
         animate={{ 
-          scale: [1, 1.15, 1],
-          opacity: [0.4, 0.7, 0.4]
+          scale: [1, 1.1, 1],
+          opacity: [0.3, 0.5, 0.3]
         }}
         transition={{
-          duration: 4,
+          duration: 3,
           repeat: Infinity,
           ease: "easeInOut"
         }}
       >
-        <div className="w-48 h-48 rounded-full bg-primary/20 blur-[70px]" />
+        <div className="w-32 sm:w-48 h-32 sm:h-48 rounded-full bg-primary/20 blur-[50px] sm:blur-[70px]" />
       </motion.div>
       
       {/* Secondary rotating glow */}
       <motion.div 
         className="absolute inset-0 flex items-center justify-center pointer-events-none"
         animate={{ rotate: 360 }}
-        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
       >
-        <div className="w-36 h-36 rounded-full bg-gradient-to-r from-primary/15 via-transparent to-primary/15 blur-[50px]" />
-      </motion.div>
-      
-      {/* Tertiary pulsing glow */}
-      <motion.div 
-        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-        animate={{ 
-          scale: [1, 1.3, 1],
-          rotate: [-180, 180]
-        }}
-        transition={{
-          scale: { duration: 5, repeat: Infinity, ease: "easeInOut" },
-          rotate: { duration: 25, repeat: Infinity, ease: "linear" }
-        }}
-      >
-        <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-primary/10 to-transparent blur-[40px]" />
+        <div className="w-24 sm:w-36 h-24 sm:h-36 rounded-full bg-gradient-to-r from-primary/10 via-transparent to-primary/10 blur-[40px] sm:blur-[50px]" />
       </motion.div>
 
-      {/* Mind map SVG lines */}
+      {/* Mind map SVG lines - responsive viewBox */}
       <svg 
         className="absolute inset-0 w-full h-full hidden sm:block" 
         viewBox="0 0 420 400"
         fill="none"
+        preserveAspectRatio="xMidYMid meet"
       >
         <defs>
           <linearGradient id="branchGrad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -401,7 +306,7 @@ export const HeroVisual = () => {
             </feMerge>
           </filter>
           <filter id="strongGlow">
-            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
             <feMerge>
               <feMergeNode in="coloredBlur"/>
               <feMergeNode in="SourceGraphic"/>
@@ -410,47 +315,45 @@ export const HeroVisual = () => {
         </defs>
         
         <g filter="url(#glow)">
-          {/* Delay Inteligente - top-[18%] right-[10%] → endpoint ~(378, 72) */}
+          {/* Delay Inteligente */}
           <AnimatedLine d="M 210 200 C 260 160, 320 100, 378 72" delay={0.1} />
           
-          {/* Multi-Contas - top-[36%] right-[5%] → endpoint ~(399, 144) */}
+          {/* Multi-Contas */}
           <AnimatedLine d="M 210 200 C 280 180, 350 160, 399 144" delay={0.15} />
           
-          {/* Modo PC - top-[58%] right-[2%] → endpoint ~(412, 232) */}
+          {/* Modo PC */}
           <AnimatedLine d="M 210 200 C 280 210, 360 220, 412 232" delay={0.2} />
           
-          {/* Anti-Ban - bottom-[16%] right-[8%] → endpoint ~(386, 336) */}
+          {/* Anti-Ban */}
           <AnimatedLine d="M 210 200 C 260 250, 330 300, 386 336" delay={0.25} />
           
-          {/* Extração - top-[26%] left-[5%] → endpoint ~(21, 104) */}
+          {/* Extração */}
           <AnimatedLine d="M 210 200 C 150 170, 80 130, 21 104" delay={0.3} />
           
-          {/* Crescimento - bottom-[18%] left-[15%] → endpoint ~(63, 328) */}
+          {/* Crescimento */}
           <AnimatedLine d="M 210 200 C 160 250, 100 290, 63 328" delay={0.35} />
           
-          {/* Automação - bottom-[8%] left-[55%] → endpoint ~(231, 368) */}
+          {/* Automação */}
           <AnimatedLine d="M 210 200 C 215 260, 225 320, 231 368" delay={0.4} />
         </g>
 
         {/* Floating particles around center */}
         <g filter="url(#strongGlow)">
-          <FloatingParticle startX={195} startY={210} delay={1} />
-          <FloatingParticle startX={225} startY={215} delay={1.5} />
-          <FloatingParticle startX={200} startY={185} delay={2} />
-          <FloatingParticle startX={220} startY={190} delay={2.5} />
-          <FloatingParticle startX={190} startY={200} delay={3} />
-          <FloatingParticle startX={230} startY={205} delay={3.5} />
+          <FloatingParticle startX={195} startY={210} delay={0.5} />
+          <FloatingParticle startX={225} startY={215} delay={0.8} />
+          <FloatingParticle startX={200} startY={185} delay={1.1} />
+          <FloatingParticle startX={220} startY={190} delay={1.4} />
         </g>
 
         {/* Pulsing node dots at badge positions */}
         <g filter="url(#glow)">
-          <PulsingDot cx={378} cy={72} delay={0.5} />
-          <PulsingDot cx={399} cy={144} delay={0.55} />
-          <PulsingDot cx={412} cy={232} delay={0.6} />
-          <PulsingDot cx={386} cy={336} delay={0.65} />
-          <PulsingDot cx={21} cy={104} delay={0.7} />
-          <PulsingDot cx={63} cy={328} delay={0.75} />
-          <PulsingDot cx={231} cy={368} delay={0.8} />
+          <PulsingDot cx={378} cy={72} delay={0.3} />
+          <PulsingDot cx={399} cy={144} delay={0.35} />
+          <PulsingDot cx={412} cy={232} delay={0.4} />
+          <PulsingDot cx={386} cy={336} delay={0.45} />
+          <PulsingDot cx={21} cy={104} delay={0.5} />
+          <PulsingDot cx={63} cy={328} delay={0.55} />
+          <PulsingDot cx={231} cy={368} delay={0.6} />
         </g>
         
         {/* Central pulsing rings */}
@@ -463,30 +366,11 @@ export const HeroVisual = () => {
           strokeWidth="1.5"
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ 
-            scale: [0.8, 1.4, 1.8],
-            opacity: [0.6, 0.2, 0]
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeOut"
-          }}
-        />
-        <motion.circle
-          cx="210"
-          cy="200"
-          r="45"
-          fill="none"
-          stroke="hsl(var(--primary))"
-          strokeWidth="1"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ 
             scale: [0.8, 1.3, 1.6],
-            opacity: [0.4, 0.15, 0]
+            opacity: [0.5, 0.2, 0]
           }}
           transition={{
-            duration: 3,
-            delay: 1,
+            duration: 2.5,
             repeat: Infinity,
             ease: "easeOut"
           }}
@@ -496,27 +380,27 @@ export const HeroVisual = () => {
       {/* Central node - Telegram Icon */}
       <motion.div 
         className="relative z-10"
-        initial={{ scale: 0, opacity: 0, rotate: -180 }}
-        animate={{ scale: 1, opacity: 1, rotate: 0 }}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
         transition={{ 
-          duration: 1, 
+          duration: 0.6, 
           type: "spring",
-          stiffness: 150,
-          damping: 12
+          stiffness: 200,
+          damping: 15
         }}
       >
         {/* Outer glow ring animated */}
         <motion.div 
-          className="absolute -inset-8 rounded-full"
+          className="absolute -inset-6 sm:-inset-8 rounded-full"
           style={{
-            background: "radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)"
+            background: "radial-gradient(circle, hsl(var(--primary) / 0.12) 0%, transparent 70%)"
           }}
           animate={{ 
-            scale: [1, 1.15, 1],
-            opacity: [0.5, 0.8, 0.5]
+            scale: [1, 1.1, 1],
+            opacity: [0.4, 0.6, 0.4]
           }}
           transition={{
-            duration: 3,
+            duration: 2.5,
             repeat: Infinity,
             ease: "easeInOut"
           }}
@@ -524,49 +408,49 @@ export const HeroVisual = () => {
         
         {/* Inner glow with rotation */}
         <motion.div 
-          className="absolute -inset-5 rounded-full bg-primary/15 blur-xl"
+          className="absolute -inset-4 sm:-inset-5 rounded-full bg-primary/10 blur-lg sm:blur-xl"
           animate={{ 
-            scale: [1, 1.2, 1],
+            scale: [1, 1.15, 1],
             rotate: [0, 180, 360]
           }}
           transition={{
-            scale: { duration: 2.5, repeat: Infinity, ease: "easeInOut" },
-            rotate: { duration: 10, repeat: Infinity, ease: "linear" }
+            scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+            rotate: { duration: 8, repeat: Infinity, ease: "linear" }
           }}
         />
         
-        {/* Main container with 3D-like effect */}
+        {/* Main container */}
         <motion.div 
-          className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-background via-background to-muted flex items-center justify-center shadow-2xl overflow-hidden"
+          className="relative w-20 h-20 xs:w-24 xs:h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-background via-background to-muted flex items-center justify-center shadow-2xl overflow-hidden"
           style={{ 
-            boxShadow: "0 0 40px -5px hsl(var(--primary) / 0.4), inset 0 -5px 20px -5px hsl(var(--primary) / 0.1)" 
+            boxShadow: "0 0 30px -5px hsl(var(--primary) / 0.3), inset 0 -4px 15px -5px hsl(var(--primary) / 0.1)" 
           }}
           animate={{
             boxShadow: [
-              "0 0 40px -5px hsl(var(--primary) / 0.4), inset 0 -5px 20px -5px hsl(var(--primary) / 0.1)",
-              "0 0 60px -5px hsl(var(--primary) / 0.6), inset 0 -5px 20px -5px hsl(var(--primary) / 0.2)",
-              "0 0 40px -5px hsl(var(--primary) / 0.4), inset 0 -5px 20px -5px hsl(var(--primary) / 0.1)"
+              "0 0 30px -5px hsl(var(--primary) / 0.3), inset 0 -4px 15px -5px hsl(var(--primary) / 0.1)",
+              "0 0 50px -5px hsl(var(--primary) / 0.5), inset 0 -4px 15px -5px hsl(var(--primary) / 0.15)",
+              "0 0 30px -5px hsl(var(--primary) / 0.3), inset 0 -4px 15px -5px hsl(var(--primary) / 0.1)"
             ]
           }}
           transition={{
-            duration: 3,
+            duration: 2.5,
             repeat: Infinity,
             ease: "easeInOut"
           }}
           whileHover={{ 
-            scale: 1.1,
-            boxShadow: "0 0 80px -5px hsl(var(--primary) / 0.7), inset 0 -5px 20px -5px hsl(var(--primary) / 0.3)"
+            scale: 1.08,
+            boxShadow: "0 0 60px -5px hsl(var(--primary) / 0.6), inset 0 -4px 15px -5px hsl(var(--primary) / 0.2)"
           }}
         >
           {/* Rotating gradient border */}
           <motion.div
             className="absolute inset-0 rounded-full"
             style={{
-              background: "conic-gradient(from 0deg, hsl(var(--primary) / 0.8), transparent 30%, hsl(var(--primary) / 0.4), transparent 60%, hsl(var(--primary) / 0.8))",
+              background: "conic-gradient(from 0deg, hsl(var(--primary) / 0.6), transparent 30%, hsl(var(--primary) / 0.3), transparent 60%, hsl(var(--primary) / 0.6))",
               padding: "2px"
             }}
             animate={{ rotate: 360 }}
-            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
           >
             <div className="w-full h-full rounded-full bg-background" />
           </motion.div>
@@ -578,33 +462,33 @@ export const HeroVisual = () => {
             <motion.div
               className="absolute inset-0 -translate-x-full"
               style={{
-                background: "linear-gradient(90deg, transparent, white/20, transparent)",
+                background: "linear-gradient(90deg, transparent, white/15, transparent)",
                 width: "50%"
               }}
               animate={{ x: ["-100%", "300%"] }}
               transition={{
-                duration: 2.5,
+                duration: 2,
                 repeat: Infinity,
-                repeatDelay: 3,
+                repeatDelay: 2.5,
                 ease: "easeInOut"
               }}
             />
           </motion.div>
           
-          {/* Telegram icon with enhanced glow */}
+          {/* Telegram icon */}
           <motion.svg 
             viewBox="0 0 24 24" 
-            className="w-12 h-12 sm:w-14 sm:h-14 relative z-10"
+            className="w-10 h-10 xs:w-12 xs:h-12 sm:w-14 sm:h-14 relative z-10"
             animate={{ 
               filter: [
-                "drop-shadow(0 0 15px hsl(var(--primary) / 0.7))",
-                "drop-shadow(0 0 30px hsl(var(--primary) / 0.9))",
-                "drop-shadow(0 0 15px hsl(var(--primary) / 0.7))"
+                "drop-shadow(0 0 10px hsl(var(--primary) / 0.5))",
+                "drop-shadow(0 0 20px hsl(var(--primary) / 0.7))",
+                "drop-shadow(0 0 10px hsl(var(--primary) / 0.5))"
               ],
-              scale: [1, 1.05, 1]
+              scale: [1, 1.03, 1]
             }}
             transition={{
-              duration: 2.5,
+              duration: 2,
               repeat: Infinity,
               ease: "easeInOut"
             }}
@@ -624,70 +508,79 @@ export const HeroVisual = () => {
         </motion.div>
       </motion.div>
 
-      {/* Badges aligned with SVG line endpoints - using transform to center on dots */}
-      {/* Delay Inteligente - endpoint (378, 72) */}
-      <div className="absolute hidden sm:block" style={{ top: '18%', right: '10%', transform: 'translate(50%, -50%)' }}>
+      {/* Badges - Desktop/Tablet - positioned relative to dots */}
+      {/* Delay Inteligente - top right */}
+      <div className="absolute hidden sm:block" style={{ top: '18%', right: '8%', transform: 'translate(50%, -100%)' }}>
         <Badge icon={Clock} label="Delay Inteligente" delay={0.4} floatOffset={0} />
       </div>
 
-      {/* Multi-Contas - endpoint (399, 144) */}
-      <div className="absolute hidden sm:block" style={{ top: '36%', right: '5%', transform: 'translate(50%, -50%)' }}>
+      {/* Multi-Contas - right */}
+      <div className="absolute hidden sm:block" style={{ top: '36%', right: '3%', transform: 'translate(50%, -100%)' }}>
         <Badge icon={Users} label="Multi-Contas" delay={0.45} floatOffset={0.3} />
       </div>
 
-      {/* Modo PC - endpoint (412, 232) */}
-      <div className="absolute hidden sm:block" style={{ top: '58%', right: '2%', transform: 'translate(50%, -50%)' }}>
+      {/* Modo PC - right center */}
+      <div className="absolute hidden sm:block" style={{ top: '58%', right: '0%', transform: 'translate(50%, -100%)' }}>
         <Badge icon={Monitor} label="Modo PC" delay={0.5} floatOffset={0.6} />
       </div>
 
-      {/* Anti-Ban - endpoint (386, 336) */}
-      <div className="absolute hidden sm:block" style={{ bottom: '16%', right: '8%', transform: 'translate(50%, 50%)' }}>
+      {/* Anti-Ban - bottom right */}
+      <div className="absolute hidden sm:block" style={{ bottom: '14%', right: '6%', transform: 'translate(50%, 100%)' }}>
         <Badge icon={Shield} label="Anti-Ban" delay={0.55} floatOffset={0.2} />
       </div>
 
-      {/* Extração - endpoint (21, 104) */}
-      <div className="absolute hidden sm:block" style={{ top: '26%', left: '5%', transform: 'translate(-50%, -50%)' }}>
+      {/* Extração - top left */}
+      <div className="absolute hidden sm:block" style={{ top: '26%', left: '3%', transform: 'translate(-50%, -100%)' }}>
         <Badge icon={Send} label="Extração" delay={0.6} floatOffset={0.5} />
       </div>
 
-      {/* Crescimento - endpoint (63, 328) */}
-      <div className="absolute hidden sm:block" style={{ bottom: '18%', left: '15%', transform: 'translate(-50%, 50%)' }}>
+      {/* Crescimento - bottom left */}
+      <div className="absolute hidden sm:block" style={{ bottom: '16%', left: '12%', transform: 'translate(-50%, 100%)' }}>
         <Badge icon={Rocket} label="Crescimento" delay={0.65} floatOffset={0.4} />
       </div>
 
-      {/* Automação - endpoint (231, 368) */}
-      <div className="absolute hidden sm:block" style={{ bottom: '8%', left: '55%', transform: 'translate(-50%, 50%)' }}>
+      {/* Automação - bottom center */}
+      <div className="absolute hidden sm:block" style={{ bottom: '6%', left: '55%', transform: 'translate(-50%, 100%)' }}>
         <Badge icon={Zap} label="Automação" delay={0.7} floatOffset={0.1} />
       </div>
 
-      {/* Mobile layout with enhanced animations */}
-      <div className="absolute bottom-0 left-0 right-0 flex flex-wrap justify-center gap-2 sm:hidden">
+      {/* Mobile layout - compact badges at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 flex flex-wrap justify-center gap-1.5 xs:gap-2 sm:hidden px-2">
         <motion.div
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-background/95 backdrop-blur-sm border border-border/50 shadow-lg"
-          initial={{ opacity: 0, y: 20, scale: 0.8 }}
+          className="flex items-center gap-1 px-2 py-1 rounded-md bg-background/95 backdrop-blur-sm border border-border/50 shadow-md"
+          initial={{ opacity: 0, y: 15, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.3, type: "spring" }}
+          transition={{ duration: 0.3, delay: 0.2, type: "spring", stiffness: 300 }}
         >
-          <Clock className="w-3 h-3 text-primary" />
-          <span className="text-[10px] font-medium text-foreground">Delay</span>
+          <Clock className="w-2.5 h-2.5 xs:w-3 xs:h-3 text-primary" />
+          <span className="text-[9px] xs:text-[10px] font-medium text-foreground">Delay</span>
         </motion.div>
         <motion.div
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-background/95 backdrop-blur-sm border border-border/50 shadow-lg"
-          initial={{ opacity: 0, y: 20, scale: 0.8 }}
+          className="flex items-center gap-1 px-2 py-1 rounded-md bg-background/95 backdrop-blur-sm border border-border/50 shadow-md"
+          initial={{ opacity: 0, y: 15, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.4, type: "spring" }}
+          transition={{ duration: 0.3, delay: 0.25, type: "spring", stiffness: 300 }}
         >
-          <Shield className="w-3 h-3 text-primary" />
-          <span className="text-[10px] font-medium text-foreground">Anti-Ban</span>
+          <Shield className="w-2.5 h-2.5 xs:w-3 xs:h-3 text-primary" />
+          <span className="text-[9px] xs:text-[10px] font-medium text-foreground">Anti-Ban</span>
         </motion.div>
         <motion.div
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-background/95 backdrop-blur-sm border border-border/50 shadow-lg"
-          initial={{ opacity: 0, y: 20, scale: 0.8 }}
+          className="flex items-center gap-1 px-2 py-1 rounded-md bg-background/95 backdrop-blur-sm border border-border/50 shadow-md"
+          initial={{ opacity: 0, y: 15, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.5, type: "spring" }}
+          transition={{ duration: 0.3, delay: 0.3, type: "spring", stiffness: 300 }}
         >
-          <Zap className="w-3 h-3 text-primary" />
-          <span className="text-[10px] font-medium text-foreground">Automação</span>
+          <Zap className="w-2.5 h-2.5 xs:w-3 xs:h-3 text-primary" />
+          <span className="text-[9px] xs:text-[10px] font-medium text-foreground">Automação</span>
+        </motion.div>
+        <motion.div
+          className="flex items-center gap-1 px-2 py-1 rounded-md bg-background/95 backdrop-blur-sm border border-border/50 shadow-md"
+          initial={{ opacity: 0, y: 15, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.35, type: "spring", stiffness: 300 }}
+        >
+          <Users className="w-2.5 h-2.5 xs:w-3 xs:h-3 text-primary" />
+          <span className="text-[9px] xs:text-[10px] font-medium text-foreground">Multi-Contas</span>
         </motion.div>
       </div>
     </div>
