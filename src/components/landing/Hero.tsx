@@ -10,9 +10,20 @@ const gpuEase = [0.33, 1, 0.68, 1] as const;
 const Hero = () => {
   return (
     <section className="pt-20 pb-8 sm:pt-24 sm:pb-12 md:pt-28 md:pb-16 lg:pb-20 relative overflow-hidden min-h-[80vh] sm:min-h-[85vh] flex items-center">
-      {/* Background glow */}
-      <div className="absolute inset-0 z-0 bg-black">
-        <div className="absolute top-[15%] left-1/2 -translate-x-1/2 lg:left-[20%] w-[700px] h-[350px] bg-primary/15 rounded-full blur-[180px]" />
+      {/* Background with gradient mesh */}
+      <div className="absolute inset-0 z-0 bg-background">
+        {/* Primary glow */}
+        <div className="absolute top-[10%] left-[15%] w-[500px] h-[500px] bg-primary/8 rounded-full blur-[120px]" />
+        {/* Secondary glow */}
+        <div className="absolute bottom-[20%] right-[10%] w-[400px] h-[400px] bg-primary/6 rounded-full blur-[100px]" />
+        {/* Subtle grid overlay */}
+        <div 
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
+            backgroundSize: '60px 60px'
+          }}
+        />
       </div>
       
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
