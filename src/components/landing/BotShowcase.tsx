@@ -3,9 +3,7 @@ import { motion, useInView } from "framer-motion";
 import { Users, Clock } from "lucide-react";
 import { useRef } from "react";
 import { SubtleDivider } from "./SubtleDivider";
-
-// GPU-optimized easing
-const gpuEase = [0.33, 1, 0.68, 1] as const;
+import { gpuEase, usePrefersReducedMotion } from "@/hooks/useScrollAnimation";
 
 // Minimal float animation - GPU only
 const floatAnimation = {
@@ -22,10 +20,15 @@ const RevealSection = ({
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { 
-    once: false, 
+    once: true, 
     amount: 0.15,
-    margin: "-40px 0px -40px 0px"
+    margin: "-40px"
   });
+  const prefersReducedMotion = usePrefersReducedMotion();
+
+  if (prefersReducedMotion) {
+    return <div ref={ref} className={className}>{children}</div>;
+  }
 
   return (
     <motion.div
@@ -34,7 +37,7 @@ const RevealSection = ({
       style={{ willChange: "transform, opacity" }}
       initial={{ opacity: 0, y: 24 }}
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-      transition={{ duration: 0.3, ease: gpuEase }}
+      transition={{ duration: 0.4, ease: gpuEase }}
     >
       {children}
     </motion.div>
@@ -42,6 +45,8 @@ const RevealSection = ({
 };
 
 const BotShowcase = () => {
+  const prefersReducedMotion = usePrefersReducedMotion();
+
   return (
     <section className="relative overflow-hidden bg-background py-12 sm:py-20 lg:py-32">
       {/* Section 1: Dashboard */}
@@ -52,8 +57,8 @@ const BotShowcase = () => {
             <div className="absolute -inset-8 bg-gradient-to-r from-primary/15 via-primary/5 to-transparent rounded-3xl blur-3xl opacity-60" />
             <motion.div 
               className="relative"
-              animate={floatAnimation}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              animate={prefersReducedMotion ? {} : floatAnimation}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
             >
               <BotDashboardPreview />
             </motion.div>
@@ -145,8 +150,8 @@ const BotShowcase = () => {
             <div className="absolute -inset-4 bg-gradient-to-l from-green-500/15 via-green-500/5 to-transparent rounded-3xl blur-2xl opacity-60" />
             <motion.div 
               className="relative"
-              animate={floatAnimation}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              animate={prefersReducedMotion ? {} : floatAnimation}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
             >
               <BotActionsPreview />
             </motion.div>
@@ -165,8 +170,8 @@ const BotShowcase = () => {
             <div className="absolute -inset-4 bg-gradient-to-r from-yellow-500/15 via-yellow-500/5 to-transparent rounded-3xl blur-2xl opacity-60" />
             <motion.div 
               className="relative"
-              animate={floatAnimation}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              animate={prefersReducedMotion ? {} : floatAnimation}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
             >
               <BotAccountsPreview />
             </motion.div>

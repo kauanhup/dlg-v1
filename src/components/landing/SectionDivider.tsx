@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Shield, Zap, Users, Clock, Activity, Lock, CheckCircle, Sparkles, Send, Target } from "lucide-react";
+import { usePrefersReducedMotion } from "@/hooks/useScrollAnimation";
 
 const features = [
   { icon: Shield, text: "Proteção Anti-Ban", highlight: true },
@@ -15,6 +16,8 @@ const features = [
 ];
 
 export const SectionDivider = () => {
+  const prefersReducedMotion = usePrefersReducedMotion();
+
   return (
     <div className="relative py-8 sm:py-10 overflow-hidden bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent">
       {/* Top line */}
@@ -28,19 +31,20 @@ export const SectionDivider = () => {
       <div className="flex overflow-hidden">
         <motion.div
           className="flex gap-3 sm:gap-4"
-          animate={{ x: ["0%", "-50%"] }}
+          animate={prefersReducedMotion ? {} : { x: ["0%", "-50%"] }}
           transition={{
             x: {
               repeat: Infinity,
               repeatType: "loop",
-              duration: 40,
+              duration: 50,
               ease: "linear",
             },
           }}
+          style={{ willChange: prefersReducedMotion ? "auto" : "transform" }}
         >
           {/* Duplicate items for seamless loop */}
           {[...features, ...features].map((feature, index) => (
-            <div
+            <motion.div
               key={index}
               className={`
                 flex items-center gap-2.5 px-4 py-2.5 whitespace-nowrap flex-shrink-0
@@ -50,6 +54,8 @@ export const SectionDivider = () => {
                   : "border-border/20 bg-card/30"
                 }
               `}
+              whileHover={prefersReducedMotion ? {} : { scale: 1.05, y: -2 }}
+              transition={{ duration: 0.2 }}
             >
               {/* Icon with glow for highlights */}
               <div className={`relative ${feature.highlight ? "text-primary" : "text-primary/50"}`}>
@@ -63,7 +69,7 @@ export const SectionDivider = () => {
               <span className={`text-sm font-medium ${feature.highlight ? "text-foreground" : "text-muted-foreground/80"}`}>
                 {feature.text}
               </span>
-            </div>
+            </motion.div>
           ))}
         </motion.div>
       </div>
