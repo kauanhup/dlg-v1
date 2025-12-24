@@ -507,10 +507,11 @@ const Login = () => {
         setIsSubmitting(false);
 
         // Redirect based on role (from validation response)
+        // Use window.location for guaranteed navigation after auth state change
         if (parsedResponse?.role === 'admin') {
-          navigate("/admin");
+          window.location.href = "/admin";
         } else {
-          navigate(redirectUrl);
+          window.location.href = redirectUrl;
         }
       } else {
         // Signup via secure edge function with honeypot
