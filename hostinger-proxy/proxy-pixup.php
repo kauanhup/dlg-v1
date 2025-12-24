@@ -189,7 +189,7 @@ switch ($action) {
         $payer_document = $data['payer_document'] ?? '';
         
         // URL do webhook - IMPORTANTE: o PixUp envia o callback para esta URL
-        $postback_url = 'https://dlgconnect.com';
+        $postback_url = 'https://dlgconnect.com/api/webhook-pixup.php';
         
         if ($amount < 1) {
             http_response_code(400);
