@@ -624,39 +624,39 @@ export const HeroVisual = () => {
         </motion.div>
       </motion.div>
 
-      {/* Badges aligned with SVG line endpoints */}
-      {/* Delay Inteligente - endpoint (360, 90) → top: 22%, right: 14% */}
-      <div className="absolute hidden sm:block top-[18%] right-[10%]">
+      {/* Badges aligned with SVG line endpoints - using transform to center on dots */}
+      {/* Delay Inteligente - endpoint (378, 72) */}
+      <div className="absolute hidden sm:block" style={{ top: '18%', right: '10%', transform: 'translate(50%, -50%)' }}>
         <Badge icon={Clock} label="Delay Inteligente" delay={0.4} floatOffset={0} />
       </div>
 
-      {/* Multi-Contas - endpoint (380, 160) → top: 36%, right: 8% */}
-      <div className="absolute hidden sm:block top-[36%] right-[5%]">
+      {/* Multi-Contas - endpoint (399, 144) */}
+      <div className="absolute hidden sm:block" style={{ top: '36%', right: '5%', transform: 'translate(50%, -50%)' }}>
         <Badge icon={Users} label="Multi-Contas" delay={0.45} floatOffset={0.3} />
       </div>
 
-      {/* Modo PC - endpoint (390, 250) → top: 58%, right: 6% */}
-      <div className="absolute hidden sm:block top-[58%] right-[2%]">
+      {/* Modo PC - endpoint (412, 232) */}
+      <div className="absolute hidden sm:block" style={{ top: '58%', right: '2%', transform: 'translate(50%, -50%)' }}>
         <Badge icon={Monitor} label="Modo PC" delay={0.5} floatOffset={0.6} />
       </div>
 
-      {/* Anti-Ban - endpoint (360, 320) → bottom: 18%, right: 12% */}
-      <div className="absolute hidden sm:block bottom-[16%] right-[8%]">
+      {/* Anti-Ban - endpoint (386, 336) */}
+      <div className="absolute hidden sm:block" style={{ bottom: '16%', right: '8%', transform: 'translate(50%, 50%)' }}>
         <Badge icon={Shield} label="Anti-Ban" delay={0.55} floatOffset={0.2} />
       </div>
 
-      {/* Extração - endpoint (50, 120) → top: 26%, left: 10% */}
-      <div className="absolute hidden sm:block top-[26%] left-[5%]">
+      {/* Extração - endpoint (21, 104) */}
+      <div className="absolute hidden sm:block" style={{ top: '26%', left: '5%', transform: 'translate(-50%, -50%)' }}>
         <Badge icon={Send} label="Extração" delay={0.6} floatOffset={0.5} />
       </div>
 
-      {/* Crescimento - endpoint (90, 310) → bottom: 20%, left: 18% */}
-      <div className="absolute hidden sm:block bottom-[18%] left-[15%]">
+      {/* Crescimento - endpoint (63, 328) */}
+      <div className="absolute hidden sm:block" style={{ bottom: '18%', left: '15%', transform: 'translate(-50%, 50%)' }}>
         <Badge icon={Rocket} label="Crescimento" delay={0.65} floatOffset={0.4} />
       </div>
 
-      {/* Automação - endpoint (250, 350) → bottom: 10%, left: 55% */}
-      <div className="absolute hidden sm:block bottom-[8%] left-[55%]">
+      {/* Automação - endpoint (231, 368) */}
+      <div className="absolute hidden sm:block" style={{ bottom: '8%', left: '55%', transform: 'translate(-50%, 50%)' }}>
         <Badge icon={Zap} label="Automação" delay={0.7} floatOffset={0.1} />
       </div>
 
