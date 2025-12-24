@@ -31,37 +31,47 @@ const Hero = () => {
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
           {/* Left side - Text content */}
-          <div className="text-center lg:text-left">
+          <div className="text-center lg:text-left space-y-6 sm:space-y-8">
+            {/* Badge */}
+            <motion.div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: gpuEase }}
+            >
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-xs sm:text-sm font-medium text-primary">Automação Profissional</span>
+            </motion.div>
+
             {/* Title */}
             <motion.h1
-              className="text-3xl xs:text-4xl sm:text-5xl md:text-5xl lg:text-5xl xl:text-6xl font-display font-bold tracking-tight mb-5 sm:mb-6 leading-[1.15]"
+              className="text-4xl xs:text-5xl sm:text-6xl md:text-6xl lg:text-6xl xl:text-7xl font-display tracking-tighter leading-[0.95]"
               style={{ willChange: "transform, opacity" }}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, ease: gpuEase }}
+              transition={{ duration: 0.4, delay: 0.05, ease: gpuEase }}
             >
-              <span className="text-foreground">Cresça no Telegram</span>
-              <br />
-              <span className="text-foreground">com </span>
-              <TypewriterText 
-                texts={["segurança", "rapidez", "inteligência"]}
-                typingSpeed={80}
-                deletingSpeed={40}
-                pauseTime={2500}
-              />
+              <span className="block text-foreground">Cresça no Telegram</span>
+              <span className="block mt-1 sm:mt-2">
+                <span className="text-foreground">com </span>
+                <TypewriterText 
+                  texts={["segurança", "rapidez", "inteligência"]}
+                  typingSpeed={80}
+                  deletingSpeed={40}
+                  pauseTime={2500}
+                />
+              </span>
             </motion.h1>
 
-            {/* Subtitle - improved */}
+            {/* Subtitle */}
             <motion.p
-              className="text-sm sm:text-base md:text-lg text-muted-foreground/90 mb-6 sm:mb-8 max-w-lg mx-auto lg:mx-0 leading-relaxed"
+              className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed"
               style={{ willChange: "transform, opacity" }}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1, ease: gpuEase }}
+              transition={{ duration: 0.35, delay: 0.12, ease: gpuEase }}
             >
-              <span className="text-foreground/80 font-medium">Automação profissional</span> para Telegram.
-              <br className="hidden sm:block" />
-              {" "}Sem gambiarra. Sem scripts quebrados. Sem risco.
+              Sem gambiarra. Sem scripts quebrados. <span className="text-foreground font-medium">Sem risco.</span>
             </motion.p>
 
             {/* CTA Buttons */}
