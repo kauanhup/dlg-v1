@@ -1,18 +1,20 @@
 import { motion } from "framer-motion";
-import { Users, Zap, Shield, Clock, Send, Monitor, Rocket } from "lucide-react";
+import { Users, Shield, Clock, Send, Monitor, Rocket } from "lucide-react";
 import { usePrefersReducedMotion, gpuEase } from "@/hooks/useScrollAnimation";
 
-// Simplified floating badge - GPU optimized
+// Enhanced floating badge with more movement
 const Badge = ({ 
   icon: Icon, 
   label, 
   delay,
-  floatOffset = 0
+  floatOffset = 0,
+  floatX = 0
 }: { 
   icon: React.ElementType; 
   label: string; 
   delay: number;
   floatOffset?: number;
+  floatX?: number;
 }) => {
   const prefersReducedMotion = usePrefersReducedMotion();
 
@@ -24,14 +26,21 @@ const Badge = ({
       animate={{ 
         opacity: 1, 
         scale: 1, 
-        y: prefersReducedMotion ? 0 : [0, -4, 0]
+        y: prefersReducedMotion ? 0 : [0, -6, 0, -3, 0],
+        x: prefersReducedMotion ? 0 : [0, floatX, 0, -floatX * 0.5, 0]
       }}
       transition={{ 
         opacity: { duration: 0.4, delay },
         scale: { duration: 0.4, delay, ease: gpuEase },
         y: {
-          duration: 4 + floatOffset,
+          duration: 5 + floatOffset,
           delay: delay + 0.5,
+          repeat: Infinity,
+          ease: "easeInOut"
+        },
+        x: {
+          duration: 6 + floatOffset,
+          delay: delay + 0.3,
           repeat: Infinity,
           ease: "easeInOut"
         }
@@ -49,26 +58,36 @@ const Badge = ({
   );
 };
 
-// Simplified animated line - thinner for better look
+// Animated curved line with pulse effect
 const AnimatedLine = ({ 
   d, 
   delay 
 }: { 
   d: string; 
   delay: number;
-}) => (
-  <motion.path 
-    d={d}
-    stroke="url(#branchGrad)" 
-    strokeWidth="0.5"
-    strokeLinecap="round"
-    fill="none"
-    style={{ willChange: "stroke-dashoffset, opacity" }}
-    initial={{ pathLength: 0, opacity: 0 }}
-    animate={{ pathLength: 1, opacity: 1 }}
-    transition={{ duration: 1, delay, ease: "easeOut" }}
-  />
-);
+}) => {
+  const prefersReducedMotion = usePrefersReducedMotion();
+  
+  return (
+    <motion.path 
+      d={d}
+      stroke="url(#branchGrad)" 
+      strokeWidth="0.4"
+      strokeLinecap="round"
+      fill="none"
+      style={{ willChange: "stroke-dashoffset, opacity" }}
+      initial={{ pathLength: 0, opacity: 0 }}
+      animate={{ 
+        pathLength: 1, 
+        opacity: prefersReducedMotion ? 0.6 : [0.4, 0.8, 0.4]
+      }}
+      transition={{ 
+        pathLength: { duration: 1.2, delay, ease: "easeOut" },
+        opacity: { duration: 3, delay: delay + 1, repeat: Infinity, ease: "easeInOut" }
+      }}
+    />
+  );
+};
 
 export const HeroVisual = () => {
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -106,28 +125,25 @@ export const HeroVisual = () => {
           </linearGradient>
         </defs>
         
-        {/* Lines going from center to badge positions - evenly distributed */}
+        {/* Curved lines from center to badges - 6 badges only */}
         
-        {/* Extração - top left */}
-        <AnimatedLine d="M 50 50 Q 30 30, 12 15" delay={0.1} />
+        {/* Extração - top left - curved up then left */}
+        <AnimatedLine d="M 50 50 C 40 35, 25 25, 18 18" delay={0.1} />
         
-        {/* Delay Inteligente - top right */}
-        <AnimatedLine d="M 50 50 Q 70 30, 88 15" delay={0.15} />
+        {/* Delay Inteligente - top right - curved up then right */}
+        <AnimatedLine d="M 50 50 C 60 35, 75 25, 82 18" delay={0.15} />
         
-        {/* Crescimento - middle left */}
-        <AnimatedLine d="M 50 50 Q 30 50, 8 48" delay={0.2} />
+        {/* Crescimento - middle left - S-curve */}
+        <AnimatedLine d="M 50 50 C 35 55, 20 45, 5 48" delay={0.2} />
         
-        {/* Multi-Contas - middle right */}
-        <AnimatedLine d="M 50 50 Q 70 50, 92 48" delay={0.25} />
+        {/* Multi-Contas - middle right - S-curve */}
+        <AnimatedLine d="M 50 50 C 65 45, 80 55, 95 48" delay={0.25} />
         
-        {/* Modo PC - bottom left */}
-        <AnimatedLine d="M 50 50 Q 30 70, 15 82" delay={0.3} />
+        {/* Modo PC - bottom left - curved down then left */}
+        <AnimatedLine d="M 50 50 C 40 65, 25 75, 18 82" delay={0.3} />
         
-        {/* Automação - bottom center */}
-        <AnimatedLine d="M 50 50 Q 50 70, 50 92" delay={0.35} />
-        
-        {/* Anti-Ban - bottom right */}
-        <AnimatedLine d="M 50 50 Q 70 70, 85 82" delay={0.4} />
+        {/* Anti-Ban - bottom right - curved down then right */}
+        <AnimatedLine d="M 50 50 C 60 65, 75 75, 82 82" delay={0.35} />
         
         {/* Central pulsing ring - only if not reduced motion */}
         {!prefersReducedMotion && (
@@ -208,40 +224,35 @@ export const HeroVisual = () => {
         </motion.div>
       </motion.div>
 
-      {/* Badges distributed evenly around the logo */}
+      {/* Badges distributed evenly around the logo - 6 badges */}
       {/* Top left - Extração */}
-      <div className="absolute hidden sm:block" style={{ top: '5%', left: '2%' }}>
-        <Badge icon={Send} label="Extração" delay={0.3} floatOffset={0.5} />
+      <div className="absolute hidden sm:block" style={{ top: '8%', left: '0%' }}>
+        <Badge icon={Send} label="Extração" delay={0.3} floatOffset={0.5} floatX={3} />
       </div>
 
       {/* Top right - Delay Inteligente */}
-      <div className="absolute hidden sm:block" style={{ top: '5%', right: '2%' }}>
-        <Badge icon={Clock} label="Delay Inteligente" delay={0.35} floatOffset={0} />
+      <div className="absolute hidden sm:block" style={{ top: '8%', right: '0%' }}>
+        <Badge icon={Clock} label="Delay Inteligente" delay={0.35} floatOffset={0} floatX={-3} />
       </div>
 
       {/* Middle left - Crescimento */}
-      <div className="absolute hidden sm:block" style={{ top: '42%', left: '-5%' }}>
-        <Badge icon={Rocket} label="Crescimento" delay={0.4} floatOffset={0.4} />
+      <div className="absolute hidden sm:block" style={{ top: '40%', left: '-12%' }}>
+        <Badge icon={Rocket} label="Crescimento" delay={0.4} floatOffset={0.4} floatX={4} />
       </div>
 
       {/* Middle right - Multi-Contas */}
-      <div className="absolute hidden sm:block" style={{ top: '42%', right: '-5%' }}>
-        <Badge icon={Users} label="Multi-Contas" delay={0.45} floatOffset={0.3} />
+      <div className="absolute hidden sm:block" style={{ top: '40%', right: '-12%' }}>
+        <Badge icon={Users} label="Multi-Contas" delay={0.45} floatOffset={0.3} floatX={-4} />
       </div>
 
       {/* Bottom left - Modo PC */}
-      <div className="absolute hidden sm:block" style={{ bottom: '8%', left: '5%' }}>
-        <Badge icon={Monitor} label="Modo PC" delay={0.5} floatOffset={0.6} />
-      </div>
-
-      {/* Bottom center - Automação */}
-      <div className="absolute hidden sm:block" style={{ bottom: '0%', left: '50%', transform: 'translateX(-50%)' }}>
-        <Badge icon={Zap} label="Automação" delay={0.55} floatOffset={0.1} />
+      <div className="absolute hidden sm:block" style={{ bottom: '8%', left: '0%' }}>
+        <Badge icon={Monitor} label="Modo PC" delay={0.5} floatOffset={0.6} floatX={3} />
       </div>
 
       {/* Bottom right - Anti-Ban */}
-      <div className="absolute hidden sm:block" style={{ bottom: '8%', right: '5%' }}>
-        <Badge icon={Shield} label="Anti-Ban" delay={0.6} floatOffset={0.2} />
+      <div className="absolute hidden sm:block" style={{ bottom: '8%', right: '0%' }}>
+        <Badge icon={Shield} label="Anti-Ban" delay={0.55} floatOffset={0.2} floatX={-3} />
       </div>
 
       {/* Mobile layout */}
@@ -270,8 +281,8 @@ export const HeroVisual = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.5 }}
         >
-          <Zap className="w-3 h-3 text-primary" />
-          <span className="text-[10px] font-medium text-foreground">Automação</span>
+          <Rocket className="w-3 h-3 text-primary" />
+          <span className="text-[10px] font-medium text-foreground">Crescimento</span>
         </motion.div>
       </div>
     </div>
