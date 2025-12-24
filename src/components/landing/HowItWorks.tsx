@@ -162,23 +162,23 @@ const HowItWorks = () => {
         {/* Header */}
         <motion.div 
           className="text-center max-w-2xl mx-auto mb-16"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.3, ease: [0.33, 1, 0.68, 1] }}
         >
           <motion.h2 
             className="text-3xl sm:text-4xl font-display font-bold mb-4"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.25, delay: 0.05, ease: [0.33, 1, 0.68, 1] }}
           >
             Simples de Usar
           </motion.h2>
           <motion.p 
             className="text-muted-foreground"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.25, delay: 0.08, ease: [0.33, 1, 0.68, 1] }}
           >
             Em apenas 3 passos você configura e começa a automatizar seu Telegram.
           </motion.p>
@@ -190,12 +190,12 @@ const HowItWorks = () => {
             <motion.div
               key={step.step}
               className={`flex flex-col ${index % 2 === 1 ? 'lg:flex-row-reverse' : 'lg:flex-row'} gap-8 lg:gap-16 items-center`}
-              initial={{ opacity: 0, y: 60 }}
+              initial={{ opacity: 0, y: 24 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ 
-                duration: 0.7, 
-                delay: 0.3 + (index * 0.2),
-                ease: [0.22, 1, 0.36, 1]
+                duration: 0.35, 
+                delay: 0.1 + (index * 0.08),
+                ease: [0.33, 1, 0.68, 1]
               }}
             >
               {/* Content */}
@@ -213,9 +213,9 @@ const HowItWorks = () => {
                 {/* Tutorial Button */}
                 <motion.div 
                   className="mt-6"
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={isInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ delay: 0.5 + (index * 0.2) }}
+                  transition={{ delay: 0.15 + (index * 0.08), duration: 0.25 }}
                 >
                   <Button
                     variant="outline"
@@ -233,12 +233,12 @@ const HowItWorks = () => {
               <div className="flex-1 w-full flex justify-center">
                 <motion.div 
                   className="relative group"
-                  whileHover={{ scale: 1.03, y: -8 }}
-                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                  whileHover={{ scale: 1.02, y: -4 }}
+                  transition={{ duration: 0.2, ease: [0.33, 1, 0.68, 1] }}
                 >
-                  {/* Outer glow - animated */}
+                  {/* Outer glow - faster */}
                   <motion.div 
-                    className="absolute -inset-2 bg-gradient-to-r from-primary/50 via-blue-500/40 to-purple-500/50 rounded-3xl blur-2xl opacity-40 group-hover:opacity-70 transition-all duration-700"
+                    className="absolute -inset-2 bg-gradient-to-r from-primary/50 via-blue-500/40 to-purple-500/50 rounded-3xl blur-2xl opacity-40 group-hover:opacity-70 transition-all duration-300"
                     animate={{ 
                       background: [
                         "linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(217 91% 60% / 0.4), hsl(270 70% 60% / 0.5))",
@@ -247,21 +247,21 @@ const HowItWorks = () => {
                         "linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(217 91% 60% / 0.4), hsl(270 70% 60% / 0.5))"
                       ]
                     }}
-                    transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
                   />
                   
                   {/* Inner glow */}
                   <div className="absolute -inset-1 bg-gradient-to-br from-primary/30 to-blue-500/20 rounded-2xl blur-lg opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
                   
                   {/* Image container */}
-                  <div className="relative rounded-2xl overflow-hidden border border-white/20 group-hover:border-primary/40 shadow-2xl shadow-black/60 transition-all duration-500">
+                  <div className="relative rounded-2xl overflow-hidden border border-white/20 group-hover:border-primary/40 shadow-2xl shadow-black/60 transition-all duration-200">
                     {/* Shine effect on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-10 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500 ease-out z-10 pointer-events-none" />
                     
                     <img 
                       src={step.image} 
                       alt={step.title}
-                      className="w-full max-w-xl h-auto object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                      className="w-full max-w-xl h-auto object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                       loading="lazy"
                     />
                     
@@ -278,14 +278,14 @@ const HowItWorks = () => {
                   
                   {/* Floating particles on hover */}
                   <motion.div
-                    className="absolute -top-1 -right-1 w-2 h-2 bg-primary/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    className="absolute -top-1 -right-1 w-2 h-2 bg-primary/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                     animate={{ y: [-2, 2, -2] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
                   />
                   <motion.div
-                    className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-blue-500/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-blue-500/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                     animate={{ y: [2, -2, 2] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
                   />
                 </motion.div>
               </div>
@@ -296,9 +296,9 @@ const HowItWorks = () => {
         {/* Download Button */}
         <motion.div
           className="text-center"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, delay: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.3, delay: 0.35, ease: [0.33, 1, 0.68, 1] }}
         >
           <Button
             size="lg"

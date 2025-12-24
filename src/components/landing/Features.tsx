@@ -17,31 +17,31 @@ const Features = () => {
       <div className="container mx-auto px-4 sm:px-6">
         <motion.div 
           className="text-center max-w-2xl mx-auto mb-12"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.3, ease: [0.33, 1, 0.68, 1] }}
         >
           <motion.p
             className="text-primary text-sm font-medium mb-3"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.25, delay: 0.05, ease: [0.33, 1, 0.68, 1] }}
           >
             Demonstração
           </motion.p>
           <motion.h2 
             className="text-3xl sm:text-4xl font-display font-bold mb-4"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.25, delay: 0.08, ease: [0.33, 1, 0.68, 1] }}
           >
             Conheça o Bot
           </motion.h2>
           <motion.p 
             className="text-muted-foreground"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.25, delay: 0.1, ease: [0.33, 1, 0.68, 1] }}
           >
             Veja como o bot funciona na prática e descubra todo seu potencial.
           </motion.p>
@@ -49,9 +49,9 @@ const Features = () => {
 
         <motion.div
           className="w-full max-w-3xl mx-auto"
-          initial={{ opacity: 0, y: 40, scale: 0.95 }}
+          initial={{ opacity: 0, y: 20, scale: 0.98 }}
           animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
-          transition={{ duration: 0.7, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.35, delay: 0.12, ease: [0.33, 1, 0.68, 1] }}
         >
           <div className="relative aspect-[16/9] rounded-2xl overflow-hidden border border-border bg-card/50 backdrop-blur-sm shadow-2xl shadow-primary/10 group">
             {videoUrl ? (
