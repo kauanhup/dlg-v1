@@ -11,11 +11,9 @@ const gpuEase = [0.33, 1, 0.68, 1] as const;
 const Hero = () => {
   return (
     <section className="pt-20 pb-8 sm:pt-24 sm:pb-12 md:pt-28 md:pb-16 lg:pb-20 relative overflow-hidden min-h-[80vh] sm:min-h-[85vh] flex items-center">
-      {/* Simple Gradient Light Background */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-background" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/10 rounded-full blur-[120px] opacity-60" />
-        <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px] opacity-40" />
+      {/* Single Point Light Effect */}
+      <div className="absolute inset-0 z-0 bg-black">
+        <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/20 rounded-full blur-[150px]" />
       </div>
       
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
