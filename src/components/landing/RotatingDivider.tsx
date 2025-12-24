@@ -5,7 +5,7 @@ const RotatingDivider = () => {
   const prefersReducedMotion = usePrefersReducedMotion();
 
   return (
-    <div className="relative w-full py-12 sm:py-16 overflow-hidden bg-transparent">
+    <div className="relative w-full py-16 sm:py-20 overflow-hidden bg-gradient-to-b from-primary/5 via-background to-background">
       {/* Animated horizontal line */}
       <div className="absolute inset-0 flex items-center">
         <motion.div 
