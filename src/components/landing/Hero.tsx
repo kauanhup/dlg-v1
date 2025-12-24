@@ -28,10 +28,10 @@ const Hero = () => {
       {/* Top fade overlay */}
       <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background to-transparent z-[1]" />
       
-      <div className="container mx-auto px-4 sm:px-6 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
+      <div className="container mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-16 items-center">
           {/* Left side - Text content */}
-          <div className="text-center lg:text-left space-y-5 sm:space-y-6">
+          <div className="text-center lg:text-left space-y-5 sm:space-y-6 lg:pl-4 xl:pl-8">
             {/* Title */}
             <motion.h1
               className="text-4xl xs:text-5xl sm:text-6xl md:text-6xl lg:text-6xl xl:text-7xl font-display tracking-[-0.04em] leading-[1.2]"
