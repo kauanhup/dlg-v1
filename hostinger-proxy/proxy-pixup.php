@@ -8,7 +8,7 @@
 
 // Configurações
 define('PROXY_SECRET', 'swx_proxy_2024_Xk9mP2nQ7rT3wY5z'); // Troque por uma chave segura
-define('PIXUP_API_URL', 'https://api.bspay.co'); // URL correta da API BSPAY/PixUp
+define('PIXUP_API_URL', 'https://api.pixupbr.com');
 
 // Headers CORS
 header('Content-Type: application/json');
