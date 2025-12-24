@@ -67,18 +67,18 @@ const FAQ = () => {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.05,
-        delayChildren: 0.2
+        staggerChildren: 0.03,
+        delayChildren: 0.1
       }
     }
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
+    hidden: { opacity: 0, y: 10 },
     visible: { 
       opacity: 1, 
       y: 0,
-      transition: { duration: 0.4, ease: "easeOut" as const }
+      transition: { duration: 0.2, ease: "easeOut" as const }
     }
   };
 
@@ -88,23 +88,23 @@ const FAQ = () => {
         <div className="max-w-2xl mx-auto">
           <motion.div 
             className="text-center mb-12"
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.3, ease: [0.33, 1, 0.68, 1] }}
           >
             <motion.p 
               className="text-primary text-sm font-medium mb-3"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: 0.1 }}
+              transition={{ duration: 0.25, delay: 0.05 }}
             >
               FAQ
             </motion.p>
             <motion.h2 
               className="text-3xl sm:text-4xl font-display font-bold"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: 0.15 }}
+              transition={{ duration: 0.25, delay: 0.08 }}
             >
               Perguntas frequentes
             </motion.h2>
