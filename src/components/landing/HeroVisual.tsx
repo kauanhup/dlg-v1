@@ -98,20 +98,56 @@ export const HeroVisual = () => {
       {floatingFeatures.map((item, index) => (
         <motion.div
           key={index}
-          className="absolute hidden xs:flex z-20"
+          className="absolute hidden xs:flex z-20 group cursor-default"
           style={{ 
             left: `${item.x}%`, 
             top: `${item.y}%`,
           }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: item.delay }}
+          initial={{ opacity: 0, scale: 0.8, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ 
+            duration: 0.5, 
+            delay: item.delay,
+            ease: [0.22, 1, 0.36, 1]
+          }}
+          whileHover={{ scale: 1.05, y: -2 }}
         >
-          <div className="flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-background border border-border/50 shadow-lg shadow-black/20 backdrop-blur-sm">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-lg bg-primary/15 flex items-center justify-center">
-              <item.icon className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 text-primary" />
+          {/* Outer glow */}
+          <motion.div 
+            className="absolute -inset-1 rounded-2xl bg-primary/20 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            animate={{ 
+              opacity: [0.3, 0.5, 0.3],
+            }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: index * 0.5 }}
+          />
+          
+          {/* Gradient border wrapper */}
+          <div className="relative p-[1px] rounded-xl bg-gradient-to-br from-primary/40 via-border/30 to-primary/20 group-hover:from-primary/60 group-hover:to-primary/40 transition-all duration-300">
+            {/* Inner content */}
+            <div className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-[11px] bg-background/95 backdrop-blur-md shadow-lg shadow-black/30">
+              {/* Icon container with pulse effect */}
+              <motion.div 
+                className="relative w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-lg bg-gradient-to-br from-primary/25 to-primary/10 flex items-center justify-center"
+                animate={{ 
+                  boxShadow: [
+                    "0 0 0 0 hsl(var(--primary) / 0)",
+                    "0 0 8px 2px hsl(var(--primary) / 0.3)",
+                    "0 0 0 0 hsl(var(--primary) / 0)"
+                  ]
+                }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: index * 0.3 }}
+              >
+                <item.icon className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 text-primary drop-shadow-[0_0_4px_hsl(var(--primary)/0.5)]" />
+              </motion.div>
+              
+              {/* Text with subtle gradient */}
+              <span className="text-[9px] sm:text-[11px] md:text-xs font-semibold text-foreground/95 whitespace-nowrap tracking-wide">
+                {item.label}
+              </span>
+              
+              {/* Top highlight line */}
+              <div className="absolute top-0 left-3 right-3 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
             </div>
-            <span className="text-[9px] sm:text-[11px] md:text-xs font-medium text-foreground/90 whitespace-nowrap">{item.label}</span>
           </div>
         </motion.div>
       ))}
