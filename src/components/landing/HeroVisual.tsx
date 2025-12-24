@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Users, Zap, Shield, Clock, Send } from "lucide-react";
+import { Users, Zap, Shield, Clock, Send, Monitor } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 
 const Badge = ({ 
@@ -26,7 +26,7 @@ const Badge = ({
 
 export const HeroVisual = () => {
   return (
-    <div className="relative w-full max-w-[400px] lg:max-w-[440px] mx-auto h-[360px] sm:h-[400px] flex items-center justify-center">
+    <div className="relative w-full max-w-[380px] lg:max-w-[420px] mx-auto h-[360px] sm:h-[400px] flex items-center justify-center">
       {/* Subtle ambient glow */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="w-40 h-40 rounded-full bg-primary/10 blur-[60px]" />
@@ -35,7 +35,7 @@ export const HeroVisual = () => {
       {/* Mind map SVG lines */}
       <svg 
         className="absolute inset-0 w-full h-full hidden sm:block" 
-        viewBox="0 0 440 400"
+        viewBox="0 0 420 400"
         fill="none"
       >
         <defs>
@@ -45,10 +45,11 @@ export const HeroVisual = () => {
           </linearGradient>
         </defs>
         
-        {/* Mind map branches - bezier curves from center */}
-        {/* Right side branches */}
+        {/* Mind map branches - bezier curves from center (210, 200) */}
+        
+        {/* Delay Inteligente - top right */}
         <motion.path 
-          d="M 220 200 C 280 200, 320 120, 380 100" 
+          d="M 210 200 C 260 180, 300 120, 360 90" 
           stroke="url(#branchGrad)" 
           strokeWidth="2"
           strokeLinecap="round"
@@ -57,8 +58,22 @@ export const HeroVisual = () => {
           animate={{ pathLength: 1, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.1 }}
         />
+        
+        {/* Multi-Contas - right side */}
         <motion.path 
-          d="M 220 200 C 300 200, 340 200, 400 200" 
+          d="M 210 200 C 280 190, 330 170, 380 160" 
+          stroke="url(#branchGrad)" 
+          strokeWidth="2"
+          strokeLinecap="round"
+          fill="none"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.15 }}
+        />
+        
+        {/* Modo PC - middle right */}
+        <motion.path 
+          d="M 210 200 C 290 200, 340 230, 390 250" 
           stroke="url(#branchGrad)" 
           strokeWidth="2"
           strokeLinecap="round"
@@ -67,8 +82,22 @@ export const HeroVisual = () => {
           animate={{ pathLength: 1, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
         />
+        
+        {/* Anti-Ban - bottom right */}
         <motion.path 
-          d="M 220 200 C 280 200, 320 280, 380 310" 
+          d="M 210 200 C 260 230, 300 290, 360 320" 
+          stroke="url(#branchGrad)" 
+          strokeWidth="2"
+          strokeLinecap="round"
+          fill="none"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.25 }}
+        />
+        
+        {/* Extração - left side */}
+        <motion.path 
+          d="M 210 200 C 150 180, 100 140, 50 120" 
           stroke="url(#branchGrad)" 
           strokeWidth="2"
           strokeLinecap="round"
@@ -78,9 +107,21 @@ export const HeroVisual = () => {
           transition={{ duration: 0.8, delay: 0.3 }}
         />
         
-        {/* Left side branches */}
+        {/* Logo - bottom left */}
         <motion.path 
-          d="M 220 200 C 160 200, 100 160, 50 140" 
+          d="M 210 200 C 170 230, 130 280, 90 310" 
+          stroke="url(#branchGrad)" 
+          strokeWidth="2"
+          strokeLinecap="round"
+          fill="none"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.35 }}
+        />
+        
+        {/* Automação - bottom center */}
+        <motion.path 
+          d="M 210 200 C 210 260, 230 310, 250 350" 
           stroke="url(#branchGrad)" 
           strokeWidth="2"
           strokeLinecap="round"
@@ -89,36 +130,15 @@ export const HeroVisual = () => {
           animate={{ pathLength: 1, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4 }}
         />
-        <motion.path 
-          d="M 220 200 C 180 240, 140 300, 80 330" 
-          stroke="url(#branchGrad)" 
-          strokeWidth="2"
-          strokeLinecap="round"
-          fill="none"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.5 }}
-        />
-        
-        {/* Bottom branch */}
-        <motion.path 
-          d="M 220 200 C 220 260, 240 320, 260 360" 
-          stroke="url(#branchGrad)" 
-          strokeWidth="2"
-          strokeLinecap="round"
-          fill="none"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-        />
 
         {/* Node dots at endpoints */}
-        <motion.circle cx="380" cy="100" r="4" fill="hsl(var(--primary))" fillOpacity="0.6" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.5 }} />
-        <motion.circle cx="400" cy="200" r="4" fill="hsl(var(--primary))" fillOpacity="0.6" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.6 }} />
-        <motion.circle cx="380" cy="310" r="4" fill="hsl(var(--primary))" fillOpacity="0.6" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.7 }} />
-        <motion.circle cx="50" cy="140" r="4" fill="hsl(var(--primary))" fillOpacity="0.6" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.8 }} />
-        <motion.circle cx="80" cy="330" r="4" fill="hsl(var(--primary))" fillOpacity="0.6" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.9 }} />
-        <motion.circle cx="260" cy="360" r="4" fill="hsl(var(--primary))" fillOpacity="0.6" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 1.0 }} />
+        <motion.circle cx="360" cy="90" r="4" fill="hsl(var(--primary))" fillOpacity="0.6" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.5 }} />
+        <motion.circle cx="380" cy="160" r="4" fill="hsl(var(--primary))" fillOpacity="0.6" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.55 }} />
+        <motion.circle cx="390" cy="250" r="4" fill="hsl(var(--primary))" fillOpacity="0.6" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.6 }} />
+        <motion.circle cx="360" cy="320" r="4" fill="hsl(var(--primary))" fillOpacity="0.6" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.65 }} />
+        <motion.circle cx="50" cy="120" r="4" fill="hsl(var(--primary))" fillOpacity="0.6" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.7 }} />
+        <motion.circle cx="90" cy="310" r="4" fill="hsl(var(--primary))" fillOpacity="0.6" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.75 }} />
+        <motion.circle cx="250" cy="350" r="4" fill="hsl(var(--primary))" fillOpacity="0.6" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.8 }} />
       </svg>
 
       {/* Central node - Telegram Icon */}
@@ -152,40 +172,45 @@ export const HeroVisual = () => {
       {/* Badges positioned at branch endpoints */}
       
       {/* Delay Inteligente - top right */}
-      <div className="absolute hidden sm:block top-[18%] right-[2%]">
+      <div className="absolute hidden sm:block top-[15%] right-[8%]">
         <Badge icon={Clock} label="Delay Inteligente" delay={0.4} />
       </div>
 
-      {/* Multi-Contas - middle right */}
-      <div className="absolute hidden sm:block top-[45%] right-0 -translate-y-1/2">
-        <Badge icon={Users} label="Multi-Contas" delay={0.5} />
+      {/* Multi-Contas - upper right */}
+      <div className="absolute hidden sm:block top-[32%] right-[2%]">
+        <Badge icon={Users} label="Multi-Contas" delay={0.45} />
+      </div>
+
+      {/* Modo PC - middle right */}
+      <div className="absolute hidden sm:block top-[55%] right-[0%]">
+        <Badge icon={Monitor} label="Modo PC" delay={0.5} />
       </div>
 
       {/* Anti-Ban - bottom right */}
-      <div className="absolute hidden sm:block bottom-[15%] right-[5%]">
-        <Badge icon={Shield} label="Anti-Ban" delay={0.6} />
+      <div className="absolute hidden sm:block bottom-[12%] right-[5%]">
+        <Badge icon={Shield} label="Anti-Ban" delay={0.55} />
       </div>
 
       {/* Extração - left */}
-      <div className="absolute hidden sm:block top-[28%] left-0">
-        <Badge icon={Send} label="Extração" delay={0.7} />
+      <div className="absolute hidden sm:block top-[22%] left-[0%]">
+        <Badge icon={Send} label="Extração" delay={0.6} />
       </div>
 
-      {/* Logo - bottom left */}
+      {/* Logo - bottom left with white background */}
       <motion.div
-        className="absolute hidden sm:flex bottom-[12%] left-[12%]"
+        className="absolute hidden sm:flex bottom-[15%] left-[15%]"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, delay: 0.8 }}
+        transition={{ duration: 0.3, delay: 0.65 }}
       >
-        <div className="w-10 h-10 rounded-full bg-background border-2 border-primary/30 shadow-lg flex items-center justify-center overflow-hidden">
+        <div className="w-10 h-10 rounded-full bg-white border-2 border-primary/30 shadow-lg flex items-center justify-center overflow-hidden">
           <img src={logoImg} alt="Logo" className="w-6 h-6 object-contain" />
         </div>
       </motion.div>
 
       {/* Automação - bottom center */}
-      <div className="absolute hidden sm:block bottom-[2%] left-[55%]">
-        <Badge icon={Zap} label="Automação" delay={0.9} />
+      <div className="absolute hidden sm:block bottom-[5%] left-[52%]">
+        <Badge icon={Zap} label="Automação" delay={0.7} />
       </div>
 
       {/* Mobile layout */}
