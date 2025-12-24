@@ -29,18 +29,18 @@ const Hero = () => {
       <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background to-transparent z-[1]" />
       
       <div className="container mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-8 sm:gap-10 lg:gap-8 items-center">
           {/* Left side - Text content */}
-          <div className="text-center lg:text-left space-y-5 sm:space-y-6 lg:pl-4 xl:pl-8">
+          <div className="text-center lg:text-left space-y-5 sm:space-y-6">
             {/* Title */}
             <motion.h1
-              className="text-4xl xs:text-5xl sm:text-6xl md:text-6xl lg:text-6xl xl:text-7xl font-display tracking-[-0.04em] leading-[1.2]"
+              className="text-3xl xs:text-4xl sm:text-5xl lg:text-5xl xl:text-6xl font-display tracking-[-0.03em] leading-[1.2]"
               style={{ willChange: "transform, opacity" }}
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.05, ease: gpuEase }}
             >
-              <span className="block bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent pb-1 whitespace-nowrap">
+              <span className="block bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent pb-1">
                 Cresça no Telegram
               </span>
               <span className="block mt-1 sm:mt-2">
