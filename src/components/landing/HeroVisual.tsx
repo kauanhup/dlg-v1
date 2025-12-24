@@ -11,15 +11,63 @@ const Badge = ({
   delay: number;
 }) => (
   <motion.div
-    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-background border border-border/50 shadow-md hover:border-primary/40 transition-all hover:shadow-lg"
-    initial={{ opacity: 0, scale: 0.9 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ duration: 0.3, delay }}
+    className="group relative flex items-center gap-2 px-3 py-2 rounded-xl bg-background border border-border/50 shadow-md cursor-default overflow-hidden"
+    initial={{ opacity: 0, scale: 0.8, y: 20 }}
+    animate={{ opacity: 1, scale: 1, y: 0 }}
+    transition={{ 
+      duration: 0.5, 
+      delay,
+      type: "spring",
+      stiffness: 200,
+      damping: 15
+    }}
+    whileHover={{ 
+      scale: 1.08, 
+      boxShadow: "0 8px 30px -8px hsl(var(--primary) / 0.4)",
+      borderColor: "hsl(var(--primary) / 0.6)"
+    }}
+    whileTap={{ scale: 0.95 }}
   >
-    <div className="w-6 h-6 rounded-lg bg-primary/15 flex items-center justify-center">
-      <Icon className="w-3.5 h-3.5 text-primary" />
-    </div>
-    <span className="text-xs font-medium text-foreground whitespace-nowrap">{label}</span>
+    {/* Shimmer effect on hover */}
+    <motion.div
+      className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-primary/10 to-transparent group-hover:translate-x-full transition-transform duration-700"
+    />
+    
+    {/* Glow background */}
+    <motion.div
+      className="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors duration-300"
+    />
+    
+    {/* Icon container with pulse */}
+    <motion.div 
+      className="relative w-6 h-6 rounded-lg bg-primary/15 flex items-center justify-center"
+      animate={{ 
+        boxShadow: [
+          "0 0 0 0 hsl(var(--primary) / 0.3)",
+          "0 0 0 6px hsl(var(--primary) / 0)",
+        ]
+      }}
+      transition={{
+        duration: 2,
+        repeat: Infinity,
+        delay: delay + 1.5,
+        ease: "easeOut"
+      }}
+    >
+      <motion.div
+        animate={{ rotate: [0, 5, -5, 0] }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          delay: delay + 0.5,
+          ease: "easeInOut"
+        }}
+      >
+        <Icon className="w-3.5 h-3.5 text-primary" />
+      </motion.div>
+    </motion.div>
+    
+    <span className="relative text-xs font-medium text-foreground whitespace-nowrap">{label}</span>
   </motion.div>
 );
 
