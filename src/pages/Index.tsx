@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { Header, Hero, BotShowcase, Features, Pricing, FAQ, CTA, Footer } from "@/components/landing";
 import { SectionDivider } from "@/components/landing/SectionDivider";
-import RotatingDivider from "@/components/landing/RotatingDivider";
 import SEO from "@/components/SEO";
 import PageTransition from "@/components/PageTransition";
 
@@ -33,7 +32,8 @@ const Index = () => {
           <BotShowcase />
           <SectionDivider />
           <Features />
-          <RotatingDivider />
+          {/* Simple divider */}
+          <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
           <Pricing />
           <FAQ />
           <CTA />
