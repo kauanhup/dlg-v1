@@ -3,130 +3,123 @@ import { Users, Zap, Shield, Clock, Send } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 
 const features = [
-  { icon: Clock, label: "Delay Inteligente", x: 78, y: 15 },
-  { icon: Users, label: "Multi-Contas", x: 85, y: 40 },
-  { icon: Shield, label: "Anti-Ban", x: 78, y: 65 },
-  { icon: Send, label: "Extração", x: 22, y: 40 },
-  { icon: Zap, label: "Automação", x: 50, y: 82 },
+  { icon: Clock, label: "Delay Inteligente", x: 82, y: 18 },
+  { icon: Users, label: "Multi-Contas", x: 88, y: 42 },
+  { icon: Shield, label: "Anti-Ban", x: 82, y: 66 },
+  { icon: Send, label: "Extração", x: 18, y: 42 },
+  { icon: Zap, label: "Automação", x: 50, y: 85 },
 ];
-
-// Generate smooth curved path
-const getCurvedPath = (startX: number, startY: number, endX: number, endY: number) => {
-  const dx = endX - startX;
-  const dy = endY - startY;
-  const midX = startX + dx * 0.5;
-  const midY = startY + dy * 0.5;
-  
-  // Add curve based on direction
-  const curveOffset = dx > 0 ? -8 : 8;
-  const ctrlX = midX;
-  const ctrlY = midY + curveOffset;
-  
-  return `M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}`;
-};
 
 export const HeroVisual = () => {
   const centerX = 50;
-  const centerY = 45;
+  const centerY = 48;
 
   return (
-    <div className="relative w-full max-w-[400px] lg:max-w-[460px] mx-auto h-[350px] sm:h-[400px] lg:h-[420px] flex items-center justify-center">
-      {/* Subtle ambient glow */}
+    <div className="relative w-full max-w-[420px] lg:max-w-[480px] mx-auto h-[380px] sm:h-[420px] lg:h-[450px] flex items-center justify-center">
+      {/* Ambient glow */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-56 h-56 sm:w-72 sm:h-72 rounded-full bg-primary/8 blur-[70px]" />
+        <div className="w-64 h-64 rounded-full bg-primary/8 blur-[80px]" />
       </div>
 
-      {/* SVG Curved Lines */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+      {/* SVG Lines - connecting center to badges */}
+      <svg 
+        className="absolute inset-0 w-full h-full pointer-events-none" 
+        viewBox="0 0 100 100" 
+        preserveAspectRatio="none"
+      >
         <defs>
-          <linearGradient id="curveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.15" />
+          <linearGradient id="lineGradRight" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.1" />
+          </linearGradient>
+          <linearGradient id="lineGradLeft" x1="100%" y1="0%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.1" />
           </linearGradient>
         </defs>
         
+        {/* Lines to each feature */}
         {features.map((item, index) => {
-          const path = getCurvedPath(centerX, centerY, item.x, item.y);
-          
+          const isLeft = item.x < 50;
           return (
-            <motion.path
+            <motion.line
               key={index}
-              d={path}
-              fill="none"
-              stroke="url(#curveGrad)"
-              strokeWidth="0.3"
-              strokeLinecap="round"
+              x1={centerX}
+              y1={centerY}
+              x2={item.x}
+              y2={item.y}
+              stroke={isLeft ? "url(#lineGradLeft)" : "url(#lineGradRight)"}
+              strokeWidth="0.25"
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.3 + index * 0.1, ease: "easeOut" }}
+              transition={{ duration: 0.6, delay: 0.3 + index * 0.08 }}
             />
           );
         })}
         
         {/* Line to logo */}
-        <motion.path
-          d={getCurvedPath(centerX, centerY, 22, 70)}
-          fill="none"
-          stroke="url(#curveGrad)"
-          strokeWidth="0.3"
-          strokeLinecap="round"
+        <motion.line
+          x1={centerX}
+          y1={centerY}
+          x2={18}
+          y2={72}
+          stroke="url(#lineGradLeft)"
+          strokeWidth="0.25"
           initial={{ pathLength: 0, opacity: 0 }}
           animate={{ pathLength: 1, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.8, ease: "easeOut" }}
+          transition={{ duration: 0.6, delay: 0.7 }}
         />
         
-        {/* Connection dots */}
+        {/* Small dots at line endpoints */}
         {features.map((item, index) => (
           <motion.circle
             key={`dot-${index}`}
             cx={item.x}
             cy={item.y}
-            r="0.6"
+            r="0.5"
             fill="hsl(var(--primary))"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 0.6 }}
-            transition={{ duration: 0.3, delay: 0.7 + index * 0.08 }}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.2, delay: 0.6 + index * 0.08 }}
           />
         ))}
-        
-        {/* Logo dot */}
         <motion.circle
-          cx={22}
-          cy={70}
-          r="0.6"
+          cx={18}
+          cy={72}
+          r="0.5"
           fill="hsl(var(--primary))"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 0.6 }}
-          transition={{ duration: 0.3, delay: 1 }}
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.2, delay: 0.9 }}
         />
       </svg>
 
       {/* Central Telegram Icon */}
       <motion.div 
         className="absolute z-10"
-        style={{ left: '50%', top: '45%', transform: 'translate(-50%, -50%)' }}
+        style={{ left: `${centerX}%`, top: `${centerY}%`, transform: 'translate(-50%, -50%)' }}
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4 }}
       >
         {/* Outer ring */}
         <motion.div
-          className="absolute -inset-5 sm:-inset-7 rounded-full border border-primary/20"
+          className="absolute -inset-6 sm:-inset-8 rounded-full border border-primary/15"
           animate={{ rotate: 360 }}
-          transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
         >
-          <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary/50" />
+          <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary/40" />
         </motion.div>
         
         {/* Inner glow */}
-        <div className="absolute -inset-8 rounded-full bg-primary/8 blur-xl" />
+        <div className="absolute -inset-10 rounded-full bg-primary/6 blur-2xl" />
         
         {/* Icon container */}
-        <div className="relative w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full bg-gradient-to-br from-background via-background to-muted/20 border border-border/40 flex items-center justify-center shadow-2xl shadow-black/30">
+        <div className="relative w-28 h-28 sm:w-32 sm:h-32 lg:w-36 lg:h-36 rounded-full bg-gradient-to-br from-background via-background to-muted/20 border border-border/30 flex items-center justify-center shadow-2xl">
           <svg 
             viewBox="0 0 24 24" 
-            className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16"
-            style={{ filter: "drop-shadow(0 0 20px hsl(var(--primary) / 0.35))" }}
+            className="w-14 h-14 sm:w-16 sm:h-16 lg:w-18 lg:h-18"
+            style={{ filter: "drop-shadow(0 0 24px hsl(var(--primary) / 0.3))" }}
           >
             <defs>
               <linearGradient id="telegramGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -145,18 +138,17 @@ export const HeroVisual = () => {
       {/* Logo badge */}
       <motion.div
         className="absolute z-20 hidden sm:flex"
-        style={{ left: '22%', top: '70%', transform: 'translate(-50%, -50%)' }}
+        style={{ left: '18%', top: '72%', transform: 'translate(-50%, -50%)' }}
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, delay: 0.9 }}
-        whileHover={{ scale: 1.05 }}
+        transition={{ duration: 0.3, delay: 0.8 }}
       >
-        <div className="flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-background/95 backdrop-blur-sm border border-border/50 shadow-lg hover:border-primary/30 transition-colors duration-300 overflow-hidden">
-          <img src={logoImg} alt="Logo" className="w-7 h-7 sm:w-8 sm:h-8 object-contain" />
+        <div className="w-12 h-12 rounded-full bg-background/95 border border-border/40 shadow-lg flex items-center justify-center overflow-hidden hover:border-primary/30 transition-colors">
+          <img src={logoImg} alt="Logo" className="w-8 h-8 object-contain" />
         </div>
       </motion.div>
 
-      {/* Feature badges */}
+      {/* Feature badges - positioned to match SVG coordinates */}
       {features.map((item, index) => (
         <motion.div
           key={index}
@@ -168,11 +160,10 @@ export const HeroVisual = () => {
           }}
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.5 + index * 0.08 }}
-          whileHover={{ scale: 1.05 }}
+          transition={{ duration: 0.3, delay: 0.4 + index * 0.08 }}
         >
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/95 backdrop-blur-sm border border-border/50 shadow-lg hover:border-primary/30 transition-colors duration-300">
-            <div className="w-6 h-6 rounded-md bg-primary/12 flex items-center justify-center">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/95 border border-border/40 shadow-lg hover:border-primary/30 transition-colors">
+            <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
               <item.icon className="w-3.5 h-3.5 text-primary" />
             </div>
             <span className="text-xs font-medium text-foreground whitespace-nowrap">
