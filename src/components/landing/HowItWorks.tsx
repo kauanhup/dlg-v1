@@ -1,45 +1,45 @@
 import { motion, useInView } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
-import { Download, Settings, Users, Send, Play, ExternalLink } from "lucide-react";
+import { Download, Settings, Users, Send, Play, ExternalLink, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { BotActionsPreview, BotAccountsPreview } from "./BotPreviews";
 import appContasImg from "@/assets/app-contas.jpg";
+import appConfigImg from "@/assets/app-config.jpg";
+import appAcoesImg from "@/assets/app-acoes.jpg";
 
-const YOUTUBE_TUTORIAL_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"; // Link do tutorial
+const YOUTUBE_TUTORIAL_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
 
 interface StepType {
   step: string;
   title: string;
   description: string;
   icon: typeof Users;
-  preview?: React.ComponentType;
-  image?: string;
+  image: string;
 }
 
 const steps: StepType[] = [
   {
     step: "01",
+    title: "Configure o Bot",
+    description: "Ajuste delays, ative modo anti-ban, configure proxies e personalize cada detalhe para máxima eficiência.",
+    icon: Settings,
+    image: appConfigImg,
+  },
+  {
+    step: "02",
     title: "Gerencie suas Contas",
     description: "Conecte suas contas Telegram e monitore o status de cada uma em tempo real. Veja quais estão ativas, em float ou banidas.",
     icon: Users,
     image: appContasImg,
   },
   {
-    step: "02",
+    step: "03",
     title: "Execute Ações",
     description: "Extraia membros, adicione em grupos, envie mensagens em massa. Todas as automações em um só lugar.",
-    icon: Send,
-    preview: BotActionsPreview,
-  },
-  {
-    step: "03",
-    title: "Configure o Sistema",
-    description: "Ajuste delays, ative modo anti-ban, configure proxies e personalize cada detalhe para máxima eficiência.",
-    icon: Settings,
-    preview: BotAccountsPreview,
+    icon: Zap,
+    image: appAcoesImg,
   },
 ];
 
@@ -229,23 +229,33 @@ const HowItWorks = () => {
                 </motion.div>
               </div>
 
-              {/* Preview Component or Image */}
+              {/* Image with effects */}
               <div className="flex-1 w-full flex justify-center">
                 <motion.div 
-                  className="relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl shadow-primary/10"
+                  className="relative group"
                   whileHover={{ scale: 1.02, y: -5 }}
                   transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  {step.image ? (
+                  {/* Glow effect */}
+                  <div className="absolute -inset-1 bg-gradient-to-r from-primary/40 via-blue-500/30 to-primary/40 rounded-2xl blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
+                  
+                  {/* Image container */}
+                  <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black/50">
                     <img 
                       src={step.image} 
                       alt={step.title}
-                      className="w-full max-w-xl h-auto object-cover rounded-2xl"
+                      className="w-full max-w-xl h-auto object-cover"
                       loading="lazy"
                     />
-                  ) : step.preview ? (
-                    <step.preview />
-                  ) : null}
+                    
+                    {/* Overlay gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+                    
+                    {/* Step badge */}
+                    <div className="absolute top-3 left-3 bg-primary/90 backdrop-blur-sm text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg">
+                      Passo {step.step}
+                    </div>
+                  </div>
                 </motion.div>
               </div>
             </motion.div>
