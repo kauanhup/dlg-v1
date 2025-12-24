@@ -133,15 +133,16 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
         isScrolled ? "pt-2" : "pt-3 sm:pt-4"
       )}>
         <motion.div 
-          className={cn(
-            "flex items-center gap-0.5 sm:gap-1 border backdrop-blur-lg px-1.5 sm:px-2 rounded-full shadow-lg transition-all duration-300",
-            isScrolled 
-              ? "py-1 bg-background/95 border-border/80 scale-[0.9]" 
-              : "py-1.5 sm:py-2 bg-background/90 border-border"
-          )}
+          className="flex items-center gap-0.5 sm:gap-1 border backdrop-blur-lg px-1.5 sm:px-2 rounded-full shadow-lg bg-background/90 border-border"
           initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
+          animate={{ 
+            y: 0, 
+            opacity: 1,
+            scale: isScrolled ? 0.85 : 1,
+            paddingTop: isScrolled ? 4 : 8,
+            paddingBottom: isScrolled ? 4 : 8
+          }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
         >
           {/* Navigation Items */}
           {navItems.map((item) => {
