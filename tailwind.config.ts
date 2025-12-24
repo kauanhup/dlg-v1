@@ -114,6 +114,10 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0" },
         },
+        "grid": {
+          "0%": { transform: "translateY(-50%)" },
+          "100%": { transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.35s cubic-bezier(0.33, 1, 0.68, 1)",
@@ -122,6 +126,7 @@ export default {
         "float": "float 4s ease-in-out infinite",
         "luma-spin": "luma-spin 2.5s ease-in-out infinite",
         "blink": "blink 1s step-end infinite",
+        "grid": "grid 20s linear infinite",
       },
     },
   },
