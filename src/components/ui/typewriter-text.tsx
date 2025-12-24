@@ -62,9 +62,23 @@ export function TypewriterText({
 
   return (
     <span className={cn("inline-flex items-baseline", className)}>
-      <span className="text-primary font-bold">
+      <motion.span 
+        className="font-bold bg-clip-text text-transparent"
+        style={{
+          backgroundImage: "linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.6) 50%, hsl(var(--primary)) 100%)",
+          backgroundSize: "200% 100%",
+        }}
+        animate={{
+          backgroundPosition: ["0% 0%", "100% 0%", "0% 0%"],
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          ease: "linear",
+        }}
+      >
         {displayText}
-      </span>
+      </motion.span>
       <motion.span 
         className="inline-block w-[3px] h-[0.85em] bg-primary ml-0.5 rounded-sm"
         animate={{ opacity: [1, 0.3, 1] }}
