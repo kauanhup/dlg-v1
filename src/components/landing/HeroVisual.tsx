@@ -2,47 +2,47 @@ import { motion } from "framer-motion";
 import { Users, Zap, Shield, Clock, Send } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 
-const features = [
-  { icon: Clock, label: "Delay Inteligente", top: "12%", left: "75%" },
-  { icon: Users, label: "Multi-Contas", top: "35%", left: "82%" },
-  { icon: Shield, label: "Anti-Ban", top: "58%", left: "78%" },
-  { icon: Send, label: "Extração", top: "35%", left: "12%" },
-  { icon: Zap, label: "Automação", top: "75%", left: "50%" },
-];
-
 export const HeroVisual = () => {
   return (
-    <div className="relative w-full max-w-[420px] lg:max-w-[500px] mx-auto h-[380px] sm:h-[420px] lg:h-[460px]">
+    <div className="relative w-full max-w-[480px] mx-auto h-[400px] sm:h-[440px] lg:h-[480px] flex items-center justify-center">
       {/* Ambient glow */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-64 h-64 rounded-full bg-primary/8 blur-[80px]" />
+        <div className="w-72 h-72 rounded-full bg-primary/10 blur-[100px]" />
       </div>
 
-      {/* Central Telegram Icon - positioned at center */}
+      {/* Decorative orbit ring */}
+      <motion.div
+        className="absolute w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] lg:w-[360px] lg:h-[360px] rounded-full border border-primary/10"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6 }}
+      />
+      
+      {/* Second orbit */}
+      <motion.div
+        className="absolute w-[200px] h-[200px] sm:w-[230px] sm:h-[230px] lg:w-[260px] lg:h-[260px] rounded-full border border-primary/5"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+      >
+        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-primary/30" />
+      </motion.div>
+
+      {/* Central Telegram Icon */}
       <motion.div 
-        className="absolute z-10 left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2"
+        className="relative z-10"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.4 }}
       >
-        {/* Outer ring */}
-        <motion.div
-          className="absolute -inset-6 sm:-inset-8 rounded-full border border-primary/15"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-        >
-          <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary/40" />
-        </motion.div>
-        
         {/* Inner glow */}
-        <div className="absolute -inset-10 rounded-full bg-primary/6 blur-2xl" />
+        <div className="absolute -inset-8 rounded-full bg-primary/8 blur-2xl" />
         
         {/* Icon container */}
-        <div className="relative w-28 h-28 sm:w-32 sm:h-32 lg:w-36 lg:h-36 rounded-full bg-gradient-to-br from-background via-background to-muted/20 border border-border/30 flex items-center justify-center shadow-2xl">
+        <div className="relative w-32 h-32 sm:w-36 sm:h-36 lg:w-40 lg:h-40 rounded-full bg-gradient-to-br from-background via-background to-muted/20 border border-border/30 flex items-center justify-center shadow-2xl">
           <svg 
             viewBox="0 0 24 24" 
-            className="w-14 h-14 sm:w-16 sm:h-16 lg:w-[72px] lg:h-[72px]"
-            style={{ filter: "drop-shadow(0 0 24px hsl(var(--primary) / 0.3))" }}
+            className="w-16 h-16 sm:w-18 sm:h-18 lg:w-20 lg:h-20"
+            style={{ filter: "drop-shadow(0 0 24px hsl(var(--primary) / 0.4))" }}
           >
             <defs>
               <linearGradient id="telegramGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -58,53 +58,16 @@ export const HeroVisual = () => {
         </div>
       </motion.div>
 
-      {/* Connection lines using CSS */}
-      <svg className="absolute inset-0 w-full h-full" style={{ overflow: 'visible' }}>
-        <defs>
-          <linearGradient id="lineGrad1" gradientUnits="userSpaceOnUse" x1="50%" y1="45%" x2="75%" y2="12%">
-            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.08" />
-          </linearGradient>
-        </defs>
-        {/* Lines drawn from center to each badge position */}
-        <motion.line x1="50%" y1="45%" x2="75%" y2="15%" stroke="hsl(var(--primary))" strokeOpacity="0.2" strokeWidth="1" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5, delay: 0.2 }} />
-        <motion.line x1="50%" y1="45%" x2="82%" y2="38%" stroke="hsl(var(--primary))" strokeOpacity="0.2" strokeWidth="1" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5, delay: 0.3 }} />
-        <motion.line x1="50%" y1="45%" x2="78%" y2="61%" stroke="hsl(var(--primary))" strokeOpacity="0.2" strokeWidth="1" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5, delay: 0.4 }} />
-        <motion.line x1="50%" y1="45%" x2="15%" y2="38%" stroke="hsl(var(--primary))" strokeOpacity="0.2" strokeWidth="1" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5, delay: 0.5 }} />
-        <motion.line x1="50%" y1="45%" x2="50%" y2="78%" stroke="hsl(var(--primary))" strokeOpacity="0.2" strokeWidth="1" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5, delay: 0.6 }} />
-        <motion.line x1="50%" y1="45%" x2="18%" y2="68%" stroke="hsl(var(--primary))" strokeOpacity="0.2" strokeWidth="1" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5, delay: 0.7 }} />
-        
-        {/* Dots at endpoints */}
-        <motion.circle cx="75%" cy="15%" r="3" fill="hsl(var(--primary))" fillOpacity="0.5" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.4 }} />
-        <motion.circle cx="82%" cy="38%" r="3" fill="hsl(var(--primary))" fillOpacity="0.5" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.5 }} />
-        <motion.circle cx="78%" cy="61%" r="3" fill="hsl(var(--primary))" fillOpacity="0.5" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.6 }} />
-        <motion.circle cx="15%" cy="38%" r="3" fill="hsl(var(--primary))" fillOpacity="0.5" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.7 }} />
-        <motion.circle cx="50%" cy="78%" r="3" fill="hsl(var(--primary))" fillOpacity="0.5" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.8 }} />
-        <motion.circle cx="18%" cy="68%" r="3" fill="hsl(var(--primary))" fillOpacity="0.5" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.9 }} />
-      </svg>
-
-      {/* Logo badge */}
+      {/* Feature badges positioned around the circle */}
+      
+      {/* Delay Inteligente - top right */}
       <motion.div
-        className="absolute z-20 hidden sm:flex"
-        style={{ left: '18%', top: '68%', transform: 'translate(-50%, -50%)' }}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, delay: 0.8 }}
+        className="absolute hidden sm:flex top-[8%] right-[5%]"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
       >
-        <div className="w-11 h-11 rounded-full bg-background border border-border/40 shadow-lg flex items-center justify-center overflow-hidden hover:border-primary/30 transition-colors">
-          <img src={logoImg} alt="Logo" className="w-7 h-7 object-contain" />
-        </div>
-      </motion.div>
-
-      {/* Feature badges */}
-      <motion.div
-        className="absolute z-20 hidden sm:flex"
-        style={{ left: '75%', top: '15%', transform: 'translate(-50%, -50%)' }}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, delay: 0.3 }}
-      >
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg hover:border-primary/30 transition-colors">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg">
           <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
             <Clock className="w-3.5 h-3.5 text-primary" />
           </div>
@@ -112,14 +75,14 @@ export const HeroVisual = () => {
         </div>
       </motion.div>
 
+      {/* Multi-Contas - right */}
       <motion.div
-        className="absolute z-20 hidden sm:flex"
-        style={{ left: '82%', top: '38%', transform: 'translate(-50%, -50%)' }}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, delay: 0.4 }}
+        className="absolute hidden sm:flex top-[35%] right-0"
+        initial={{ opacity: 0, x: 10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4, delay: 0.3 }}
       >
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg hover:border-primary/30 transition-colors">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg">
           <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
             <Users className="w-3.5 h-3.5 text-primary" />
           </div>
@@ -127,14 +90,14 @@ export const HeroVisual = () => {
         </div>
       </motion.div>
 
+      {/* Anti-Ban - bottom right */}
       <motion.div
-        className="absolute z-20 hidden sm:flex"
-        style={{ left: '78%', top: '61%', transform: 'translate(-50%, -50%)' }}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, delay: 0.5 }}
+        className="absolute hidden sm:flex bottom-[25%] right-[5%]"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.4 }}
       >
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg hover:border-primary/30 transition-colors">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg">
           <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
             <Shield className="w-3.5 h-3.5 text-primary" />
           </div>
@@ -142,14 +105,14 @@ export const HeroVisual = () => {
         </div>
       </motion.div>
 
+      {/* Extração - left */}
       <motion.div
-        className="absolute z-20 hidden sm:flex"
-        style={{ left: '15%', top: '38%', transform: 'translate(-50%, -50%)' }}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, delay: 0.6 }}
+        className="absolute hidden sm:flex top-[35%] left-0"
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4, delay: 0.5 }}
       >
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg hover:border-primary/30 transition-colors">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg">
           <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
             <Send className="w-3.5 h-3.5 text-primary" />
           </div>
@@ -157,18 +120,30 @@ export const HeroVisual = () => {
         </div>
       </motion.div>
 
+      {/* Automação - bottom */}
       <motion.div
-        className="absolute z-20 hidden sm:flex"
-        style={{ left: '50%', top: '78%', transform: 'translate(-50%, -50%)' }}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, delay: 0.7 }}
+        className="absolute hidden sm:flex bottom-[8%] left-1/2 -translate-x-1/2"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.6 }}
       >
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg hover:border-primary/30 transition-colors">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg">
           <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
             <Zap className="w-3.5 h-3.5 text-primary" />
           </div>
           <span className="text-xs font-medium text-foreground">Automação</span>
+        </div>
+      </motion.div>
+
+      {/* Logo - bottom left */}
+      <motion.div
+        className="absolute hidden sm:flex bottom-[25%] left-[5%]"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, delay: 0.7 }}
+      >
+        <div className="w-11 h-11 rounded-full bg-background border border-border/40 shadow-lg flex items-center justify-center overflow-hidden">
+          <img src={logoImg} alt="Logo" className="w-7 h-7 object-contain" />
         </div>
       </motion.div>
 
