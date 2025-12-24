@@ -3005,7 +3005,11 @@ const ApiSection = () => {
                     min="0"
                     max="100"
                     value={pixupWeight}
-                    onChange={(e) => setPixupWeight(Number(e.target.value))}
+                    onChange={(e) => {
+                      const newPixup = Number(e.target.value);
+                      setPixupWeight(newPixup);
+                      setEvopayWeight(100 - newPixup);
+                    }}
                     className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
@@ -3027,7 +3031,11 @@ const ApiSection = () => {
                     min="0"
                     max="100"
                     value={evopayWeight}
-                    onChange={(e) => setEvopayWeight(Number(e.target.value))}
+                    onChange={(e) => {
+                      const newEvopay = Number(e.target.value);
+                      setEvopayWeight(newEvopay);
+                      setPixupWeight(100 - newEvopay);
+                    }}
                     className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-emerald-500"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
@@ -3040,7 +3048,7 @@ const ApiSection = () => {
               <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
                 <p className="text-xs text-muted-foreground">
                   <strong>Exemplo:</strong> Se PixUp = 70% e EvoPay = 30%, em 100 pagamentos aproximadamente 70 usarão PixUp e 30 usarão EvoPay.
-                  Os valores não precisam somar 100% - o sistema calcula proporcionalmente.
+                  Os valores sempre somam 100% automaticamente.
                 </p>
               </div>
 
