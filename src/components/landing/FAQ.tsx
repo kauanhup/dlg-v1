@@ -55,60 +55,59 @@ const faqs = [
 ];
 
 // GPU-optimized easing
-const gpuEase = [0.33, 1, 0.68, 1] as const;
+const gpuEase = [0.25, 0.1, 0.25, 1] as const;
 
 const FAQ = () => {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { 
-    once: false, 
-    amount: 0.15,
-    margin: "-60px 0px -60px 0px"
+    once: true, 
+    amount: 0.15
   });
 
   return (
-    <section id="faq" className="py-20 sm:py-28 bg-card" ref={ref}>
+    <section id="faq" className="py-24 sm:py-32 relative" ref={ref}>
+      {/* Background */}
+      <div className="absolute inset-0 -z-10 bg-card/50" />
+      
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <motion.div 
-            className="text-center mb-12"
-            style={{ willChange: "transform, opacity" }}
+            className="text-center mb-12 sm:mb-16"
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.28, ease: gpuEase }}
+            transition={{ duration: 0.5, ease: gpuEase }}
           >
-            <p className="text-primary text-sm font-medium mb-3">FAQ</p>
-            <h2 className="text-3xl sm:text-4xl font-display font-bold">
+            <p className="text-primary text-sm font-semibold mb-3 tracking-wide uppercase">FAQ</p>
+            <h2 className="text-4xl sm:text-5xl font-display font-bold tracking-tight">
               Perguntas frequentes
             </h2>
           </motion.div>
 
           <motion.div
-            style={{ willChange: "opacity" }}
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 0.25, ease: gpuEase }}
+            transition={{ duration: 0.4, delay: 0.1, ease: gpuEase }}
           >
-            <Accordion type="single" collapsible className="space-y-2">
+            <Accordion type="single" collapsible className="space-y-3">
               {faqs.map((faq, index) => (
                 <motion.div 
                   key={index}
-                  style={{ willChange: "transform, opacity" }}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
                   transition={{ 
-                    duration: 0.25, 
-                    delay: index * 0.025, 
+                    duration: 0.4, 
+                    delay: 0.1 + index * 0.03, 
                     ease: gpuEase 
                   }}
                 >
                   <AccordionItem 
                     value={`item-${index}`}
-                    className="border border-border rounded-lg px-4 bg-background data-[state=open]:border-primary/30 transition-colors duration-200"
+                    className="border border-border/50 rounded-xl px-5 bg-card/50 backdrop-blur-sm data-[state=open]:border-primary/30 transition-colors duration-300"
                   >
-                    <AccordionTrigger className="text-left hover:no-underline py-4 text-sm font-medium">
+                    <AccordionTrigger className="text-left hover:no-underline py-5 text-base font-medium">
                       {faq.question}
                     </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground text-sm pb-4">
+                    <AccordionContent className="text-muted-foreground text-sm pb-5 leading-relaxed">
                       {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
