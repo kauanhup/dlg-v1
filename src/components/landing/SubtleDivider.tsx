@@ -8,16 +8,17 @@ interface SubtleDividerProps {
 export const SubtleDivider = ({ variant = "default", className = "" }: SubtleDividerProps) => {
   if (variant === "dots") {
     return (
-      <div className={`flex items-center justify-center gap-4 py-10 sm:py-14 ${className}`}>
+      <div className={`flex items-center justify-center gap-3 py-8 sm:py-12 ${className}`}>
         {[0, 1, 2].map((i) => (
           <motion.div
             key={i}
-            className="w-1.5 h-1.5 rounded-full bg-primary/40"
-            animate={{ opacity: [0.3, 0.7, 0.3] }}
+            className="w-1.5 h-1.5 rounded-full bg-primary/30"
+            initial={{ opacity: 0.3 }}
+            whileInView={{ opacity: [0.3, 0.6, 0.3] }}
             transition={{ 
-              duration: 2.5, 
+              duration: 2, 
               repeat: Infinity, 
-              delay: i * 0.4,
+              delay: i * 0.3,
               ease: "easeInOut"
             }}
           />
@@ -28,40 +29,40 @@ export const SubtleDivider = ({ variant = "default", className = "" }: SubtleDiv
 
   if (variant === "glow") {
     return (
-      <div className={`relative py-10 sm:py-14 ${className}`}>
+      <div className={`relative py-8 sm:py-12 ${className}`}>
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-48 sm:w-64 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+          <div className="w-32 sm:w-48 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
         </div>
         <motion.div 
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
-          animate={{ opacity: [0.4, 0.7, 0.4] }}
+          className="absolute inset-0 flex items-center justify-center"
+          animate={{ opacity: [0.3, 0.6, 0.3] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         >
-          <div className="w-24 sm:w-32 h-6 bg-primary/10 rounded-full blur-xl" />
+          <div className="w-16 sm:w-24 h-4 bg-primary/10 rounded-full blur-xl" />
         </motion.div>
       </div>
     );
   }
 
-  // Default variant - elegant gradient line with center element
+  // Default variant - elegant gradient line
   return (
-    <div className={`relative py-10 sm:py-14 ${className}`}>
+    <div className={`relative py-8 sm:py-12 ${className}`}>
       <div className="container mx-auto px-4">
         <div className="relative flex items-center justify-center">
           {/* Left fade line */}
-          <div className="flex-1 h-px bg-gradient-to-r from-transparent to-border/50" />
+          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border/30 to-border/50" />
           
           {/* Center element */}
-          <div className="mx-6 sm:mx-8">
+          <div className="mx-4 sm:mx-6">
             <motion.div 
-              className="w-2.5 h-2.5 rounded-full bg-primary/50 ring-4 ring-primary/10"
-              animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.8, 0.5] }}
+              className="w-2 h-2 rounded-full bg-primary/40 ring-4 ring-primary/10"
+              animate={{ scale: [1, 1.1, 1], opacity: [0.4, 0.6, 0.4] }}
               transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
             />
           </div>
           
           {/* Right fade line */}
-          <div className="flex-1 h-px bg-gradient-to-l from-transparent to-border/50" />
+          <div className="flex-1 h-px bg-gradient-to-l from-transparent via-border/30 to-border/50" />
         </div>
       </div>
     </div>

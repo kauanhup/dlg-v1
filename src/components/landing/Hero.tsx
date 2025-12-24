@@ -2,63 +2,32 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import AnimatedShaderBackground from "@/components/ui/animated-shader-background";
 import { TypewriterText } from "@/components/ui/typewriter-text";
 import { HeroVisual } from "./HeroVisual";
 
-// GPU-optimized easing - SaaS standard
-const gpuEase = [0.25, 0.1, 0.25, 1] as const;
+// GPU-optimized easing
+const gpuEase = [0.33, 1, 0.68, 1] as const;
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16 sm:pt-20">
-      {/* Background with subtle gradient */}
-      <div className="absolute inset-0 -z-10">
-        {/* Main gradient - deep blue tint */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: `
-              radial-gradient(ellipse 80% 50% at 50% -20%, hsl(var(--primary) / 0.12), transparent 50%),
-              linear-gradient(180deg, hsl(222 47% 4%) 0%, hsl(222 47% 2%) 50%, hsl(222 47% 4%) 100%)
-            `
-          }}
-        />
-        {/* Subtle grid pattern */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
+    <section className="pt-20 pb-8 sm:pt-24 sm:pb-12 md:pt-28 md:pb-16 lg:pb-20 relative overflow-hidden min-h-[80vh] sm:min-h-[85vh] flex items-center">
+      {/* Animated Background */}
+      <div className="absolute inset-0 z-0">
+        <AnimatedShaderBackground className="w-full h-full" />
       </div>
-
-      {/* Bottom decorative glow */}
-      <div 
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] -z-10 pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at center, hsl(var(--primary) / 0.08), transparent 70%)',
-          filter: 'blur(60px)'
-        }}
-      />
       
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
-          {/* Left side - Text content */}
-          <div className="text-center lg:text-left max-w-2xl mx-auto lg:mx-0">
-            {/* Animated Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: gpuEase }}
-              className="mb-6 sm:mb-8"
-            >
-              <span className="badge-glow">
-                <span className="ping-dot" />
-                Automação Profissional para Telegram
-              </span>
-            </motion.div>
-
-            {/* Title with gradient */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
+          {/* Left side - Text content - Always first on mobile */}
+          <div className="text-center lg:text-left">
+            {/* Title */}
             <motion.h1
-              className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-5xl xl:text-6xl font-display font-bold tracking-tight mb-4 sm:mb-6 leading-[1.1]"
+              className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-display font-bold tracking-tight mb-4 sm:mb-6 leading-tight sm:leading-normal"
+              style={{ willChange: "transform, opacity" }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1, ease: gpuEase }}
+              transition={{ duration: 0.35, ease: gpuEase }}
             >
               Cresça no Telegram com{" "}
               <TypewriterText 
@@ -66,41 +35,43 @@ const Hero = () => {
                 typingSpeed={80}
                 deletingSpeed={40}
                 pauseTime={2500}
-                className="bg-gradient-to-r from-primary via-[hsl(187,85%,50%)] to-primary bg-clip-text text-transparent inline-block"
+                className="bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent inline-block"
               />
             </motion.h1>
 
             {/* Subtitle */}
             <motion.p
-              className="text-base sm:text-lg lg:text-xl text-muted-foreground mb-6 sm:mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed"
-              initial={{ opacity: 0, y: 20 }}
+              className="text-xs sm:text-sm md:text-base font-medium text-muted-foreground mb-5 sm:mb-6 max-w-md mx-auto lg:mx-0"
+              style={{ willChange: "transform, opacity" }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2, ease: gpuEase }}
+              transition={{ duration: 0.3, ease: gpuEase }}
             >
-              Adicione membros, extraia usuários e gerencie seus grupos com o sistema mais completo do mercado.
+              Sem gambiarra. Sem scripts quebrados. Sem risco desnecessário.
             </motion.p>
 
             {/* CTA Buttons */}
             <motion.div 
-              className="flex flex-col xs:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4"
-              initial={{ opacity: 0, y: 20 }}
+              className="flex flex-col xs:flex-row items-center justify-center lg:justify-start gap-2.5 sm:gap-3 md:gap-4"
+              style={{ willChange: "transform, opacity" }}
+              initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3, ease: gpuEase }}
+              transition={{ duration: 0.28, ease: gpuEase }}
             >
               <Link to="/comprar" className="w-full xs:w-auto">
                 <Button 
                   size="lg" 
-                  className="w-full xs:w-auto min-w-[180px] sm:min-w-[200px] h-12 sm:h-14 text-sm sm:text-base font-semibold btn-primary-glow transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full xs:w-auto min-w-[160px] sm:min-w-[180px] h-10 sm:h-12 text-sm sm:text-base bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   Começar Agora
-                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
+                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-2" />
                 </Button>
               </Link>
               <Link to="/login" className="w-full xs:w-auto">
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="w-full xs:w-auto min-w-[180px] sm:min-w-[200px] h-12 sm:h-14 text-sm sm:text-base font-semibold border-border/50 bg-card/30 backdrop-blur-sm hover:bg-card/50 hover:border-border transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full xs:w-auto min-w-[160px] sm:min-w-[180px] h-10 sm:h-12 text-sm sm:text-base hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   Já tenho licença
                 </Button>
@@ -108,12 +79,13 @@ const Hero = () => {
             </motion.div>
           </div>
 
-          {/* Right side - Visual */}
+          {/* Right side - Visual - Below text on mobile */}
           <motion.div
             className="relative hidden sm:block lg:mt-0"
+            style={{ willChange: "transform, opacity" }}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2, ease: gpuEase }}
+            transition={{ duration: 0.35, ease: gpuEase }}
           >
             <HeroVisual />
           </motion.div>
