@@ -611,32 +611,32 @@ export const HeroVisual = () => {
         </motion.div>
       </motion.div>
 
-      {/* Badges with floating animation */}
-      <div className="absolute hidden sm:block top-[15%] right-[8%]">
+      {/* Badges with floating animation - more spacing */}
+      <div className="absolute hidden sm:block top-[5%] right-[5%]">
         <Badge icon={Clock} label="Delay Inteligente" delay={0.4} floatOffset={0} />
       </div>
 
-      <div className="absolute hidden sm:block top-[32%] right-[2%]">
+      <div className="absolute hidden sm:block top-[28%] right-[-5%]">
         <Badge icon={Users} label="Multi-Contas" delay={0.45} floatOffset={0.3} />
       </div>
 
-      <div className="absolute hidden sm:block top-[55%] right-[0%]">
+      <div className="absolute hidden sm:block top-[55%] right-[-8%]">
         <Badge icon={Monitor} label="Modo PC" delay={0.5} floatOffset={0.6} />
       </div>
 
-      <div className="absolute hidden sm:block bottom-[12%] right-[5%]">
+      <div className="absolute hidden sm:block bottom-[5%] right-[0%]">
         <Badge icon={Shield} label="Anti-Ban" delay={0.55} floatOffset={0.2} />
       </div>
 
-      <div className="absolute hidden sm:block top-[22%] left-[0%]">
+      <div className="absolute hidden sm:block top-[12%] left-[-5%]">
         <Badge icon={Send} label="Extração" delay={0.6} floatOffset={0.5} />
       </div>
 
-      <div className="absolute hidden sm:block bottom-[18%] left-[12%]">
+      <div className="absolute hidden sm:block bottom-[10%] left-[5%]">
         <Badge icon={Rocket} label="Crescimento" delay={0.65} floatOffset={0.4} />
       </div>
 
-      <div className="absolute hidden sm:block bottom-[5%] left-[52%]">
+      <div className="absolute hidden sm:block bottom-[-5%] left-[45%]">
         <Badge icon={Zap} label="Automação" delay={0.7} floatOffset={0.1} />
       </div>
 
