@@ -1,37 +1,39 @@
 import { motion } from "framer-motion";
-import { Shield, Zap, Users, Clock, Activity, Lock, CheckCircle, Sparkles } from "lucide-react";
+import { Shield, Zap, Users, Clock, Activity, Lock, CheckCircle, Sparkles, Send, Target } from "lucide-react";
 
 const features = [
-  { icon: Shield, text: "Monitoramento 24/7" },
-  { icon: Activity, text: "Status em tempo real" },
-  { icon: Lock, text: "Proteção Anti-Ban" },
-  { icon: Zap, text: "Limites inteligentes" },
+  { icon: Shield, text: "Proteção Anti-Ban", highlight: true },
+  { icon: Activity, text: "Status em Tempo Real" },
+  { icon: Zap, text: "Delays Inteligentes", highlight: true },
   { icon: Users, text: "Multi-Contas" },
-  { icon: Clock, text: "Delays Automáticos" },
-  { icon: CheckCircle, text: "100% Seguro" },
-  { icon: Sparkles, text: "Interface Profissional" },
+  { icon: Target, text: "Extração Avançada", highlight: true },
+  { icon: Send, text: "Adicionar em Massa" },
+  { icon: Clock, text: "Automação 24/7" },
+  { icon: Lock, text: "100% Seguro" },
+  { icon: CheckCircle, text: "Fácil de Usar" },
+  { icon: Sparkles, text: "Interface Pro" },
 ];
 
 export const SectionDivider = () => {
   return (
-    <div className="relative py-6 overflow-hidden">
-      {/* Top subtle line */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+    <div className="relative py-8 sm:py-10 overflow-hidden bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent">
+      {/* Top line */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/30 to-transparent" />
       
       {/* Gradient fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-32 sm:w-48 bg-gradient-to-r from-background to-transparent z-10" />
-      <div className="absolute right-0 top-0 bottom-0 w-32 sm:w-48 bg-gradient-to-l from-background to-transparent z-10" />
+      <div className="absolute left-0 top-0 bottom-0 w-40 sm:w-56 bg-gradient-to-r from-background via-background/80 to-transparent z-10" />
+      <div className="absolute right-0 top-0 bottom-0 w-40 sm:w-56 bg-gradient-to-l from-background via-background/80 to-transparent z-10" />
       
       {/* Scrolling container */}
       <div className="flex overflow-hidden">
         <motion.div
-          className="flex gap-6 sm:gap-8"
+          className="flex gap-3 sm:gap-4"
           animate={{ x: ["0%", "-50%"] }}
           transition={{
             x: {
               repeat: Infinity,
               repeatType: "loop",
-              duration: 35,
+              duration: 40,
               ease: "linear",
             },
           }}
@@ -40,17 +42,34 @@ export const SectionDivider = () => {
           {[...features, ...features].map((feature, index) => (
             <div
               key={index}
-              className="flex items-center gap-2 px-3 py-1.5 whitespace-nowrap flex-shrink-0"
+              className={`
+                flex items-center gap-2.5 px-4 py-2.5 whitespace-nowrap flex-shrink-0
+                rounded-full border transition-all duration-300
+                ${feature.highlight 
+                  ? "border-primary/30 bg-primary/5" 
+                  : "border-border/20 bg-card/30"
+                }
+              `}
             >
-              <feature.icon className="w-3.5 h-3.5 text-primary/50" strokeWidth={1.5} />
-              <span className="text-xs font-medium text-muted-foreground/70 tracking-wide uppercase">{feature.text}</span>
+              {/* Icon with glow for highlights */}
+              <div className={`relative ${feature.highlight ? "text-primary" : "text-primary/50"}`}>
+                {feature.highlight && (
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-md" />
+                )}
+                <feature.icon className="relative w-4 h-4" strokeWidth={feature.highlight ? 2 : 1.5} />
+              </div>
+              
+              {/* Text */}
+              <span className={`text-sm font-medium ${feature.highlight ? "text-foreground" : "text-muted-foreground/80"}`}>
+                {feature.text}
+              </span>
             </div>
           ))}
         </motion.div>
       </div>
       
-      {/* Bottom subtle line */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+      {/* Bottom line */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/30 to-transparent" />
     </div>
   );
 };
