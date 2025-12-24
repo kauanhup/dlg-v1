@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Header, Hero, BotShowcase, Features, HowItWorks, Pricing, FAQ, CTA, Footer } from "@/components/landing";
 import { SectionDivider } from "@/components/landing/SectionDivider";
-import RotatingDivider from "@/components/landing/RotatingDivider";
+
 import FloatingParticles from "@/components/landing/FloatingParticles";
 import GridBackground from "@/components/landing/GridBackground";
 import SEO from "@/components/SEO";
@@ -40,7 +40,7 @@ const Index = () => {
           <SectionDivider />
           <Features />
           <HowItWorks />
-          <RotatingDivider />
+          
           <Pricing />
           <FAQ />
           <CTA />
