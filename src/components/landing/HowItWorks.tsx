@@ -1,47 +1,9 @@
 import { motion, useInView } from "framer-motion";
-import { useRef, useState, useEffect } from "react";
-import { Download, Settings, Users, Send, Play, ExternalLink, Zap } from "lucide-react";
+import { useRef } from "react";
+import { Download, Play, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
-import appContasImg from "@/assets/app-contas.jpg";
-import appConfigImg from "@/assets/app-config.jpg";
-import appAcoesImg from "@/assets/app-acoes.jpg";
-
-const YOUTUBE_TUTORIAL_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
-
-interface StepType {
-  step: string;
-  title: string;
-  description: string;
-  icon: typeof Users;
-  image: string;
-}
-
-const steps: StepType[] = [
-  {
-    step: "01",
-    title: "Configure o Bot",
-    description: "Ajuste delays, ative modo anti-ban, configure proxies e personalize cada detalhe para máxima eficiência.",
-    icon: Settings,
-    image: appConfigImg,
-  },
-  {
-    step: "02",
-    title: "Gerencie suas Contas",
-    description: "Conecte suas contas Telegram e monitore o status de cada uma em tempo real. Veja quais estão ativas, em float ou banidas.",
-    icon: Users,
-    image: appContasImg,
-  },
-  {
-    step: "03",
-    title: "Execute Ações",
-    description: "Extraia membros, adicione em grupos, envie mensagens em massa. Todas as automações em um só lugar.",
-    icon: Zap,
-    image: appAcoesImg,
-  },
-];
+import { useBotDownload } from "@/hooks/useBotDownload";
+import { TUTORIAL_STEPS, YOUTUBE_TUTORIAL_URL } from "@/lib/landing/constants";
 
 const HowItWorks = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -51,106 +13,7 @@ const HowItWorks = () => {
     margin: "-50px"
   });
   
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [hasLicense, setHasLicense] = useState(false);
-  const [filePath, setFilePath] = useState<string | null>(null);
-  const [downloadEnabled, setDownloadEnabled] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsLoggedIn(!!session);
-      
-      if (session) {
-        const { data: license } = await supabase
-          .from('licenses')
-          .select('id')
-          .eq('user_id', session.user.id)
-          .eq('status', 'active')
-          .maybeSingle();
-        
-        setHasLicense(!!license);
-      }
-    };
-
-    const fetchBotConfig = async () => {
-      try {
-        const { data: settingData } = await supabase
-          .from('system_settings')
-          .select('value')
-          .eq('key', 'allow_bot_download')
-          .maybeSingle();
-        
-        if (settingData) {
-          setDownloadEnabled(settingData.value === 'true');
-        }
-
-        const { data } = await supabase
-          .from('bot_files')
-          .select('file_path')
-          .eq('is_active', true)
-          .order('uploaded_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (data) {
-          setFilePath(data.file_path);
-        }
-      } catch (error) {
-        console.error('Failed to fetch bot config:', error);
-        setDownloadEnabled(false);
-      }
-    };
-
-    checkAuth();
-    fetchBotConfig();
-  }, []);
-
-  const handleDownload = async () => {
-    if (!isLoggedIn) {
-      toast.info("Faça login para baixar o bot");
-      navigate('/login');
-      return;
-    }
-
-    if (!hasLicense) {
-      toast.info("Você precisa de uma licença ativa para baixar o bot");
-      navigate('/comprar');
-      return;
-    }
-
-    if (!downloadEnabled) {
-      toast.error("Downloads temporariamente desabilitados");
-      return;
-    }
-    
-    if (!filePath) {
-      toast.error("Bot não disponível no momento");
-      return;
-    }
-
-    setIsLoading(true);
-    
-    try {
-      const { data, error } = await supabase.storage
-        .from('bot-files')
-        .createSignedUrl(filePath, 3600);
-      
-      if (error || !data?.signedUrl) {
-        toast.error("Erro ao gerar link de download");
-        return;
-      }
-      
-      window.location.href = data.signedUrl;
-      toast.success("Download iniciado!");
-    } catch (error) {
-      toast.error("Erro ao baixar o bot");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { isLoading, handleDownload, getDownloadMessage } = useBotDownload();
 
   const openTutorial = () => {
     window.open(YOUTUBE_TUTORIAL_URL, '_blank');
@@ -186,7 +49,7 @@ const HowItWorks = () => {
 
         {/* Steps Grid */}
         <div className="grid gap-16 lg:gap-20 mb-16">
-          {steps.map((step, index) => (
+          {TUTORIAL_STEPS.map((step, index) => (
             <motion.div
               key={step.step}
               className={`flex flex-col ${index % 2 === 1 ? 'lg:flex-row-reverse' : 'lg:flex-row'} gap-8 lg:gap-16 items-center`}
@@ -236,7 +99,7 @@ const HowItWorks = () => {
                   whileHover={{ scale: 1.02, y: -4 }}
                   transition={{ duration: 0.2, ease: [0.33, 1, 0.68, 1] }}
                 >
-                  {/* Outer glow - faster */}
+                  {/* Outer glow */}
                   <motion.div 
                     className="absolute -inset-2 bg-gradient-to-r from-primary/50 via-blue-500/40 to-purple-500/50 rounded-3xl blur-2xl opacity-40 group-hover:opacity-70 transition-all duration-300"
                     animate={{ 
@@ -310,11 +173,7 @@ const HowItWorks = () => {
             {isLoading ? "Baixando..." : "Baixar Bot"}
           </Button>
           <p className="text-muted-foreground text-sm mt-4">
-            {!isLoggedIn 
-              ? "Faça login e adquira uma licença para baixar" 
-              : !hasLicense 
-                ? "Adquira uma licença para ter acesso ao download"
-                : "Clique para baixar a versão mais recente"}
+            {getDownloadMessage()}
           </p>
         </motion.div>
       </div>
