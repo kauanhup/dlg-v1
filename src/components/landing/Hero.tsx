@@ -34,16 +34,16 @@ const Hero = () => {
           <div className="text-center lg:text-left space-y-5 sm:space-y-6">
             {/* Title */}
             <motion.h1
-              className="text-4xl xs:text-5xl sm:text-6xl md:text-6xl lg:text-6xl xl:text-7xl font-display tracking-[-0.04em] leading-[1.05]"
+              className="text-4xl xs:text-5xl sm:text-6xl md:text-6xl lg:text-6xl xl:text-7xl font-display tracking-[-0.04em] leading-[1.2]"
               style={{ willChange: "transform, opacity" }}
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.05, ease: gpuEase }}
             >
-              <span className="block bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent pb-1">
                 Cresça no Telegram
               </span>
-              <span className="block mt-2 sm:mt-3">
+              <span className="block mt-1 sm:mt-2">
                 <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">com </span>
                 <TypewriterText 
                   texts={["segurança", "rapidez", "inteligência"]}
