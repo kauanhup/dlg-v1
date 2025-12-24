@@ -5,9 +5,9 @@ const RotatingDivider = () => {
   const prefersReducedMotion = usePrefersReducedMotion();
 
   return (
-    <div className="relative w-full py-16 sm:py-20 overflow-hidden">
-      {/* Gradient transition from dark to background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[hsl(220,20%,4%)] via-[hsl(220,18%,8%)] to-background" />
+    <div className="relative w-full py-16 sm:py-20 overflow-hidden bg-background">
+      {/* Smooth gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[hsl(222,47%,6%)] via-[hsl(222,47%,8%)] to-[hsl(222,47%,11%)]" />
       
       {/* Animated horizontal lines */}
       <div className="absolute inset-0 flex items-center">
