@@ -13,7 +13,7 @@ const Hero = () => {
     <section className="pt-20 pb-8 sm:pt-24 sm:pb-12 md:pt-28 md:pb-16 lg:pb-20 relative overflow-hidden min-h-[80vh] sm:min-h-[85vh] flex items-center">
       {/* Single Point Light Effect */}
       <div className="absolute inset-0 z-0 bg-black">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 lg:left-[25%] w-[500px] h-[500px] bg-primary/25 rounded-full blur-[120px]" />
+        <div className="absolute top-[15%] left-1/2 -translate-x-1/2 lg:left-[20%] w-[700px] h-[350px] bg-primary/15 rounded-full blur-[180px]" />
       </div>
       
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
