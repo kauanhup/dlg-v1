@@ -32,17 +32,6 @@ const Hero = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
           {/* Left side - Text content */}
           <div className="text-center lg:text-left space-y-6 sm:space-y-8">
-            {/* Badge */}
-            <motion.div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, ease: gpuEase }}
-            >
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span className="text-xs sm:text-sm font-medium text-primary">Automação Profissional</span>
-            </motion.div>
-
             {/* Title */}
             <motion.h1
               className="text-4xl xs:text-5xl sm:text-6xl md:text-6xl lg:text-6xl xl:text-7xl font-display tracking-tighter leading-[0.95]"
