@@ -45,14 +45,12 @@ const Hero = () => {
               </span>
               <span className="block mt-2 sm:mt-3">
                 <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">com </span>
-                <span className="bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent">
-                  <TypewriterText 
-                    texts={["segurança", "rapidez", "inteligência"]}
-                    typingSpeed={80}
-                    deletingSpeed={40}
-                    pauseTime={2500}
-                  />
-                </span>
+                <TypewriterText 
+                  texts={["segurança", "rapidez", "inteligência"]}
+                  typingSpeed={80}
+                  deletingSpeed={40}
+                  pauseTime={2500}
+                />
               </span>
             </motion.h1>
 
