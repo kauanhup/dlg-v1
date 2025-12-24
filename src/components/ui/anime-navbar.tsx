@@ -56,7 +56,7 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
     if (location.pathname !== '/') return
 
     const handleScroll = () => {
-      const sections = ['features', 'pricing', 'faq']
+      const sections = ['features', 'download', 'pricing', 'faq']
       const scrollPosition = window.scrollY + 150
 
       for (const sectionId of sections) {

@@ -160,19 +160,11 @@ const HowItWorks = () => {
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
-          <motion.p
-            className="text-primary text-sm font-medium mb-3"
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          >
-            Como funciona
-          </motion.p>
           <motion.h2 
             className="text-3xl sm:text-4xl font-display font-bold mb-4"
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
           >
             Simples de Usar
           </motion.h2>
@@ -180,7 +172,7 @@ const HowItWorks = () => {
             className="text-muted-foreground"
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           >
             Em apenas 3 passos você configura e começa a automatizar seu Telegram.
           </motion.p>
