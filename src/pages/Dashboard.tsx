@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import SEO from "@/components/SEO";
+import PageTransition from "@/components/PageTransition";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { UserProfileSidebar } from "@/components/ui/menu";
@@ -948,7 +949,7 @@ const Dashboard = () => {
   }
 
   return (
-    <>
+    <PageTransition>
       <SEO 
         title="Dashboard"
         description="Gerencie suas licenças, sessions e configurações da conta. Acesse sua loja de sessions e acompanhe seus pedidos."
@@ -1988,7 +1989,7 @@ const Dashboard = () => {
         </footer>
       </main>
       </div>
-    </>
+    </PageTransition>
   );
 };
 

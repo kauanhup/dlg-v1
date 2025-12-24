@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Ban, MessageCircle, Wrench, Mail, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SEO from "@/components/SEO";
+import PageTransition from "@/components/PageTransition";
 
 interface SystemSettings {
   maintenanceMode: boolean;
@@ -788,7 +789,7 @@ const Login = () => {
   };
 
   return (
-    <>
+    <PageTransition>
       <SEO 
         title={isLogin ? "Entrar" : "Criar Conta"}
         description={isLogin 
@@ -1311,7 +1312,7 @@ const Login = () => {
       </AnimatePresence>
 
     </div>
-    </>
+    </PageTransition>
   );
 };
 

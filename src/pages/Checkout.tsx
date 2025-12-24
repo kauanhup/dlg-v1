@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
 import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
+import PageTransition from "@/components/PageTransition";
 
 interface PixData {
   pixCode: string;
@@ -1050,7 +1051,7 @@ const Checkout = () => {
   } : null;
 
   return (
-    <>
+    <PageTransition>
       <SEO 
         title="Checkout"
         description="Finalize sua compra de forma segura. Pagamento via PIX com confirmação instantânea."
@@ -1533,7 +1534,7 @@ const Checkout = () => {
           </motion.div>
         </div>
       </div>
-    </>
+    </PageTransition>
   );
 };
 
