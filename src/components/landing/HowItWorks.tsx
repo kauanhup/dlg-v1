@@ -233,24 +233,60 @@ const HowItWorks = () => {
               <div className="flex-1 w-full flex justify-center">
                 <motion.div 
                   className="relative group"
-                  whileHover={{ scale: 1.02, y: -5 }}
+                  whileHover={{ scale: 1.03, y: -8 }}
                   transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  {/* Glow effect */}
-                  <div className="absolute -inset-1 bg-gradient-to-r from-primary/40 via-blue-500/30 to-primary/40 rounded-2xl blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
+                  {/* Outer glow - animated */}
+                  <motion.div 
+                    className="absolute -inset-2 bg-gradient-to-r from-primary/50 via-blue-500/40 to-purple-500/50 rounded-3xl blur-2xl opacity-40 group-hover:opacity-70 transition-all duration-700"
+                    animate={{ 
+                      background: [
+                        "linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(217 91% 60% / 0.4), hsl(270 70% 60% / 0.5))",
+                        "linear-gradient(180deg, hsl(270 70% 60% / 0.5), hsl(var(--primary) / 0.5), hsl(217 91% 60% / 0.4))",
+                        "linear-gradient(270deg, hsl(217 91% 60% / 0.4), hsl(270 70% 60% / 0.5), hsl(var(--primary) / 0.5))",
+                        "linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(217 91% 60% / 0.4), hsl(270 70% 60% / 0.5))"
+                      ]
+                    }}
+                    transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                  />
+                  
+                  {/* Inner glow */}
+                  <div className="absolute -inset-1 bg-gradient-to-br from-primary/30 to-blue-500/20 rounded-2xl blur-lg opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
                   
                   {/* Image container */}
-                  <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black/50">
+                  <div className="relative rounded-2xl overflow-hidden border border-white/20 group-hover:border-primary/40 shadow-2xl shadow-black/60 transition-all duration-500">
+                    {/* Shine effect on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-10 pointer-events-none" />
+                    
                     <img 
                       src={step.image} 
                       alt={step.title}
-                      className="w-full max-w-xl h-auto object-cover"
+                      className="w-full max-w-xl h-auto object-cover transition-transform duration-700 group-hover:scale-[1.02]"
                       loading="lazy"
                     />
                     
-                    {/* Overlay gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+                    {/* Top highlight */}
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                    
+                    {/* Bottom gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
+                    
+                    {/* Corner accents */}
+                    <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-primary/20 to-transparent pointer-events-none" />
+                    <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-blue-500/20 to-transparent pointer-events-none" />
                   </div>
+                  
+                  {/* Floating particles on hover */}
+                  <motion.div
+                    className="absolute -top-1 -right-1 w-2 h-2 bg-primary/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    animate={{ y: [-2, 2, -2] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  <motion.div
+                    className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-blue-500/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    animate={{ y: [2, -2, 2] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                  />
                 </motion.div>
               </div>
             </motion.div>
