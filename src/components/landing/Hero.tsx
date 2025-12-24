@@ -23,7 +23,13 @@ const Hero = () => {
       </div>
       
       {/* BGPattern - Dots with fade-center */}
-      <BGPattern variant="dots" mask="fade-center" size={20} fill="hsl(217 91% 60% / 0.25)" />
+      <BGPattern 
+        variant="dots" 
+        mask="fade-center" 
+        size={40} 
+        fill="hsl(217 91% 60% / 0.15)" 
+        className="opacity-80 blur-[0.5px]"
+      />
       
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
