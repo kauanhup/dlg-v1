@@ -2,86 +2,111 @@ import { motion } from "framer-motion";
 import { Users, Zap, Shield, Clock, Send } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 
-// Connection line component
-const ConnectionLine = ({ 
-  angle, 
-  length, 
-  delay 
-}: { 
-  angle: number; 
-  length: string;
-  delay: number;
-}) => (
-  <motion.div
-    className="absolute left-1/2 top-1/2 origin-left h-[1px]"
-    style={{
-      width: length,
-      transform: `rotate(${angle}deg)`,
-      background: 'linear-gradient(90deg, hsl(var(--primary) / 0.3) 0%, hsl(var(--primary) / 0.05) 100%)',
-    }}
-    initial={{ scaleX: 0, opacity: 0 }}
-    animate={{ scaleX: 1, opacity: 1 }}
-    transition={{ duration: 0.5, delay }}
-  />
-);
-
 export const HeroVisual = () => {
   return (
-    <div className="relative w-full max-w-[480px] mx-auto h-[400px] sm:h-[440px] lg:h-[480px] flex items-center justify-center">
+    <div className="relative w-full max-w-[380px] lg:max-w-[420px] mx-auto h-[340px] sm:h-[380px] lg:h-[400px] flex items-center justify-center">
       {/* Ambient glow */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-72 h-72 rounded-full bg-primary/10 blur-[100px]" />
+        <div className="w-48 h-48 rounded-full bg-primary/8 blur-[80px]" />
       </div>
 
-      {/* Connection lines from center */}
-      <div className="absolute inset-0 hidden sm:block">
-        {/* To Delay Inteligente (top right) */}
-        <ConnectionLine angle={-35} length="180px" delay={0.1} />
-        {/* To Multi-Contas (right) */}
-        <ConnectionLine angle={0} length="160px" delay={0.2} />
-        {/* To Anti-Ban (bottom right) */}
-        <ConnectionLine angle={35} length="180px" delay={0.3} />
-        {/* To Extração (left) */}
-        <ConnectionLine angle={180} length="160px" delay={0.4} />
-        {/* To Automação (bottom) */}
-        <ConnectionLine angle={90} length="140px" delay={0.5} />
-        {/* To Logo (bottom left) */}
-        <ConnectionLine angle={145} length="170px" delay={0.6} />
-      </div>
-
-      {/* Decorative orbit ring */}
-      <motion.div
-        className="absolute w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] lg:w-[360px] lg:h-[360px] rounded-full border border-primary/10"
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6 }}
-      />
-      
-      {/* Second orbit */}
-      <motion.div
-        className="absolute w-[200px] h-[200px] sm:w-[230px] sm:h-[230px] lg:w-[260px] lg:h-[260px] rounded-full border border-primary/5"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+      {/* SVG Curved lines */}
+      <svg 
+        className="absolute inset-0 w-full h-full hidden sm:block" 
+        viewBox="0 0 400 400"
+        fill="none"
+        preserveAspectRatio="xMidYMid meet"
       >
-        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-primary/30" />
-      </motion.div>
+        <defs>
+          <linearGradient id="lineGradR" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.05" />
+          </linearGradient>
+          <linearGradient id="lineGradL" x1="100%" y1="0%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.05" />
+          </linearGradient>
+        </defs>
+        
+        {/* Curved lines from center (200, 200) to badges */}
+        {/* To Delay Inteligente (top right) */}
+        <motion.path 
+          d="M 200 200 Q 280 140, 340 80" 
+          stroke="url(#lineGradR)" 
+          strokeWidth="1"
+          fill="none"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        />
+        {/* To Multi-Contas (right) */}
+        <motion.path 
+          d="M 200 200 Q 300 180, 350 160" 
+          stroke="url(#lineGradR)" 
+          strokeWidth="1"
+          fill="none"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        />
+        {/* To Anti-Ban (bottom right) */}
+        <motion.path 
+          d="M 200 200 Q 290 250, 340 280" 
+          stroke="url(#lineGradR)" 
+          strokeWidth="1"
+          fill="none"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        />
+        {/* To Extração (left) */}
+        <motion.path 
+          d="M 200 200 Q 120 170, 60 160" 
+          stroke="url(#lineGradL)" 
+          strokeWidth="1"
+          fill="none"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+        />
+        {/* To Automação (bottom) */}
+        <motion.path 
+          d="M 200 200 Q 230 300, 260 340" 
+          stroke="url(#lineGradR)" 
+          strokeWidth="1"
+          fill="none"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+        />
+        {/* To Logo (bottom left) */}
+        <motion.path 
+          d="M 200 200 Q 120 260, 70 300" 
+          stroke="url(#lineGradL)" 
+          strokeWidth="1"
+          fill="none"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.6, delay: 0.7 }}
+        />
+      </svg>
 
-      {/* Central Telegram Icon */}
+      {/* Central Telegram Icon - simplified */}
       <motion.div 
         className="relative z-10"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.4 }}
       >
-        {/* Inner glow */}
-        <div className="absolute -inset-8 rounded-full bg-primary/8 blur-2xl" />
+        {/* Subtle glow */}
+        <div className="absolute -inset-6 rounded-full bg-primary/10 blur-xl" />
         
         {/* Icon container */}
-        <div className="relative w-32 h-32 sm:w-36 sm:h-36 lg:w-40 lg:h-40 rounded-full bg-gradient-to-br from-background via-background to-muted/20 border border-border/30 flex items-center justify-center shadow-2xl">
+        <div className="relative w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full bg-gradient-to-br from-background via-background to-muted/20 border border-border/30 flex items-center justify-center shadow-xl">
           <svg 
             viewBox="0 0 24 24" 
-            className="w-16 h-16 sm:w-[72px] sm:h-[72px] lg:w-20 lg:h-20"
-            style={{ filter: "drop-shadow(0 0 24px hsl(var(--primary) / 0.4))" }}
+            className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16"
+            style={{ filter: "drop-shadow(0 0 20px hsl(var(--primary) / 0.4))" }}
           >
             <defs>
               <linearGradient id="telegramGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -97,92 +122,92 @@ export const HeroVisual = () => {
         </div>
       </motion.div>
 
-      {/* Feature badges positioned around the circle */}
+      {/* Feature badges - repositioned closer to center */}
       
       {/* Delay Inteligente - top right */}
       <motion.div
-        className="absolute hidden sm:flex top-[8%] right-[5%] z-20"
+        className="absolute hidden sm:flex top-[12%] right-[8%] z-20"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
+        transition={{ duration: 0.4, delay: 0.3 }}
       >
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg hover:border-primary/30 transition-colors">
-          <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-            <Clock className="w-3.5 h-3.5 text-primary" />
+          <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+            <Clock className="w-3 h-3 text-primary" />
           </div>
-          <span className="text-xs font-medium text-foreground">Delay Inteligente</span>
+          <span className="text-[11px] font-medium text-foreground">Delay Inteligente</span>
         </div>
       </motion.div>
 
       {/* Multi-Contas - right */}
       <motion.div
-        className="absolute hidden sm:flex top-[42%] right-0 z-20"
+        className="absolute hidden sm:flex top-[32%] right-[3%] z-20"
         initial={{ opacity: 0, x: 10 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.4, delay: 0.3 }}
+        transition={{ duration: 0.4, delay: 0.4 }}
       >
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg hover:border-primary/30 transition-colors">
-          <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-            <Users className="w-3.5 h-3.5 text-primary" />
+          <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+            <Users className="w-3 h-3 text-primary" />
           </div>
-          <span className="text-xs font-medium text-foreground">Multi-Contas</span>
+          <span className="text-[11px] font-medium text-foreground">Multi-Contas</span>
         </div>
       </motion.div>
 
       {/* Anti-Ban - bottom right */}
       <motion.div
-        className="absolute hidden sm:flex bottom-[20%] right-[5%] z-20"
+        className="absolute hidden sm:flex bottom-[22%] right-[8%] z-20"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.4 }}
+        transition={{ duration: 0.4, delay: 0.5 }}
       >
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg hover:border-primary/30 transition-colors">
-          <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-            <Shield className="w-3.5 h-3.5 text-primary" />
+          <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+            <Shield className="w-3 h-3 text-primary" />
           </div>
-          <span className="text-xs font-medium text-foreground">Anti-Ban</span>
+          <span className="text-[11px] font-medium text-foreground">Anti-Ban</span>
         </div>
       </motion.div>
 
       {/* Extração - left */}
       <motion.div
-        className="absolute hidden sm:flex top-[42%] left-0 z-20"
+        className="absolute hidden sm:flex top-[32%] left-[3%] z-20"
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.4, delay: 0.5 }}
-      >
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg hover:border-primary/30 transition-colors">
-          <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-            <Send className="w-3.5 h-3.5 text-primary" />
-          </div>
-          <span className="text-xs font-medium text-foreground">Extração</span>
-        </div>
-      </motion.div>
-
-      {/* Automação - bottom */}
-      <motion.div
-        className="absolute hidden sm:flex bottom-[5%] left-1/2 -translate-x-1/2 z-20"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.6 }}
       >
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg hover:border-primary/30 transition-colors">
-          <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-            <Zap className="w-3.5 h-3.5 text-primary" />
+          <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+            <Send className="w-3 h-3 text-primary" />
           </div>
-          <span className="text-xs font-medium text-foreground">Automação</span>
+          <span className="text-[11px] font-medium text-foreground">Extração</span>
+        </div>
+      </motion.div>
+
+      {/* Automação - bottom center-right */}
+      <motion.div
+        className="absolute hidden sm:flex bottom-[8%] right-[25%] z-20"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.7 }}
+      >
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 shadow-lg hover:border-primary/30 transition-colors">
+          <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+            <Zap className="w-3 h-3 text-primary" />
+          </div>
+          <span className="text-[11px] font-medium text-foreground">Automação</span>
         </div>
       </motion.div>
 
       {/* Logo - bottom left */}
       <motion.div
-        className="absolute hidden sm:flex bottom-[20%] left-[5%] z-20"
+        className="absolute hidden sm:flex bottom-[18%] left-[10%] z-20"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, delay: 0.7 }}
+        transition={{ duration: 0.4, delay: 0.8 }}
       >
-        <div className="w-11 h-11 rounded-full bg-background border border-border/40 shadow-lg flex items-center justify-center overflow-hidden hover:border-primary/30 transition-colors">
-          <img src={logoImg} alt="Logo" className="w-7 h-7 object-contain" />
+        <div className="w-10 h-10 rounded-full bg-background border border-border/40 shadow-lg flex items-center justify-center overflow-hidden hover:border-primary/30 transition-colors">
+          <img src={logoImg} alt="Logo" className="w-6 h-6 object-contain" />
         </div>
       </motion.div>
 
