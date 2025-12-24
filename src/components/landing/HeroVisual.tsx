@@ -410,13 +410,26 @@ export const HeroVisual = () => {
         </defs>
         
         <g filter="url(#glow)">
-          <AnimatedLine d="M 210 200 C 260 180, 300 120, 360 90" delay={0.1} />
-          <AnimatedLine d="M 210 200 C 280 190, 330 170, 380 160" delay={0.15} />
-          <AnimatedLine d="M 210 200 C 290 200, 340 230, 390 250" delay={0.2} />
-          <AnimatedLine d="M 210 200 C 260 230, 300 290, 360 320" delay={0.25} />
-          <AnimatedLine d="M 210 200 C 150 180, 100 140, 50 120" delay={0.3} />
-          <AnimatedLine d="M 210 200 C 170 230, 130 280, 90 310" delay={0.35} />
-          <AnimatedLine d="M 210 200 C 210 260, 230 310, 250 350" delay={0.4} />
+          {/* Delay Inteligente - top-[18%] right-[10%] → endpoint ~(378, 72) */}
+          <AnimatedLine d="M 210 200 C 260 160, 320 100, 378 72" delay={0.1} />
+          
+          {/* Multi-Contas - top-[36%] right-[5%] → endpoint ~(399, 144) */}
+          <AnimatedLine d="M 210 200 C 280 180, 350 160, 399 144" delay={0.15} />
+          
+          {/* Modo PC - top-[58%] right-[2%] → endpoint ~(412, 232) */}
+          <AnimatedLine d="M 210 200 C 280 210, 360 220, 412 232" delay={0.2} />
+          
+          {/* Anti-Ban - bottom-[16%] right-[8%] → endpoint ~(386, 336) */}
+          <AnimatedLine d="M 210 200 C 260 250, 330 300, 386 336" delay={0.25} />
+          
+          {/* Extração - top-[26%] left-[5%] → endpoint ~(21, 104) */}
+          <AnimatedLine d="M 210 200 C 150 170, 80 130, 21 104" delay={0.3} />
+          
+          {/* Crescimento - bottom-[18%] left-[15%] → endpoint ~(63, 328) */}
+          <AnimatedLine d="M 210 200 C 160 250, 100 290, 63 328" delay={0.35} />
+          
+          {/* Automação - bottom-[8%] left-[55%] → endpoint ~(231, 368) */}
+          <AnimatedLine d="M 210 200 C 215 260, 225 320, 231 368" delay={0.4} />
         </g>
 
         {/* Floating particles around center */}
@@ -429,15 +442,15 @@ export const HeroVisual = () => {
           <FloatingParticle startX={230} startY={205} delay={3.5} />
         </g>
 
-        {/* Pulsing node dots at endpoints */}
+        {/* Pulsing node dots at badge positions */}
         <g filter="url(#glow)">
-          <PulsingDot cx={360} cy={90} delay={0.5} />
-          <PulsingDot cx={380} cy={160} delay={0.55} />
-          <PulsingDot cx={390} cy={250} delay={0.6} />
-          <PulsingDot cx={360} cy={320} delay={0.65} />
-          <PulsingDot cx={50} cy={120} delay={0.7} />
-          <PulsingDot cx={90} cy={310} delay={0.75} />
-          <PulsingDot cx={250} cy={350} delay={0.8} />
+          <PulsingDot cx={378} cy={72} delay={0.5} />
+          <PulsingDot cx={399} cy={144} delay={0.55} />
+          <PulsingDot cx={412} cy={232} delay={0.6} />
+          <PulsingDot cx={386} cy={336} delay={0.65} />
+          <PulsingDot cx={21} cy={104} delay={0.7} />
+          <PulsingDot cx={63} cy={328} delay={0.75} />
+          <PulsingDot cx={231} cy={368} delay={0.8} />
         </g>
         
         {/* Central pulsing rings */}
