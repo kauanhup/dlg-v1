@@ -9,9 +9,7 @@ const CTA = () => {
   const isInView = useInView(ref, { once: true, amount: 0.3 });
 
   return (
-    <section className="py-24 sm:py-32 relative overflow-hidden" ref={ref}>
-      {/* Dark background */}
-      <div className="absolute inset-0 bg-background pointer-events-none" />
+    <section className="py-24 sm:py-32 relative overflow-hidden bg-card" ref={ref}>
 
       <div className="container mx-auto px-4 sm:px-6 relative">
         <motion.div 
