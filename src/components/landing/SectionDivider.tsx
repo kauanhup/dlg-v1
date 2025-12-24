@@ -1,93 +1,75 @@
 import { motion } from "framer-motion";
-import { Shield, Zap, Users, Target, Send } from "lucide-react";
+import { Shield, Zap, Users, Clock, Activity, Lock, CheckCircle, Sparkles, Send, Target } from "lucide-react";
 
 const features = [
-  { icon: Shield, text: "Anti-Ban", delay: 0 },
-  { icon: Zap, text: "Delays Inteligentes", delay: 0.1 },
-  { icon: Users, text: "Multi-Contas", delay: 0.2 },
-  { icon: Target, text: "Extração", delay: 0.3 },
-  { icon: Send, text: "Adicionar em Massa", delay: 0.4 },
+  { icon: Shield, text: "Proteção Anti-Ban", highlight: true },
+  { icon: Activity, text: "Status em Tempo Real" },
+  { icon: Zap, text: "Delays Inteligentes", highlight: true },
+  { icon: Users, text: "Multi-Contas" },
+  { icon: Target, text: "Extração Avançada", highlight: true },
+  { icon: Send, text: "Adicionar em Massa" },
+  { icon: Clock, text: "Automação 24/7" },
+  { icon: Lock, text: "100% Seguro" },
+  { icon: CheckCircle, text: "Fácil de Usar" },
+  { icon: Sparkles, text: "Interface Pro" },
 ];
 
 export const SectionDivider = () => {
   return (
-    <div className="relative py-16 sm:py-20 overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.03] to-transparent" />
+    <div className="relative py-8 sm:py-10 overflow-hidden bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent">
+      {/* Top line */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/30 to-transparent" />
       
-      {/* 3D Perspective Container */}
-      <div 
-        className="relative max-w-5xl mx-auto px-4"
-        style={{ perspective: "1000px" }}
-      >
-        {/* Floating cards with 3D effect */}
-        <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
-          {features.map((feature, index) => (
-            <motion.div
+      {/* Gradient fade edges */}
+      <div className="absolute left-0 top-0 bottom-0 w-40 sm:w-56 bg-gradient-to-r from-background via-background/80 to-transparent z-10" />
+      <div className="absolute right-0 top-0 bottom-0 w-40 sm:w-56 bg-gradient-to-l from-background via-background/80 to-transparent z-10" />
+      
+      {/* Scrolling container */}
+      <div className="flex overflow-hidden">
+        <motion.div
+          className="flex gap-3 sm:gap-4"
+          animate={{ x: ["0%", "-50%"] }}
+          transition={{
+            x: {
+              repeat: Infinity,
+              repeatType: "loop",
+              duration: 40,
+              ease: "linear",
+            },
+          }}
+        >
+          {/* Duplicate items for seamless loop */}
+          {[...features, ...features].map((feature, index) => (
+            <div
               key={index}
-              initial={{ opacity: 0, y: 30, rotateX: -15 }}
-              whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ 
-                duration: 0.6, 
-                delay: feature.delay,
-                ease: [0.23, 1, 0.32, 1]
-              }}
-              whileHover={{ 
-                y: -8, 
-                rotateX: 5,
-                rotateY: 5,
-                scale: 1.05,
-                transition: { duration: 0.3 }
-              }}
-              className="group relative"
-              style={{ transformStyle: "preserve-3d" }}
+              className={`
+                flex items-center gap-2.5 px-4 py-2.5 whitespace-nowrap flex-shrink-0
+                rounded-full border transition-all duration-300
+                ${feature.highlight 
+                  ? "border-primary/30 bg-primary/5" 
+                  : "border-border/20 bg-card/30"
+                }
+              `}
             >
-              {/* Card glow effect */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              {/* Main card */}
-              <div className="relative flex items-center gap-3 px-5 py-3.5 rounded-xl border border-border/30 bg-card/50 backdrop-blur-sm shadow-lg shadow-black/5">
-                {/* Icon container with depth */}
-                <div 
-                  className="relative flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20"
-                  style={{ transform: "translateZ(10px)" }}
-                >
-                  <feature.icon className="w-5 h-5 text-primary" strokeWidth={2} />
-                  
-                  {/* Icon inner glow */}
-                  <div className="absolute inset-0 rounded-lg bg-primary/10 blur-sm" />
-                </div>
-                
-                {/* Text with subtle shadow */}
-                <span 
-                  className="text-sm sm:text-base font-semibold text-foreground whitespace-nowrap"
-                  style={{ transform: "translateZ(5px)" }}
-                >
-                  {feature.text}
-                </span>
+              {/* Icon with glow for highlights */}
+              <div className={`relative ${feature.highlight ? "text-primary" : "text-primary/50"}`}>
+                {feature.highlight && (
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-md" />
+                )}
+                <feature.icon className="relative w-4 h-4" strokeWidth={feature.highlight ? 2 : 1.5} />
               </div>
               
-              {/* Bottom reflection/shadow for 3D depth */}
-              <div 
-                className="absolute inset-x-2 -bottom-3 h-4 bg-gradient-to-b from-primary/10 to-transparent rounded-full blur-md opacity-50 group-hover:opacity-70 transition-opacity"
-                style={{ transform: "rotateX(90deg) translateZ(-20px)" }}
-              />
-            </motion.div>
+              {/* Text */}
+              <span className={`text-sm font-medium ${feature.highlight ? "text-foreground" : "text-muted-foreground/80"}`}>
+                {feature.text}
+              </span>
+            </div>
           ))}
-        </div>
-        
-        {/* Connecting line with glow */}
-        <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 -z-10">
-          <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
-          <div className="h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent blur-sm" />
-        </div>
+        </motion.div>
       </div>
       
-      {/* Subtle decorative elements */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[200px] -z-20">
-        <div className="absolute inset-0 bg-primary/5 rounded-full blur-3xl" />
-      </div>
+      {/* Bottom line */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/30 to-transparent" />
     </div>
   );
 };
