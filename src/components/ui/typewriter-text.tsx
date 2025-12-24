@@ -61,12 +61,13 @@ export function TypewriterText({
   }, [displayText, isDeleting, isPaused, textIndex, texts, typingSpeed, deletingSpeed, pauseTime]);
 
   return (
-    <span className={cn("inline-flex items-baseline", className)}>
+    <span className={cn("inline-flex items-end pb-[0.15em]", className)}>
       <motion.span 
-        className="font-bold bg-clip-text text-transparent"
+        className="font-bold bg-clip-text text-transparent leading-none"
         style={{
           backgroundImage: "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary-foreground)), hsl(var(--primary)))",
           backgroundSize: "200% 100%",
+          paddingBottom: "0.1em",
         }}
         initial={{ backgroundPosition: "0 0" }}
         animate={{ backgroundPosition: "200% 0" }}
@@ -80,7 +81,7 @@ export function TypewriterText({
         {displayText}
       </motion.span>
       <motion.span 
-        className="inline-block w-[3px] h-[0.85em] bg-primary ml-0.5 rounded-sm"
+        className="inline-block w-[3px] h-[0.75em] bg-primary ml-0.5 rounded-sm mb-[0.1em]"
         animate={{ opacity: [1, 0.3, 1] }}
         transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut" }}
       />
