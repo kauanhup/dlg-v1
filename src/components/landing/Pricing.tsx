@@ -3,6 +3,7 @@ import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, useInView } from "framer-motion";
+import { gpuEase, usePrefersReducedMotion } from "@/hooks/useScrollAnimation";
 
 interface Plan {
   id: string;
@@ -29,19 +30,17 @@ const formatPeriod = (days: number) => {
   return `${days} dias`;
 };
 
-// GPU-optimized easing
-const gpuEase = [0.33, 1, 0.68, 1] as const;
-
 const Pricing = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef, { 
-    once: false, 
+    once: true, 
     amount: 0.1,
-    margin: "-40px 0px -40px 0px"
+    margin: "-40px"
   });
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -77,8 +76,10 @@ const Pricing = () => {
     fetchPlans();
   }, []);
 
-  // Optimized particles - reduced count for mobile
+  // Optimized particles - reduced count for mobile, skip if reduced motion
   useEffect(() => {
+    if (prefersReducedMotion) return;
+
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
@@ -97,15 +98,15 @@ const Pricing = () => {
     const make = (): P => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      v: Math.random() * 0.15 + 0.03,
-      o: Math.random() * 0.25 + 0.08,
+      v: Math.random() * 0.1 + 0.02,
+      o: Math.random() * 0.2 + 0.05,
     });
 
     const init = () => {
       ps = [];
       // Reduced particle count for better performance
-      const count = Math.floor((canvas.width * canvas.height) / 20000);
-      for (let i = 0; i < Math.min(count, 40); i++) ps.push(make());
+      const count = Math.floor((canvas.width * canvas.height) / 30000);
+      for (let i = 0; i < Math.min(count, 25); i++) ps.push(make());
     };
 
     const draw = () => {
@@ -115,11 +116,11 @@ const Pricing = () => {
         if (p.y < 0) {
           p.x = Math.random() * canvas.width;
           p.y = canvas.height + Math.random() * 40;
-          p.v = Math.random() * 0.15 + 0.03;
-          p.o = Math.random() * 0.25 + 0.08;
+          p.v = Math.random() * 0.1 + 0.02;
+          p.o = Math.random() * 0.2 + 0.05;
         }
-        ctx.fillStyle = `rgba(139,92,246,${p.o * 0.35})`;
-        ctx.fillRect(p.x, p.y, 0.6, 1.5);
+        ctx.fillStyle = `rgba(139,92,246,${p.o * 0.3})`;
+        ctx.fillRect(p.x, p.y, 0.5, 1.2);
       });
       raf = requestAnimationFrame(draw);
     };
@@ -139,7 +140,7 @@ const Pricing = () => {
       ro.disconnect();
       cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [prefersReducedMotion]);
 
   const getPopularIndex = () => {
     if (plans.length === 0) return -1;

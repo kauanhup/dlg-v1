@@ -3,11 +3,13 @@ import { Instagram, MessageCircle, Mail, ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useRef } from "react";
 import logo from "@/assets/logo.png";
+import { gpuEase, usePrefersReducedMotion } from "@/hooks/useScrollAnimation";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
   const ref = useRef<HTMLElement>(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const linkClass = "text-muted-foreground/80 hover:text-foreground transition-colors duration-200 text-xs sm:text-sm";
   const socialClass = "flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-muted/50 text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110";
@@ -17,18 +19,18 @@ const Footer = () => {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.1
+        staggerChildren: prefersReducedMotion ? 0 : 0.08,
+        delayChildren: prefersReducedMotion ? 0 : 0.1
       }
     }
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: prefersReducedMotion ? 1 : 0, y: prefersReducedMotion ? 0 : 16 },
     visible: { 
       opacity: 1, 
       y: 0,
-      transition: { duration: 0.5, ease: "easeOut" as const }
+      transition: { duration: prefersReducedMotion ? 0 : 0.4, ease: gpuEase }
     }
   };
 
