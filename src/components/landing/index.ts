@@ -1,4 +1,5 @@
 export { default as Header } from './Header';
+export { default as HowItWorks } from './HowItWorks';
 export { default as Hero } from './Hero';
 export { default as BotShowcase } from './BotShowcase';
 export { default as Features } from './Features';

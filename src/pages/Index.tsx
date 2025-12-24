@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Header, Hero, BotShowcase, Features, Pricing, FAQ, CTA, Footer } from "@/components/landing";
+import { Header, Hero, BotShowcase, Features, HowItWorks, Pricing, FAQ, CTA, Footer } from "@/components/landing";
 import { SectionDivider } from "@/components/landing/SectionDivider";
 import RotatingDivider from "@/components/landing/RotatingDivider";
 import SEO from "@/components/SEO";
@@ -33,6 +33,7 @@ const Index = () => {
           <BotShowcase />
           <SectionDivider />
           <Features />
+          <HowItWorks />
           <RotatingDivider />
           <Pricing />
           <FAQ />
