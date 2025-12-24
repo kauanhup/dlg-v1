@@ -5,35 +5,31 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-
-// Import images from assets
-import botDashboard1 from "@/assets/bot-dashboard-1.png";
-import botDashboard2 from "@/assets/bot-dashboard-2.png";
-import botDashboard3 from "@/assets/bot-dashboard-3.png";
+import { BotDashboardPreview, BotActionsPreview, BotAccountsPreview } from "./BotPreviews";
 
 const YOUTUBE_TUTORIAL_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"; // Link do tutorial
 
 const steps = [
   {
     step: "01",
-    title: "Configure o Bot",
-    description: "Defina grupos alvo, configure delays inteligentes e ajuste as configurações de extração de membros.",
-    icon: Settings,
-    image: botDashboard1,
+    title: "Gerencie suas Contas",
+    description: "Conecte suas contas Telegram e monitore o status de cada uma em tempo real. Veja quais estão ativas, em float ou banidas.",
+    icon: Users,
+    preview: BotDashboardPreview,
   },
   {
     step: "02",
-    title: "Adicione suas Sessions",
-    description: "Faça upload das suas contas Telegram para começar a automatizar. Suporte para múltiplas sessions simultâneas.",
-    icon: Users,
-    image: botDashboard2,
+    title: "Execute Ações",
+    description: "Extraia membros, adicione em grupos, envie mensagens em massa. Todas as automações em um só lugar.",
+    icon: Send,
+    preview: BotActionsPreview,
   },
   {
     step: "03",
-    title: "Inicie a Automação",
-    description: "Execute as ações e acompanhe o progresso em tempo real. Veja estatísticas e métricas detalhadas.",
-    icon: Send,
-    image: botDashboard3,
+    title: "Configure o Sistema",
+    description: "Ajuste delays, ative modo anti-ban, configure proxies e personalize cada detalhe para máxima eficiência.",
+    icon: Settings,
+    preview: BotAccountsPreview,
   },
 ];
 
@@ -230,35 +226,13 @@ const HowItWorks = () => {
                 )}
               </div>
 
-              {/* Image */}
-              <div className="flex-1 w-full max-w-xl lg:max-w-lg">
+              {/* Preview Component */}
+              <div className="flex-1 w-full flex justify-center">
                 <motion.div 
-                  className="relative rounded-2xl overflow-hidden border border-border/50 bg-card/30 backdrop-blur-sm shadow-2xl shadow-primary/5 group"
                   whileHover={{ scale: 1.02, y: -5 }}
                   transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <img 
-                    src={step.image} 
-                    alt={step.title}
-                    className="w-full h-auto object-cover"
-                    loading="lazy"
-                  />
-                  
-                  {/* Overlay gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  
-                  {/* Step badge */}
-                  <div className="absolute top-4 left-4 bg-primary/90 backdrop-blur-sm text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg">
-                    Passo {step.step}
-                  </div>
-                  
-                  {/* Glow effect */}
-                  <motion.div 
-                    className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-transparent to-primary/20 rounded-3xl blur-2xl -z-10"
-                    initial={{ opacity: 0.1 }}
-                    whileHover={{ opacity: 0.4 }}
-                    transition={{ duration: 0.4 }}
-                  />
+                  <step.preview />
                 </motion.div>
               </div>
             </motion.div>
