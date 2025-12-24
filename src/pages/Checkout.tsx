@@ -471,7 +471,55 @@ const Checkout = () => {
     };
   }, [orderId, navigate, toast, isPlanPurchase]);
 
-  // UNIFIED: Free plans now go through the same flow as paid plans
+  // POLLING: Check PIX status every 5 seconds as backup to webhooks
+  useEffect(() => {
+    if (!orderId || !pixData?.transactionId || paymentStatus === 'completed' || paymentStatus === 'paid') {
+      return;
+    }
+
+    const checkPixStatus = async () => {
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        if (!session?.session?.access_token) return;
+
+        const response = await supabase.functions.invoke('pixup', {
+          body: { 
+            action: 'check_pix_status', 
+            orderId,
+            transactionId: pixData.transactionId
+          },
+          headers: {
+            Authorization: `Bearer ${session.session.access_token}`
+          }
+        });
+
+        if (response.error) {
+          console.error('[Polling] Error checking PIX status:', response.error);
+          return;
+        }
+
+        const result = response.data;
+        console.log('[Polling] PIX status:', result?.status, 'Order status:', result?.orderStatus);
+
+        if (result?.status === 'paid' || result?.orderStatus === 'completed') {
+          setPaymentStatus('completed');
+          toast.success("Pagamento confirmado!", isPlanPurchase ? "Sua licença foi ativada." : "Suas sessions foram liberadas.");
+          setTimeout(() => navigate('/dashboard'), 2000);
+        }
+      } catch (error) {
+        console.error('[Polling] Error:', error);
+      }
+    };
+
+    // Check immediately
+    checkPixStatus();
+
+    // Then check every 5 seconds
+    const intervalId = setInterval(checkPixStatus, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [orderId, pixData?.transactionId, paymentStatus, navigate, toast, isPlanPurchase]);
+
   // Creates order with amount=0 and calls complete_order_atomic via webhook simulation
   const handleFreeActivation = async () => {
     if (!user || !isPlanPurchase || !plan) return;

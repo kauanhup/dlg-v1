@@ -137,7 +137,7 @@ serve(async (req) => {
 
     // SECURITY: Define which actions require authentication and admin role
     const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection', 'save_email_settings', 'save_feature_toggles', 'save_recaptcha_settings', 'save_email_template', 'save_evopay_settings'];
-    const authRequiredActions = ['create_pix'];
+    const authRequiredActions = ['create_pix', 'check_pix_status'];
 
     if (adminOnlyActions.includes(action)) {
       if (!isAuthenticated || !userId) {
@@ -213,6 +213,9 @@ serve(async (req) => {
       
       case 'create_pix':
         return await createPixCharge(supabaseAdmin, params, userId!);
+      
+      case 'check_pix_status':
+        return await checkPixStatus(supabaseAdmin, params, userId!);
       
       default:
         return new Response(
@@ -898,6 +901,169 @@ async function createPixCharge(supabase: any, params: {
     return new Response(
       JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+// CHECK PIX STATUS - Polling for payment confirmation
+async function checkPixStatus(supabase: any, params: { 
+  orderId: string;
+  transactionId?: string;
+}, userId: string) {
+  const { orderId, transactionId } = params;
+
+  if (!orderId) {
+    return new Response(
+      JSON.stringify({ error: 'orderId is required' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // SECURITY: Verify order belongs to user
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('user_id, status, amount, product_type, quantity')
+    .eq('id', orderId)
+    .single();
+
+  if (orderError || !order) {
+    return new Response(
+      JSON.stringify({ error: 'Order not found' }),
+      { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (order.user_id !== userId) {
+    console.log(`User ${userId} attempted to check status for order owned by ${order.user_id}`);
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // If order is already completed, return immediately
+  if (order.status === 'completed' || order.status === 'paid') {
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        status: 'paid',
+        orderStatus: order.status,
+        message: 'Payment already confirmed'
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Get payment with transaction ID
+  const { data: payment } = await supabase
+    .from('payments')
+    .select('evopay_transaction_id, status')
+    .eq('order_id', orderId)
+    .maybeSingle();
+
+  const txId = transactionId || payment?.evopay_transaction_id;
+
+  // If no transaction ID, we can't check with gateway
+  if (!txId) {
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        status: 'pending',
+        orderStatus: order.status,
+        message: 'Awaiting payment'
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Get gateway credentials
+  const { data: settings } = await supabase
+    .from('gateway_settings')
+    .select('client_id, client_secret')
+    .eq('provider', 'pixup')
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (!settings?.client_id || !settings?.client_secret) {
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        status: 'pending',
+        orderStatus: order.status,
+        message: 'Gateway not configured'
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  try {
+    // Call proxy to check PIX status
+    const result = await callProxy('get_pix_status', {
+      client_id: settings.client_id,
+      client_secret: settings.client_secret,
+      transaction_id: txId
+    });
+
+    console.log('PIX status check result:', JSON.stringify(result));
+
+    const gatewayStatus = result.data?.status?.toLowerCase() || 'pending';
+    
+    // Map gateway status to our status
+    // Common PixUp statuses: PENDING, PAID, EXPIRED, CANCELLED
+    if (gatewayStatus === 'paid' || gatewayStatus === 'approved' || gatewayStatus === 'completed') {
+      console.log(`PIX confirmed via polling for order ${orderId}! Completing order...`);
+      
+      // Complete the order atomically
+      const { data: completeResult, error: completeError } = await supabase.rpc('complete_order_atomic', {
+        _order_id: orderId,
+        _user_id: userId,
+        _product_type: order.product_type,
+        _quantity: order.quantity
+      });
+
+      if (completeError) {
+        console.error('Error completing order:', completeError);
+      } else {
+        console.log('Order completed successfully:', completeResult);
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          status: 'paid',
+          orderStatus: 'completed',
+          gatewayStatus: result.data?.status,
+          message: 'Payment confirmed!'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Return current status
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        status: gatewayStatus,
+        orderStatus: order.status,
+        gatewayStatus: result.data?.status,
+        message: 'Payment pending'
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error checking PIX status:', errorMessage);
+    
+    // Return pending if we can't check
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        status: 'pending',
+        orderStatus: order.status,
+        error: errorMessage
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 }
