@@ -63,7 +63,11 @@ export function TypewriterText({
     <span className={cn("inline-flex items-baseline leading-relaxed pb-1", className)}>
       <span className="leading-[1.3]">{displayText}</span>
       <span 
-        className="inline-block w-[3px] h-[0.8em] bg-primary ml-0.5 animate-blink" 
+        className="inline-block w-[3px] h-[0.85em] bg-current ml-0.5 rounded-sm animate-pulse" 
+        style={{
+          boxShadow: "0 0 8px currentColor, 0 0 12px currentColor",
+          animation: "blink 1s ease-in-out infinite"
+        }}
       />
     </span>
   );

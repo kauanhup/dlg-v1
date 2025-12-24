@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { Header, Hero, BotShowcase, Features, HowItWorks, Pricing, FAQ, CTA, Footer } from "@/components/landing";
 import { SectionDivider } from "@/components/landing/SectionDivider";
 import RotatingDivider from "@/components/landing/RotatingDivider";
+import FloatingParticles from "@/components/landing/FloatingParticles";
+import GridBackground from "@/components/landing/GridBackground";
 import SEO from "@/components/SEO";
 import PageTransition from "@/components/PageTransition";
 
@@ -26,9 +28,13 @@ const Index = () => {
         description="Sistema de automação avançado para crescimento de grupos Telegram. Extração e transferência de membros com segurança. Gerencie múltiplas contas."
         canonical="/"
       />
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background relative">
+        {/* Professional background effects */}
+        <GridBackground />
+        <FloatingParticles />
+        
         <Header />
-        <main>
+        <main className="relative z-10">
           <Hero />
           <BotShowcase />
           <SectionDivider />
