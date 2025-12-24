@@ -61,49 +61,14 @@ export function TypewriterText({
   }, [displayText, isDeleting, isPaused, textIndex, texts, typingSpeed, deletingSpeed, pauseTime]);
 
   return (
-    <span className={cn("inline-flex items-baseline relative", className)}>
-      {/* Glow effect behind text */}
-      <motion.span
-        className="absolute inset-0 blur-2xl opacity-60 pointer-events-none"
-        style={{
-          background: "hsl(var(--primary))",
-          filter: "blur(24px)",
-        }}
-        animate={{
-          opacity: [0.4, 0.7, 0.4],
-          scale: [1, 1.1, 1],
-        }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
-      
-      {/* Shiny text */}
-      <motion.span 
-        className="relative font-bold bg-clip-text text-transparent"
-        style={{
-          backgroundImage: "linear-gradient(110deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.5) 25%, hsl(var(--primary)) 50%, hsl(var(--primary)/0.5) 75%, hsl(var(--primary)) 100%)",
-          backgroundSize: "300% 100%",
-        }}
-        animate={{
-          backgroundPosition: ["0% 0%", "100% 0%"],
-        }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: "linear",
-        }}
-      >
+    <span className={cn("inline-flex items-baseline", className)}>
+      <span className="font-bold text-primary">
         {displayText}
-      </motion.span>
-      
-      {/* Cursor */}
+      </span>
       <motion.span 
-        className="relative inline-block w-[3px] h-[0.85em] bg-primary ml-0.5 rounded-sm shadow-[0_0_12px_hsl(var(--primary)/0.8)]"
-        animate={{ opacity: [1, 0.2, 1] }}
-        transition={{ duration: 0.5, repeat: Infinity, ease: "easeInOut" }}
+        className="inline-block w-[3px] h-[0.85em] bg-primary ml-0.5 rounded-sm"
+        animate={{ opacity: [1, 0.3, 1] }}
+        transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut" }}
       />
     </span>
   );
