@@ -250,11 +250,6 @@ const HowItWorks = () => {
                     
                     {/* Overlay gradient */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
-                    
-                    {/* Step badge */}
-                    <div className="absolute top-3 left-3 bg-primary/90 backdrop-blur-sm text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg">
-                      Passo {step.step}
-                    </div>
                   </div>
                 </motion.div>
               </div>
