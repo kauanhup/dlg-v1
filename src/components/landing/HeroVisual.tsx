@@ -49,7 +49,7 @@ const Badge = ({
   );
 };
 
-// Simplified animated line - no particle animation for performance
+// Simplified animated line - thinner for better look
 const AnimatedLine = ({ 
   d, 
   delay 
@@ -60,7 +60,7 @@ const AnimatedLine = ({
   <motion.path 
     d={d}
     stroke="url(#branchGrad)" 
-    strokeWidth="2"
+    strokeWidth="0.5"
     strokeLinecap="round"
     fill="none"
     style={{ willChange: "stroke-dashoffset, opacity" }}
@@ -106,29 +106,28 @@ export const HeroVisual = () => {
           </linearGradient>
         </defs>
         
-        {/* Center is at approximately 50%, 50% */}
-        {/* Lines going from center to badge positions */}
+        {/* Lines going from center to badge positions - evenly distributed */}
         
-        {/* Extração - top left (0%, 18%) */}
-        <AnimatedLine d="M 50 50 Q 35 35, 15 22" delay={0.1} />
+        {/* Extração - top left */}
+        <AnimatedLine d="M 50 50 Q 30 30, 12 15" delay={0.1} />
         
-        {/* Delay Inteligente - top right (95%, 12%) */}
-        <AnimatedLine d="M 50 50 Q 65 35, 85 18" delay={0.15} />
+        {/* Delay Inteligente - top right */}
+        <AnimatedLine d="M 50 50 Q 70 30, 88 15" delay={0.15} />
         
-        {/* Multi-Contas - right upper (100%, 32%) */}
-        <AnimatedLine d="M 50 50 Q 70 45, 90 38" delay={0.2} />
+        {/* Crescimento - middle left */}
+        <AnimatedLine d="M 50 50 Q 30 50, 8 48" delay={0.2} />
         
-        {/* Modo PC - right middle (98%, 52%) */}
-        <AnimatedLine d="M 50 50 Q 70 52, 88 55" delay={0.25} />
+        {/* Multi-Contas - middle right */}
+        <AnimatedLine d="M 50 50 Q 70 50, 92 48" delay={0.25} />
         
-        {/* Crescimento - bottom left (5%, 85%) */}
-        <AnimatedLine d="M 50 50 Q 35 65, 20 78" delay={0.3} />
+        {/* Modo PC - bottom left */}
+        <AnimatedLine d="M 50 50 Q 30 70, 15 82" delay={0.3} />
         
-        {/* Anti-Ban - bottom right (92%, 85%) */}
-        <AnimatedLine d="M 50 50 Q 65 65, 82 78" delay={0.35} />
+        {/* Automação - bottom center */}
+        <AnimatedLine d="M 50 50 Q 50 70, 50 92" delay={0.35} />
         
-        {/* Automação - bottom center (50%, 95%) */}
-        <AnimatedLine d="M 50 50 Q 50 70, 50 88" delay={0.4} />
+        {/* Anti-Ban - bottom right */}
+        <AnimatedLine d="M 50 50 Q 70 70, 85 82" delay={0.4} />
         
         {/* Central pulsing ring - only if not reduced motion */}
         {!prefersReducedMotion && (
@@ -209,40 +208,40 @@ export const HeroVisual = () => {
         </motion.div>
       </motion.div>
 
-      {/* Badges distributed around the logo - better positioning */}
-      {/* Top right - Delay Inteligente */}
-      <div className="absolute hidden sm:block" style={{ top: '12%', right: '5%' }}>
-        <Badge icon={Clock} label="Delay Inteligente" delay={0.3} floatOffset={0} />
-      </div>
-
-      {/* Right upper - Multi-Contas */}
-      <div className="absolute hidden sm:block" style={{ top: '32%', right: '0%' }}>
-        <Badge icon={Users} label="Multi-Contas" delay={0.35} floatOffset={0.3} />
-      </div>
-
-      {/* Right middle - Modo PC */}
-      <div className="absolute hidden sm:block" style={{ top: '52%', right: '2%' }}>
-        <Badge icon={Monitor} label="Modo PC" delay={0.4} floatOffset={0.6} />
-      </div>
-
-      {/* Right lower - Anti-Ban */}
-      <div className="absolute hidden sm:block" style={{ bottom: '15%', right: '8%' }}>
-        <Badge icon={Shield} label="Anti-Ban" delay={0.45} floatOffset={0.2} />
-      </div>
-
+      {/* Badges distributed evenly around the logo */}
       {/* Top left - Extração */}
-      <div className="absolute hidden sm:block" style={{ top: '18%', left: '0%' }}>
-        <Badge icon={Send} label="Extração" delay={0.5} floatOffset={0.5} />
+      <div className="absolute hidden sm:block" style={{ top: '5%', left: '2%' }}>
+        <Badge icon={Send} label="Extração" delay={0.3} floatOffset={0.5} />
       </div>
 
-      {/* Bottom left - Crescimento */}
-      <div className="absolute hidden sm:block" style={{ bottom: '15%', left: '5%' }}>
-        <Badge icon={Rocket} label="Crescimento" delay={0.55} floatOffset={0.4} />
+      {/* Top right - Delay Inteligente */}
+      <div className="absolute hidden sm:block" style={{ top: '5%', right: '2%' }}>
+        <Badge icon={Clock} label="Delay Inteligente" delay={0.35} floatOffset={0} />
+      </div>
+
+      {/* Middle left - Crescimento */}
+      <div className="absolute hidden sm:block" style={{ top: '42%', left: '-5%' }}>
+        <Badge icon={Rocket} label="Crescimento" delay={0.4} floatOffset={0.4} />
+      </div>
+
+      {/* Middle right - Multi-Contas */}
+      <div className="absolute hidden sm:block" style={{ top: '42%', right: '-5%' }}>
+        <Badge icon={Users} label="Multi-Contas" delay={0.45} floatOffset={0.3} />
+      </div>
+
+      {/* Bottom left - Modo PC */}
+      <div className="absolute hidden sm:block" style={{ bottom: '8%', left: '5%' }}>
+        <Badge icon={Monitor} label="Modo PC" delay={0.5} floatOffset={0.6} />
       </div>
 
       {/* Bottom center - Automação */}
-      <div className="absolute hidden sm:block" style={{ bottom: '5%', left: '50%', transform: 'translateX(-50%)' }}>
-        <Badge icon={Zap} label="Automação" delay={0.6} floatOffset={0.1} />
+      <div className="absolute hidden sm:block" style={{ bottom: '0%', left: '50%', transform: 'translateX(-50%)' }}>
+        <Badge icon={Zap} label="Automação" delay={0.55} floatOffset={0.1} />
+      </div>
+
+      {/* Bottom right - Anti-Ban */}
+      <div className="absolute hidden sm:block" style={{ bottom: '8%', right: '5%' }}>
+        <Badge icon={Shield} label="Anti-Ban" delay={0.6} floatOffset={0.2} />
       </div>
 
       {/* Mobile layout */}
