@@ -203,7 +203,7 @@ export function AnimeNavBar({ items, className, defaultActive = "Home" }: NavBar
           })}
 
           {/* Divider */}
-          <div className="w-px h-6 bg-border mx-1 sm:mx-2" />
+          <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-border to-transparent mx-2 sm:mx-3" />
 
           {/* Action Items (Pages) */}
           {actionItems.map((item) => {
