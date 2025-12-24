@@ -351,6 +351,7 @@ export const useUserDashboard = (userId: string | undefined) => {
   };
 
   // Calculate license info from license data (moved from Dashboard.tsx)
+  // CRITICAL FIX: Validate expiration on frontend even if cron hasn't run
   const getLicenseInfo = () => {
     if (!license) return null;
     
@@ -364,13 +365,21 @@ export const useUserDashboard = (userId: string | undefined) => {
       return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
     };
     
+    // CRITICAL: Override status to 'expired' if end_date has passed
+    // This prevents showing "Active" when license should be expired but cron hasn't run
+    let effectiveStatus = license.status;
+    if (license.status === 'active' && endDate < now) {
+      console.warn('[useUserDashboard] License appears active but end_date has passed - treating as expired');
+      effectiveStatus = 'expired';
+    }
+    
     return {
       plan: license.plan_name,
       expiresAt: formatDate(endDate),
       daysLeft,
       totalDays,
       activatedAt: formatDate(startDate),
-      status: license.status
+      status: effectiveStatus
     };
   };
 
