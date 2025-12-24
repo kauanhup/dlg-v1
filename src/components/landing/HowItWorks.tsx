@@ -200,25 +200,23 @@ const HowItWorks = () => {
                   {step.description}
                 </p>
                 
-                {/* Tutorial Button - Only on first step */}
-                {index === 0 && (
-                  <motion.div 
-                    className="mt-6"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={isInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ delay: 0.8 }}
+                {/* Tutorial Button */}
+                <motion.div 
+                  className="mt-6"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={isInView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ delay: 0.5 + (index * 0.2) }}
+                >
+                  <Button
+                    variant="outline"
+                    onClick={openTutorial}
+                    className="gap-2 border-primary/30 hover:bg-primary/10 hover:border-primary/50"
                   >
-                    <Button
-                      variant="outline"
-                      onClick={openTutorial}
-                      className="gap-2 border-primary/30 hover:bg-primary/10 hover:border-primary/50"
-                    >
-                      <Play className="w-4 h-4" />
-                      Ver Tutorial
-                      <ExternalLink className="w-3 h-3 ml-1 opacity-60" />
-                    </Button>
-                  </motion.div>
-                )}
+                    <Play className="w-4 h-4" />
+                    Ver Tutorial
+                    <ExternalLink className="w-3 h-3 ml-1 opacity-60" />
+                  </Button>
+                </motion.div>
               </div>
 
               {/* Preview Component */}
