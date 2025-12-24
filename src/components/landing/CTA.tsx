@@ -9,18 +9,22 @@ const CTA = () => {
   const isInView = useInView(ref, { once: true, amount: 0.3 });
 
   return (
-    <section className="py-20 sm:py-28 relative overflow-hidden" ref={ref}>
-      {/* Gradient transition from FAQ */}
-      <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-card via-card/50 to-transparent pointer-events-none" />
-      {/* Background glow */}
+    <section className="py-20 sm:py-28 relative overflow-hidden bg-gradient-to-b from-card via-background to-background" ref={ref}>
+      {/* Smooth top transition */}
+      <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-card to-transparent pointer-events-none" />
+      
+      {/* Background glow - centered and subtle */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
         initial={{ opacity: 0 }}
         animate={isInView ? { opacity: 1 } : {}}
         transition={{ duration: 0.4 }}
       >
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-primary/10 rounded-full blur-[120px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[250px] bg-primary/8 rounded-full blur-[100px]" />
       </motion.div>
+      
+      {/* Smooth bottom transition */}
+      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none" />
 
       <div className="container mx-auto px-4 sm:px-6 relative">
         <motion.div 
