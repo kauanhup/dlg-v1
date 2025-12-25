@@ -4097,9 +4097,10 @@ const Admin = () => {
   // From here, user is CONFIRMED as admin - safe to render admin UI
   
   const adminUser = {
-    name: user?.user_metadata?.name || "Administrador",
-    email: user?.email || "admin@dlgconnect.com",
-    initials: (user?.user_metadata?.name || "AD").slice(0, 2).toUpperCase(),
+    name: profile?.name || user?.user_metadata?.name || "Administrador",
+    email: profile?.email || user?.email || "admin@dlgconnect.com",
+    initials: (profile?.name || user?.user_metadata?.name || "AD").slice(0, 2).toUpperCase(),
+    avatar: profile?.avatar || "😀",
   };
 
   const sidebarTabs = ["overview", "dashboard", "users", "sessions", "bot", "api", "debug"];
