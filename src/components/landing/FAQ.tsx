@@ -37,20 +37,20 @@ const FAQ = () => {
   };
 
   return (
-    <section id="faq" className="relative py-20 sm:py-28 bg-card" ref={ref}>
+    <section id="faq" className="relative py-12 sm:py-20 lg:py-28 bg-card" ref={ref}>
       {/* Gradient transition from Pricing */}
-      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background to-transparent pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-24 sm:h-32 bg-gradient-to-b from-background to-transparent pointer-events-none" />
       
       <div className="container mx-auto px-4 sm:px-6">
         <div className="max-w-2xl mx-auto">
           <motion.div 
-            className="text-center mb-12"
+            className="text-center mb-8 sm:mb-12 px-2"
             initial={{ opacity: 0, y: 16 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.3, ease: [0.33, 1, 0.68, 1] }}
           >
             <motion.p 
-              className="text-primary text-sm font-medium mb-3"
+              className="text-primary text-xs sm:text-sm font-medium mb-2 sm:mb-3"
               initial={{ opacity: 0, y: 10 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.25, delay: 0.05 }}
@@ -58,7 +58,7 @@ const FAQ = () => {
               FAQ
             </motion.p>
             <motion.h2 
-              className="text-3xl sm:text-4xl font-display font-bold"
+              className="text-2xl xs:text-3xl sm:text-4xl font-display font-bold"
               initial={{ opacity: 0, y: 10 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.25, delay: 0.08 }}
@@ -80,12 +80,12 @@ const FAQ = () => {
                 >
                   <AccordionItem 
                     value={`item-${index}`}
-                    className="border border-border rounded-lg px-4 bg-background data-[state=open]:border-primary/30 transition-all duration-300 hover:border-border/80"
+                    className="border border-border rounded-lg px-3 sm:px-4 bg-background data-[state=open]:border-primary/30 transition-all duration-300 hover:border-border/80"
                   >
-                    <AccordionTrigger className="text-left hover:no-underline py-4 text-sm font-medium">
+                    <AccordionTrigger className="text-left hover:no-underline py-3 sm:py-4 text-xs sm:text-sm font-medium">
                       {faq.question}
                     </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground text-sm pb-4">
+                    <AccordionContent className="text-muted-foreground text-xs sm:text-sm pb-3 sm:pb-4">
                       {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
