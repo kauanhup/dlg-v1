@@ -7,9 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const EVOPAY_BASE_URL = 'https://pix.evopay.cash/v1';
-
-type Gateway = 'pixup' | 'evopay';
+type Gateway = 'asaas' | 'pixup';
 
 interface GatewayAttempt {
   gateway: Gateway;
@@ -70,7 +68,7 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
 async function getGatewaySettings(supabase: any) {
   const { data, error } = await supabase
     .from('gateway_settings')
-    .select('client_id, client_secret, is_active, evopay_api_key, evopay_enabled, pixup_weight, evopay_weight')
+    .select('client_id, client_secret, is_active, pixup_weight')
     .eq('provider', 'pixup')
     .limit(1)
     .maybeSingle();
@@ -105,7 +103,142 @@ async function logGatewayAttempt(
   }
 }
 
-// Create PIX with PixUp via proxy
+// Get or create Asaas customer
+async function getOrCreateAsaasCustomer(supabase: any, userId: string, apiKey: string): Promise<{ success: boolean; customerId?: string; error?: string }> {
+  const ASAAS_API_URL = 'https://api.asaas.com/v3';
+  
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('email, name, whatsapp')
+    .eq('user_id', userId)
+    .single();
+
+  if (!profile?.email) {
+    return { success: false, error: 'Perfil não encontrado' };
+  }
+
+  try {
+    // Search for existing customer
+    const searchResponse = await fetchWithTimeout(`${ASAAS_API_URL}/customers?email=${encodeURIComponent(profile.email)}`, {
+      method: 'GET',
+      headers: {
+        'access_token': apiKey,
+        'Content-Type': 'application/json',
+      },
+    }, 15000);
+
+    const searchData = await searchResponse.json();
+    
+    if (searchData.data && searchData.data.length > 0) {
+      return { success: true, customerId: searchData.data[0].id };
+    }
+
+    // Create new customer
+    const createResponse = await fetchWithTimeout(`${ASAAS_API_URL}/customers`, {
+      method: 'POST',
+      headers: {
+        'access_token': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: profile.name || profile.email.split('@')[0],
+        email: profile.email,
+        mobilePhone: profile.whatsapp?.replace(/\D/g, '') || undefined,
+        notificationDisabled: false,
+      }),
+    }, 15000);
+
+    const createData = await createResponse.json();
+
+    if (createData.id) {
+      return { success: true, customerId: createData.id };
+    }
+
+    return { success: false, error: createData.errors?.[0]?.description || 'Erro ao criar cliente' };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// Create PIX with Asaas (PRIMARY GATEWAY)
+async function createPixWithAsaas(
+  supabase: any,
+  orderId: string,
+  amount: number,
+  description: string,
+  userId: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  const apiKey = Deno.env.get('ASAAS_API_KEY');
+  const ASAAS_API_URL = 'https://api.asaas.com/v3';
+
+  if (!apiKey) {
+    return { success: false, error: 'Asaas não configurado' };
+  }
+
+  try {
+    // Get or create customer
+    const customerResult = await getOrCreateAsaasCustomer(supabase, userId, apiKey);
+    if (!customerResult.success) {
+      return { success: false, error: customerResult.error };
+    }
+
+    const today = new Date();
+    const dueDate = today.toISOString().split('T')[0];
+
+    // Create payment
+    const response = await fetchWithTimeout(`${ASAAS_API_URL}/payments`, {
+      method: 'POST',
+      headers: {
+        'access_token': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        customer: customerResult.customerId,
+        billingType: 'PIX',
+        value: amount,
+        dueDate: dueDate,
+        description: description,
+        externalReference: orderId,
+      }),
+    }, 30000);
+
+    const data = await response.json();
+    console.log('[Asaas] Payment response:', JSON.stringify(data));
+
+    if (data.errors) {
+      return { success: false, error: data.errors[0]?.description || 'Erro ao criar cobrança' };
+    }
+
+    if (!data.id) {
+      return { success: false, error: 'Resposta inválida do gateway' };
+    }
+
+    // Get PIX QR Code
+    const qrResponse = await fetchWithTimeout(`${ASAAS_API_URL}/payments/${data.id}/pixQrCode`, {
+      method: 'GET',
+      headers: {
+        'access_token': apiKey,
+        'Content-Type': 'application/json',
+      },
+    }, 15000);
+
+    const qrData = await qrResponse.json();
+
+    return {
+      success: true,
+      data: {
+        pixCode: qrData.payload,
+        qrCodeBase64: qrData.encodedImage,
+        transactionId: data.id,
+      },
+    };
+  } catch (error: any) {
+    console.error('[Asaas] Error:', error);
+    return { success: false, error: error.message || 'Erro de conexão' };
+  }
+}
+
+// Create PIX with PixUp via proxy (FALLBACK GATEWAY)
 async function createPixWithPixUp(
   supabase: any,
   settings: any,
@@ -148,12 +281,8 @@ async function createPixWithPixUp(
       return { success: false, error: proxyResponse.error || `HTTP ${response.status}` };
     }
 
-    // Extract data from proxy response (proxy returns { success, data: {...pixup response} })
     const pixupData = proxyResponse.data || proxyResponse;
-    console.log('[PixUp] Extracted data:', JSON.stringify(pixupData));
 
-    // Map PixUp response fields to standard format
-    // PixUp returns: qrcode (EMV code), qrcode_base64, id, etc
     return { 
       success: true, 
       data: {
@@ -168,51 +297,6 @@ async function createPixWithPixUp(
   }
 }
 
-// Create PIX with EvoPay
-async function createPixWithEvoPay(
-  settings: any,
-  orderId: string,
-  amount: number
-): Promise<{ success: boolean; data?: any; error?: string }> {
-  if (!settings?.evopay_api_key || !settings?.evopay_enabled) {
-    return { success: false, error: 'EvoPay não configurado ou desativado' };
-  }
-
-  try {
-    const webhookUrl = 'https://dlgconnect.com/evopay';
-
-    const response = await fetchWithTimeout(`${EVOPAY_BASE_URL}/pix`, {
-      method: 'POST',
-      headers: {
-        'API-Key': settings.evopay_api_key,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        amount: amount,
-        callbackUrl: webhookUrl,
-      }),
-    }, 30000);
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return { success: false, error: data.message || `HTTP ${response.status}` };
-    }
-
-    return { 
-      success: true, 
-      data: {
-        pixCode: data.qrCodeText,
-        qrCodeBase64: data.qrCodeBase64,
-        transactionId: data.id,
-        amount: data.amount
-      }
-    };
-  } catch (error: any) {
-    return { success: false, error: error.message || 'Erro de conexão com EvoPay' };
-  }
-}
-
 // Notify admin about total gateway failure
 async function notifyAdminGatewayFailure(
   supabase: any,
@@ -222,7 +306,6 @@ async function notifyAdminGatewayFailure(
   attempts: GatewayAttempt[]
 ) {
   try {
-    // Get email settings
     const { data: settings } = await supabase
       .from('gateway_settings')
       .select('resend_api_key, resend_from_email, resend_from_name, email_enabled')
@@ -235,16 +318,12 @@ async function notifyAdminGatewayFailure(
       return;
     }
 
-    // Get admin emails
     const { data: admins } = await supabase
       .from('user_roles')
       .select('user_id')
       .eq('role', 'admin');
 
-    if (!admins || admins.length === 0) {
-      console.log('No admins found for notification');
-      return;
-    }
+    if (!admins || admins.length === 0) return;
 
     const { data: profiles } = await supabase
       .from('profiles')
@@ -252,11 +331,7 @@ async function notifyAdminGatewayFailure(
       .in('user_id', admins.map((a: any) => a.user_id));
 
     const adminEmails = profiles?.map((p: any) => p.email).filter(Boolean) || [];
-    
-    if (adminEmails.length === 0) {
-      console.log('No admin emails found');
-      return;
-    }
+    if (adminEmails.length === 0) return;
 
     const attemptsHtml = attempts.map(a => `
       <li style="margin-bottom: 8px;">
@@ -269,27 +344,21 @@ async function notifyAdminGatewayFailure(
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #1a1a1a; color: #e5e5e5; padding: 24px; border-radius: 8px;">
         <h1 style="color: #ef4444; margin-bottom: 24px;">🚨 URGENTE: Todos os gateways falharam</h1>
-        
         <div style="background-color: #262626; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
           <p style="margin: 8px 0;"><strong>Order ID:</strong> ${orderId}</p>
           <p style="margin: 8px 0;"><strong>Usuário:</strong> ${userEmail}</p>
           <p style="margin: 8px 0;"><strong>Valor:</strong> R$ ${amount.toFixed(2)}</p>
           <p style="margin: 8px 0;"><strong>Data:</strong> ${new Date().toLocaleString('pt-BR')}</p>
         </div>
-
         <h2 style="color: #fbbf24; margin-top: 24px;">Tentativas:</h2>
-        <ul style="list-style: none; padding: 0;">
-          ${attemptsHtml}
-        </ul>
-
+        <ul style="list-style: none; padding: 0;">${attemptsHtml}</ul>
         <p style="color: #9ca3af; margin-top: 24px; font-size: 14px;">
           O cliente foi orientado que o pedido foi registrado e que entrarão em contato.
         </p>
       </div>
     `;
 
-    // Send email via Resend
-    const resendResponse = await fetch('https://api.resend.com/emails', {
+    await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${settings.resend_api_key}`,
@@ -303,11 +372,7 @@ async function notifyAdminGatewayFailure(
       }),
     });
 
-    if (resendResponse.ok) {
-      console.log('Admin notification sent successfully');
-    } else {
-      console.error('Failed to send admin notification:', await resendResponse.text());
-    }
+    console.log('Admin notification sent');
   } catch (error) {
     console.error('Error notifying admin:', error);
   }
@@ -368,39 +433,24 @@ serve(async (req) => {
       );
     }
 
-    // Get gateway settings
+    // Get gateway settings (for PixUp fallback)
     const settings = await getGatewaySettings(supabaseAdmin);
+
+    // Determine available gateways
+    // Priority: Asaas (primary) > PixUp (fallback)
+    const asaasEnabled = !!Deno.env.get('ASAAS_API_KEY');
+    const pixupEnabled = settings?.is_active && settings?.client_id && settings?.client_secret;
+
+    const gateways: Gateway[] = [];
     
-    if (!settings) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Configurações de gateway não encontradas' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Asaas is always primary if available
+    if (asaasEnabled) {
+      gateways.push('asaas');
     }
-
-    // Determine gateway order based on weights (higher weight = more priority)
-    const pixupWeight = settings.pixup_weight ?? 50;
-    const evopayWeight = settings.evopay_weight ?? 50;
-    const pixupEnabled = settings.is_active && settings.client_id && settings.client_secret;
-    const evopayEnabled = settings.evopay_enabled && settings.evopay_api_key;
-
-    // Build gateway order
-    let gateways: Gateway[] = [];
     
-    if (pixupEnabled && evopayEnabled) {
-      // Both enabled - use weights to determine order (or random if equal)
-      if (pixupWeight > evopayWeight) {
-        gateways = ['pixup', 'evopay'];
-      } else if (evopayWeight > pixupWeight) {
-        gateways = ['evopay', 'pixup'];
-      } else {
-        // Equal weights - random
-        gateways = Math.random() < 0.5 ? ['pixup', 'evopay'] : ['evopay', 'pixup'];
-      }
-    } else if (pixupEnabled) {
-      gateways = ['pixup'];
-    } else if (evopayEnabled) {
-      gateways = ['evopay'];
+    // PixUp is fallback
+    if (pixupEnabled) {
+      gateways.push('pixup');
     }
 
     if (gateways.length === 0) {
@@ -428,10 +478,10 @@ serve(async (req) => {
 
       let gatewayResult: { success: boolean; data?: any; error?: string };
 
-      if (gateway === 'pixup') {
-        gatewayResult = await createPixWithPixUp(supabaseAdmin, settings, order_id, amount, description || order.product_name);
+      if (gateway === 'asaas') {
+        gatewayResult = await createPixWithAsaas(supabaseAdmin, order_id, amount, description || order.product_name, userId);
       } else {
-        gatewayResult = await createPixWithEvoPay(settings, order_id, amount);
+        gatewayResult = await createPixWithPixUp(supabaseAdmin, settings, order_id, amount, description || order.product_name);
       }
 
       const responseTime = Date.now() - startTime;
@@ -464,8 +514,8 @@ serve(async (req) => {
         await supabaseAdmin.from('payments').update({
           pix_code: pixCode,
           qr_code_base64: qrCodeBase64 || null,
-          payment_method: gateway === 'evopay' ? 'evopay_pix' : 'pix',
-          evopay_transaction_id: gateway === 'evopay' ? transactionId : null
+          payment_method: gateway === 'asaas' ? 'asaas_pix' : 'pix',
+          evopay_transaction_id: transactionId
         }).eq('order_id', order_id);
 
         result = {
@@ -488,14 +538,12 @@ serve(async (req) => {
     if (!result) {
       console.log('[Fallback] All gateways failed, notifying admin');
       
-      // Get user email for notification
       const { data: profile } = await supabaseAdmin
         .from('profiles')
         .select('email')
         .eq('user_id', userId)
         .single();
 
-      // Notify admin
       await notifyAdminGatewayFailure(
         supabaseAdmin,
         order_id,
@@ -507,7 +555,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Nossos sistemas de pagamento estão temporariamente indisponíveis. Seu pedido foi registrado e entraremos em contato em breve.',
+          error: 'Todos os gateways de pagamento falharam. Seu pedido foi registrado e entraremos em contato.',
           attempts
         }),
         { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -520,9 +568,9 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('Error in create-payment-with-fallback:', error);
+    console.error('[Fallback] Error:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message || 'Erro interno' }),
+      JSON.stringify({ success: false, error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
