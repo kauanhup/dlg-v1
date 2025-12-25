@@ -2167,24 +2167,20 @@ const ApiSection = () => {
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // (Mercado Pago removido)
+  // Asaas state
+  const [asaasEnabled, setAsaasEnabled] = useState(true);
+  const [asaasApiKey, setAsaasApiKey] = useState("");
+  const [hasAsaasKey, setHasAsaasKey] = useState(false);
+  const [showAsaasKey, setShowAsaasKey] = useState(false);
+  const [isSavingAsaas, setIsSavingAsaas] = useState(false);
+  const [asaasSaveSuccess, setAsaasSaveSuccess] = useState(false);
+  const [isTestingAsaas, setIsTestingAsaas] = useState(false);
+  const [asaasConnected, setAsaasConnected] = useState(false);
 
-  // EvoPay state
-  const [evoEnabled, setEvoEnabled] = useState(false);
-  const [evoApiKey, setEvoApiKey] = useState("");
-  const [evoWebhookUrl, setEvoWebhookUrl] = useState("");
-  const [hasEvoKey, setHasEvoKey] = useState(false);
-  const [showEvoKey, setShowEvoKey] = useState(false);
-  const [isSavingEvo, setIsSavingEvo] = useState(false);
-  const [evoSaveSuccess, setEvoSaveSuccess] = useState(false);
-  const [isTestingEvo, setIsTestingEvo] = useState(false);
-  const [evoConnected, setEvoConnected] = useState(false);
-
-  // Gateway weights state
-  const [pixupWeight, setPixupWeight] = useState(50);
-  const [evopayWeight, setEvopayWeight] = useState(50);
-  const [isSavingWeights, setIsSavingWeights] = useState(false);
-  const [weightsSaveSuccess, setWeightsSaveSuccess] = useState(false);
+  // Gateway priority state (Asaas primary, PixUp fallback)
+  const [asaasPriority, setAsaasPriority] = useState<"primary" | "fallback">("primary");
+  const [isSavingPriority, setIsSavingPriority] = useState(false);
+  const [prioritySaveSuccess, setPrioritySaveSuccess] = useState(false);
 
   // Resend state
   const [resendApiKey, setResendApiKey] = useState("");
@@ -2263,28 +2259,22 @@ const ApiSection = () => {
           setTemplateAccentColor(data.data.email_template_accent_color || "#4ade80");
           setTemplateShowLogo(data.data.email_template_show_logo !== false);
           setTemplateLogoUrl(data.data.email_template_logo_url || "");
-          // (Mercado Pago removido)
-          // EvoPay settings
-          setEvoEnabled(data.data.evopay_enabled === true);
-          setHasEvoKey(data.data.has_evopay_key === true);
-          setEvoWebhookUrl(data.data.evopay_webhook_url || "");
-          // Set evoConnected based on enabled + has key (same logic as PixUp)
-          setEvoConnected(data.data.evopay_enabled === true && data.data.has_evopay_key === true);
-          // Gateway weights
-          setPixupWeight(data.data.pixup_weight ?? 50);
-          setEvopayWeight(data.data.evopay_weight ?? 50);
+          // Asaas settings
+          setAsaasEnabled(data.data.asaas_enabled !== false); // Default true
+          setHasAsaasKey(data.data.has_asaas_key === true);
+          setAsaasConnected(data.data.asaas_enabled !== false && data.data.has_asaas_key === true);
+          // Gateway priority
+          setAsaasPriority(data.data.gateway_priority === "pixup" ? "fallback" : "primary");
         } else {
-          // No settings yet
+          // No settings yet - defaults
           setClientId("");
           setWebhookUrl("");
           setIsConnected(false);
           setPixupEnabled(false);
           setHasSecret(false);
-          // (Mercado Pago removido)
-          setEvoEnabled(false);
-          setHasEvoKey(false);
-          setEvoWebhookUrl("");
-          setEvoConnected(false);
+          setAsaasEnabled(true);
+          setHasAsaasKey(false);
+          setAsaasConnected(false);
         }
       } catch (error) {
         console.error('Error loading API settings:', error);
@@ -2385,94 +2375,90 @@ const ApiSection = () => {
     }
   };
 
-  // (Mercado Pago handlers removidos)
-
-  // EvoPay save handler
-  const handleSaveEvoPay = async () => {
-    setIsSavingEvo(true);
-    setEvoSaveSuccess(false);
+  // Asaas save handler
+  const handleSaveAsaas = async () => {
+    setIsSavingAsaas(true);
+    setAsaasSaveSuccess(false);
     try {
-      const { data, error } = await supabase.functions.invoke('pixup', {
+      const { data, error } = await supabase.functions.invoke('asaas', {
         body: { 
-          action: 'save_evopay_settings',
-          evopay_enabled: evoEnabled,
-          evopay_api_key: evoApiKey.trim() || null,
-          evopay_webhook_url: evoWebhookUrl.trim() || null
+          action: 'save_settings',
+          asaas_enabled: asaasEnabled,
+          asaas_api_key: asaasApiKey.trim() || null
         }
       });
 
       if (error) throw error;
 
       if (data?.success) {
-        toast.success("Configurações do EvoPay salvas!");
-        setEvoSaveSuccess(true);
-        setHasEvoKey(!!evoApiKey.trim() || hasEvoKey);
-        setEvoApiKey(""); // Clear after save
-        setTimeout(() => setEvoSaveSuccess(false), 2000);
+        toast.success("Configurações do Asaas salvas!");
+        setAsaasSaveSuccess(true);
+        setHasAsaasKey(!!asaasApiKey.trim() || hasAsaasKey);
+        setAsaasApiKey(""); // Clear after save
+        setTimeout(() => setAsaasSaveSuccess(false), 2000);
       } else {
         toast.error(data?.error || "Erro ao salvar configurações");
       }
     } catch (error) {
-      console.error('Error saving EvoPay settings:', error);
+      console.error('Error saving Asaas settings:', error);
       toast.error("Erro ao salvar configurações");
     } finally {
-      setIsSavingEvo(false);
+      setIsSavingAsaas(false);
     }
   };
 
-  // EvoPay test connection handler
-  const handleTestEvoPay = async () => {
-    setIsTestingEvo(true);
+  // Asaas test connection handler
+  const handleTestAsaas = async () => {
+    setIsTestingAsaas(true);
     try {
-      const { data, error } = await supabase.functions.invoke('evopay', {
+      const { data, error } = await supabase.functions.invoke('asaas', {
         body: { action: 'test_connection' }
       });
 
       if (error) throw error;
 
       if (data?.success) {
-        toast.success(`Conexão estabelecida! Saldo: R$ ${data.data?.balance?.toFixed(2) || '0.00'}`);
-        setEvoConnected(true);
+        toast.success(`Conexão Asaas estabelecida! Saldo: R$ ${data.data?.balance?.toFixed(2) || '0.00'}`);
+        setAsaasConnected(true);
       } else {
         toast.error(data?.error || "Falha na conexão");
-        setEvoConnected(false);
+        setAsaasConnected(false);
       }
     } catch (error) {
-      console.error('Error testing EvoPay connection:', error);
+      console.error('Error testing Asaas connection:', error);
       toast.error("Erro ao testar conexão");
-      setEvoConnected(false);
+      setAsaasConnected(false);
     } finally {
-      setIsTestingEvo(false);
+      setIsTestingAsaas(false);
     }
   };
 
-  // Gateway weights save handler
-  const handleSaveGatewayWeights = async () => {
-    setIsSavingWeights(true);
-    setWeightsSaveSuccess(false);
+  // Gateway priority save handler
+  const handleSaveGatewayPriority = async () => {
+    setIsSavingPriority(true);
+    setPrioritySaveSuccess(false);
     try {
       const { data, error } = await supabase.functions.invoke('pixup', {
         body: { 
-          action: 'save_gateway_weights',
-          pixup_weight: pixupWeight,
-          evopay_weight: evopayWeight
+          action: 'save_gateway_priority',
+          gateway_priority: asaasPriority === "primary" ? "asaas" : "pixup"
         }
       });
 
       if (error) throw error;
 
       if (data?.success) {
-        toast.success("Pesos dos gateways salvos!");
-        setWeightsSaveSuccess(true);
-        setTimeout(() => setWeightsSaveSuccess(false), 2000);
+        toast.success("Prioridade de gateway salva!");
+        setPrioritySaveSuccess(true);
+        setTimeout(() => setPrioritySaveSuccess(false), 2000);
       } else {
-        toast.error(data?.error || "Erro ao salvar pesos");
+        toast.error(data?.error || "Erro ao salvar prioridade");
       }
     } catch (error) {
-      console.error('Error saving gateway weights:', error);
-      toast.error("Erro ao salvar pesos dos gateways");
+      console.error('Error saving gateway priority:', error);
+      toast.error("Erro ao salvar prioridade de gateway");
     } finally {
-      setIsSavingWeights(false);
+      setIsSavingPriority(false);
     }
   };
 
@@ -2840,138 +2826,120 @@ const ApiSection = () => {
             </div>
           </div>
 
-          {/* Mercado Pago removido */}
-
-          {/* EvoPay Card */}
-          <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+          {/* Asaas Card - Gateway Principal */}
+          <div className="bg-card border border-amber-500/30 rounded-lg p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center">
-                  <Wallet className="w-5 h-5 text-emerald-500" />
+                <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-amber-500" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">EvoPay</h3>
-                  <p className="text-sm text-muted-foreground">Gateway PIX alternativo</p>
+                  <h3 className="font-semibold text-foreground">Asaas</h3>
+                  <p className="text-sm text-muted-foreground">Gateway Principal (PIX + Cartão)</p>
                 </div>
               </div>
               <div className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit border",
-                evoEnabled && hasEvoKey && evoConnected 
+                asaasEnabled && hasAsaasKey && asaasConnected 
                   ? "bg-green-500/10 text-green-500 border-green-500/30" 
-                  : evoEnabled && hasEvoKey 
+                  : asaasEnabled && hasAsaasKey 
                     ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" 
                     : "bg-muted/50 text-muted-foreground border-border"
               )}>
                 <div className={cn(
                   "w-2 h-2 rounded-full animate-pulse", 
-                  evoEnabled && hasEvoKey && evoConnected 
+                  asaasEnabled && hasAsaasKey && asaasConnected 
                     ? "bg-green-500" 
-                    : evoEnabled && hasEvoKey 
+                    : asaasEnabled && hasAsaasKey 
                       ? "bg-yellow-500" 
                       : "bg-muted-foreground"
                 )} />
-                {evoEnabled && hasEvoKey && evoConnected ? "Conectado" : 
-                 evoEnabled && hasEvoKey ? "Configurado" : "Desativado"}
+                {asaasEnabled && hasAsaasKey && asaasConnected ? "Conectado" : 
+                 asaasEnabled && hasAsaasKey ? "Configurado" : "Desativado"}
               </div>
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50">
+              <div className="flex items-center justify-between p-3 bg-amber-500/5 rounded-lg border border-amber-500/20">
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     "w-8 h-8 rounded-md flex items-center justify-center",
-                    evoEnabled ? "bg-emerald-500/10" : "bg-muted"
+                    asaasEnabled ? "bg-amber-500/10" : "bg-muted"
                   )}>
-                    <Wallet className={cn("w-4 h-4", evoEnabled ? "text-emerald-500" : "text-muted-foreground")} />
+                    <CreditCard className={cn("w-4 h-4", asaasEnabled ? "text-amber-500" : "text-muted-foreground")} />
                   </div>
-                  <span className="text-sm font-medium text-foreground">Habilitar EvoPay</span>
+                  <div>
+                    <span className="text-sm font-medium text-foreground">Habilitar Asaas</span>
+                    <p className="text-xs text-muted-foreground">Gateway principal de pagamentos</p>
+                  </div>
                 </div>
                 <button
-                  onClick={() => setEvoEnabled(!evoEnabled)}
+                  onClick={() => setAsaasEnabled(!asaasEnabled)}
                   className={cn(
                     "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
-                    evoEnabled ? "bg-emerald-500" : "bg-muted"
+                    asaasEnabled ? "bg-amber-500" : "bg-muted"
                   )}
                 >
                   <span className={cn(
                     "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200",
-                    evoEnabled ? "translate-x-6" : "translate-x-1"
+                    asaasEnabled ? "translate-x-6" : "translate-x-1"
                   )} />
                 </button>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">API Key</label>
+                <label className="text-sm font-medium text-foreground mb-2 block">API Key Asaas</label>
                 <div className="relative">
                   <input
-                    type={showEvoKey ? "text" : "password"}
-                    value={evoApiKey}
-                    onChange={(e) => setEvoApiKey(e.target.value)}
-                    placeholder={hasEvoKey ? "••••••••• (configurado)" : "Sua API Key do EvoPay"}
-                    className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
+                    type={showAsaasKey ? "text" : "password"}
+                    value={asaasApiKey}
+                    onChange={(e) => setAsaasApiKey(e.target.value)}
+                    placeholder={hasAsaasKey ? "••••••••• (configurado)" : "Sua API Key do Asaas"}
+                    className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowEvoKey(!showEvoKey)}
+                    onClick={() => setShowAsaasKey(!showAsaasKey)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {showEvoKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showAsaasKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Obtenha sua API Key em: <a href="https://www.asaas.com" target="_blank" rel="noopener" className="text-amber-500 hover:underline">asaas.com</a> → Configurações → Integrações
+                </p>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Webhook URL (Callback)</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={evoWebhookUrl}
-                    onChange={(e) => setEvoWebhookUrl(e.target.value)}
-                    placeholder="https://dlgconnect.com/api/webhook-evopay.php"
-                    className="flex-1 px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => {
-                      setEvoWebhookUrl("https://dlgconnect.com/api/webhook-evopay.php");
-                      navigator.clipboard.writeText("https://dlgconnect.com/api/webhook-evopay.php");
-                      toast.success("URL copiada!");
-                    }}
-                    title="Usar URL padrão da Hostinger"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  URL enviada ao EvoPay em cada PIX. Use o proxy da Hostinger para manter a URL fixa.
+              <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
+                <p className="text-xs text-muted-foreground">
+                  <strong>Métodos suportados:</strong> PIX (0,99%) e Cartão de Crédito (~2,99%). 
+                  Webhook automático integrado via Lovable Cloud.
                 </p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-border/50">
                 <Button 
-                  onClick={handleSaveEvoPay} 
-                  disabled={isSavingEvo} 
-                  className={cn("gap-2 transition-all", evoSaveSuccess && "bg-green-600 hover:bg-green-600")}
+                  onClick={handleSaveAsaas} 
+                  disabled={isSavingAsaas} 
+                  className={cn("gap-2 transition-all", asaasSaveSuccess && "bg-green-600 hover:bg-green-600")}
                 >
-                  {isSavingEvo ? <Spinner size="sm" /> : evoSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                  {evoSaveSuccess ? "Salvo!" : "Salvar Configurações"}
+                  {isSavingAsaas ? <Spinner size="sm" /> : asaasSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                  {asaasSaveSuccess ? "Salvo!" : "Salvar Configurações"}
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={handleTestEvoPay} 
-                  disabled={isTestingEvo || !hasEvoKey}
-                  className={cn("gap-2", evoConnected && "border-green-500/50 text-green-500")}
+                  onClick={handleTestAsaas} 
+                  disabled={isTestingAsaas || !hasAsaasKey}
+                  className={cn("gap-2", asaasConnected && "border-green-500/50 text-green-500")}
                 >
-                  {isTestingEvo ? <Spinner size="sm" /> : evoConnected ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
-                  {evoConnected ? "Conectado" : "Testar Conexão"}
+                  {isTestingAsaas ? <Spinner size="sm" /> : asaasConnected ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                  {asaasConnected ? "Conectado" : "Testar Conexão"}
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* Gateway Weights Card */}
+          {/* Gateway Priority Card */}
           <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-3">
@@ -2979,87 +2947,74 @@ const ApiSection = () => {
                   <Sliders className="w-5 h-5 text-purple-500" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">Distribuição de Gateways</h3>
-                  <p className="text-sm text-muted-foreground">Configure a porcentagem de uso de cada gateway</p>
+                  <h3 className="font-semibold text-foreground">Prioridade de Gateways</h3>
+                  <p className="text-sm text-muted-foreground">Configure qual gateway será usado primeiro</p>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Quando ambos os gateways estão ativos, o sistema escolhe aleatoriamente qual usar baseado nos pesos configurados.
-                Valores maiores = maior chance de ser selecionado.
+                O sistema tentará usar o gateway primário primeiro. Se falhar, usará o fallback automaticamente.
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-primary" />
-                      PixUp
-                    </label>
-                    <span className="text-sm font-semibold text-primary">{pixupWeight}%</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  onClick={() => setAsaasPriority("primary")}
+                  className={cn(
+                    "p-4 rounded-lg border-2 transition-all text-left",
+                    asaasPriority === "primary" 
+                      ? "border-amber-500 bg-amber-500/10" 
+                      : "border-border hover:border-muted-foreground"
+                  )}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-amber-500/20 rounded-md flex items-center justify-center">
+                      <CreditCard className="w-4 h-4 text-amber-500" />
+                    </div>
+                    <span className="font-medium text-foreground">Asaas Principal</span>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={pixupWeight}
-                    onChange={(e) => {
-                      const newPixup = Number(e.target.value);
-                      setPixupWeight(newPixup);
-                      setEvopayWeight(100 - newPixup);
-                    }}
-                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>0%</span>
-                    <span>100%</span>
-                  </div>
-                </div>
+                  <p className="text-xs text-muted-foreground">
+                    Asaas primeiro, PixUp como fallback
+                  </p>
+                </button>
 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                      EvoPay
-                    </label>
-                    <span className="text-sm font-semibold text-emerald-500">{evopayWeight}%</span>
+                <button
+                  onClick={() => setAsaasPriority("fallback")}
+                  className={cn(
+                    "p-4 rounded-lg border-2 transition-all text-left",
+                    asaasPriority === "fallback" 
+                      ? "border-primary bg-primary/10" 
+                      : "border-border hover:border-muted-foreground"
+                  )}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-primary/20 rounded-md flex items-center justify-center">
+                      <CreditCard className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="font-medium text-foreground">PixUp Principal</span>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={evopayWeight}
-                    onChange={(e) => {
-                      const newEvopay = Number(e.target.value);
-                      setEvopayWeight(newEvopay);
-                      setPixupWeight(100 - newEvopay);
-                    }}
-                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>0%</span>
-                    <span>100%</span>
-                  </div>
-                </div>
+                  <p className="text-xs text-muted-foreground">
+                    PixUp primeiro, Asaas como fallback
+                  </p>
+                </button>
               </div>
 
               <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
                 <p className="text-xs text-muted-foreground">
-                  <strong>Exemplo:</strong> Se PixUp = 70% e EvoPay = 30%, em 100 pagamentos aproximadamente 70 usarão PixUp e 30 usarão EvoPay.
-                  Os valores sempre somam 100% automaticamente.
+                  <strong>Recomendado:</strong> Asaas como principal por suportar PIX e Cartão. 
+                  PixUp fica como backup para PIX caso o Asaas tenha instabilidade.
                 </p>
               </div>
 
               <div className="flex justify-end pt-2 border-t border-border/50">
                 <Button 
-                  onClick={handleSaveGatewayWeights} 
-                  disabled={isSavingWeights}
-                  className={cn("gap-2 transition-all", weightsSaveSuccess && "bg-green-600 hover:bg-green-600")}
+                  onClick={handleSaveGatewayPriority} 
+                  disabled={isSavingPriority}
+                  className={cn("gap-2 transition-all", prioritySaveSuccess && "bg-green-600 hover:bg-green-600")}
                 >
-                  {isSavingWeights ? <Spinner size="sm" /> : weightsSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                  {weightsSaveSuccess ? "Salvo!" : "Salvar Pesos"}
+                  {isSavingPriority ? <Spinner size="sm" /> : prioritySaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                  {prioritySaveSuccess ? "Salvo!" : "Salvar Prioridade"}
                 </Button>
               </div>
             </div>
