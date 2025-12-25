@@ -133,6 +133,8 @@ async function createPixWithPixUp(
       },
       body: JSON.stringify({
         action: 'create_pix',
+        client_id: settings.client_id,
+        client_secret: settings.client_secret,
         amount,
         external_id: orderId,
         description
