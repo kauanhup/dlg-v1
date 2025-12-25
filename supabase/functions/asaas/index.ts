@@ -390,7 +390,7 @@ serve(async (req) => {
     const { userId, isAuthenticated } = await getUserFromRequest(req, supabaseAuth);
 
     // Admin-only actions
-    const adminOnlyActions = ['test_connection', 'get_balance'];
+    const adminOnlyActions = ['test_connection', 'get_balance', 'save_settings'];
     const authRequiredActions = ['create_pix', 'create_credit_card', 'check_status'];
 
     if (adminOnlyActions.includes(action)) {
@@ -417,6 +417,17 @@ serve(async (req) => {
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+    }
+
+    // save_settings doesn't require apiKey to be set (it's about enabling/disabling)
+    if (action === 'save_settings') {
+      // Asaas API key is stored in secrets, not in DB
+      // This action just acknowledges the setting was saved
+      console.log('[Asaas] save_settings called - API key is stored in secrets');
+      return new Response(
+        JSON.stringify({ success: true, message: 'Configurações do Asaas são gerenciadas via secrets' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     if (!apiKey) {

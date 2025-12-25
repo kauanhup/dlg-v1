@@ -136,7 +136,7 @@ serve(async (req) => {
     const { userId, isAuthenticated } = await getUserFromRequest(req, supabaseAuth);
 
     // SECURITY: Define which actions require authentication and admin role
-    const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection', 'save_email_settings', 'save_feature_toggles', 'save_recaptcha_settings', 'save_email_template', 'save_evopay_settings'];
+    const adminOnlyActions = ['save_credentials', 'get_settings', 'test_connection', 'save_email_settings', 'save_feature_toggles', 'save_recaptcha_settings', 'save_email_template', 'save_gateway_priority'];
     const authRequiredActions = ['create_pix', 'check_pix_status'];
 
     if (adminOnlyActions.includes(action)) {
@@ -167,7 +167,7 @@ serve(async (req) => {
     }
 
     // Actions that modify settings - add audit logging
-    const auditableActions = ['save_credentials', 'save_email_settings', 'save_feature_toggles', 'save_recaptcha_settings', 'save_email_template', 'save_evopay_settings', 'save_gateway_weights'];
+    const auditableActions = ['save_credentials', 'save_email_settings', 'save_feature_toggles', 'save_recaptcha_settings', 'save_email_template', 'save_gateway_priority'];
 
     switch (action) {
       case 'test_connection':
@@ -203,13 +203,9 @@ serve(async (req) => {
         return await saveEmailTemplate(supabaseAdmin, params);
       
       
-      case 'save_evopay_settings':
-        await logAudit(supabaseAdmin, userId!, 'UPDATE', 'evopay_settings', { enabled: params.evopay_enabled }, req);
-        return await saveEvopaySettings(supabaseAdmin, params);
-      
-      case 'save_gateway_weights':
-        await logAudit(supabaseAdmin, userId!, 'UPDATE', 'gateway_weights', { pixup_weight: params.pixup_weight, evopay_weight: params.evopay_weight }, req);
-        return await saveGatewayWeights(supabaseAdmin, params);
+      case 'save_gateway_priority':
+        await logAudit(supabaseAdmin, userId!, 'UPDATE', 'gateway_priority', { priority: params.gateway_priority }, req);
+        return await saveGatewayPriority(supabaseAdmin, params);
       
       case 'create_pix':
         return await createPixCharge(supabaseAdmin, params, userId!);
@@ -248,6 +244,16 @@ async function getSettings(supabase: any) {
     throw new Error('Failed to fetch gateway settings');
   }
 
+  // Get gateway priority from system_settings
+  const { data: priorityData } = await supabase
+    .from('system_settings')
+    .select('value')
+    .eq('key', 'gateway_priority')
+    .maybeSingle();
+
+  // Check if ASAAS_API_KEY is configured
+  const hasAsaasKey = !!Deno.env.get('ASAAS_API_KEY');
+
   // SECURITY: Never return client_secret, resend_api_key, or recaptcha_secret_key in the response
   return new Response(
     JSON.stringify({ 
@@ -279,13 +285,11 @@ async function getSettings(supabase: any) {
         email_template_accent_color: data.email_template_accent_color || '#4ade80',
         email_template_show_logo: data.email_template_show_logo !== false,
         email_template_logo_url: data.email_template_logo_url || '',
-        // EvoPay settings
-        evopay_enabled: data.evopay_enabled || false,
-        has_evopay_key: !!data.evopay_api_key,
-        evopay_webhook_url: data.evopay_webhook_url || '',
-        // Gateway weights
-        pixup_weight: data.pixup_weight ?? 50,
-        evopay_weight: data.evopay_weight ?? 50
+        // Asaas settings
+        asaas_enabled: hasAsaasKey,
+        has_asaas_key: hasAsaasKey,
+        // Gateway priority (asaas = Asaas principal, pixup = PixUp principal)
+        gateway_priority: priorityData?.value || 'asaas'
       } : null 
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -530,88 +534,37 @@ async function saveEmailTemplate(supabase: any, params: {
   );
 }
 
-// Mercado Pago removido
-
-async function saveEvopaySettings(supabase: any, params: { 
-  evopay_enabled?: boolean; 
-  evopay_api_key?: string | null;
-  evopay_webhook_url?: string | null;
+// Gateway Priority - Asaas como principal, PixUp como fallback (ou vice-versa)
+async function saveGatewayPriority(supabase: any, params: { 
+  gateway_priority?: string;
 }) {
-  const { evopay_enabled, evopay_api_key, evopay_webhook_url } = params;
+  const { gateway_priority } = params;
 
-  const settingsId = await getOrCreateSettingsId(supabase);
-
-  const updateData: any = { updated_at: new Date().toISOString() };
-  
-  if (evopay_enabled !== undefined) {
-    updateData.evopay_enabled = evopay_enabled;
-  }
-  if (evopay_api_key) {
-    updateData.evopay_api_key = evopay_api_key;
-  }
-  if (evopay_webhook_url !== undefined) {
-    updateData.evopay_webhook_url = evopay_webhook_url || null;
-  }
-
-  const { error } = await supabase
-    .from('gateway_settings')
-    .update(updateData)
-    .eq('id', settingsId);
-
-  if (error) {
-    console.error('Error saving EvoPay settings:', error);
-    throw new Error('Failed to save EvoPay settings');
-  }
-
-  console.log('EvoPay settings saved successfully');
-  return new Response(
-    JSON.stringify({ success: true }),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
-}
-
-async function saveGatewayWeights(supabase: any, params: { 
-  pixup_weight?: number; 
-  evopay_weight?: number;
-}) {
-  const { pixup_weight, evopay_weight } = params;
-
-  // Validate weights are between 0 and 100
-  if (pixup_weight !== undefined && (pixup_weight < 0 || pixup_weight > 100)) {
+  // Validate priority value
+  if (gateway_priority && !['asaas', 'pixup'].includes(gateway_priority)) {
     return new Response(
-      JSON.stringify({ error: 'pixup_weight deve estar entre 0 e 100' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-  if (evopay_weight !== undefined && (evopay_weight < 0 || evopay_weight > 100)) {
-    return new Response(
-      JSON.stringify({ error: 'evopay_weight deve estar entre 0 e 100' }),
+      JSON.stringify({ error: 'gateway_priority deve ser "asaas" ou "pixup"' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
   const settingsId = await getOrCreateSettingsId(supabase);
 
-  const updateData: any = { updated_at: new Date().toISOString() };
-  
-  if (pixup_weight !== undefined) {
-    updateData.pixup_weight = Math.round(pixup_weight);
-  }
-  if (evopay_weight !== undefined) {
-    updateData.evopay_weight = Math.round(evopay_weight);
-  }
-
+  // Store priority in system_settings table
   const { error } = await supabase
-    .from('gateway_settings')
-    .update(updateData)
-    .eq('id', settingsId);
+    .from('system_settings')
+    .upsert({ 
+      key: 'gateway_priority',
+      value: gateway_priority || 'asaas',
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'key' });
 
   if (error) {
-    console.error('Error saving gateway weights:', error);
-    throw new Error('Failed to save gateway weights');
+    console.error('Error saving gateway priority:', error);
+    throw new Error('Failed to save gateway priority');
   }
 
-  console.log('Gateway weights saved successfully');
+  console.log(`Gateway priority saved: ${gateway_priority}`);
   return new Response(
     JSON.stringify({ success: true }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
