@@ -43,9 +43,13 @@ export const useAuth = (requiredRole?: 'admin' | 'user') => {
   });
 
   useEffect(() => {
+    let isMounted = true;
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (!isMounted) return;
+        
         setAuthState(prev => ({
           ...prev,
           session,
@@ -55,7 +59,9 @@ export const useAuth = (requiredRole?: 'admin' | 'user') => {
         // Fetch role and profile after auth change (deferred to avoid deadlock)
         if (session?.user) {
           setTimeout(() => {
-            fetchUserData(session.user.id);
+            if (isMounted) {
+              fetchUserData(session.user.id);
+            }
           }, 0);
         } else {
           setAuthState(prev => ({
@@ -65,7 +71,7 @@ export const useAuth = (requiredRole?: 'admin' | 'user') => {
             isLoading: false,
           }));
           
-          // Redirect to login if no session
+          // Only redirect to login on explicit sign out, not on initial load
           if (event === 'SIGNED_OUT') {
             navigate('/login');
           }
@@ -74,21 +80,46 @@ export const useAuth = (requiredRole?: 'admin' | 'user') => {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setAuthState(prev => ({
-          ...prev,
-          session,
-          user: session.user,
-        }));
-        fetchUserData(session.user.id);
-      } else {
-        setAuthState(prev => ({ ...prev, isLoading: false }));
-        navigate('/login');
+    const initializeSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setAuthState(prev => ({ ...prev, isLoading: false }));
+          navigate('/login');
+          return;
+        }
+        
+        if (session) {
+          setAuthState(prev => ({
+            ...prev,
+            session,
+            user: session.user,
+          }));
+          fetchUserData(session.user.id);
+        } else {
+          // No session found after checking - redirect to login
+          setAuthState(prev => ({ ...prev, isLoading: false }));
+          navigate('/login');
+        }
+      } catch (err) {
+        console.error('Error initializing session:', err);
+        if (isMounted) {
+          setAuthState(prev => ({ ...prev, isLoading: false }));
+          navigate('/login');
+        }
       }
-    });
+    };
+    
+    initializeSession();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   // Check role requirement after role is loaded
