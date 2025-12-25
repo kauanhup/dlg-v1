@@ -1,11 +1,5 @@
 project_id = "nydtfckvvslkbyolipsf"
 
-[functions.pixup]
-verify_jwt = false
-
-[functions.pixup-webhook]
-verify_jwt = false
-
 [functions.asaas]
 verify_jwt = false
 
@@ -37,9 +31,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.cleanup-expired-reservations]
-verify_jwt = false
-
-[functions.create-payment-with-fallback]
 verify_jwt = false
 
 [functions.notify-expiring-licenses]

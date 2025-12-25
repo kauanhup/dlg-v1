@@ -2145,7 +2145,7 @@ const UsersSection = () => {
 
 // SessionsSection is now imported from src/components/admin/sessions
 
-// API Section - PixUp + Resend + reCAPTCHA
+// API Section - Asaas Gateway + Resend + reCAPTCHA
 const ApiSection = () => {
   const [activeApiTab, setActiveApiTab] = useState<"gateway" | "email" | "security" | "audit">("gateway");
   const [showTemplateEditor, setShowTemplateEditor] = useState(false);
@@ -2154,33 +2154,15 @@ const ApiSection = () => {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
   
-  // PixUp state
-  const [pixupEnabled, setPixupEnabled] = useState(false);
-  const [clientId, setClientId] = useState("");
-  const [clientSecret, setClientSecret] = useState("");
-  const [webhookUrl, setWebhookUrl] = useState("");
-  const [isConnected, setIsConnected] = useState(false);
-  const [hasSecret, setHasSecret] = useState(false);
-  const [showSecret, setShowSecret] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
-  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-
   // Asaas state
   const [asaasEnabled, setAsaasEnabled] = useState(true);
-  const [asaasApiKey, setAsaasApiKey] = useState("");
   const [hasAsaasKey, setHasAsaasKey] = useState(false);
   const [showAsaasKey, setShowAsaasKey] = useState(false);
   const [isSavingAsaas, setIsSavingAsaas] = useState(false);
   const [asaasSaveSuccess, setAsaasSaveSuccess] = useState(false);
   const [isTestingAsaas, setIsTestingAsaas] = useState(false);
   const [asaasConnected, setAsaasConnected] = useState(false);
-
-  // Gateway priority state (Asaas primary, PixUp fallback)
-  const [asaasPriority, setAsaasPriority] = useState<"primary" | "fallback">("primary");
-  const [isSavingPriority, setIsSavingPriority] = useState(false);
-  const [prioritySaveSuccess, setPrioritySaveSuccess] = useState(false);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
   // Resend state
   const [resendApiKey, setResendApiKey] = useState("");
@@ -2225,60 +2207,49 @@ const ApiSection = () => {
     const loadSettings = async () => {
       setIsLoadingSettings(true);
       try {
-        const { data, error } = await supabase.functions.invoke('pixup', {
-          body: { action: 'get_settings' }
-        });
+        // Fetch gateway settings from DB
+        const { data: settings } = await supabase
+          .from('gateway_settings')
+          .select('*')
+          .eq('provider', 'pixup')
+          .maybeSingle();
 
-        console.log('API settings loaded:', data);
-
-        if (data?.success && data?.data) {
-          setClientId(data.data.client_id || "");
-          setWebhookUrl(data.data.webhook_url || "");
-          setIsConnected(data.data.is_active === true);
-          setPixupEnabled(data.data.is_active === true);
-          setHasSecret(data.data.has_secret === true);
+        if (settings) {
           // Resend settings
-          setResendFromEmail(data.data.resend_from_email || "");
-          setResendFromName(data.data.resend_from_name || "DLG Connect");
-          setEmailEnabled(data.data.email_enabled === true);
-          setHasResendKey(data.data.has_resend_key === true);
+          setResendFromEmail(settings.resend_from_email || "");
+          setResendFromName(settings.resend_from_name || "DLG Connect");
+          setEmailEnabled(settings.email_enabled === true);
+          setHasResendKey(!!settings.resend_api_key);
           // reCAPTCHA settings
-          setRecaptchaEnabled(data.data.recaptcha_enabled === true);
-          setRecaptchaSiteKey(data.data.recaptcha_site_key || "");
-          setHasRecaptchaSecret(data.data.has_recaptcha_secret === true);
+          setRecaptchaEnabled(settings.recaptcha_enabled === true);
+          setRecaptchaSiteKey(settings.recaptcha_site_key || "");
+          setHasRecaptchaSecret(!!settings.recaptcha_secret_key);
           // Feature toggles
-          setPasswordRecoveryEnabled(data.data.password_recovery_enabled === true);
-          setEmailVerificationEnabled(data.data.email_verification_enabled === true);
+          setPasswordRecoveryEnabled(settings.password_recovery_enabled === true);
+          setEmailVerificationEnabled(settings.email_verification_enabled === true);
           // Email template settings
-          setTemplateTitle(data.data.email_template_title || "✉️ Verificação de Email");
-          setTemplateGreeting(data.data.email_template_greeting || "Olá {name}!");
-          setTemplateMessage(data.data.email_template_message || "Seu código de verificação é:");
-          setTemplateExpiryText(data.data.email_template_expiry_text || "Este código expira em 15 minutos.");
-          setTemplateFooter(data.data.email_template_footer || "DLG Connect - Sistema de Gestão");
-          setTemplateBgColor(data.data.email_template_bg_color || "#0a0a0a");
-          setTemplateAccentColor(data.data.email_template_accent_color || "#4ade80");
-          setTemplateShowLogo(data.data.email_template_show_logo !== false);
-          setTemplateLogoUrl(data.data.email_template_logo_url || "");
-          // Asaas settings
-          setAsaasEnabled(data.data.asaas_enabled !== false); // Default true
-          setHasAsaasKey(data.data.has_asaas_key === true);
-          setAsaasConnected(data.data.asaas_enabled !== false && data.data.has_asaas_key === true);
-          // Gateway priority
-          setAsaasPriority(data.data.gateway_priority === "pixup" ? "fallback" : "primary");
-        } else {
-          // No settings yet - defaults
-          setClientId("");
-          setWebhookUrl("");
-          setIsConnected(false);
-          setPixupEnabled(false);
-          setHasSecret(false);
-          setAsaasEnabled(true);
-          setHasAsaasKey(false);
-          setAsaasConnected(false);
+          setTemplateTitle(settings.email_template_title || "✉️ Verificação de Email");
+          setTemplateGreeting(settings.email_template_greeting || "Olá {name}!");
+          setTemplateMessage(settings.email_template_message || "Seu código de verificação é:");
+          setTemplateExpiryText(settings.email_template_expiry_text || "Este código expira em 15 minutos.");
+          setTemplateFooter(settings.email_template_footer || "DLG Connect - Sistema de Gestão");
+          setTemplateBgColor(settings.email_template_bg_color || "#0a0a0a");
+          setTemplateAccentColor(settings.email_template_accent_color || "#4ade80");
+          setTemplateShowLogo(settings.email_template_show_logo !== false);
+          setTemplateLogoUrl(settings.email_template_logo_url || "");
+        }
+
+        // Test Asaas connection
+        const { data: asaasData } = await supabase.functions.invoke('asaas', {
+          body: { action: 'test_connection' }
+        });
+        
+        if (asaasData?.success) {
+          setHasAsaasKey(true);
+          setAsaasConnected(true);
         }
       } catch (error) {
         console.error('Error loading API settings:', error);
-        toast.error("Erro ao carregar configurações");
       } finally {
         setIsLoadingSettings(false);
       }
@@ -2287,117 +2258,23 @@ const ApiSection = () => {
     loadSettings();
   }, []);
 
-  const handleSave = async () => {
-    const trimmedClientId = clientId.trim();
-    const trimmedClientSecret = clientSecret.trim();
-    
-    if (!trimmedClientId) {
-      toast.error("Preencha o Client ID");
-      return;
-    }
-    
-    // Require secret if no existing secret
-    if (!hasSecret && !trimmedClientSecret) {
-      toast.error("Preencha o Client Secret");
-      return;
-    }
-
-    setIsLoading(true);
-    setSaveSuccess(false);
-    try {
-      const payload: any = { 
-        action: 'save_credentials',
-        client_id: trimmedClientId,
-        webhook_url: webhookUrl.trim(),
-        is_active: pixupEnabled
-      };
-      
-      // Include secret if provided (new or update)
-      if (trimmedClientSecret) {
-        payload.client_secret = trimmedClientSecret;
-      }
-
-      console.log('Saving credentials:', { ...payload, client_secret: payload.client_secret ? '***' : undefined });
-
-      const { data, error } = await supabase.functions.invoke('pixup', {
-        body: payload
-      });
-
-      console.log('Save response:', data);
-
-      if (error) {
-        throw error;
-      }
-
-      if (data?.success) {
-        toast.success("Credenciais salvas com sucesso!");
-        setHasSecret(true);
-        setClientSecret(""); // Clear secret input after save
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 2000);
-      } else {
-        toast.error(data?.error || "Erro ao salvar credenciais");
-      }
-    } catch (error) {
-      console.error('Error saving credentials:', error);
-      toast.error("Erro ao salvar credenciais");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleTestConnection = async () => {
-    setIsTesting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('pixup', {
-        body: { action: 'test_connection' }
-      });
-
-      console.log('Test connection response:', data);
-
-      if (error) {
-        throw error;
-      }
-
-      if (data?.success) {
-        toast.success("Conexão bem sucedida!");
-        setIsConnected(true);
-      } else {
-        toast.error(data?.error || "Falha na conexão");
-        setIsConnected(false);
-      }
-    } catch (error) {
-      console.error('Error testing connection:', error);
-      toast.error("Erro ao testar conexão");
-      setIsConnected(false);
-    } finally {
-    setIsTesting(false);
-    }
-  };
-
-  // Asaas save handler
+  // Asaas save handler - API key is managed via environment secrets
   const handleSaveAsaas = async () => {
     setIsSavingAsaas(true);
     setAsaasSaveSuccess(false);
     try {
       const { data, error } = await supabase.functions.invoke('asaas', {
-        body: { 
-          action: 'save_settings',
-          asaas_enabled: asaasEnabled,
-          asaas_api_key: asaasApiKey.trim() || null
-        }
+        body: { action: 'save_settings' }
       });
 
       if (error) throw error;
 
       if (data?.success) {
-        toast.success("Configurações do Asaas salvas!");
+        toast.success("Configurações salvas!");
         setAsaasSaveSuccess(true);
-        setHasAsaasKey(!!asaasApiKey.trim() || hasAsaasKey);
-        setAsaasApiKey(""); // Clear after save
         setTimeout(() => setAsaasSaveSuccess(false), 2000);
       } else {
-        toast.error(data?.error || "Erro ao salvar configurações");
+        toast.error(data?.error || "Erro ao salvar");
       }
     } catch (error) {
       console.error('Error saving Asaas settings:', error);
@@ -2420,6 +2297,7 @@ const ApiSection = () => {
       if (data?.success) {
         toast.success(`Conexão Asaas estabelecida! Saldo: R$ ${data.data?.balance?.toFixed(2) || '0.00'}`);
         setAsaasConnected(true);
+        setHasAsaasKey(true);
       } else {
         toast.error(data?.error || "Falha na conexão");
         setAsaasConnected(false);
@@ -2430,35 +2308,6 @@ const ApiSection = () => {
       setAsaasConnected(false);
     } finally {
       setIsTestingAsaas(false);
-    }
-  };
-
-  // Gateway priority save handler
-  const handleSaveGatewayPriority = async () => {
-    setIsSavingPriority(true);
-    setPrioritySaveSuccess(false);
-    try {
-      const { data, error } = await supabase.functions.invoke('pixup', {
-        body: { 
-          action: 'save_gateway_priority',
-          gateway_priority: asaasPriority === "primary" ? "asaas" : "pixup"
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        toast.success("Prioridade de gateway salva!");
-        setPrioritySaveSuccess(true);
-        setTimeout(() => setPrioritySaveSuccess(false), 2000);
-      } else {
-        toast.error(data?.error || "Erro ao salvar prioridade");
-      }
-    } catch (error) {
-      console.error('Error saving gateway priority:', error);
-      toast.error("Erro ao salvar prioridade de gateway");
-    } finally {
-      setIsSavingPriority(false);
     }
   };
 
@@ -2564,10 +2413,9 @@ const ApiSection = () => {
     }
   };
 
-  const handleCopyPixupWebhookUrl = () => {
-    setWebhookUrl("https://dlgconnect.com/api/webhook-pixup.php");
-    navigator.clipboard.writeText("https://dlgconnect.com/api/webhook-pixup.php");
-    toast.success("URL copiada!");
+  const handleCopyAsaasWebhookUrl = () => {
+    navigator.clipboard.writeText("https://dlgconnect.com/webhook-asaas.php");
+    toast.success("URL do webhook copiada!");
   };
 
   const handleSaveEmailTemplate = async () => {
@@ -2688,145 +2536,7 @@ const ApiSection = () => {
       {/* Gateway PIX Tab */}
       {activeApiTab === "gateway" && (
         <div className="space-y-6">
-          {/* PixUp Card */}
-          <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">PixUp</h3>
-                  <p className="text-sm text-muted-foreground">Gateway de Pagamentos PIX</p>
-                </div>
-              </div>
-              <div className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit border",
-                pixupEnabled && isConnected 
-                  ? "bg-green-500/10 text-green-500 border-green-500/30" 
-                  : pixupEnabled && hasSecret 
-                    ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" 
-                    : "bg-muted/50 text-muted-foreground border-border"
-              )}>
-                <div className={cn(
-                  "w-2 h-2 rounded-full animate-pulse", 
-                  pixupEnabled && isConnected 
-                    ? "bg-green-500" 
-                    : pixupEnabled && hasSecret 
-                      ? "bg-yellow-500" 
-                      : "bg-muted-foreground"
-                )} />
-                {pixupEnabled && isConnected ? "Conectado" : 
-                 pixupEnabled && hasSecret ? "Configurado" : "Desativado"}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50">
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-8 h-8 rounded-md flex items-center justify-center",
-                    pixupEnabled ? "bg-primary/10" : "bg-muted"
-                  )}>
-                    <CreditCard className={cn("w-4 h-4", pixupEnabled ? "text-primary" : "text-muted-foreground")} />
-                  </div>
-                  <span className="text-sm font-medium text-foreground">Habilitar PixUp</span>
-                </div>
-                <button
-                  onClick={() => setPixupEnabled(!pixupEnabled)}
-                  className={cn(
-                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
-                    pixupEnabled ? "bg-primary" : "bg-muted"
-                  )}
-                >
-                  <span className={cn(
-                    "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200",
-                    pixupEnabled ? "translate-x-6" : "translate-x-1"
-                  )} />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">Client ID</label>
-                  <input
-                    type="text"
-                    value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
-                    placeholder="Seu Client ID do PixUp"
-                    className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">Client Secret</label>
-                  <div className="relative">
-                    <input
-                      type={showSecret ? "text" : "password"}
-                      value={clientSecret}
-                      onChange={(e) => setClientSecret(e.target.value)}
-                      placeholder={hasSecret ? "••••••••• (configurado)" : "Seu client_secret"}
-                      className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowSecret(!showSecret)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">URL do Webhook</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={webhookUrl}
-                    onChange={(e) => setWebhookUrl(e.target.value)}
-                    placeholder="https://dlgconnect.com/api/webhook-pixup.php"
-                    className="flex-1 px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={handleCopyPixupWebhookUrl}
-                    title="Usar URL padrão da Hostinger"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  URL para receber notificações automáticas de pagamento.
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-border/50">
-                <Button 
-                  onClick={handleSave} 
-                  disabled={isLoading} 
-                  className={cn("gap-2 transition-all", saveSuccess && "bg-green-600 hover:bg-green-600")}
-                >
-                  {isLoading ? <Spinner size="sm" /> : saveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                  {saveSuccess ? "Salvo!" : "Salvar Configurações"}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleTestConnection} 
-                  disabled={isTesting || !hasSecret}
-                  className={cn("gap-2", isConnected && "border-green-500/50 text-green-500")}
-                >
-                  {isTesting ? <Spinner size="sm" /> : isConnected ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
-                  {isConnected ? "Conectado" : "Testar Conexão"}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Asaas Card - Gateway Principal */}
+          {/* Asaas Card - Único Gateway */}
           <div className="bg-card border border-amber-500/30 rounded-lg p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-3">
@@ -2835,186 +2545,72 @@ const ApiSection = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground">Asaas</h3>
-                  <p className="text-sm text-muted-foreground">Gateway Principal (PIX + Cartão)</p>
+                  <p className="text-sm text-muted-foreground">Gateway de Pagamentos (PIX + Cartão)</p>
                 </div>
               </div>
               <div className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit border",
-                asaasEnabled && hasAsaasKey && asaasConnected 
+                asaasConnected 
                   ? "bg-green-500/10 text-green-500 border-green-500/30" 
-                  : asaasEnabled && hasAsaasKey 
+                  : hasAsaasKey 
                     ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" 
                     : "bg-muted/50 text-muted-foreground border-border"
               )}>
                 <div className={cn(
                   "w-2 h-2 rounded-full animate-pulse", 
-                  asaasEnabled && hasAsaasKey && asaasConnected 
-                    ? "bg-green-500" 
-                    : asaasEnabled && hasAsaasKey 
-                      ? "bg-yellow-500" 
-                      : "bg-muted-foreground"
+                  asaasConnected ? "bg-green-500" : hasAsaasKey ? "bg-yellow-500" : "bg-muted-foreground"
                 )} />
-                {asaasEnabled && hasAsaasKey && asaasConnected ? "Conectado" : 
-                 asaasEnabled && hasAsaasKey ? "Configurado" : "Desativado"}
+                {asaasConnected ? "Conectado" : hasAsaasKey ? "Configurado" : "Não configurado"}
               </div>
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-amber-500/5 rounded-lg border border-amber-500/20">
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-8 h-8 rounded-md flex items-center justify-center",
-                    asaasEnabled ? "bg-amber-500/10" : "bg-muted"
-                  )}>
-                    <CreditCard className={cn("w-4 h-4", asaasEnabled ? "text-amber-500" : "text-muted-foreground")} />
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-foreground">Habilitar Asaas</span>
-                    <p className="text-xs text-muted-foreground">Gateway principal de pagamentos</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setAsaasEnabled(!asaasEnabled)}
-                  className={cn(
-                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
-                    asaasEnabled ? "bg-amber-500" : "bg-muted"
-                  )}
-                >
-                  <span className={cn(
-                    "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200",
-                    asaasEnabled ? "translate-x-6" : "translate-x-1"
-                  )} />
-                </button>
+              <div className="p-3 bg-amber-500/5 rounded-lg border border-amber-500/20">
+                <p className="text-sm text-muted-foreground">
+                  <strong>API Key:</strong> Configurada via secrets do Lovable Cloud. 
+                  Acesse <a href="https://www.asaas.com" target="_blank" rel="noopener" className="text-amber-500 hover:underline">asaas.com</a> → Configurações → Integrações para obter sua chave.
+                </p>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">API Key Asaas</label>
-                <div className="relative">
+                <label className="text-sm font-medium text-foreground mb-2 block">URL do Webhook</label>
+                <div className="flex gap-2">
                   <input
-                    type={showAsaasKey ? "text" : "password"}
-                    value={asaasApiKey}
-                    onChange={(e) => setAsaasApiKey(e.target.value)}
-                    placeholder={hasAsaasKey ? "••••••••• (configurado)" : "Sua API Key do Asaas"}
-                    className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                    type="text"
+                    readOnly
+                    value="https://dlgconnect.com/webhook-asaas.php"
+                    className="flex-1 px-3 py-2 bg-muted/50 border border-border rounded-md text-foreground"
                   />
-                  <button
+                  <Button
                     type="button"
-                    onClick={() => setShowAsaasKey(!showAsaasKey)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCopyAsaasWebhookUrl}
+                    title="Copiar URL do webhook"
                   >
-                    {showAsaasKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+                    <Copy className="w-4 h-4" />
+                  </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Obtenha sua API Key em: <a href="https://www.asaas.com" target="_blank" rel="noopener" className="text-amber-500 hover:underline">asaas.com</a> → Configurações → Integrações
+                  Configure esta URL no painel Asaas → Webhooks (Versão API 3).
                 </p>
               </div>
 
               <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
                 <p className="text-xs text-muted-foreground">
-                  <strong>Métodos suportados:</strong> PIX (0,99%) e Cartão de Crédito (~2,99%). 
-                  Webhook automático integrado via Lovable Cloud.
+                  <strong>Métodos suportados:</strong> PIX (0,99%) e Cartão de Crédito (~2,99%).
                 </p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-border/50">
                 <Button 
-                  onClick={handleSaveAsaas} 
-                  disabled={isSavingAsaas} 
-                  className={cn("gap-2 transition-all", asaasSaveSuccess && "bg-green-600 hover:bg-green-600")}
-                >
-                  {isSavingAsaas ? <Spinner size="sm" /> : asaasSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                  {asaasSaveSuccess ? "Salvo!" : "Salvar Configurações"}
-                </Button>
-                <Button 
                   variant="outline" 
                   onClick={handleTestAsaas} 
-                  disabled={isTestingAsaas || !hasAsaasKey}
+                  disabled={isTestingAsaas}
                   className={cn("gap-2", asaasConnected && "border-green-500/50 text-green-500")}
                 >
                   {isTestingAsaas ? <Spinner size="sm" /> : asaasConnected ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
                   {asaasConnected ? "Conectado" : "Testar Conexão"}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Gateway Priority Card */}
-          <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                  <Sliders className="w-5 h-5 text-purple-500" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">Prioridade de Gateways</h3>
-                  <p className="text-sm text-muted-foreground">Configure qual gateway será usado primeiro</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                O sistema tentará usar o gateway primário primeiro. Se falhar, usará o fallback automaticamente.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button
-                  onClick={() => setAsaasPriority("primary")}
-                  className={cn(
-                    "p-4 rounded-lg border-2 transition-all text-left",
-                    asaasPriority === "primary" 
-                      ? "border-amber-500 bg-amber-500/10" 
-                      : "border-border hover:border-muted-foreground"
-                  )}
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-8 h-8 bg-amber-500/20 rounded-md flex items-center justify-center">
-                      <CreditCard className="w-4 h-4 text-amber-500" />
-                    </div>
-                    <span className="font-medium text-foreground">Asaas Principal</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Asaas primeiro, PixUp como fallback
-                  </p>
-                </button>
-
-                <button
-                  onClick={() => setAsaasPriority("fallback")}
-                  className={cn(
-                    "p-4 rounded-lg border-2 transition-all text-left",
-                    asaasPriority === "fallback" 
-                      ? "border-primary bg-primary/10" 
-                      : "border-border hover:border-muted-foreground"
-                  )}
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-8 h-8 bg-primary/20 rounded-md flex items-center justify-center">
-                      <CreditCard className="w-4 h-4 text-primary" />
-                    </div>
-                    <span className="font-medium text-foreground">PixUp Principal</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    PixUp primeiro, Asaas como fallback
-                  </p>
-                </button>
-              </div>
-
-              <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
-                <p className="text-xs text-muted-foreground">
-                  <strong>Recomendado:</strong> Asaas como principal por suportar PIX e Cartão. 
-                  PixUp fica como backup para PIX caso o Asaas tenha instabilidade.
-                </p>
-              </div>
-
-              <div className="flex justify-end pt-2 border-t border-border/50">
-                <Button 
-                  onClick={handleSaveGatewayPriority} 
-                  disabled={isSavingPriority}
-                  className={cn("gap-2 transition-all", prioritySaveSuccess && "bg-green-600 hover:bg-green-600")}
-                >
-                  {isSavingPriority ? <Spinner size="sm" /> : prioritySaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                  {prioritySaveSuccess ? "Salvo!" : "Salvar Prioridade"}
                 </Button>
               </div>
             </div>
