@@ -31,12 +31,7 @@ interface Plan {
   max_subscriptions_per_user: number | null;
 }
 
-interface PaymentSettings {
-  pixEnabled: boolean;
-  evoPayEnabled: boolean;
-}
-
-type PaymentMethod = 'pix' | 'evopay';
+type PaymentMethod = 'pix';
 
 const PIX_EXPIRATION_MINUTES = 15;
 
@@ -56,8 +51,7 @@ const Checkout = () => {
   const [expirationTime, setExpirationTime] = useState<Date | null>(null);
   const [timeLeft, setTimeLeft] = useState<{ minutes: number; seconds: number } | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
-  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({ pixEnabled: true, evoPayEnabled: false });
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('pix');
+  const [selectedPaymentMethod] = useState<PaymentMethod>('pix');
   
   // SEGURANÇA: Verificar modo manutenção
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
@@ -227,45 +221,9 @@ const Checkout = () => {
     return () => clearInterval(interval);
   }, [expirationTime, paymentStatus, toast]);
 
-  // Fetch payment settings and auto-select gateway - OPTIMIZED: Parallel calls
+  // Asaas is the only gateway - no need to fetch settings
   useEffect(() => {
-    const fetchPaymentSettings = async () => {
-      try {
-        // Fetch both settings in PARALLEL for faster loading
-        const [pixupResult, evoResult] = await Promise.all([
-          supabase.functions.invoke('pixup', { body: { action: 'get_public_settings' } }),
-          supabase.functions.invoke('evopay', { body: { action: 'get_public_settings' } })
-        ]);
-        
-        const pixupEnabled = pixupResult.data?.data?.is_active || false;
-        const evoPayEnabled = evoResult.data?.data?.evopay_enabled || false;
-        
-        setPaymentSettings({
-          pixEnabled: pixupEnabled,
-          evoPayEnabled: evoPayEnabled
-        });
-        
-        console.log('Payment settings loaded:', { pixupEnabled, evoPayEnabled });
-        
-        // Auto-select gateway: true 50/50 random selection
-        if (pixupEnabled && evoPayEnabled) {
-          const useEvoPay = Math.random() < 0.5;
-          setSelectedPaymentMethod(useEvoPay ? 'evopay' : 'pix');
-          console.log('Both gateways active, randomly selected:', useEvoPay ? 'evopay' : 'pix');
-        } else if (evoPayEnabled) {
-          setSelectedPaymentMethod('evopay');
-          console.log('Only EvoPay active, selected: evopay');
-        } else if (pixupEnabled) {
-          setSelectedPaymentMethod('pix');
-          console.log('Only PixUp active, selected: pix');
-        } else {
-          console.warn('No payment gateway active!');
-        }
-      } catch (error) {
-        console.error('Could not fetch payment settings:', error);
-      }
-    };
-    fetchPaymentSettings();
+    console.log('Payment gateway: Asaas (único gateway ativo)');
   }, []);
 
   // Check for existing pending order on page load
@@ -482,24 +440,13 @@ const Checkout = () => {
         const { data: session } = await supabase.auth.getSession();
         if (!session?.session?.access_token) return;
 
-        // Check which gateway was used by looking at the payment record
-        const { data: payment } = await supabase
-          .from('payments')
-          .select('payment_method, evopay_transaction_id')
-          .eq('order_id', orderId)
-          .maybeSingle();
+        console.log(`[Polling] Checking status via Asaas, transactionId: ${pixData.transactionId}`);
 
-        // Determine gateway based on payment method or transaction ID
-        const isEvoPay = payment?.payment_method?.includes('evopay') || !!payment?.evopay_transaction_id;
-        const gateway = isEvoPay ? 'evopay' : 'pixup';
-        
-        console.log(`[Polling] Using gateway: ${gateway}, transactionId: ${pixData.transactionId}`);
-
-        const response = await supabase.functions.invoke(gateway, {
+        const response = await supabase.functions.invoke('asaas', {
           body: { 
-            action: 'check_pix_status', 
-            orderId,
-            transactionId: pixData.transactionId
+            action: 'check_status', 
+            order_id: orderId,
+            payment_id: pixData.transactionId
           },
           headers: {
             Authorization: `Bearer ${session.session.access_token}`
@@ -512,9 +459,10 @@ const Checkout = () => {
         }
 
         const result = response.data;
-        console.log('[Polling] PIX status:', result?.status, 'Order status:', result?.orderStatus);
+        console.log('[Polling] PIX status:', result?.data?.status);
 
-        if (result?.status === 'paid' || result?.orderStatus === 'completed') {
+        const confirmedStatuses = ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'];
+        if (confirmedStatuses.includes(result?.data?.status)) {
           setPaymentStatus('completed');
           toast.success("Pagamento confirmado!", isPlanPurchase ? "Sua licença foi ativada." : "Suas sessions foram liberadas.");
           setTimeout(() => navigate('/dashboard'), 2000);
@@ -615,7 +563,7 @@ const Checkout = () => {
     }
   };
 
-  // Helper function to generate PIX for an existing order with automatic fallback
+  // Helper function to generate PIX for an existing order using Asaas
   const generatePixForOrder = async (existingOrderId: string, amount: number, productName: string, quantity: number) => {
     const expTime = new Date();
     expTime.setMinutes(expTime.getMinutes() + PIX_EXPIRATION_MINUTES);
@@ -623,52 +571,60 @@ const Checkout = () => {
 
     const description = isPlanPurchase ? `Licença: ${productName}` : `${quantity}x ${productName}`;
 
-    console.log('[Checkout] Generating PIX with fallback for order:', existingOrderId);
+    console.log('[Checkout] Generating PIX via Asaas for order:', existingOrderId);
 
-    // Use the new fallback edge function
-    const { data: response, error } = await supabase.functions.invoke('create-payment-with-fallback', {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session?.session?.access_token) {
+      toast.error("Sessão expirada", "Faça login novamente.");
+      setExpirationTime(null);
+      return;
+    }
+
+    const { data: response, error } = await supabase.functions.invoke('asaas', {
       body: {
+        action: 'create_pix',
         order_id: existingOrderId,
         amount: amount,
         description: description,
       },
+      headers: {
+        Authorization: `Bearer ${session.session.access_token}`
+      }
     });
 
     if (error) {
-      console.error('[Checkout] Fallback function error:', error);
+      console.error('[Checkout] Asaas error:', error);
       toast.error("Erro de conexão", "Não foi possível conectar ao sistema de pagamento. Tente novamente.");
       setExpirationTime(null);
       return;
     }
 
     if (!response?.success) {
-      console.error('[Checkout] All gateways failed:', response);
-      
-      // Show user-friendly message
+      console.error('[Checkout] Asaas failed:', response);
       toast.error(
         "Sistema indisponível", 
-        response?.error || "Nossos sistemas de pagamento estão temporariamente indisponíveis. Seu pedido foi registrado e entraremos em contato em breve."
+        response?.error || "Sistema de pagamento temporariamente indisponível. Tente novamente."
       );
       setExpirationTime(null);
       return;
     }
 
     // Success - set PIX data
-    const pixCode = response.pixCode;
-    const qrCodeBase64 = response.qrCodeBase64;
+    const pixCode = response.data?.pixCode;
+    const qrCodeBase64 = response.data?.qrCodeBase64;
     
     if (pixCode) {
-      console.log('[Checkout] PIX generated successfully via:', response.gateway_used);
+      console.log('[Checkout] PIX generated successfully via Asaas');
       setPixData({
         pixCode: pixCode,
         qrCodeBase64: qrCodeBase64,
-        transactionId: response.transactionId,
+        transactionId: response.data.transactionId,
         expiresAt: undefined,
       });
-      toast.success("PIX gerado!", `Escaneie o QR Code ou copie o código para pagar. (${response.gateway_used})`);
+      toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
     } else {
       console.log('[Checkout] No PIX code returned');
-      toast.warning("Gateway não configurado", "Aguarde aprovação manual do admin.");
+      toast.warning("Erro ao gerar PIX", "Tente novamente.");
       setExpirationTime(null);
     }
   };
@@ -925,7 +881,7 @@ const Checkout = () => {
         user_id: user.id,
         order_id: orderData.id,
         amount: amount,
-        payment_method: 'pending', // Will be updated by fallback function
+        payment_method: 'asaas_pix',
         status: 'pending',
       });
       
@@ -933,17 +889,23 @@ const Checkout = () => {
         console.error('Payment record error:', paymentError);
       }
 
-      // Use fallback function for PIX generation with automatic gateway failover
+      // Generate PIX via Asaas
       const description = isPlanPurchase ? `Licença: ${productName}` : `${quantity}x ${productName}`;
       
-      console.log('[Checkout] Generating PIX with fallback for new order:', orderData.id);
+      console.log('[Checkout] Generating PIX via Asaas for new order:', orderData.id);
 
-      const { data: response, error: fallbackError } = await supabase.functions.invoke('create-payment-with-fallback', {
+      const { data: session } = await supabase.auth.getSession();
+      
+      const { data: response, error: asaasError } = await supabase.functions.invoke('asaas', {
         body: {
+          action: 'create_pix',
           order_id: orderData.id,
           amount: amount,
           description: description,
         },
+        headers: {
+          Authorization: `Bearer ${session?.session?.access_token}`
+        }
       });
 
       // Set expiration time regardless of gateway response
@@ -951,27 +913,26 @@ const Checkout = () => {
       expTime.setMinutes(expTime.getMinutes() + PIX_EXPIRATION_MINUTES);
       setExpirationTime(expTime);
 
-      if (fallbackError) {
-        console.error('[Checkout] Fallback function error:', fallbackError);
+      if (asaasError) {
+        console.error('[Checkout] Asaas error:', asaasError);
         toast.error("Gateway indisponível", "Pedido criado. Tente gerar o PIX novamente.");
       } else if (!response?.success) {
-        console.error('[Checkout] All gateways failed:', response);
-        // Show user-friendly message - admin already notified by fallback function
+        console.error('[Checkout] Asaas failed:', response);
         toast.error(
           "Sistema temporariamente indisponível", 
-          response?.error || "Seu pedido foi registrado. Entraremos em contato em breve."
+          response?.error || "Seu pedido foi registrado. Tente gerar o PIX novamente."
         );
-      } else if (response?.pixCode) {
-        console.log('[Checkout] PIX generated successfully via:', response.gateway_used);
+      } else if (response?.data?.pixCode) {
+        console.log('[Checkout] PIX generated successfully via Asaas');
         setPixData({
-          pixCode: response.pixCode,
-          qrCodeBase64: response.qrCodeBase64,
-          transactionId: response.transactionId,
+          pixCode: response.data.pixCode,
+          qrCodeBase64: response.data.qrCodeBase64,
+          transactionId: response.data.transactionId,
           expiresAt: undefined,
         });
-        toast.success("PIX gerado!", `Escaneie o QR Code ou copie o código para pagar.`);
+        toast.success("PIX gerado!", "Escaneie o QR Code ou copie o código para pagar.");
       } else {
-        toast.warning("Gateway não configurado", "Pedido criado. Aguarde aprovação manual do admin.");
+        toast.warning("Erro ao gerar PIX", "Tente novamente.");
       }
     } catch (error) {
       console.error('Error creating order:', error);
