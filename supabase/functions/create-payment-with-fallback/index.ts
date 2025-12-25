@@ -141,14 +141,29 @@ async function createPixWithPixUp(
       })
     }, 30000);
 
-    const data = await response.json();
+    const proxyResponse = await response.json();
+    console.log('[PixUp] Proxy response:', JSON.stringify(proxyResponse));
 
-    if (!response.ok || data.error) {
-      return { success: false, error: data.error || `HTTP ${response.status}` };
+    if (!response.ok || proxyResponse.error) {
+      return { success: false, error: proxyResponse.error || `HTTP ${response.status}` };
     }
 
-    return { success: true, data };
+    // Extract data from proxy response (proxy returns { success, data: {...pixup response} })
+    const pixupData = proxyResponse.data || proxyResponse;
+    console.log('[PixUp] Extracted data:', JSON.stringify(pixupData));
+
+    // Map PixUp response fields to standard format
+    // PixUp returns: qrcode (EMV code), qrcode_base64, id, etc
+    return { 
+      success: true, 
+      data: {
+        pixCode: pixupData.qrcode || pixupData.emv || pixupData.pix_code || pixupData.qr_code,
+        qrCodeBase64: pixupData.qrcode_base64 || pixupData.qr_code_base64 || pixupData.base64,
+        transactionId: pixupData.id || pixupData.transaction_id || pixupData.txid
+      }
+    };
   } catch (error: any) {
+    console.error('[PixUp] Error:', error.message);
     return { success: false, error: error.message || 'Erro de conexão com PixUp' };
   }
 }
