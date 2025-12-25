@@ -1,17 +1,38 @@
-# Redireciona requisições POST para o webhook handler
-# Requisições normais (GET) continuam funcionando para o site
+# Configuração para SPA React + Webhooks
+# IMPORTANTE: Este arquivo deve estar na raiz do public_html
 
 RewriteEngine On
+RewriteBase /
+
+# ============================================
+# WEBHOOKS (devem vir ANTES das regras SPA)
+# ============================================
 
 # Se for POST na raiz, redireciona para o webhook PixUp
 RewriteCond %{REQUEST_METHOD} POST
 RewriteCond %{REQUEST_URI} ^/$
 RewriteRule ^$ /api/webhook-pixup.php [L]
 
-# Redireciona /webhook para o webhook PixUp (alguns gateways usam /webhook)
+# Redireciona /webhook para o webhook PixUp
 RewriteCond %{REQUEST_METHOD} POST
 RewriteRule ^webhook/?$ /api/webhook-pixup.php [L]
 
 # Redireciona /evopay para o webhook EvoPay
 RewriteCond %{REQUEST_METHOD} POST
 RewriteRule ^evopay/?$ /api/webhook-evopay.php [L]
+
+# ============================================
+# SPA FALLBACK (React Router)
+# ============================================
+
+# Se o arquivo ou diretório existir, serve diretamente
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Ignora arquivos de API e assets
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteCond %{REQUEST_URI} !^/assets/
+RewriteCond %{REQUEST_URI} !\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map)$
+
+# Redireciona todas as outras rotas para index.html
+RewriteRule ^(.*)$ /index.html [L,QSA]
