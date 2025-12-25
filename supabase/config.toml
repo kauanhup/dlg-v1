@@ -6,10 +6,10 @@ verify_jwt = false
 [functions.pixup-webhook]
 verify_jwt = false
 
-[functions.evopay]
+[functions.asaas]
 verify_jwt = false
 
-[functions.evopay-webhook]
+[functions.asaas-webhook]
 verify_jwt = false
 
 [functions.register]
