@@ -48,10 +48,10 @@ const BotShowcase = () => {
   const prefersReducedMotion = usePrefersReducedMotion();
 
   return (
-    <section className="relative overflow-hidden bg-background py-12 sm:py-20 lg:py-32">
+    <section className="relative overflow-hidden bg-background py-10 sm:py-20 lg:py-32">
       {/* Section 1: Dashboard */}
-      <div className="container mx-auto px-4 mb-16 sm:mb-24 lg:mb-32">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
+      <div className="container mx-auto px-4 mb-12 sm:mb-24 lg:mb-32">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-12 lg:gap-16 items-center">
           {/* Left - Preview */}
           <RevealSection className="relative order-2 lg:order-1">
             <div className="absolute -inset-8 bg-gradient-to-r from-primary/15 via-primary/5 to-transparent rounded-3xl blur-3xl opacity-60" />
@@ -65,12 +65,12 @@ const BotShowcase = () => {
           </RevealSection>
 
           {/* Right - Text */}
-          <RevealSection className="order-1 lg:order-2 text-center lg:text-left">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-display font-bold text-foreground mb-4 sm:mb-6 leading-tight">
+          <RevealSection className="order-1 lg:order-2 text-center lg:text-left px-2 sm:px-0">
+            <h2 className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-display font-bold text-foreground mb-3 sm:mb-6 leading-tight">
               Controle total em{" "}
               <span className="text-primary">tempo real</span>
             </h2>
-            <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 max-w-lg mx-auto lg:mx-0">
+            <p className="text-muted-foreground text-xs sm:text-base lg:text-lg mb-5 sm:mb-8 max-w-lg mx-auto lg:mx-0">
               Acompanhe o status de cada conta, monitore a saúde do sistema e gerencie limites diários com uma interface profissional.
             </p>
 
@@ -106,15 +106,15 @@ const BotShowcase = () => {
       <SubtleDivider variant="default" />
 
       {/* Section 2: Actions - Inverted */}
-      <div className="container mx-auto px-4 mb-16 sm:mb-24 lg:mb-32">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-20 items-center">
+      <div className="container mx-auto px-4 mb-12 sm:mb-24 lg:mb-32">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-12 lg:gap-20 items-center">
           {/* Left - Text */}
-          <RevealSection className="text-center lg:text-center lg:pl-8 xl:pl-16">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-display font-bold text-foreground mb-4 sm:mb-6 leading-tight">
+          <RevealSection className="text-center lg:text-center lg:pl-8 xl:pl-16 px-2 sm:px-0">
+            <h2 className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-display font-bold text-foreground mb-3 sm:mb-6 leading-tight">
               Extraia e adicione membros{" "}
               <span className="text-green-500">automaticamente</span>
             </h2>
-            <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 max-w-lg mx-auto">
+            <p className="text-muted-foreground text-xs sm:text-base lg:text-lg mb-5 sm:mb-8 max-w-lg mx-auto">
               Configure suas automações com delays inteligentes e limites seguros. Acompanhe o progresso em tempo real.
             </p>
 
@@ -164,7 +164,7 @@ const BotShowcase = () => {
 
       {/* Section 3: Accounts */}
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-20 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-12 lg:gap-20 items-center">
           {/* Left - Preview */}
           <RevealSection className="relative order-2 lg:order-1">
             <div className="absolute -inset-4 bg-gradient-to-r from-yellow-500/15 via-yellow-500/5 to-transparent rounded-3xl blur-2xl opacity-60" />
@@ -178,12 +178,12 @@ const BotShowcase = () => {
           </RevealSection>
 
           {/* Right - Text */}
-          <RevealSection className="order-1 lg:order-2 text-center lg:text-left">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-display font-bold text-foreground mb-4 sm:mb-6 leading-tight">
+          <RevealSection className="order-1 lg:order-2 text-center lg:text-left px-2 sm:px-0">
+            <h2 className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-display font-bold text-foreground mb-3 sm:mb-6 leading-tight">
               Múltiplas contas em{" "}
               <span className="text-yellow-500">um só lugar</span>
             </h2>
-            <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 max-w-lg mx-auto lg:mx-0">
+            <p className="text-muted-foreground text-xs sm:text-base lg:text-lg mb-5 sm:mb-8 max-w-lg mx-auto lg:mx-0">
               Conecte várias contas do Telegram, monitore status e gerencie tudo de forma centralizada. Suporte para sessions e códigos de verificação.
             </p>
 

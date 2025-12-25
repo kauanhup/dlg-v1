@@ -13,16 +13,16 @@ const Features = () => {
   const videoUrl = "";
 
   return (
-    <section id="features" className="py-20 sm:py-28 bg-background" ref={ref}>
+    <section id="features" className="py-12 sm:py-20 lg:py-28 bg-background" ref={ref}>
       <div className="container mx-auto px-4 sm:px-6">
         <motion.div 
-          className="text-center max-w-2xl mx-auto mb-12"
+          className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 px-2"
           initial={{ opacity: 0, y: 16 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.3, ease: [0.33, 1, 0.68, 1] }}
         >
           <motion.p
-            className="text-primary text-sm font-medium mb-3"
+            className="text-primary text-xs sm:text-sm font-medium mb-2 sm:mb-3"
             initial={{ opacity: 0, y: 10 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.25, delay: 0.05, ease: [0.33, 1, 0.68, 1] }}
@@ -30,7 +30,7 @@ const Features = () => {
             Demonstração
           </motion.p>
           <motion.h2 
-            className="text-3xl sm:text-4xl font-display font-bold mb-4"
+            className="text-2xl xs:text-3xl sm:text-4xl font-display font-bold mb-3 sm:mb-4"
             initial={{ opacity: 0, y: 10 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.25, delay: 0.08, ease: [0.33, 1, 0.68, 1] }}
@@ -38,7 +38,7 @@ const Features = () => {
             Conheça o Bot
           </motion.h2>
           <motion.p 
-            className="text-muted-foreground"
+            className="text-muted-foreground text-sm sm:text-base"
             initial={{ opacity: 0, y: 10 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.25, delay: 0.1, ease: [0.33, 1, 0.68, 1] }}

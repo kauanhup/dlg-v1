@@ -91,19 +91,19 @@ const Pricing = () => {
       {/* Gradient transition from HowItWorks */}
       <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
       
-      <div className="py-24 sm:py-32">
+      <div className="py-16 sm:py-24 lg:py-32">
         <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" />
 
         <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
           <div className="flex flex-col items-center">
             <motion.div 
-              className="mx-auto max-w-xl text-center"
+              className="mx-auto max-w-xl text-center px-2"
               style={{ willChange: "transform, opacity" }}
               initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
               transition={{ duration: 0.3, ease: gpuEase }}
             >
-              <h2 className="font-display text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              <h2 className="font-display text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
                 Planos e Preços
               </h2>
             </motion.div>
@@ -122,7 +122,7 @@ const Pricing = () => {
                 Nenhum plano disponível no momento.
               </motion.div>
             ) : (
-              <div className={`mt-10 sm:mt-14 grid w-full gap-4 sm:gap-6 lg:gap-8 px-2 sm:px-0 ${
+              <div className={`mt-8 sm:mt-14 grid w-full gap-3 sm:gap-6 lg:gap-8 px-0 sm:px-0 ${
                 plans.length === 1 ? 'grid-cols-1 max-w-md mx-auto' :
                 plans.length === 2 ? 'grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto' :
                 plans.length === 3 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' :
@@ -136,9 +136,9 @@ const Pricing = () => {
                   return (
                     <motion.div
                       key={plan.id}
-                      className={`relative flex flex-col p-6 rounded-2xl border backdrop-blur-sm transition-colors duration-200 ${
+                      className={`relative flex flex-col p-4 sm:p-6 rounded-xl sm:rounded-2xl border backdrop-blur-sm transition-colors duration-200 ${
                         isPopular 
-                          ? "bg-primary/5 border-primary/40 scale-[1.02] shadow-lg shadow-primary/20" 
+                          ? "bg-primary/5 border-primary/40 scale-[1.01] sm:scale-[1.02] shadow-lg shadow-primary/20" 
                           : "bg-card/60 border-border hover:border-primary/30"
                       }`}
                       style={{ willChange: "transform, opacity" }}
@@ -151,39 +151,39 @@ const Pricing = () => {
                       }}
                     >
                       <div>
-                        <h3 className="text-lg font-semibold text-foreground">{plan.name}</h3>
-                        <div className="mt-3 flex items-baseline gap-1">
-                          <span className="text-3xl font-bold text-foreground">R$ {formatPrice(effectivePrice)}</span>
+                        <h3 className="text-base sm:text-lg font-semibold text-foreground">{plan.name}</h3>
+                        <div className="mt-2 sm:mt-3 flex items-baseline gap-1">
+                          <span className="text-2xl sm:text-3xl font-bold text-foreground">R$ {formatPrice(effectivePrice)}</span>
                           {hasPromo && (
-                            <span className="ml-2 text-sm text-muted-foreground line-through">
+                            <span className="ml-2 text-xs sm:text-sm text-muted-foreground line-through">
                               R$ {formatPrice(plan.price)}
                             </span>
                           )}
                         </div>
-                        <p className="mt-1 text-sm text-muted-foreground">
+                        <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                           {formatPeriod(plan.period)} de acesso
                         </p>
                         {hasPromo && (
-                          <span className="mt-2 inline-block rounded-md bg-green-500/10 px-2 py-1 text-xs font-medium text-green-500">
+                          <span className="mt-2 inline-block rounded-md bg-green-500/10 px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium text-green-500">
                             Economia de R$ {formatPrice(plan.price - effectivePrice)}
                           </span>
                         )}
                       </div>
 
                       {plan.features && plan.features.length > 0 && (
-                        <ul className="mt-6 flex-1 space-y-3">
+                        <ul className="mt-4 sm:mt-6 flex-1 space-y-2 sm:space-y-3">
                           {plan.features.map((feature, i) => (
-                            <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                              <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                            <li key={i} className="flex items-start gap-2 sm:gap-2.5 text-xs sm:text-sm text-muted-foreground">
+                              <Check className="mt-0.5 h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-primary" />
                               {feature}
                             </li>
                           ))}
                         </ul>
                       )}
 
-                      <Link to="/comprar" className="mt-6 block">
+                      <Link to="/comprar" className="mt-4 sm:mt-6 block">
                         <button 
-                          className={`w-full rounded-xl px-5 py-3 font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${
+                          className={`w-full rounded-lg sm:rounded-xl px-4 sm:px-5 py-2.5 sm:py-3 font-semibold text-xs sm:text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${
                             isPopular 
                               ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md" 
                               : "bg-transparent border border-primary/30 text-foreground hover:bg-primary/10 hover:border-primary/50"

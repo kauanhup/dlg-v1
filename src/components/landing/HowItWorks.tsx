@@ -20,17 +20,17 @@ const HowItWorks = () => {
   };
 
   return (
-    <section id="download" className="py-20 sm:py-28 bg-gradient-to-b from-background via-background to-primary/5 overflow-hidden" ref={ref}>
+    <section id="download" className="py-12 sm:py-20 lg:py-28 bg-gradient-to-b from-background via-background to-primary/5 overflow-hidden" ref={ref}>
       <div className="container mx-auto px-4 sm:px-6">
         {/* Header */}
         <motion.div 
-          className="text-center max-w-2xl mx-auto mb-16"
+          className="text-center max-w-2xl mx-auto mb-10 sm:mb-16 px-2"
           initial={{ opacity: 0, y: 16 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.3, ease: [0.33, 1, 0.68, 1] }}
         >
           <motion.h2 
-            className="text-3xl sm:text-4xl font-display font-bold mb-4"
+            className="text-2xl xs:text-3xl sm:text-4xl font-display font-bold mb-3 sm:mb-4"
             initial={{ opacity: 0, y: 10 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.25, delay: 0.05, ease: [0.33, 1, 0.68, 1] }}
@@ -38,7 +38,7 @@ const HowItWorks = () => {
             Simples de Usar
           </motion.h2>
           <motion.p 
-            className="text-muted-foreground"
+            className="text-muted-foreground text-sm sm:text-base"
             initial={{ opacity: 0, y: 10 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.25, delay: 0.08, ease: [0.33, 1, 0.68, 1] }}
@@ -48,11 +48,11 @@ const HowItWorks = () => {
         </motion.div>
 
         {/* Steps Grid */}
-        <div className="grid gap-16 lg:gap-20 mb-16">
+        <div className="grid gap-10 sm:gap-16 lg:gap-20 mb-10 sm:mb-16">
           {TUTORIAL_STEPS.map((step, index) => (
             <motion.div
               key={step.step}
-              className={`flex flex-col ${index % 2 === 1 ? 'lg:flex-row-reverse' : 'lg:flex-row'} gap-8 lg:gap-16 items-center`}
+              className={`flex flex-col ${index % 2 === 1 ? 'lg:flex-row-reverse' : 'lg:flex-row'} gap-6 sm:gap-8 lg:gap-16 items-center`}
               initial={{ opacity: 0, y: 24 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ 
@@ -62,14 +62,14 @@ const HowItWorks = () => {
               }}
             >
               {/* Content */}
-              <div className="flex-1 text-center lg:text-left">
-                <span className="text-6xl sm:text-7xl font-display font-bold bg-gradient-to-b from-primary/30 to-transparent bg-clip-text text-transparent mb-6">
+              <div className="flex-1 text-center lg:text-left px-2 sm:px-0">
+                <span className="text-4xl xs:text-5xl sm:text-6xl lg:text-7xl font-display font-bold bg-gradient-to-b from-primary/30 to-transparent bg-clip-text text-transparent mb-4 sm:mb-6">
                   {step.step}
                 </span>
-                <h3 className="text-2xl sm:text-3xl font-display font-semibold mb-4">
+                <h3 className="text-xl xs:text-2xl sm:text-3xl font-display font-semibold mb-3 sm:mb-4">
                   {step.title}
                 </h3>
-                <p className="text-muted-foreground text-lg max-w-md mx-auto lg:mx-0 leading-relaxed">
+                <p className="text-muted-foreground text-sm sm:text-base lg:text-lg max-w-md mx-auto lg:mx-0 leading-relaxed">
                   {step.description}
                 </p>
                 
