@@ -1,0 +1,20 @@
+module DLGConnect
+
+# Singleton
+singleton Theme 1.0 Theme.qml
+
+# Components
+AppButton 1.0 components/AppButton.qml
+AppInput 1.0 components/AppInput.qml
+AppPanel 1.0 components/AppPanel.qml
+StatsCard 1.0 components/StatsCard.qml
+Sidebar 1.0 components/Sidebar.qml
+
+# Pages
+Login 1.0 pages/Login.qml
+MainLayout 1.0 pages/MainLayout.qml
+Dashboard 1.0 pages/Dashboard.qml
+Accounts 1.0 pages/Accounts.qml
+Actions 1.0 pages/Actions.qml
+Activity 1.0 pages/Activity.qml
+Settings 1.0 pages/Settings.qml

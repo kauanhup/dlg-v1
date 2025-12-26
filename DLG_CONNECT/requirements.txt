@@ -1,0 +1,4 @@
+# DLG Connect - QML Desktop App
+# Requisitos para rodar a aplicação
+
+PySide6>=6.5.0
