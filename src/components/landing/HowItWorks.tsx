@@ -4,6 +4,7 @@ import { Download, Play, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useBotDownload } from "@/hooks/useBotDownload";
 import { TUTORIAL_STEPS, YOUTUBE_TUTORIAL_URL } from "@/lib/landing/constants";
+import { gpuEase, bounceEase } from "@/hooks/useScrollAnimation";
 
 const HowItWorks = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -22,26 +23,26 @@ const HowItWorks = () => {
   return (
     <section id="download" className="py-12 sm:py-20 lg:py-28 bg-gradient-to-b from-background via-background to-primary/5 overflow-hidden" ref={ref}>
       <div className="container mx-auto px-4 sm:px-6">
-        {/* Header */}
+        {/* Header with blur-in effect */}
         <motion.div 
           className="text-center max-w-2xl mx-auto mb-10 sm:mb-16 px-2"
-          initial={{ opacity: 0, y: 16 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.3, ease: [0.33, 1, 0.68, 1] }}
+          initial={{ opacity: 0, filter: "blur(10px)", y: 30 }}
+          animate={isInView ? { opacity: 1, filter: "blur(0px)", y: 0 } : {}}
+          transition={{ duration: 0.6, ease: gpuEase }}
         >
           <motion.h2 
             className="text-2xl xs:text-3xl sm:text-4xl font-display font-bold mb-3 sm:mb-4"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.25, delay: 0.05, ease: [0.33, 1, 0.68, 1] }}
+            transition={{ duration: 0.5, delay: 0.1, ease: gpuEase }}
           >
             Simples de Usar
           </motion.h2>
           <motion.p 
             className="text-muted-foreground text-sm sm:text-base"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.25, delay: 0.08, ease: [0.33, 1, 0.68, 1] }}
+            transition={{ duration: 0.5, delay: 0.15, ease: gpuEase }}
           >
             Em apenas 3 passos você configura e começa a automatizar seu Telegram.
           </motion.p>
@@ -53,19 +54,29 @@ const HowItWorks = () => {
             <motion.div
               key={step.step}
               className={`flex flex-col ${index % 2 === 1 ? 'lg:flex-row-reverse' : 'lg:flex-row'} gap-6 sm:gap-8 lg:gap-16 items-center`}
-              initial={{ opacity: 0, y: 24 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ 
-                duration: 0.35, 
-                delay: 0.1 + (index * 0.08),
-                ease: [0.33, 1, 0.68, 1]
+              initial={{ 
+                opacity: 0, 
+                x: index % 2 === 0 ? -80 : 80,
+                rotateY: index % 2 === 0 ? -15 : 15
               }}
+              animate={isInView ? { opacity: 1, x: 0, rotateY: 0 } : {}}
+              transition={{ 
+                duration: 0.7, 
+                delay: 0.2 + (index * 0.15),
+                ease: gpuEase
+              }}
+              style={{ perspective: 1000 }}
             >
               {/* Content */}
               <div className="flex-1 text-center lg:text-left px-2 sm:px-0">
-                <span className="text-4xl xs:text-5xl sm:text-6xl lg:text-7xl font-display font-bold bg-gradient-to-b from-primary/30 to-transparent bg-clip-text text-transparent mb-4 sm:mb-6">
+                <motion.span 
+                  className="text-4xl xs:text-5xl sm:text-6xl lg:text-7xl font-display font-bold bg-gradient-to-b from-primary/30 to-transparent bg-clip-text text-transparent mb-4 sm:mb-6 inline-block"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={isInView ? { opacity: 1, scale: 1 } : {}}
+                  transition={{ delay: 0.3 + (index * 0.15), duration: 0.5, ease: bounceEase }}
+                >
                   {step.step}
-                </span>
+                </motion.span>
                 <h3 className="text-xl xs:text-2xl sm:text-3xl font-display font-semibold mb-3 sm:mb-4">
                   {step.title}
                 </h3>
@@ -76,28 +87,37 @@ const HowItWorks = () => {
                 {/* Tutorial Button */}
                 <motion.div 
                   className="mt-6"
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: 15 }}
                   animate={isInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ delay: 0.15 + (index * 0.08), duration: 0.25 }}
+                  transition={{ delay: 0.4 + (index * 0.15), duration: 0.4 }}
                 >
-                  <Button
-                    variant="outline"
-                    onClick={openTutorial}
-                    className="gap-2 border-primary/30 hover:bg-primary/10 hover:border-primary/50"
+                  <motion.div
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
                   >
-                    <Play className="w-4 h-4" />
-                    Ver Tutorial
-                    <ExternalLink className="w-3 h-3 ml-1 opacity-60" />
-                  </Button>
+                    <Button
+                      variant="outline"
+                      onClick={openTutorial}
+                      className="gap-2 border-primary/30 hover:bg-primary/10 hover:border-primary/50"
+                    >
+                      <Play className="w-4 h-4" />
+                      Ver Tutorial
+                      <ExternalLink className="w-3 h-3 ml-1 opacity-60" />
+                    </Button>
+                  </motion.div>
                 </motion.div>
               </div>
 
-              {/* Image with effects */}
+              {/* Image with zoom-in and flip effect */}
               <div className="flex-1 w-full flex justify-center">
                 <motion.div 
                   className="relative group"
-                  whileHover={{ scale: 1.02, y: -4 }}
-                  transition={{ duration: 0.2, ease: [0.33, 1, 0.68, 1] }}
+                  initial={{ opacity: 0, scale: 0.7, rotateY: index % 2 === 0 ? 20 : -20 }}
+                  animate={isInView ? { opacity: 1, scale: 1, rotateY: 0 } : {}}
+                  transition={{ delay: 0.3 + (index * 0.15), duration: 0.7, ease: gpuEase }}
+                  whileHover={{ scale: 1.03, y: -8 }}
+                  style={{ perspective: 1000 }}
                 >
                   {/* Outer glow */}
                   <motion.div 
@@ -119,7 +139,7 @@ const HowItWorks = () => {
                   {/* Image container */}
                   <div className="relative rounded-2xl overflow-hidden border border-white/20 group-hover:border-primary/40 shadow-2xl shadow-black/60 transition-all duration-200">
                     {/* Shine effect on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500 ease-out z-10 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out z-10 pointer-events-none" />
                     
                     <img 
                       src={step.image} 
@@ -142,13 +162,13 @@ const HowItWorks = () => {
                   {/* Floating particles on hover */}
                   <motion.div
                     className="absolute -top-1 -right-1 w-2 h-2 bg-primary/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    animate={{ y: [-2, 2, -2] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    animate={{ y: [-2, 4, -2] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                   />
                   <motion.div
                     className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-blue-500/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    animate={{ y: [2, -2, 2] }}
-                    transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+                    animate={{ y: [2, -4, 2] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                   />
                 </motion.div>
               </div>
@@ -156,25 +176,36 @@ const HowItWorks = () => {
           ))}
         </div>
 
-        {/* Download Button */}
+        {/* Download Button with scale-bounce */}
         <motion.div
           className="text-center"
-          initial={{ opacity: 0, y: 12 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.3, delay: 0.35, ease: [0.33, 1, 0.68, 1] }}
+          initial={{ opacity: 0, scale: 0.5, y: 30 }}
+          animate={isInView ? { opacity: 1, scale: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, delay: 0.6, ease: bounceEase }}
         >
-          <Button
-            size="lg"
-            onClick={handleDownload}
-            disabled={isLoading}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 text-lg rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300"
+          <motion.div
+            whileHover={{ scale: 1.05, y: -3 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.2 }}
           >
-            <Download className="w-5 h-5 mr-2" />
-            {isLoading ? "Baixando..." : "Baixar Bot"}
-          </Button>
-          <p className="text-muted-foreground text-sm mt-4">
+            <Button
+              size="lg"
+              onClick={handleDownload}
+              disabled={isLoading}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 text-lg rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300"
+            >
+              <Download className="w-5 h-5 mr-2" />
+              {isLoading ? "Baixando..." : "Baixar Bot"}
+            </Button>
+          </motion.div>
+          <motion.p 
+            className="text-muted-foreground text-sm mt-4"
+            initial={{ opacity: 0 }}
+            animate={isInView ? { opacity: 1 } : {}}
+            transition={{ delay: 0.7, duration: 0.4 }}
+          >
             {getDownloadMessage()}
-          </p>
+          </motion.p>
         </motion.div>
       </div>
     </section>

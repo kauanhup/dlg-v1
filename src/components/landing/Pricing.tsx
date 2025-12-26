@@ -2,7 +2,7 @@ import { useRef, useEffect } from "react";
 import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion, useInView } from "framer-motion";
-import { gpuEase, usePrefersReducedMotion } from "@/hooks/useScrollAnimation";
+import { gpuEase, bounceEase, usePrefersReducedMotion } from "@/hooks/useScrollAnimation";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { formatPrice, formatPeriod } from "@/lib/formatters";
 
@@ -99,9 +99,9 @@ const Pricing = () => {
             <motion.div 
               className="mx-auto max-w-xl text-center px-2"
               style={{ willChange: "transform, opacity" }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              transition={{ duration: 0.3, ease: gpuEase }}
+              initial={{ opacity: 0, y: 40, filter: "blur(10px)" }}
+              animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
+              transition={{ duration: 0.6, ease: gpuEase }}
             >
               <h2 className="font-display text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
                 Planos e Preços
@@ -110,14 +110,18 @@ const Pricing = () => {
 
             {isLoading ? (
               <div className="flex justify-center items-center py-20">
-                <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <motion.div 
+                  className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
               </div>
             ) : plans.length === 0 ? (
               <motion.div 
                 className="text-center py-20 text-muted-foreground"
                 initial={{ opacity: 0 }}
-                animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-                transition={{ duration: 0.25 }}
+                animate={isInView ? { opacity: 1 } : {}}
+                transition={{ duration: 0.4 }}
               >
                 Nenhum plano disponível no momento.
               </motion.div>
@@ -141,56 +145,76 @@ const Pricing = () => {
                           ? "bg-primary/5 border-primary/40 scale-[1.01] sm:scale-[1.02] shadow-lg shadow-primary/20" 
                           : "bg-card/60 border-border hover:border-primary/30"
                       }`}
-                      style={{ willChange: "transform, opacity" }}
-                      initial={{ opacity: 0, y: 24 }}
-                      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-                      transition={{ duration: 0.3, delay: index * 0.05, ease: gpuEase }}
+                      style={{ willChange: "transform, opacity", perspective: 1000 }}
+                      initial={{ opacity: 0, y: 60, rotateX: 15 }}
+                      animate={isInView ? { opacity: 1, y: 0, rotateX: 0 } : {}}
+                      transition={{ duration: 0.6, delay: 0.15 + index * 0.1, ease: gpuEase }}
                       whileHover={{ 
-                        y: -4, 
-                        transition: { duration: 0.2, ease: gpuEase } 
+                        y: -10, 
+                        scale: 1.03,
+                        boxShadow: "0 20px 40px -15px rgba(139, 92, 246, 0.3)",
+                        transition: { duration: 0.3, ease: gpuEase } 
                       }}
                     >
                       <div>
                         <h3 className="text-base sm:text-lg font-semibold text-foreground">{plan.name}</h3>
-                        <div className="mt-2 sm:mt-3 flex items-baseline gap-1">
+                        <motion.div 
+                          className="mt-2 sm:mt-3 flex items-baseline gap-1"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={isInView ? { opacity: 1, scale: 1 } : {}}
+                          transition={{ delay: 0.3 + index * 0.1, duration: 0.4, ease: bounceEase }}
+                        >
                           <span className="text-2xl sm:text-3xl font-bold text-foreground">R$ {formatPrice(effectivePrice)}</span>
                           {hasPromo && (
                             <span className="ml-2 text-xs sm:text-sm text-muted-foreground line-through">
                               R$ {formatPrice(plan.price)}
                             </span>
                           )}
-                        </div>
+                        </motion.div>
                         <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                           {formatPeriod(plan.period)} de acesso
                         </p>
                         {hasPromo && (
-                          <span className="mt-2 inline-block rounded-md bg-green-500/10 px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium text-green-500">
+                          <motion.span 
+                            className="mt-2 inline-block rounded-md bg-green-500/10 px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium text-green-500"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={isInView ? { opacity: 1, x: 0 } : {}}
+                            transition={{ delay: 0.4 + index * 0.1, duration: 0.4 }}
+                          >
                             Economia de R$ {formatPrice(plan.price - effectivePrice)}
-                          </span>
+                          </motion.span>
                         )}
                       </div>
 
                       {plan.features && plan.features.length > 0 && (
                         <ul className="mt-4 sm:mt-6 flex-1 space-y-2 sm:space-y-3">
                           {plan.features.map((feature, i) => (
-                            <li key={i} className="flex items-start gap-2 sm:gap-2.5 text-xs sm:text-sm text-muted-foreground">
+                            <motion.li 
+                              key={i} 
+                              className="flex items-start gap-2 sm:gap-2.5 text-xs sm:text-sm text-muted-foreground"
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={isInView ? { opacity: 1, x: 0 } : {}}
+                              transition={{ delay: 0.35 + index * 0.1 + i * 0.05, duration: 0.3 }}
+                            >
                               <Check className="mt-0.5 h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-primary" />
                               {feature}
-                            </li>
+                            </motion.li>
                           ))}
                         </ul>
                       )}
 
                       <Link to="/comprar" className="mt-4 sm:mt-6 block">
-                        <button 
-                          className={`w-full rounded-lg sm:rounded-xl px-4 sm:px-5 py-2.5 sm:py-3 font-semibold text-xs sm:text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${
+                        <motion.button 
+                          className={`w-full rounded-lg sm:rounded-xl px-4 sm:px-5 py-2.5 sm:py-3 font-semibold text-xs sm:text-sm transition-all duration-200 ${
                             isPopular 
                               ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md" 
                               : "bg-transparent border border-primary/30 text-foreground hover:bg-primary/10 hover:border-primary/50"
                           }`}
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
                         >
                           {effectivePrice === 0 ? 'Testar Grátis' : 'Escolher Plano'}
-                        </button>
+                        </motion.button>
                       </Link>
                     </motion.div>
                   );
@@ -201,17 +225,25 @@ const Pricing = () => {
             <motion.div 
               className="mt-8 sm:mt-10 text-center"
               style={{ willChange: "transform, opacity" }}
-              initial={{ opacity: 0, y: 12 }}
-              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-              transition={{ duration: 0.25, ease: gpuEase }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.5, delay: 0.5, ease: gpuEase }}
             >
               <Link to="/comprar">
-                <button 
-                  className="inline-flex items-center gap-2 px-6 py-3 font-semibold text-sm text-primary bg-transparent rounded-xl transition-all duration-200 hover:bg-primary/10 hover:scale-[1.02] active:scale-[0.98]"
+                <motion.button 
+                  className="inline-flex items-center gap-2 px-6 py-3 font-semibold text-sm text-primary bg-transparent rounded-xl transition-all duration-200 hover:bg-primary/10"
+                  whileHover={{ scale: 1.05, x: 5 }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   Ver todos os planos
-                  <span className="text-lg">→</span>
-                </button>
+                  <motion.span 
+                    className="text-lg"
+                    animate={{ x: [0, 5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    →
+                  </motion.span>
+                </motion.button>
               </Link>
             </motion.div>
           </div>
