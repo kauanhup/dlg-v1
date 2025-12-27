@@ -118,6 +118,70 @@ class SupabaseClient:
         license_data = self.get_license()
         return license_data is not None
     
+    def is_license_valid(self) -> dict:
+        """
+        Verifica se a licença está válida (ativa E não expirada)
+        Retorna: {"valid": bool, "days_remaining": int | None, "error": str | None}
+        """
+        from datetime import datetime, timezone
+        
+        license_data = self.get_license()
+        
+        if not license_data:
+            return {
+                "valid": False,
+                "days_remaining": None,
+                "error": "Nenhuma licença encontrada"
+            }
+        
+        try:
+            end_date_str = license_data.get("end_date")
+            if not end_date_str:
+                return {
+                    "valid": False,
+                    "days_remaining": None,
+                    "error": "Data de expiração não definida"
+                }
+            
+            # Parse ISO format date
+            end_date = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
+            now = datetime.now(timezone.utc)
+            
+            if end_date < now:
+                return {
+                    "valid": False,
+                    "days_remaining": 0,
+                    "error": "Licença expirada"
+                }
+            
+            days_remaining = (end_date - now).days
+            return {
+                "valid": True,
+                "days_remaining": days_remaining,
+                "error": None
+            }
+        except Exception as e:
+            return {
+                "valid": False,
+                "days_remaining": None,
+                "error": f"Erro ao verificar licença: {str(e)}"
+            }
+    
+    def is_banned(self) -> dict:
+        """
+        Verifica se o usuário está banido
+        Retorna: {"banned": bool, "reason": str | None}
+        """
+        profile = self.get_profile()
+        
+        if not profile:
+            return {"banned": False, "reason": None}
+        
+        return {
+            "banned": profile.get("banned", False),
+            "reason": profile.get("ban_reason")
+        }
+    
     # ========== SUBSCRIPTION ==========
     
     def get_subscription(self) -> Optional[Dict[str, Any]]:
