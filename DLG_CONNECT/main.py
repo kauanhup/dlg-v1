@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 DLG Connect - QML Application
-Teste com: python public/qml/main.py (da raiz) OU python main.py (de public/qml/)
-Requisitos: pip install PySide6
+Teste com: python DLG_CONNECT/main.py
+Requisitos: pip install PySide6 supabase
 """
 
 import sys
@@ -10,9 +10,15 @@ import os
 from pathlib import Path
 
 from PySide6.QtWidgets import QApplication
-from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterType
 from PySide6.QtCore import QUrl
 from PySide6.QtGui import QIcon
+
+# Adiciona o diretório atual ao path para imports
+sys.path.insert(0, str(Path(__file__).parent))
+
+# Importa a bridge
+from api.bridge import Backend
 
 
 def main():
@@ -21,6 +27,9 @@ def main():
     app.setApplicationName("DLG Connect")
     app.setApplicationVersion("2.0.1")
     app.setOrganizationName("DLG")
+    
+    # Registrar o Backend para uso no QML
+    qmlRegisterType(Backend, "DLGConnect", 1, 0, "Backend")
     
     # Criar engine QML
     engine = QQmlApplicationEngine()
@@ -49,6 +58,7 @@ def main():
         sys.exit(1)
     
     print("✓ DLG Connect iniciado com sucesso!")
+    print("✓ Backend conectado ao Lovable Cloud")
     
     # Executar aplicação
     sys.exit(app.exec())
