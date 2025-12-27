@@ -153,6 +153,24 @@ class Backend(QObject):
         return supabase.has_active_license()
     
     @Slot(result=str)
+    def isLicenseValid(self) -> str:
+        """
+        Verifica se a licença está válida (ativa E não expirada)
+        Retorna JSON: {"valid": bool, "days_remaining": int | None, "error": str | None}
+        """
+        result = supabase.is_license_valid()
+        return json.dumps(result)
+    
+    @Slot(result=str)
+    def isBanned(self) -> str:
+        """
+        Verifica se o usuário está banido
+        Retorna JSON: {"banned": bool, "reason": str | None}
+        """
+        result = supabase.is_banned()
+        return json.dumps(result)
+    
+    @Slot(result=str)
     def getProfileSync(self) -> str:
         """Retorna o perfil de forma síncrona (JSON)"""
         if self._profile_data:
