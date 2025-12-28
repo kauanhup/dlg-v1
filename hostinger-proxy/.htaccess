@@ -1,25 +1,26 @@
-# Configuração para SPA React + Webhooks
+# Configuração para SPA React + Webhooks + Bot API
 # IMPORTANTE: Este arquivo deve estar na raiz do public_html
 
 RewriteEngine On
 RewriteBase /
 
 # ============================================
-# WEBHOOKS (devem vir ANTES das regras SPA)
+# WEBHOOKS DE PAGAMENTO (devem vir ANTES das regras SPA)
 # ============================================
 
-# Se for POST na raiz, redireciona para o webhook PixUp
+# Webhook Asaas - POST em /webhook ou /asaas
 RewriteCond %{REQUEST_METHOD} POST
-RewriteCond %{REQUEST_URI} ^/$
-RewriteRule ^$ /api/webhook-pixup.php [L]
+RewriteRule ^webhook/?$ /api/webhook-asaas.php [L]
 
-# Redireciona /webhook para o webhook PixUp
 RewriteCond %{REQUEST_METHOD} POST
-RewriteRule ^webhook/?$ /api/webhook-pixup.php [L]
+RewriteRule ^asaas/?$ /api/webhook-asaas.php [L]
 
-# Redireciona /evopay para o webhook EvoPay
-RewriteCond %{REQUEST_METHOD} POST
-RewriteRule ^evopay/?$ /api/webhook-evopay.php [L]
+# ============================================
+# BOT API (permite GET e POST)
+# ============================================
+
+# API do Bot - /bot-api ou /api/bot-api
+RewriteRule ^bot-api/?$ /api/bot-api.php [L]
 
 # ============================================
 # SPA FALLBACK (React Router)
@@ -32,7 +33,7 @@ RewriteCond %{REQUEST_FILENAME} !-d
 # Ignora arquivos de API e assets
 RewriteCond %{REQUEST_URI} !^/api/
 RewriteCond %{REQUEST_URI} !^/assets/
-RewriteCond %{REQUEST_URI} !\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map)$
+RewriteCond %{REQUEST_URI} !\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map|json|xml|txt)$
 
 # Redireciona todas as outras rotas para index.html
 RewriteRule ^(.*)$ /index.html [L,QSA]
