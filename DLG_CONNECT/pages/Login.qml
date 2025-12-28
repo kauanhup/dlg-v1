@@ -2,6 +2,7 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import QtWebEngine 1.10
+import QtWebChannel 1.0
 import ".."
 import "../components"
 
@@ -14,6 +15,7 @@ Rectangle {
     property bool showAnimation: false
     property bool showBannedModal: false
     property bool showDeviceLimitModal: false
+    property bool showTrialExpiredModal: false
     property string banReason: ""
     property int activeDevices: 0
     property int maxDevices: 1
@@ -21,7 +23,13 @@ Rectangle {
     property bool recaptchaEnabled: false
     property string recaptchaSiteKey: ""
     property bool recaptchaVerified: false
+    property string recaptchaToken: ""
     property string errorMessage: ""
+    
+    // Trial properties
+    property bool isTrialEligible: false
+    property bool trialAlreadyUsed: false
+    property int trialDays: 0
     
     // Simple fade in
     opacity: 0
@@ -500,70 +508,147 @@ Rectangle {
                             }
                         }
                         
-                        // reCAPTCHA placeholder (se habilitado)
+                        // reCAPTCHA widget (se habilitado)
                         Rectangle {
                             visible: root.recaptchaEnabled
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 78
+                            Layout.preferredHeight: root.recaptchaVerified ? 60 : 90
                             color: Theme.muted
                             border.width: 1
                             border.color: root.recaptchaVerified ? Theme.accent : Theme.border
                             radius: 8
+                            clip: true
                             
+                            Behavior on Layout.preferredHeight { NumberAnimation { duration: 200 } }
+                            
+                            // Estado verificado
                             RowLayout {
+                                visible: root.recaptchaVerified
                                 anchors.fill: parent
                                 anchors.margins: 16
                                 spacing: 12
                                 
-                                // Checkbox simulado
                                 Rectangle {
-                                    Layout.preferredWidth: 24
-                                    Layout.preferredHeight: 24
-                                    radius: 4
-                                    color: root.recaptchaVerified ? Theme.accent : "transparent"
-                                    border.width: 2
-                                    border.color: root.recaptchaVerified ? Theme.accent : Theme.border
+                                    Layout.preferredWidth: 28
+                                    Layout.preferredHeight: 28
+                                    radius: 14
+                                    color: Theme.accent
                                     
                                     Icon {
-                                        visible: root.recaptchaVerified
                                         anchors.centerIn: parent
                                         name: "check"
-                                        size: 14
+                                        size: 16
                                         color: Theme.background
-                                    }
-                                    
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            // Simula verificação (em produção seria o widget real)
-                                            root.recaptchaVerified = !root.recaptchaVerified
-                                        }
                                     }
                                 }
                                 
                                 Text {
-                                    text: "Não sou um robô"
+                                    text: "Verificação concluída"
                                     font.pixelSize: 14
-                                    color: Theme.foreground
+                                    font.weight: Font.Medium
+                                    color: Theme.accent
                                 }
                                 
                                 Item { Layout.fillWidth: true }
                                 
-                                // reCAPTCHA logo
-                                ColumnLayout {
-                                    spacing: 2
+                                Text {
+                                    text: "✓"
+                                    font.pixelSize: 18
+                                    color: Theme.accent
+                                }
+                            }
+                            
+                            // WebView para reCAPTCHA
+                            WebEngineView {
+                                id: recaptchaWebView
+                                visible: !root.recaptchaVerified && root.recaptchaEnabled
+                                anchors.fill: parent
+                                anchors.margins: 4
+                                backgroundColor: "transparent"
+                                
+                                Component.onCompleted: {
+                                    if (root.recaptchaEnabled && root.recaptchaSiteKey) {
+                                        loadRecaptchaHtml()
+                                    }
+                                }
+                                
+                                function loadRecaptchaHtml() {
+                                    var html = '<!DOCTYPE html>' +
+                                        '<html><head>' +
+                                        '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+                                        '<script src="https://www.google.com/recaptcha/api.js" async defer></script>' +
+                                        '<style>' +
+                                        'body { margin: 0; padding: 8px; background: transparent; display: flex; justify-content: center; }' +
+                                        '.g-recaptcha { transform: scale(0.85); transform-origin: center; }' +
+                                        '</style>' +
+                                        '</head><body>' +
+                                        '<div class="g-recaptcha" data-sitekey="' + root.recaptchaSiteKey + '" data-callback="onVerify" data-theme="dark"></div>' +
+                                        '<script>' +
+                                        'function onVerify(token) {' +
+                                        '  window.recaptchaChannel.postMessage(token);' +
+                                        '}' +
+                                        '</script>' +
+                                        '</body></html>';
+                                    loadHtml(html)
+                                }
+                                
+                                webChannel: WebChannel {
+                                    id: recaptchaChannel
+                                    registeredObjects: [recaptchaHandler]
+                                }
+                            }
+                            
+                            // Handler para receber o token do reCAPTCHA
+                            QtObject {
+                                id: recaptchaHandler
+                                WebChannel.id: "recaptchaChannel"
+                                
+                                function postMessage(token) {
+                                    console.log("reCAPTCHA token received")
+                                    root.recaptchaToken = token
+                                    root.recaptchaVerified = true
+                                }
+                            }
+                            
+                            // Fallback: botão manual caso WebView não funcione
+                            Rectangle {
+                                visible: !root.recaptchaVerified && !recaptchaWebView.visible
+                                anchors.fill: parent
+                                color: "transparent"
+                                
+                                RowLayout {
+                                    anchors.centerIn: parent
+                                    spacing: 12
                                     
-                                    Image {
-                                        Layout.preferredWidth: 32
-                                        Layout.preferredHeight: 32
-                                        source: "https://www.gstatic.com/recaptcha/api2/logo_48.png"
-                                        fillMode: Image.PreserveAspectFit
+                                    Rectangle {
+                                        Layout.preferredWidth: 24
+                                        Layout.preferredHeight: 24
+                                        radius: 4
+                                        color: "transparent"
+                                        border.width: 2
+                                        border.color: Theme.border
+                                        
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                // Fallback: marca como verificado (para testes)
+                                                root.recaptchaVerified = true
+                                            }
+                                        }
                                     }
                                     
                                     Text {
+                                        text: "Não sou um robô"
+                                        font.pixelSize: 14
+                                        color: Theme.foreground
+                                    }
+                                    
+                                    Item { Layout.fillWidth: true }
+                                    
+                                    Text {
                                         text: "reCAPTCHA"
-                                        font.pixelSize: 8
+                                        font.pixelSize: 10
                                         color: Theme.mutedForeground
                                     }
                                 }

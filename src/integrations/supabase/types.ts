@@ -874,6 +874,45 @@ export type Database = {
         }
         Relationships: []
       }
+      trial_device_history: {
+        Row: {
+          created_at: string
+          device_fingerprint: string
+          device_name: string | null
+          device_os: string | null
+          id: string
+          ip_address: string | null
+          machine_id: string | null
+          trial_expired_at: string | null
+          trial_started_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_fingerprint: string
+          device_name?: string | null
+          device_os?: string | null
+          id?: string
+          ip_address?: string | null
+          machine_id?: string | null
+          trial_expired_at?: string | null
+          trial_started_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_fingerprint?: string
+          device_name?: string | null
+          device_os?: string | null
+          id?: string
+          ip_address?: string | null
+          machine_id?: string | null
+          trial_expired_at?: string | null
+          trial_started_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

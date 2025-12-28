@@ -470,6 +470,174 @@ class SupabaseClient:
             return response.data
         except Exception:
             return None
+    
+    # ========== TRIAL (Anti-burla) ==========
+    
+    def get_device_fingerprint(self) -> str:
+        """Gera fingerprint único do dispositivo para controle de trial"""
+        try:
+            import hashlib
+            
+            # Coleta informações únicas do hardware
+            machine_id = platform.node()
+            mac_address = uuid.getnode()
+            processor = platform.processor()
+            system = platform.system()
+            release = platform.release()
+            
+            # Cria hash único combinando tudo
+            fingerprint_data = f"{machine_id}-{mac_address}-{processor}-{system}-{release}"
+            fingerprint = hashlib.sha256(fingerprint_data.encode()).hexdigest()
+            
+            return fingerprint
+        except Exception:
+            return self._device_id or str(uuid.uuid4())
+    
+    def check_trial_eligibility(self) -> Dict[str, Any]:
+        """
+        Verifica se o dispositivo pode usar trial
+        Retorna: {"eligible": bool, "already_used": bool, "trial_days": int, ...}
+        """
+        fingerprint = self.get_device_fingerprint()
+        
+        try:
+            # Verificar se já usou trial
+            response = self._client.table("trial_device_history").select("*").eq(
+                "device_fingerprint", fingerprint
+            ).maybeSingle().execute()
+            
+            if response.data:
+                return {
+                    "eligible": False,
+                    "already_used": True,
+                    "trial_started_at": response.data.get("trial_started_at"),
+                    "message": "Este dispositivo já utilizou o período de teste gratuito"
+                }
+            
+            # Buscar configurações de trial
+            trial_enabled = self.get_system_setting("trial_enabled")
+            if trial_enabled != "true":
+                return {
+                    "eligible": False,
+                    "already_used": False,
+                    "message": "Período de teste não está disponível"
+                }
+            
+            trial_days = int(self.get_system_setting("trial_duration_days") or "3")
+            max_devices = int(self.get_system_setting("trial_max_devices") or "1")
+            max_actions = int(self.get_system_setting("trial_max_actions_per_day") or "50")
+            
+            return {
+                "eligible": True,
+                "already_used": False,
+                "trial_days": trial_days,
+                "max_devices": max_devices,
+                "max_actions_per_day": max_actions
+            }
+        except Exception as e:
+            return {
+                "eligible": False,
+                "already_used": False,
+                "error": str(e)
+            }
+    
+    def register_trial(self, user_id: str = None) -> Dict[str, Any]:
+        """
+        Registra o dispositivo como tendo usado trial
+        Retorna: {"success": bool, "trial_expires_at": str, ...}
+        """
+        from datetime import datetime, timedelta
+        
+        fingerprint = self.get_device_fingerprint()
+        device_info = self._get_device_info()
+        
+        try:
+            # Verificar novamente se já usou
+            check = self.check_trial_eligibility()
+            if not check.get("eligible"):
+                return {"success": False, "error": check.get("message", "Não elegível para trial")}
+            
+            trial_days = check.get("trial_days", 3)
+            trial_expires = datetime.now() + timedelta(days=trial_days)
+            
+            # Registrar no histórico
+            self._client.table("trial_device_history").insert({
+                "device_fingerprint": fingerprint,
+                "machine_id": platform.node(),
+                "device_name": device_info["device_name"],
+                "device_os": device_info["device_os"],
+                "ip_address": device_info["ip_address"],
+                "user_id": user_id or (self._current_user.get("id") if self._current_user else None),
+                "trial_expired_at": trial_expires.isoformat()
+            }).execute()
+            
+            # Se tem usuário, criar licença trial
+            if user_id or self._current_user:
+                uid = user_id or self._current_user.get("id")
+                now = datetime.now()
+                
+                self._client.table("licenses").insert({
+                    "user_id": uid,
+                    "plan_name": "Trial",
+                    "status": "active",
+                    "start_date": now.isoformat(),
+                    "end_date": trial_expires.isoformat()
+                }).execute()
+            
+            return {
+                "success": True,
+                "trial_expires_at": trial_expires.isoformat(),
+                "duration_days": trial_days
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def get_trial_status(self) -> Dict[str, Any]:
+        """
+        Verifica o status do trial para o dispositivo atual
+        Retorna: {"active": bool, "expires_at": str, "days_remaining": int, ...}
+        """
+        from datetime import datetime, timezone
+        
+        fingerprint = self.get_device_fingerprint()
+        
+        try:
+            response = self._client.table("trial_device_history").select("*").eq(
+                "device_fingerprint", fingerprint
+            ).maybeSingle().execute()
+            
+            if not response.data:
+                return {"active": False, "used": False, "message": "Trial não iniciado"}
+            
+            trial_data = response.data
+            expires_at = trial_data.get("trial_expired_at")
+            
+            if not expires_at:
+                return {"active": False, "used": True, "message": "Trial expirado"}
+            
+            expiry_date = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+            now = datetime.now(timezone.utc)
+            
+            if expiry_date < now:
+                return {
+                    "active": False,
+                    "used": True,
+                    "expired": True,
+                    "expired_at": expires_at,
+                    "message": "Período de teste expirado"
+                }
+            
+            days_remaining = (expiry_date - now).days
+            
+            return {
+                "active": True,
+                "used": True,
+                "expires_at": expires_at,
+                "days_remaining": days_remaining,
+                "started_at": trial_data.get("trial_started_at")
+            }
+        except Exception as e:
+            return {"active": False, "error": str(e)}
 
 
 # Instância global para uso em todo o app
