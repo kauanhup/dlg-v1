@@ -17,7 +17,7 @@ class DLGApiClient:
     # =====================================================
     # CONFIGURAÇÃO - ALTERE PARA SEU DOMÍNIO
     # =====================================================
-    API_URL = "https://seudominio.com/api/bot-api.php"  # ALTERE AQUI!
+    API_URL = "https://gldconnect.com/api/bot-api.php"
     API_SECRET = "dlg_bot_2024_Xk9mP2nQ7rT3wY5zB8cD4fG6hJ"  # Mesma do config.php
     
     _instance: Optional['DLGApiClient'] = None
