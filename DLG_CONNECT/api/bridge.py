@@ -168,6 +168,69 @@ class Backend(QObject):
         else:
             self.loginError.emit(error_message, error_code)
     
+    @Slot(result=bool)
+    def hasSavedSession(self) -> bool:
+        """Verifica se tem sessão salva localmente"""
+        return api.has_saved_session()
+    
+    @Slot(result=str)
+    def getSavedSessionEmail(self) -> str:
+        """Retorna email da sessão salva"""
+        return api.get_saved_session_email() or ""
+    
+    @Slot()
+    def verifySession(self):
+        """
+        Verifica sessão salva localmente sem precisar de senha.
+        Emite os mesmos sinais que o login normal.
+        """
+        self.loading = True
+        
+        result = api.verify_session()
+        
+        self.loading = False
+        
+        # Se não tinha sessão
+        if not result.get("has_session"):
+            return  # Não emite nada, apenas deixa na tela de login
+        
+        if result.get("success") and result.get("access"):
+            # Sessão válida - login automático
+            self.loginSuccess.emit(json.dumps({
+                "user": result.get("user"),
+                "license": api.license,
+                "trial": api.trial,
+                "accessType": api.get_access_type()
+            }))
+            return
+        
+        # Trata os diferentes tipos de erro
+        error_code = result.get("code", "UNKNOWN")
+        error_message = result.get("error", "Sessão expirada")
+        
+        if error_code == "MAINTENANCE":
+            self.maintenanceMode.emit(error_message)
+        elif error_code == "BANNED":
+            self.userBanned.emit(result.get("ban_reason", error_message))
+        elif error_code == "DEVICE_LIMIT":
+            self.deviceLimitReached.emit(json.dumps({
+                "active_count": result.get("activeDevices", 0),
+                "max_allowed": result.get("maxDevices", 1),
+                "error": error_message
+            }))
+        elif error_code == "NO_LICENSE":
+            self.noLicense.emit(json.dumps({
+                "can_use_trial": result.get("canUseTrial", False),
+                "trial_days": result.get("trialDays", 3),
+                "message": error_message
+            }))
+        # Para outros erros, não emite nada - deixa na tela de login
+    
+    @Slot()
+    def clearLocalSession(self):
+        """Limpa sessão local sem chamar o servidor"""
+        api.clear_local_session()
+    
     @Slot()
     def logout(self):
         """Faz logout"""
