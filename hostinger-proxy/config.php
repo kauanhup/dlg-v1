@@ -32,6 +32,12 @@ define('BOT_API_SECRET', 'dlg_bot_2024_Xk9mP2nQ7rT3wY5zB8cD4fG6hJ');
 define('ASAAS_API_KEY', 'COLE_AQUI_SUA_API_KEY_ASAAS');
 
 // =====================================================
+// reCAPTCHA - Proteção anti-bot
+// =====================================================
+// Busca automaticamente do Supabase gateway_settings
+// Não precisa configurar aqui - configurado no painel admin
+
+// =====================================================
 // CONFIGURAÇÕES DO TRIAL
 // =====================================================
 define('TRIAL_DURATION_HOURS', 24);

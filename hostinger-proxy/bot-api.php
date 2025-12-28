@@ -105,6 +105,84 @@ function logActivity($userId, $action, $details = [], $deviceId = null) {
 }
 
 // =====================================================
+// reCAPTCHA FUNCTIONS
+// =====================================================
+
+function getRecaptchaSettings() {
+    $result = supabaseRequest('gateway_settings', 'GET', null, [
+        'provider' => 'eq.asaas',
+        'select' => 'recaptcha_enabled,recaptcha_site_key,recaptcha_secret_key'
+    ]);
+    
+    $settings = $result['data'][0] ?? null;
+    
+    return [
+        'enabled' => $settings['recaptcha_enabled'] ?? false,
+        'siteKey' => $settings['recaptcha_site_key'] ?? '',
+        'secretKey' => $settings['recaptcha_secret_key'] ?? ''
+    ];
+}
+
+function verifyRecaptcha($token, $secretKey) {
+    if (empty($token)) {
+        return ['success' => false, 'error' => 'Token não fornecido'];
+    }
+    
+    if (empty($secretKey)) {
+        return ['success' => false, 'error' => 'Secret key não configurada'];
+    }
+    
+    $url = 'https://www.google.com/recaptcha/api/siteverify';
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+        'secret' => $secretKey,
+        'response' => $token,
+        'remoteip' => getClientIP()
+    ]));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode !== 200) {
+        return ['success' => false, 'error' => 'Erro ao verificar reCAPTCHA'];
+    }
+    
+    $result = json_decode($response, true);
+    
+    if ($result['success']) {
+        return [
+            'success' => true,
+            'score' => $result['score'] ?? 1.0,
+            'action' => $result['action'] ?? '',
+            'hostname' => $result['hostname'] ?? ''
+        ];
+    }
+    
+    $errorCodes = $result['error-codes'] ?? [];
+    return [
+        'success' => false,
+        'error' => 'Verificação falhou: ' . implode(', ', $errorCodes)
+    ];
+}
+
+function actionGetRecaptchaSettings() {
+    $settings = getRecaptchaSettings();
+    
+    jsonResponse([
+        'success' => true,
+        'enabled' => $settings['enabled'],
+        'siteKey' => $settings['siteKey']
+        // Não retorna secretKey por segurança
+    ]);
+}
+
+// =====================================================
 // ACTIONS
 // =====================================================
 
@@ -238,6 +316,7 @@ function actionFullLoginCheck($request) {
     $deviceName = $request['device_name'] ?? null;
     $deviceOs = $request['device_os'] ?? null;
     $machineId = $request['machine_id'] ?? null;
+    $recaptchaToken = $request['recaptcha_token'] ?? null;
     
     if (!$email || !$password) {
         jsonResponse(['success' => false, 'error' => 'Email e senha são obrigatórios'], 400);
@@ -245,6 +324,29 @@ function actionFullLoginCheck($request) {
     
     if (!$deviceFingerprint) {
         jsonResponse(['success' => false, 'error' => 'device_fingerprint é obrigatório'], 400);
+    }
+    
+    // 0. Verificar reCAPTCHA (se habilitado)
+    $recaptchaSettings = getRecaptchaSettings();
+    
+    if ($recaptchaSettings['enabled']) {
+        if (empty($recaptchaToken)) {
+            jsonResponse([
+                'success' => false,
+                'error' => 'Verificação reCAPTCHA necessária',
+                'code' => 'RECAPTCHA_REQUIRED'
+            ], 400);
+        }
+        
+        $recaptchaResult = verifyRecaptcha($recaptchaToken, $recaptchaSettings['secretKey']);
+        
+        if (!$recaptchaResult['success']) {
+            jsonResponse([
+                'success' => false,
+                'error' => $recaptchaResult['error'] ?? 'Verificação reCAPTCHA falhou',
+                'code' => 'RECAPTCHA_FAILED'
+            ], 400);
+        }
     }
     
     // 1. Verificar manutenção
@@ -660,8 +762,8 @@ if (!$action) {
     jsonResponse(['success' => false, 'error' => 'Action não especificada'], 400);
 }
 
-// Validar API key (exceto para login básico que usa credenciais)
-if (!in_array($action, ['login'])) {
+// Validar API key (exceto para ações públicas)
+if (!in_array($action, ['login', 'get_recaptcha_settings'])) {
     validateApiKey($input);
 }
 
@@ -669,6 +771,10 @@ if (!in_array($action, ['login'])) {
 switch ($action) {
     case 'login':
         actionLogin($input);
+        break;
+    
+    case 'get_recaptcha_settings':
+        actionGetRecaptchaSettings();
         break;
         
     case 'check_license':

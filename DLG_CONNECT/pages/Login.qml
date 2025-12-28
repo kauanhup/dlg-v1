@@ -814,9 +814,14 @@ Rectangle {
                                     }
                                     
                                     // Verifica se backend existe
-                                    if (!root.backend) {
-                                        root.errorMessage = "Erro interno: backend não disponível"
-                                        console.log("ERRO: root.backend é null/undefined")
+                                    if (root.backend === null || root.backend === undefined) {
+                                        root.errorMessage = "Aguarde, carregando..."
+                                        // Tenta novamente após um delay
+                                        Qt.callLater(function() {
+                                            if (root.backend !== null && root.backend !== undefined) {
+                                                root.errorMessage = ""
+                                            }
+                                        })
                                         return
                                     }
                                     
