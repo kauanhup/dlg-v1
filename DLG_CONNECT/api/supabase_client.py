@@ -1,28 +1,31 @@
 """
-DLG Connect - Supabase Client
-Módulo de conexão com o banco de dados Lovable Cloud (Supabase)
+DLG Connect - API Client
+Módulo de conexão com a API PHP hospedada na Hostinger
 """
 
-from supabase import create_client, Client
-from typing import Optional, Dict, Any, List
-import os
+import requests
 import platform
 import uuid
 import socket
+import hashlib
+from typing import Optional, Dict, Any, List
 
 
-class SupabaseClient:
-    """Cliente Supabase para o DLG Connect"""
+class DLGApiClient:
+    """Cliente para a API PHP do DLG Connect (Hostinger)"""
     
-    # Configuração do Lovable Cloud (Supabase)
-    SUPABASE_URL = "https://nydtfckvvslkbyolipsf.supabase.co"
-    SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55ZHRmY2t2dnNsa2J5b2xpcHNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3OTMyNDMsImV4cCI6MjA4MTM2OTI0M30.1vHOv48yxJNkyjodlWA3l94mDVDMRwVa97a-0R_U4uI"
+    # =====================================================
+    # CONFIGURAÇÃO - ALTERE PARA SEU DOMÍNIO
+    # =====================================================
+    API_URL = "https://seudominio.com/api/bot-api.php"  # ALTERE AQUI!
+    API_SECRET = "dlg_bot_2024_Xk9mP2nQ7rT3wY5zB8cD4fG6hJ"  # Mesma do config.php
     
-    _instance: Optional['SupabaseClient'] = None
-    _client: Optional[Client] = None
+    _instance: Optional['DLGApiClient'] = None
     _current_user: Optional[Dict[str, Any]] = None
-    _session: Optional[Dict[str, Any]] = None
-    _device_id: Optional[str] = None
+    _access_token: Optional[str] = None
+    _device_fingerprint: Optional[str] = None
+    _license_info: Optional[Dict[str, Any]] = None
+    _trial_info: Optional[Dict[str, Any]] = None
     
     def __new__(cls):
         """Singleton pattern para garantir uma única instância"""
@@ -31,14 +34,10 @@ class SupabaseClient:
         return cls._instance
     
     def __init__(self):
-        if self._client is None:
-            self._client = create_client(self.SUPABASE_URL, self.SUPABASE_ANON_KEY)
-            self._device_id = self._generate_device_id()
+        if self._device_fingerprint is None:
+            self._device_fingerprint = self._generate_device_fingerprint()
     
-    @property
-    def client(self) -> Client:
-        """Retorna o cliente Supabase"""
-        return self._client
+    # ========== PROPRIEDADES ==========
     
     @property
     def user(self) -> Optional[Dict[str, Any]]:
@@ -51,26 +50,36 @@ class SupabaseClient:
         return self._current_user is not None
     
     @property
-    def device_id(self) -> str:
-        """Retorna o ID único do dispositivo"""
-        return self._device_id or ""
+    def device_fingerprint(self) -> str:
+        """Retorna o fingerprint único do dispositivo"""
+        return self._device_fingerprint or ""
+    
+    @property
+    def license(self) -> Optional[Dict[str, Any]]:
+        """Retorna informações da licença"""
+        return self._license_info
+    
+    @property
+    def trial(self) -> Optional[Dict[str, Any]]:
+        """Retorna informações do trial"""
+        return self._trial_info
     
     # ========== DEVICE IDENTIFICATION ==========
     
-    def _generate_device_id(self) -> str:
-        """Gera um ID único para o dispositivo baseado em hardware"""
+    def _generate_device_fingerprint(self) -> str:
+        """Gera fingerprint único do dispositivo para controle de trial"""
         try:
-            # Combina informações únicas do sistema
-            machine_id = platform.node()  # Nome do computador
-            mac = uuid.getnode()  # Endereço MAC
-            system_info = f"{platform.system()}-{platform.machine()}"
+            machine_id = platform.node()
+            mac_address = uuid.getnode()
+            processor = platform.processor()
+            system = platform.system()
+            release = platform.release()
             
-            # Cria hash único
-            unique_string = f"{machine_id}-{mac}-{system_info}"
-            device_hash = str(uuid.uuid5(uuid.NAMESPACE_DNS, unique_string))
-            return device_hash
+            fingerprint_data = f"{machine_id}-{mac_address}-{processor}-{system}-{release}"
+            fingerprint = hashlib.sha256(fingerprint_data.encode()).hexdigest()
+            
+            return fingerprint
         except Exception:
-            # Fallback para UUID aleatório (persistido localmente)
             return str(uuid.uuid4())
     
     def _get_device_info(self) -> Dict[str, Any]:
@@ -83,562 +92,266 @@ class SupabaseClient:
             ip_address = "unknown"
         
         return {
-            "device_id": self._device_id,
+            "device_fingerprint": self._device_fingerprint,
             "device_name": platform.node(),
             "device_os": f"{platform.system()} {platform.release()}",
+            "machine_id": platform.node(),
             "ip_address": ip_address
         }
+    
+    # ========== API COMMUNICATION ==========
+    
+    def _api_request(self, action: str, data: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Faz uma requisição para a API PHP
+        """
+        payload = {
+            "action": action,
+            "api_key": self.API_SECRET,
+            **(data or {})
+        }
+        
+        try:
+            response = requests.post(
+                self.API_URL,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=30
+            )
+            
+            result = response.json()
+            
+            # Adiciona status code ao resultado
+            result["_status_code"] = response.status_code
+            
+            return result
+            
+        except requests.exceptions.Timeout:
+            return {"success": False, "error": "Timeout na conexão com o servidor"}
+        except requests.exceptions.ConnectionError:
+            return {"success": False, "error": "Erro de conexão. Verifique sua internet."}
+        except Exception as e:
+            return {"success": False, "error": f"Erro: {str(e)}"}
     
     # ========== AUTENTICAÇÃO ==========
     
     def login(self, email: str, password: str) -> Dict[str, Any]:
         """
-        Faz login com email e senha
+        Login simples - apenas valida credenciais
         Retorna: {"success": bool, "user": dict | None, "error": str | None}
         """
-        try:
-            response = self._client.auth.sign_in_with_password({
-                "email": email,
-                "password": password
-            })
-            
-            self._current_user = response.user.__dict__ if response.user else None
-            self._session = response.session.__dict__ if response.session else None
-            
-            return {
-                "success": True,
-                "user": self._current_user,
-                "error": None
-            }
-        except Exception as e:
-            return {
-                "success": False,
-                "user": None,
-                "error": str(e)
-            }
+        result = self._api_request("login", {
+            "email": email,
+            "password": password
+        })
+        
+        if result.get("success"):
+            self._current_user = result.get("user")
+            self._access_token = result.get("access_token")
+        
+        return result
+    
+    def full_login(self, email: str, password: str) -> Dict[str, Any]:
+        """
+        Login completo com TODAS as verificações:
+        - Manutenção
+        - Ban
+        - Licença
+        - Trial
+        - Limite de dispositivos
+        
+        Retorna: {
+            "success": bool,
+            "user": dict,
+            "license": dict | None,
+            "trial": dict | None,
+            "canUseTrial": bool,
+            "maxDevices": int,
+            "activeDevices": int,
+            "error": str | None,
+            "code": str | None (MAINTENANCE, BANNED, NO_LICENSE, DEVICE_LIMIT, INVALID_CREDENTIALS)
+        }
+        """
+        device_info = self._get_device_info()
+        
+        result = self._api_request("full_login_check", {
+            "email": email,
+            "password": password,
+            **device_info
+        })
+        
+        if result.get("success"):
+            self._current_user = result.get("user")
+            self._access_token = result.get("access_token")
+            self._license_info = result.get("license")
+            self._trial_info = result.get("trial")
+        
+        return result
     
     def logout(self) -> Dict[str, Any]:
-        """Faz logout do usuário atual"""
-        try:
-            # Desativa a sessão do dispositivo antes de sair
-            if self._current_user:
-                self._deactivate_device_session()
-            
-            self._client.auth.sign_out()
-            self._current_user = None
-            self._session = None
-            return {"success": True, "error": None}
-        except Exception as e:
-            return {"success": False, "error": str(e)}
-    
-    # ========== PERFIL DO USUÁRIO ==========
-    
-    def get_profile(self) -> Optional[Dict[str, Any]]:
-        """Busca o perfil do usuário logado"""
+        """Faz logout e desativa sessão do dispositivo"""
         if not self._current_user:
-            return None
+            return {"success": True, "message": "Já deslogado"}
         
-        try:
-            response = self._client.table("profiles").select("*").eq(
-                "user_id", self._current_user.get("id")
-            ).single().execute()
-            return response.data
-        except Exception:
-            return None
+        result = self._api_request("logout", {
+            "user_id": self._current_user.get("id"),
+            "device_fingerprint": self._device_fingerprint
+        })
+        
+        # Limpar estado local
+        self._current_user = None
+        self._access_token = None
+        self._license_info = None
+        self._trial_info = None
+        
+        return result
     
     # ========== LICENÇA ==========
     
-    def get_license(self) -> Optional[Dict[str, Any]]:
-        """Busca a licença ativa do usuário logado"""
+    def check_license(self) -> Dict[str, Any]:
+        """
+        Verifica licença do usuário atual
+        Retorna: {"success": bool, "hasLicense": bool, "license": dict | None}
+        """
         if not self._current_user:
-            return None
+            return {"success": False, "error": "Usuário não autenticado"}
         
-        try:
-            response = self._client.table("licenses").select("*").eq(
-                "user_id", self._current_user.get("id")
-            ).eq("status", "active").single().execute()
-            return response.data
-        except Exception:
-            return None
+        result = self._api_request("check_license", {
+            "user_id": self._current_user.get("id")
+        })
+        
+        if result.get("success"):
+            self._license_info = result.get("license")
+        
+        return result
     
     def has_active_license(self) -> bool:
-        """Verifica se o usuário tem licença ativa"""
-        license_data = self.get_license()
-        return license_data is not None
+        """Verifica rapidamente se tem licença ativa"""
+        return self._license_info is not None
     
-    def is_license_valid(self) -> dict:
-        """
-        Verifica se a licença está válida (ativa E não expirada)
-        Retorna: {"valid": bool, "days_remaining": int | None, "error": str | None}
-        """
-        from datetime import datetime, timezone
-        
-        license_data = self.get_license()
-        
-        if not license_data:
-            return {
-                "valid": False,
-                "days_remaining": None,
-                "error": "Nenhuma licença encontrada"
-            }
-        
-        try:
-            end_date_str = license_data.get("end_date")
-            if not end_date_str:
-                return {
-                    "valid": False,
-                    "days_remaining": None,
-                    "error": "Data de expiração não definida"
-                }
-            
-            # Parse ISO format date
-            end_date = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
-            now = datetime.now(timezone.utc)
-            
-            if end_date < now:
-                return {
-                    "valid": False,
-                    "days_remaining": 0,
-                    "error": "Licença expirada"
-                }
-            
-            days_remaining = (end_date - now).days
-            return {
-                "valid": True,
-                "days_remaining": days_remaining,
-                "error": None
-            }
-        except Exception as e:
-            return {
-                "valid": False,
-                "days_remaining": None,
-                "error": f"Erro ao verificar licença: {str(e)}"
-            }
-    
-    def is_banned(self) -> dict:
-        """
-        Verifica se o usuário está banido
-        Retorna: {"banned": bool, "reason": str | None}
-        """
-        profile = self.get_profile()
-        
-        if not profile:
-            return {"banned": False, "reason": None}
-        
-        return {
-            "banned": profile.get("banned", False),
-            "reason": profile.get("ban_reason")
-        }
-    
-    # ========== DEVICE SESSIONS (Controle de dispositivos) ==========
-    
-    def get_active_device_count(self) -> int:
-        """Retorna quantos dispositivos ativos o usuário tem"""
-        if not self._current_user:
+    def get_license_days_remaining(self) -> int:
+        """Retorna dias restantes da licença"""
+        if not self._license_info:
             return 0
-        
-        try:
-            response = self._client.table("bot_device_sessions").select("id").eq(
-                "user_id", self._current_user.get("id")
-            ).eq("is_active", True).execute()
-            return len(response.data) if response.data else 0
-        except Exception:
-            return 0
+        return self._license_info.get("days_remaining", 0)
     
-    def get_max_devices_allowed(self) -> int:
-        """Retorna o limite de dispositivos do plano do usuário"""
-        subscription = self.get_subscription()
-        if not subscription:
-            return 1  # Padrão: 1 dispositivo
-        
-        plan = subscription.get("subscription_plans", {})
-        return plan.get("max_devices", 1) if plan else 1
+    # ========== TRIAL ==========
     
-    def can_register_device(self) -> Dict[str, Any]:
+    def check_trial(self) -> Dict[str, Any]:
         """
-        Verifica se pode registrar mais um dispositivo
-        Retorna: {"allowed": bool, "active_count": int, "max_allowed": int, "error": str | None}
+        Verifica elegibilidade/status do trial para este dispositivo
+        Retorna: {"success": bool, "trial": {"exists": bool, "eligible": bool, "active": bool, ...}}
         """
-        if not self._current_user:
-            return {
-                "allowed": False,
-                "active_count": 0,
-                "max_allowed": 0,
-                "error": "Usuário não autenticado"
-            }
+        result = self._api_request("check_trial", {
+            "device_fingerprint": self._device_fingerprint
+        })
         
-        # Verifica se o dispositivo atual já está registrado
-        try:
-            response = self._client.table("bot_device_sessions").select("id").eq(
-                "user_id", self._current_user.get("id")
-            ).eq("device_id", self._device_id).eq("is_active", True).maybeSingle().execute()
-            
-            if response.data:
-                # Dispositivo já registrado, permitir
-                return {
-                    "allowed": True,
-                    "active_count": self.get_active_device_count(),
-                    "max_allowed": self.get_max_devices_allowed(),
-                    "error": None,
-                    "already_registered": True
-                }
-        except Exception:
-            pass
+        if result.get("success"):
+            self._trial_info = result.get("trial")
         
-        active_count = self.get_active_device_count()
-        max_allowed = self.get_max_devices_allowed()
-        
-        return {
-            "allowed": active_count < max_allowed,
-            "active_count": active_count,
-            "max_allowed": max_allowed,
-            "error": None if active_count < max_allowed else f"Limite de {max_allowed} dispositivo(s) atingido",
-            "already_registered": False
-        }
+        return result
     
-    def register_device_session(self) -> Dict[str, Any]:
+    def register_trial(self) -> Dict[str, Any]:
         """
-        Registra o dispositivo atual para o usuário
-        Retorna: {"success": bool, "error": str | None}
+        Registra trial para o usuário/dispositivo atual
+        Retorna: {"success": bool, "trial": {"active": bool, "expires_at": str, ...}}
         """
         if not self._current_user:
             return {"success": False, "error": "Usuário não autenticado"}
         
         device_info = self._get_device_info()
         
-        try:
-            # Upsert - atualiza se existir, insere se não
-            response = self._client.table("bot_device_sessions").upsert({
-                "user_id": self._current_user.get("id"),
-                "device_id": device_info["device_id"],
-                "device_name": device_info["device_name"],
-                "device_os": device_info["device_os"],
-                "ip_address": device_info["ip_address"],
-                "is_active": True,
-                "last_activity_at": "now()"
-            }, on_conflict="user_id,device_id").execute()
-            
-            return {"success": True, "error": None}
-        except Exception as e:
-            return {"success": False, "error": str(e)}
-    
-    def _deactivate_device_session(self):
-        """Desativa a sessão do dispositivo atual"""
-        if not self._current_user:
-            return
+        result = self._api_request("register_trial", {
+            "user_id": self._current_user.get("id"),
+            **device_info
+        })
         
-        try:
-            self._client.table("bot_device_sessions").update({
-                "is_active": False
-            }).eq("user_id", self._current_user.get("id")).eq(
-                "device_id", self._device_id
-            ).execute()
-        except Exception:
-            pass
-    
-    def get_user_devices(self) -> List[Dict[str, Any]]:
-        """Retorna lista de dispositivos do usuário"""
-        if not self._current_user:
-            return []
+        if result.get("success"):
+            self._trial_info = result.get("trial")
         
-        try:
-            response = self._client.table("bot_device_sessions").select("*").eq(
-                "user_id", self._current_user.get("id")
-            ).order("last_activity_at", desc=True).execute()
-            return response.data or []
-        except Exception:
-            return []
+        return result
     
-    def deactivate_device(self, device_id: str) -> Dict[str, Any]:
-        """Desativa um dispositivo específico (para liberar slot)"""
-        if not self._current_user:
-            return {"success": False, "error": "Usuário não autenticado"}
-        
-        try:
-            self._client.table("bot_device_sessions").update({
-                "is_active": False
-            }).eq("user_id", self._current_user.get("id")).eq(
-                "device_id", device_id
-            ).execute()
-            return {"success": True, "error": None}
-        except Exception as e:
-            return {"success": False, "error": str(e)}
-    
-    # ========== BOT ACTIVITY LOGS ==========
-    
-    def log_activity(self, action: str, details: Dict[str, Any] = None) -> bool:
-        """
-        Registra uma atividade do bot
-        Actions: login, logout, extract_members, add_members, etc.
-        """
-        if not self._current_user:
+    def has_active_trial(self) -> bool:
+        """Verifica rapidamente se tem trial ativo"""
+        if not self._trial_info:
             return False
-        
-        device_info = self._get_device_info()
-        
-        try:
-            self._client.table("bot_activity_logs").insert({
-                "user_id": self._current_user.get("id"),
-                "device_id": device_info["device_id"],
-                "action": action,
-                "details": details or {},
-                "ip_address": device_info["ip_address"]
-            }).execute()
-            return True
-        except Exception:
+        return self._trial_info.get("active", False)
+    
+    def can_use_trial(self) -> bool:
+        """Verifica se é elegível para trial"""
+        if not self._trial_info:
+            self.check_trial()
+        return self._trial_info.get("eligible", False) if self._trial_info else False
+    
+    # ========== UTILITÁRIOS ==========
+    
+    def get_user_display_name(self) -> str:
+        """Retorna nome do usuário para exibição"""
+        if not self._current_user:
+            return "Visitante"
+        return self._current_user.get("name") or self._current_user.get("email", "Usuário")
+    
+    def get_user_avatar(self) -> str:
+        """Retorna avatar do usuário"""
+        if not self._current_user:
+            return "😀"
+        return self._current_user.get("avatar", "😀")
+    
+    def get_plan_name(self) -> str:
+        """Retorna nome do plano atual"""
+        if self._license_info:
+            return self._license_info.get("plan_name", "Sem plano")
+        if self._trial_info and self._trial_info.get("active"):
+            return "Trial"
+        return "Sem plano"
+    
+    def is_trial_expired(self) -> bool:
+        """Verifica se o trial expirou"""
+        if not self._trial_info:
             return False
+        return self._trial_info.get("expired", False)
     
-    def get_activity_logs(self, limit: int = 50) -> List[Dict[str, Any]]:
-        """Retorna os últimos logs de atividade do usuário"""
-        if not self._current_user:
-            return []
-        
-        try:
-            response = self._client.table("bot_activity_logs").select("*").eq(
-                "user_id", self._current_user.get("id")
-            ).order("created_at", desc=True).limit(limit).execute()
-            return response.data or []
-        except Exception:
-            return []
-    
-    # ========== SUBSCRIPTION ==========
-    
-    def get_subscription(self) -> Optional[Dict[str, Any]]:
-        """Busca a assinatura ativa do usuário"""
-        if not self._current_user:
-            return None
-        
-        try:
-            response = self._client.table("user_subscriptions").select(
-                "*, subscription_plans(*)"
-            ).eq(
-                "user_id", self._current_user.get("id")
-            ).eq("status", "active").single().execute()
-            return response.data
-        except Exception:
-            return None
-    
-    # ========== SESSIONS (Telegram) ==========
-    
-    def get_user_sessions(self) -> list:
-        """Busca as sessions do usuário"""
-        if not self._current_user:
-            return []
-        
-        try:
-            response = self._client.table("user_sessions").select("*").eq(
-                "user_id", self._current_user.get("id")
-            ).execute()
-            return response.data or []
-        except Exception:
-            return []
-    
-    # ========== CONFIGURAÇÕES DO SISTEMA ==========
-    
-    def get_system_setting(self, key: str) -> Optional[str]:
-        """Busca uma configuração do sistema"""
-        try:
-            response = self._client.table("system_settings").select("value").eq(
-                "key", key
-            ).single().execute()
-            return response.data.get("value") if response.data else None
-        except Exception:
-            return None
-    
-    def get_recaptcha_settings(self) -> Dict[str, Any]:
-        """Busca configurações do reCAPTCHA"""
-        try:
-            response = self._client.table("gateway_settings").select(
-                "recaptcha_enabled, recaptcha_site_key"
-            ).limit(1).single().execute()
-            
-            if response.data:
-                return {
-                    "enabled": response.data.get("recaptcha_enabled", False),
-                    "site_key": response.data.get("recaptcha_site_key", "")
-                }
-            return {"enabled": False, "site_key": ""}
-        except Exception:
-            return {"enabled": False, "site_key": ""}
-    
-    def get_bot_file(self) -> Optional[Dict[str, Any]]:
-        """Busca informações do arquivo do bot ativo"""
-        try:
-            response = self._client.table("bot_files").select("*").eq(
-                "is_active", True
-            ).single().execute()
-            return response.data
-        except Exception:
-            return None
-    
-    # ========== TRIAL (Anti-burla) ==========
-    
-    def get_device_fingerprint(self) -> str:
-        """Gera fingerprint único do dispositivo para controle de trial"""
-        try:
-            import hashlib
-            
-            # Coleta informações únicas do hardware
-            machine_id = platform.node()
-            mac_address = uuid.getnode()
-            processor = platform.processor()
-            system = platform.system()
-            release = platform.release()
-            
-            # Cria hash único combinando tudo
-            fingerprint_data = f"{machine_id}-{mac_address}-{processor}-{system}-{release}"
-            fingerprint = hashlib.sha256(fingerprint_data.encode()).hexdigest()
-            
-            return fingerprint
-        except Exception:
-            return self._device_id or str(uuid.uuid4())
-    
-    def check_trial_eligibility(self) -> Dict[str, Any]:
+    def get_access_type(self) -> str:
         """
-        Verifica se o dispositivo pode usar trial
-        Retorna: {"eligible": bool, "already_used": bool, "trial_days": int, ...}
+        Retorna tipo de acesso: 'license', 'trial', ou 'none'
         """
-        fingerprint = self.get_device_fingerprint()
-        
-        try:
-            # Verificar se já usou trial
-            response = self._client.table("trial_device_history").select("*").eq(
-                "device_fingerprint", fingerprint
-            ).maybeSingle().execute()
-            
-            if response.data:
-                return {
-                    "eligible": False,
-                    "already_used": True,
-                    "trial_started_at": response.data.get("trial_started_at"),
-                    "message": "Este dispositivo já utilizou o período de teste gratuito"
-                }
-            
-            # Buscar configurações de trial
-            trial_enabled = self.get_system_setting("trial_enabled")
-            if trial_enabled != "true":
-                return {
-                    "eligible": False,
-                    "already_used": False,
-                    "message": "Período de teste não está disponível"
-                }
-            
-            trial_days = int(self.get_system_setting("trial_duration_days") or "3")
-            max_devices = int(self.get_system_setting("trial_max_devices") or "1")
-            max_actions = int(self.get_system_setting("trial_max_actions_per_day") or "50")
-            
-            return {
-                "eligible": True,
-                "already_used": False,
-                "trial_days": trial_days,
-                "max_devices": max_devices,
-                "max_actions_per_day": max_actions
-            }
-        except Exception as e:
-            return {
-                "eligible": False,
-                "already_used": False,
-                "error": str(e)
-            }
-    
-    def register_trial(self, user_id: str = None) -> Dict[str, Any]:
-        """
-        Registra o dispositivo como tendo usado trial
-        Retorna: {"success": bool, "trial_expires_at": str, ...}
-        """
-        from datetime import datetime, timedelta
-        
-        fingerprint = self.get_device_fingerprint()
-        device_info = self._get_device_info()
-        
-        try:
-            # Verificar novamente se já usou
-            check = self.check_trial_eligibility()
-            if not check.get("eligible"):
-                return {"success": False, "error": check.get("message", "Não elegível para trial")}
-            
-            trial_days = check.get("trial_days", 3)
-            trial_expires = datetime.now() + timedelta(days=trial_days)
-            
-            # Registrar no histórico
-            self._client.table("trial_device_history").insert({
-                "device_fingerprint": fingerprint,
-                "machine_id": platform.node(),
-                "device_name": device_info["device_name"],
-                "device_os": device_info["device_os"],
-                "ip_address": device_info["ip_address"],
-                "user_id": user_id or (self._current_user.get("id") if self._current_user else None),
-                "trial_expired_at": trial_expires.isoformat()
-            }).execute()
-            
-            # Se tem usuário, criar licença trial
-            if user_id or self._current_user:
-                uid = user_id or self._current_user.get("id")
-                now = datetime.now()
-                
-                self._client.table("licenses").insert({
-                    "user_id": uid,
-                    "plan_name": "Trial",
-                    "status": "active",
-                    "start_date": now.isoformat(),
-                    "end_date": trial_expires.isoformat()
-                }).execute()
-            
-            return {
-                "success": True,
-                "trial_expires_at": trial_expires.isoformat(),
-                "duration_days": trial_days
-            }
-        except Exception as e:
-            return {"success": False, "error": str(e)}
-    
-    def get_trial_status(self) -> Dict[str, Any]:
-        """
-        Verifica o status do trial para o dispositivo atual
-        Retorna: {"active": bool, "expires_at": str, "days_remaining": int, ...}
-        """
-        from datetime import datetime, timezone
-        
-        fingerprint = self.get_device_fingerprint()
-        
-        try:
-            response = self._client.table("trial_device_history").select("*").eq(
-                "device_fingerprint", fingerprint
-            ).maybeSingle().execute()
-            
-            if not response.data:
-                return {"active": False, "used": False, "message": "Trial não iniciado"}
-            
-            trial_data = response.data
-            expires_at = trial_data.get("trial_expired_at")
-            
-            if not expires_at:
-                return {"active": False, "used": True, "message": "Trial expirado"}
-            
-            expiry_date = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
-            now = datetime.now(timezone.utc)
-            
-            if expiry_date < now:
-                return {
-                    "active": False,
-                    "used": True,
-                    "expired": True,
-                    "expired_at": expires_at,
-                    "message": "Período de teste expirado"
-                }
-            
-            days_remaining = (expiry_date - now).days
-            
-            return {
-                "active": True,
-                "used": True,
-                "expires_at": expires_at,
-                "days_remaining": days_remaining,
-                "started_at": trial_data.get("trial_started_at")
-            }
-        except Exception as e:
-            return {"active": False, "error": str(e)}
+        if self._license_info:
+            return "license"
+        if self._trial_info and self._trial_info.get("active"):
+            return "trial"
+        return "none"
 
 
-# Instância global para uso em todo o app
-supabase = SupabaseClient()
+# =====================================================
+# INSTÂNCIA GLOBAL
+# =====================================================
+api = DLGApiClient()
+
+
+# =====================================================
+# FUNÇÕES DE ATALHO (compatibilidade)
+# =====================================================
+
+def login(email: str, password: str) -> Dict[str, Any]:
+    """Atalho para login completo"""
+    return api.full_login(email, password)
+
+def logout() -> Dict[str, Any]:
+    """Atalho para logout"""
+    return api.logout()
+
+def is_authenticated() -> bool:
+    """Verifica se está autenticado"""
+    return api.is_authenticated
+
+def get_user() -> Optional[Dict[str, Any]]:
+    """Retorna usuário atual"""
+    return api.user
+
+def has_license() -> bool:
+    """Verifica se tem licença"""
+    return api.has_active_license()
+
+def has_trial() -> bool:
+    """Verifica se tem trial ativo"""
+    return api.has_active_trial()
