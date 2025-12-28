@@ -24,7 +24,7 @@ serve(async (req) => {
       const { data: settings } = await supabase
         .from("gateway_settings")
         .select("recaptcha_enabled, recaptcha_site_key")
-        .single();
+        .maybeSingle();
 
       return new Response(
         JSON.stringify({
@@ -43,7 +43,7 @@ serve(async (req) => {
       const { data: settings } = await supabase
         .from("gateway_settings")
         .select("recaptcha_secret_key, recaptcha_enabled")
-        .single();
+        .maybeSingle();
 
       if (!settings?.recaptcha_enabled) {
         return new Response(
@@ -83,7 +83,7 @@ serve(async (req) => {
 
     // ========== CHECK TRIAL ELIGIBILITY ==========
     if (action === "check_trial_eligibility") {
-      const { device_fingerprint, machine_id } = params;
+      const { device_fingerprint } = params;
 
       if (!device_fingerprint) {
         return new Response(
@@ -92,12 +92,11 @@ serve(async (req) => {
         );
       }
 
-      // Verificar se trial está habilitado
       const { data: trialEnabled } = await supabase
         .from("system_settings")
         .select("value")
         .eq("key", "trial_enabled")
-        .single();
+        .maybeSingle();
 
       if (trialEnabled?.value !== "true") {
         return new Response(
@@ -110,45 +109,35 @@ serve(async (req) => {
         );
       }
 
-      // Verificar se dispositivo já usou trial
       const { data: existingTrial } = await supabase
         .from("trial_device_history")
         .select("*")
         .eq("device_fingerprint", device_fingerprint)
-        .single();
+        .maybeSingle();
 
       if (existingTrial) {
-        console.log(`[bot-auth] Device already used trial:`, device_fingerprint);
         return new Response(
           JSON.stringify({
             success: true,
             eligible: false,
             already_used: true,
             trial_started_at: existingTrial.trial_started_at,
-            message: "Este dispositivo já utilizou o período de teste gratuito",
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Buscar configurações de trial
       const { data: trialDays } = await supabase
         .from("system_settings")
         .select("value")
         .eq("key", "trial_duration_days")
-        .single();
+        .maybeSingle();
 
       const { data: maxDevices } = await supabase
         .from("system_settings")
         .select("value")
         .eq("key", "trial_max_devices")
-        .single();
-
-      const { data: maxActions } = await supabase
-        .from("system_settings")
-        .select("value")
-        .eq("key", "trial_max_actions_per_day")
-        .single();
+        .maybeSingle();
 
       return new Response(
         JSON.stringify({
@@ -156,7 +145,6 @@ serve(async (req) => {
           eligible: true,
           trial_days: parseInt(trialDays?.value || "3"),
           max_devices: parseInt(maxDevices?.value || "1"),
-          max_actions_per_day: parseInt(maxActions?.value || "50"),
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -164,7 +152,7 @@ serve(async (req) => {
 
     // ========== REGISTER TRIAL ==========
     if (action === "register_trial") {
-      const { device_fingerprint, machine_id, device_name, device_os, ip_address, user_id } = params;
+      const { device_fingerprint, machine_id, device_name, device_os, ip_address, user_id: trialUserId } = params;
 
       if (!device_fingerprint) {
         return new Response(
@@ -173,12 +161,11 @@ serve(async (req) => {
         );
       }
 
-      // Verificar novamente se já usou trial (double-check)
       const { data: existingTrial } = await supabase
         .from("trial_device_history")
         .select("id")
         .eq("device_fingerprint", device_fingerprint)
-        .single();
+        .maybeSingle();
 
       if (existingTrial) {
         return new Response(
@@ -190,18 +177,16 @@ serve(async (req) => {
         );
       }
 
-      // Buscar duração do trial
       const { data: trialDays } = await supabase
         .from("system_settings")
         .select("value")
         .eq("key", "trial_duration_days")
-        .single();
+        .maybeSingle();
 
       const durationDays = parseInt(trialDays?.value || "3");
       const trialExpiry = new Date();
       trialExpiry.setDate(trialExpiry.getDate() + durationDays);
 
-      // Registrar trial
       const { error: insertError } = await supabase
         .from("trial_device_history")
         .insert({
@@ -210,31 +195,26 @@ serve(async (req) => {
           device_name,
           device_os,
           ip_address,
-          user_id,
+          user_id: trialUserId,
           trial_expired_at: trialExpiry.toISOString(),
         });
 
       if (insertError) {
-        console.error(`[bot-auth] Trial insert error:`, insertError);
         return new Response(
           JSON.stringify({ success: false, error: insertError.message }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Se tem user_id, criar licença trial
-      if (user_id) {
-        const now = new Date();
+      if (trialUserId) {
         await supabase.from("licenses").insert({
-          user_id,
+          user_id: trialUserId,
           plan_name: "Trial",
           status: "active",
-          start_date: now.toISOString(),
+          start_date: new Date().toISOString(),
           end_date: trialExpiry.toISOString(),
         });
       }
-
-      console.log(`[bot-auth] Trial registered for device:`, device_fingerprint);
 
       return new Response(
         JSON.stringify({
@@ -246,35 +226,373 @@ serve(async (req) => {
       );
     }
 
+    // ========== FULL LOGIN CHECK (COM EMAIL/PASSWORD) ==========
+    if (action === "full_login_check") {
+      const { email, password, device_fingerprint, device_id, device_name, device_os, ip_address, recaptcha_token } = params;
+
+      let userId = params.user_id;
+      let userEmail = email;
+      let userName = "";
+      let userAvatar = "😀";
+
+      // Se recebeu email/password, fazer autenticação primeiro
+      if (email && password) {
+        console.log(`[bot-auth] Full login with email: ${email}`);
+
+        // 1. Verificar reCAPTCHA se habilitado
+        const { data: recaptchaSettings } = await supabase
+          .from("gateway_settings")
+          .select("recaptcha_enabled, recaptcha_secret_key")
+          .maybeSingle();
+
+        if (recaptchaSettings?.recaptcha_enabled) {
+          if (!recaptcha_token) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                access: false,
+                reason: "recaptcha_required",
+                error: "Verificação reCAPTCHA necessária",
+                code: "RECAPTCHA_REQUIRED"
+              }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+
+          const verifyResponse = await fetch(
+            `https://www.google.com/recaptcha/api/siteverify`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: `secret=${recaptchaSettings.recaptcha_secret_key}&response=${recaptcha_token}`,
+            }
+          );
+          const verifyResult = await verifyResponse.json();
+          
+          if (!verifyResult.success) {
+            console.log(`[bot-auth] reCAPTCHA failed:`, verifyResult);
+            return new Response(
+              JSON.stringify({
+                success: false,
+                access: false,
+                reason: "recaptcha_failed",
+                error: "Verificação reCAPTCHA falhou",
+                code: "RECAPTCHA_FAILED"
+              }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        }
+
+        // 2. Verificar manutenção
+        const { data: maintenanceCheck } = await supabase
+          .from("system_settings")
+          .select("value")
+          .eq("key", "maintenance_mode")
+          .maybeSingle();
+
+        if (maintenanceCheck?.value === "true") {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              access: false,
+              reason: "maintenance",
+              error: "Sistema em manutenção",
+              code: "MAINTENANCE"
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // 3. Autenticar usuário
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (authError || !authData.user) {
+          console.log(`[bot-auth] Auth failed:`, authError?.message);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              access: false,
+              reason: "invalid_credentials",
+              error: "Credenciais inválidas",
+              code: "INVALID_CREDENTIALS"
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        userId = authData.user.id;
+        userEmail = authData.user.email;
+        console.log(`[bot-auth] Auth success for user: ${userId}`);
+      }
+
+      if (!userId) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            access: false,
+            reason: "invalid_request",
+            error: "Email/senha ou User ID são obrigatórios" 
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log(`[bot-auth] Full login check for user: ${userId}`);
+
+      // 4. VERIFICAR BAN e buscar profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("banned, ban_reason, banned_at, name, avatar")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (profile) {
+        userName = profile.name || "";
+        userAvatar = profile.avatar || "😀";
+      }
+
+      if (profile?.banned) {
+        console.log(`[bot-auth] User banned: ${userId}`);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            access: false,
+            reason: "banned",
+            message: "Sua conta foi suspensa",
+            ban_reason: profile.ban_reason,
+            banned_at: profile.banned_at,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // 5. BUSCAR LICENÇA ATIVA
+      const { data: licenses } = await supabase
+        .from("licenses")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .order("end_date", { ascending: false })
+        .limit(1);
+
+      const license = licenses?.[0];
+      let hasValidLicense = false;
+      let isTrial = false;
+      let planName = "";
+      let expiresAt = "";
+      let maxDevices = 1;
+      let features: string[] = [];
+      let trialEligible = false;
+
+      if (license) {
+        const now = new Date();
+        const endDate = new Date(license.end_date);
+
+        if (endDate > now) {
+          hasValidLicense = true;
+          isTrial = license.plan_name === "Trial";
+          planName = license.plan_name;
+          expiresAt = license.end_date;
+
+          const { data: subscription } = await supabase
+            .from("user_subscriptions")
+            .select("subscription_plans(max_devices, features)")
+            .eq("user_id", userId)
+            .eq("status", "active")
+            .maybeSingle();
+
+          const planData = subscription?.subscription_plans as { max_devices?: number; features?: string[] } | null;
+          maxDevices = planData?.max_devices || (isTrial ? 1 : 2);
+          features = planData?.features || [];
+        } else {
+          await supabase
+            .from("licenses")
+            .update({ status: "expired" })
+            .eq("id", license.id);
+          console.log(`[bot-auth] License auto-expired for user: ${userId}`);
+        }
+      }
+
+      // 6. SE NÃO TEM LICENÇA, VERIFICAR TRIAL
+      const deviceFp = device_fingerprint || device_id;
+      if (!hasValidLicense && deviceFp) {
+        const { data: trialHistory } = await supabase
+          .from("trial_device_history")
+          .select("*")
+          .eq("device_fingerprint", deviceFp)
+          .maybeSingle();
+
+        if (trialHistory) {
+          const expiry = new Date(trialHistory.trial_expired_at);
+          if (expiry > new Date()) {
+            hasValidLicense = true;
+            isTrial = true;
+            planName = "Trial";
+            expiresAt = trialHistory.trial_expired_at;
+
+            const { data: trialMaxDevices } = await supabase
+              .from("system_settings")
+              .select("value")
+              .eq("key", "trial_max_devices")
+              .maybeSingle();
+            maxDevices = parseInt(trialMaxDevices?.value || "1");
+          }
+        } else {
+          const { data: trialEnabled } = await supabase
+            .from("system_settings")
+            .select("value")
+            .eq("key", "trial_enabled")
+            .maybeSingle();
+          trialEligible = trialEnabled?.value === "true";
+        }
+      }
+
+      // 7. SE NÃO TEM ACESSO
+      if (!hasValidLicense) {
+        console.log(`[bot-auth] No valid license for user: ${userId}, trial_eligible: ${trialEligible}`);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            access: false,
+            reason: "no_license",
+            message: "Você não possui uma licença ativa",
+            trial_eligible: trialEligible,
+            user: {
+              id: userId,
+              email: userEmail,
+              name: userName,
+              avatar: userAvatar
+            }
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // 8. VERIFICAR LIMITE DE DISPOSITIVOS
+      const deviceIdToUse = device_id || device_fingerprint;
+      if (deviceIdToUse) {
+        const { data: activeSessions } = await supabase
+          .from("bot_device_sessions")
+          .select("id, device_id, device_name, last_activity_at")
+          .eq("user_id", userId)
+          .eq("is_active", true);
+
+        if (activeSessions) {
+          const currentDevice = activeSessions.find(s => s.device_id === deviceIdToUse);
+          
+          if (!currentDevice && activeSessions.length >= maxDevices) {
+            console.log(`[bot-auth] Device limit reached for user: ${userId} (${activeSessions.length}/${maxDevices})`);
+            return new Response(
+              JSON.stringify({
+                success: true,
+                access: false,
+                reason: "device_limit",
+                message: `Limite de ${maxDevices} dispositivo(s) atingido`,
+                max_devices: maxDevices,
+                active_devices: activeSessions.length,
+                devices: activeSessions.map(s => ({
+                  device_id: s.device_id,
+                  device_name: s.device_name,
+                  last_activity: s.last_activity_at,
+                })),
+              }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+
+          if (currentDevice) {
+            await supabase
+              .from("bot_device_sessions")
+              .update({ 
+                last_activity_at: new Date().toISOString(),
+                device_name: device_name || currentDevice.device_name,
+                device_os: device_os || null,
+                ip_address: ip_address || null,
+              })
+              .eq("id", currentDevice.id);
+          } else {
+            await supabase
+              .from("bot_device_sessions")
+              .insert({
+                user_id: userId,
+                device_id: deviceIdToUse,
+                device_name,
+                device_os,
+                ip_address,
+                is_active: true,
+              });
+          }
+        }
+      }
+
+      // 9. REGISTRAR ATIVIDADE DE LOGIN
+      await supabase.from("bot_activity_logs").insert({
+        user_id: userId,
+        action: "login",
+        device_id: deviceIdToUse || null,
+        ip_address: ip_address || null,
+        details: {
+          plan_name: planName,
+          is_trial: isTrial,
+          device_name,
+          device_os,
+        },
+      });
+
+      // 10. SUCESSO - ACESSO LIBERADO
+      console.log(`[bot-auth] Access granted for user: ${userId}, plan: ${planName}`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          access: true,
+          is_trial: isTrial,
+          plan_name: planName,
+          expires_at: expiresAt,
+          max_devices: maxDevices,
+          features,
+          user: {
+            id: userId,
+            email: userEmail,
+            name: userName,
+            avatar: userAvatar
+          }
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // ========== VALIDATE LICENSE ==========
     if (action === "validate_license") {
-      const { user_id, device_fingerprint } = params;
+      const { user_id: licenseUserId, device_fingerprint } = params;
 
-      if (!user_id) {
+      if (!licenseUserId) {
         return new Response(
           JSON.stringify({ success: false, error: "User ID obrigatório" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Buscar licença ativa
-      const { data: license } = await supabase
+      const { data: licenses } = await supabase
         .from("licenses")
         .select("*")
-        .eq("user_id", user_id)
+        .eq("user_id", licenseUserId)
         .eq("status", "active")
         .order("end_date", { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
+
+      const license = licenses?.[0];
 
       if (!license) {
-        // Verificar se pode usar trial
         if (device_fingerprint) {
           const { data: trialHistory } = await supabase
             .from("trial_device_history")
             .select("*")
             .eq("device_fingerprint", device_fingerprint)
-            .single();
+            .maybeSingle();
 
           if (trialHistory) {
             const expiry = new Date(trialHistory.trial_expired_at);
@@ -298,7 +616,6 @@ serve(async (req) => {
             success: true,
             valid: false,
             reason: "no_license",
-            message: "Nenhuma licença ativa encontrada",
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
@@ -308,7 +625,6 @@ serve(async (req) => {
       const endDate = new Date(license.end_date);
 
       if (endDate < now) {
-        // Expirar licença
         await supabase
           .from("licenses")
           .update({ status: "expired" })
@@ -319,24 +635,20 @@ serve(async (req) => {
             success: true,
             valid: false,
             reason: "expired",
-            message: "Sua licença expirou",
             expired_at: license.end_date,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Buscar max_devices do plano
       const { data: subscription } = await supabase
         .from("user_subscriptions")
         .select("plan_id, subscription_plans(max_devices, features)")
-        .eq("user_id", user_id)
+        .eq("user_id", licenseUserId)
         .eq("status", "active")
-        .single();
+        .maybeSingle();
 
       const planData = subscription?.subscription_plans as { max_devices?: number; features?: string[] } | null;
-      const maxDevices = planData?.max_devices || 1;
-      const features = planData?.features || [];
 
       return new Response(
         JSON.stringify({
@@ -345,261 +657,34 @@ serve(async (req) => {
           is_trial: license.plan_name === "Trial",
           plan_name: license.plan_name,
           expires_at: license.end_date,
-          max_devices: maxDevices,
-          features,
+          max_devices: planData?.max_devices || 1,
+          features: planData?.features || [],
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // ========== FULL LOGIN CHECK (COMPLETO) ==========
-    if (action === "full_login_check") {
-      const { user_id, device_fingerprint, device_id, device_name, device_os, ip_address } = params;
+    // ========== LOGOUT ==========
+    if (action === "logout") {
+      const { user_id: logoutUserId, device_fingerprint, device_id } = params;
+      const deviceToLogout = device_id || device_fingerprint;
 
-      if (!user_id) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            access: false,
-            reason: "invalid_request",
-            error: "User ID obrigatório" 
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      console.log(`[bot-auth] Full login check for user: ${user_id}`);
-
-      // 1. VERIFICAR BAN
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("banned, ban_reason, banned_at")
-        .eq("user_id", user_id)
-        .single();
-
-      if (profile?.banned) {
-        console.log(`[bot-auth] User banned: ${user_id}`);
-        return new Response(
-          JSON.stringify({
-            success: true,
-            access: false,
-            reason: "banned",
-            message: "Sua conta foi suspensa",
-            ban_reason: profile.ban_reason,
-            banned_at: profile.banned_at,
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // 2. VERIFICAR MODO MANUTENÇÃO
-      const { data: maintenanceMode } = await supabase
-        .from("system_settings")
-        .select("value")
-        .eq("key", "maintenanceMode")
-        .single();
-
-      if (maintenanceMode?.value === "true") {
-        console.log(`[bot-auth] System in maintenance mode`);
-        return new Response(
-          JSON.stringify({
-            success: true,
-            access: false,
-            reason: "maintenance",
-            message: "Sistema em manutenção. Tente novamente mais tarde.",
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // 3. BUSCAR LICENÇA ATIVA
-      const { data: license } = await supabase
-        .from("licenses")
-        .select("*")
-        .eq("user_id", user_id)
-        .eq("status", "active")
-        .order("end_date", { ascending: false })
-        .limit(1)
-        .single();
-
-      let hasValidLicense = false;
-      let isTrial = false;
-      let planName = "";
-      let expiresAt = "";
-      let maxDevices = 1;
-      let features: string[] = [];
-      let trialEligible = false;
-
-      if (license) {
-        const now = new Date();
-        const endDate = new Date(license.end_date);
-
-        if (endDate > now) {
-          // Licença válida
-          hasValidLicense = true;
-          isTrial = license.plan_name === "Trial";
-          planName = license.plan_name;
-          expiresAt = license.end_date;
-
-          // Buscar detalhes do plano
-          const { data: subscription } = await supabase
-            .from("user_subscriptions")
-            .select("subscription_plans(max_devices, features)")
-            .eq("user_id", user_id)
-            .eq("status", "active")
-            .single();
-
-          const planData = subscription?.subscription_plans as { max_devices?: number; features?: string[] } | null;
-          maxDevices = planData?.max_devices || (isTrial ? 1 : 2);
-          features = planData?.features || [];
-        } else {
-          // Expirar licença automaticamente
-          await supabase
-            .from("licenses")
-            .update({ status: "expired" })
-            .eq("id", license.id);
-          console.log(`[bot-auth] License auto-expired for user: ${user_id}`);
-        }
-      }
-
-      // 4. SE NÃO TEM LICENÇA, VERIFICAR TRIAL (APENAS VERIFICA, NÃO REGISTRA)
-      if (!hasValidLicense && device_fingerprint) {
-        // Verificar trial ativo existente
-        const { data: trialHistory } = await supabase
-          .from("trial_device_history")
-          .select("*")
-          .eq("device_fingerprint", device_fingerprint)
-          .single();
-
-        if (trialHistory) {
-          const expiry = new Date(trialHistory.trial_expired_at);
-          if (expiry > new Date()) {
-            // Trial ainda válido
-            hasValidLicense = true;
-            isTrial = true;
-            planName = "Trial";
-            expiresAt = trialHistory.trial_expired_at;
-
-            // Buscar limites do trial
-            const { data: trialMaxDevices } = await supabase
-              .from("system_settings")
-              .select("value")
-              .eq("key", "trial_max_devices")
-              .single();
-            maxDevices = parseInt(trialMaxDevices?.value || "1");
-          }
-          // Se trial expirou, trialEligible fica false (já usou)
-        } else {
-          // Verificar se pode iniciar trial
-          const { data: trialEnabled } = await supabase
-            .from("system_settings")
-            .select("value")
-            .eq("key", "trial_enabled")
-            .single();
-
-          trialEligible = trialEnabled?.value === "true";
-        }
-      }
-
-      // 5. SE NÃO TEM ACESSO
-      if (!hasValidLicense) {
-        console.log(`[bot-auth] No valid license for user: ${user_id}, trial_eligible: ${trialEligible}`);
-        return new Response(
-          JSON.stringify({
-            success: true,
-            access: false,
-            reason: "no_license",
-            message: "Você não possui uma licença ativa",
-            trial_eligible: trialEligible,
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // 6. VERIFICAR LIMITE DE DISPOSITIVOS
-      if (device_id) {
-        const { data: activeSessions, error: sessionsError } = await supabase
+      if (logoutUserId && deviceToLogout) {
+        await supabase
           .from("bot_device_sessions")
-          .select("id, device_id, device_name, last_activity_at")
-          .eq("user_id", user_id)
-          .eq("is_active", true);
+          .update({ is_active: false })
+          .eq("user_id", logoutUserId)
+          .eq("device_id", deviceToLogout);
 
-        if (!sessionsError && activeSessions) {
-          // Verificar se dispositivo atual já está registrado
-          const currentDevice = activeSessions.find(s => s.device_id === device_id);
-          
-          if (!currentDevice && activeSessions.length >= maxDevices) {
-            console.log(`[bot-auth] Device limit reached for user: ${user_id} (${activeSessions.length}/${maxDevices})`);
-            return new Response(
-              JSON.stringify({
-                success: true,
-                access: false,
-                reason: "device_limit",
-                message: `Limite de ${maxDevices} dispositivo(s) atingido`,
-                max_devices: maxDevices,
-                active_devices: activeSessions.length,
-                devices: activeSessions.map(s => ({
-                  device_id: s.device_id,
-                  device_name: s.device_name,
-                  last_activity: s.last_activity_at,
-                })),
-              }),
-              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-          }
-
-          // Registrar/atualizar sessão do dispositivo
-          if (currentDevice) {
-            await supabase
-              .from("bot_device_sessions")
-              .update({ 
-                last_activity_at: new Date().toISOString(),
-                device_name: device_name || currentDevice.device_name,
-                device_os: device_os || null,
-                ip_address: ip_address || null,
-              })
-              .eq("id", currentDevice.id);
-          } else {
-            await supabase
-              .from("bot_device_sessions")
-              .insert({
-                user_id,
-                device_id,
-                device_name,
-                device_os,
-                ip_address,
-                is_active: true,
-              });
-          }
-        }
+        await supabase.from("bot_activity_logs").insert({
+          user_id: logoutUserId,
+          action: "logout",
+          device_id: deviceToLogout,
+        });
       }
 
-      // 7. REGISTRAR ATIVIDADE DE LOGIN
-      await supabase.from("bot_activity_logs").insert({
-        user_id,
-        action: "login",
-        device_id: device_id || null,
-        ip_address: ip_address || null,
-        details: {
-          plan_name: planName,
-          is_trial: isTrial,
-          device_name,
-          device_os,
-        },
-      });
-
-      // 8. SUCESSO - ACESSO LIBERADO
-      console.log(`[bot-auth] Access granted for user: ${user_id}, plan: ${planName}`);
       return new Response(
-        JSON.stringify({
-          success: true,
-          access: true,
-          is_trial: isTrial,
-          plan_name: planName,
-          expires_at: expiresAt,
-          max_devices: maxDevices,
-          features,
-        }),
+        JSON.stringify({ success: true, message: "Logout realizado" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
