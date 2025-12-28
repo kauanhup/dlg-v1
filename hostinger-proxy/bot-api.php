@@ -762,8 +762,11 @@ if (!$action) {
     jsonResponse(['success' => false, 'error' => 'Action não especificada'], 400);
 }
 
+// Ações públicas (não requerem API key)
+$publicActions = ['login', 'get_recaptcha_settings', 'full_login_check'];
+
 // Validar API key (exceto para ações públicas)
-if (!in_array($action, ['login', 'get_recaptcha_settings'])) {
+if (!in_array($action, $publicActions)) {
     validateApiKey($input);
 }
 
