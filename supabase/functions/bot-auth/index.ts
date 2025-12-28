@@ -673,6 +673,272 @@ serve(async (req) => {
       );
     }
 
+    // ========== VERIFY SESSION (Auto-login sem senha) ==========
+    if (action === "verify_session") {
+      const { user_id: sessionUserId, device_fingerprint, device_id, device_name, device_os, ip_address } = params;
+
+      if (!sessionUserId) {
+        return new Response(
+          JSON.stringify({ success: false, error: "User ID obrigatório" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log(`[bot-auth] Verify session for user: ${sessionUserId}`);
+
+      // 1. Verificar manutenção
+      const { data: maintenanceCheck } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "maintenance_mode")
+        .maybeSingle();
+
+      if (maintenanceCheck?.value === "true") {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            access: false,
+            reason: "maintenance",
+            should_clear_session: false,
+            error: "Sistema em manutenção",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // 2. Verificar se usuário existe e buscar profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("banned, ban_reason, banned_at, name, avatar, email")
+        .eq("user_id", sessionUserId)
+        .maybeSingle();
+
+      if (!profile) {
+        console.log(`[bot-auth] User not found: ${sessionUserId}`);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            access: false,
+            reason: "user_not_found",
+            should_clear_session: true,
+            error: "Usuário não encontrado",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // 3. Verificar ban
+      if (profile.banned) {
+        console.log(`[bot-auth] User banned: ${sessionUserId}`);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            access: false,
+            reason: "banned",
+            should_clear_session: true,
+            ban_reason: profile.ban_reason,
+            banned_at: profile.banned_at,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // 4. Verificar licença
+      const { data: licenses } = await supabase
+        .from("licenses")
+        .select("*")
+        .eq("user_id", sessionUserId)
+        .eq("status", "active")
+        .order("end_date", { ascending: false })
+        .limit(1);
+
+      const license = licenses?.[0];
+      let hasValidLicense = false;
+      let isTrial = false;
+      let planName = "";
+      let expiresAt = "";
+      let maxDevices = 1;
+      let features: string[] = [];
+      let trialEligible = false;
+
+      if (license) {
+        const now = new Date();
+        const endDate = new Date(license.end_date);
+
+        if (endDate > now) {
+          hasValidLicense = true;
+          isTrial = license.plan_name === "Trial";
+          planName = license.plan_name;
+          expiresAt = license.end_date;
+
+          const { data: subscription } = await supabase
+            .from("user_subscriptions")
+            .select("subscription_plans(max_devices, features)")
+            .eq("user_id", sessionUserId)
+            .eq("status", "active")
+            .maybeSingle();
+
+          const planData = subscription?.subscription_plans as { max_devices?: number; features?: string[] } | null;
+          maxDevices = planData?.max_devices || (isTrial ? 1 : 2);
+          features = planData?.features || [];
+        } else {
+          await supabase
+            .from("licenses")
+            .update({ status: "expired" })
+            .eq("id", license.id);
+          console.log(`[bot-auth] License auto-expired for user: ${sessionUserId}`);
+        }
+      }
+
+      // 5. Se não tem licença, verificar trial por device
+      const deviceFp = device_fingerprint || device_id;
+      if (!hasValidLicense && deviceFp) {
+        const { data: trialHistory } = await supabase
+          .from("trial_device_history")
+          .select("*")
+          .eq("device_fingerprint", deviceFp)
+          .maybeSingle();
+
+        if (trialHistory) {
+          const expiry = new Date(trialHistory.trial_expired_at);
+          if (expiry > new Date()) {
+            hasValidLicense = true;
+            isTrial = true;
+            planName = "Trial";
+            expiresAt = trialHistory.trial_expired_at;
+
+            const { data: trialMaxDevices } = await supabase
+              .from("system_settings")
+              .select("value")
+              .eq("key", "trial_max_devices")
+              .maybeSingle();
+            maxDevices = parseInt(trialMaxDevices?.value || "1");
+          }
+        } else {
+          const { data: trialEnabled } = await supabase
+            .from("system_settings")
+            .select("value")
+            .eq("key", "trial_enabled")
+            .maybeSingle();
+          trialEligible = trialEnabled?.value === "true";
+        }
+      }
+
+      // 6. Se não tem licença válida
+      if (!hasValidLicense) {
+        console.log(`[bot-auth] Session verify: no license for user: ${sessionUserId}`);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            access: false,
+            reason: "no_license",
+            should_clear_session: true,
+            trial_eligible: trialEligible,
+            user: {
+              id: sessionUserId,
+              email: profile.email,
+              name: profile.name,
+              avatar: profile.avatar
+            }
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // 7. Verificar limite de dispositivos
+      const deviceIdToUse = device_id || device_fingerprint;
+      if (deviceIdToUse) {
+        const { data: activeSessions } = await supabase
+          .from("bot_device_sessions")
+          .select("id, device_id, device_name, last_activity_at")
+          .eq("user_id", sessionUserId)
+          .eq("is_active", true);
+
+        if (activeSessions) {
+          const currentDevice = activeSessions.find(s => s.device_id === deviceIdToUse);
+          
+          if (!currentDevice && activeSessions.length >= maxDevices) {
+            console.log(`[bot-auth] Session verify: device limit for user: ${sessionUserId}`);
+            return new Response(
+              JSON.stringify({
+                success: true,
+                access: false,
+                reason: "device_limit",
+                should_clear_session: false,
+                max_devices: maxDevices,
+                active_devices: activeSessions.length,
+                devices: activeSessions.map(s => ({
+                  device_id: s.device_id,
+                  device_name: s.device_name,
+                  last_activity: s.last_activity_at,
+                })),
+              }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+
+          // Atualizar ou criar sessão do dispositivo
+          if (currentDevice) {
+            await supabase
+              .from("bot_device_sessions")
+              .update({ 
+                last_activity_at: new Date().toISOString(),
+                device_name: device_name || currentDevice.device_name,
+                device_os: device_os || null,
+                ip_address: ip_address || null,
+              })
+              .eq("id", currentDevice.id);
+          } else {
+            await supabase
+              .from("bot_device_sessions")
+              .insert({
+                user_id: sessionUserId,
+                device_id: deviceIdToUse,
+                device_name,
+                device_os,
+                ip_address,
+                is_active: true,
+              });
+          }
+        }
+      }
+
+      // 8. Registrar atividade de auto-login
+      await supabase.from("bot_activity_logs").insert({
+        user_id: sessionUserId,
+        action: "auto_login",
+        device_id: deviceIdToUse || null,
+        ip_address: ip_address || null,
+        details: {
+          plan_name: planName,
+          is_trial: isTrial,
+          device_name,
+          device_os,
+        },
+      });
+
+      // 9. Sucesso - sessão válida
+      console.log(`[bot-auth] Session verified for user: ${sessionUserId}, plan: ${planName}`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          access: true,
+          is_trial: isTrial,
+          plan_name: planName,
+          expires_at: expiresAt,
+          max_devices: maxDevices,
+          features,
+          user: {
+            id: sessionUserId,
+            email: profile.email,
+            name: profile.name,
+            avatar: profile.avatar
+          }
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // ========== LOGOUT ==========
     if (action === "logout") {
       const { user_id: logoutUserId, device_fingerprint, device_id } = params;

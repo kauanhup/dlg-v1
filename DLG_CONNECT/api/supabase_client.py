@@ -11,6 +11,8 @@ import hashlib
 import os
 from typing import Optional, Dict, Any, List
 
+from .session_manager import session_manager
+
 
 class DLGApiClient:
     """Cliente para a API do DLG Connect (Lovable Cloud Edge Function)"""
@@ -284,18 +286,145 @@ class DLGApiClient:
                 "is_trial": result.get("is_trial", False),
                 "expires_at": result.get("expires_at")
             } if result.get("is_trial") else None
+            
+            # SALVAR SESSÃO LOCALMENTE para auto-login futuro
+            user = result.get("user", {})
+            session_manager.save_session(
+                user_id=user.get("id", ""),
+                email=user.get("email", ""),
+                name=user.get("name", ""),
+                avatar=user.get("avatar", ""),
+                device_fingerprint=self._device_fingerprint,
+                plan_name=result.get("plan_name", ""),
+                expires_at=result.get("expires_at", ""),
+                is_trial=result.get("is_trial", False)
+            )
         
         return result
     
+    def verify_session(self) -> Dict[str, Any]:
+        """
+        Verifica sessão salva localmente sem precisar de senha.
+        Usado para auto-login quando o bot abre.
+        
+        Retorna:
+            - Se sessão válida: mesmo formato do full_login com access=True
+            - Se inválida: {"success": False, "should_clear_session": True/False, ...}
+        """
+        # Verificar se tem sessão salva
+        if not session_manager.has_session():
+            return {
+                "success": False,
+                "has_session": False,
+                "error": "Nenhuma sessão salva"
+            }
+        
+        saved_session = session_manager.get_session()
+        user_id = saved_session.get("user_id")
+        
+        # Verificar integridade da sessão (mesmo dispositivo)
+        if not session_manager.verify_integrity(self._device_fingerprint):
+            session_manager.clear_session()
+            return {
+                "success": False,
+                "has_session": False,
+                "error": "Sessão inválida para este dispositivo"
+            }
+        
+        print(f"[Session] Verificando sessão para: {saved_session.get('email')}")
+        
+        # Chamar edge function para verificar no servidor
+        device_info = self._get_device_info()
+        result = self._api_request("verify_session", {
+            "user_id": user_id,
+            **device_info
+        })
+        
+        # Se deve limpar sessão local
+        if result.get("should_clear_session"):
+            print(f"[Session] Sessão expirada/inválida, limpando...")
+            session_manager.clear_session()
+        
+        # Mapear resposta para códigos
+        if not result.get("success") or not result.get("access", True):
+            reason = result.get("reason", "")
+            
+            reason_to_code = {
+                "banned": "BANNED",
+                "maintenance": "MAINTENANCE", 
+                "device_limit": "DEVICE_LIMIT",
+                "no_license": "NO_LICENSE",
+                "user_not_found": "USER_NOT_FOUND",
+            }
+            
+            code = result.get("code") or reason_to_code.get(reason, "UNKNOWN")
+            result["code"] = code
+            
+            if reason == "banned":
+                result["ban_reason"] = result.get("ban_reason") or result.get("message", "Conta suspensa")
+            
+            if reason == "device_limit":
+                result["activeDevices"] = result.get("active_devices", 0)
+                result["maxDevices"] = result.get("max_devices", 1)
+            
+            if reason == "no_license":
+                result["canUseTrial"] = result.get("trial_eligible", False)
+                result["trialDays"] = result.get("trial_days", 3)
+            
+            result["success"] = False
+        
+        # Se acesso liberado, atualizar estado local
+        if result.get("success") and result.get("access"):
+            self._current_user = result.get("user")
+            self._license_info = {
+                "plan_name": result.get("plan_name"),
+                "expires_at": result.get("expires_at"),
+                "is_trial": result.get("is_trial", False)
+            } if result.get("plan_name") else None
+            self._trial_info = {
+                "is_trial": result.get("is_trial", False),
+                "expires_at": result.get("expires_at")
+            } if result.get("is_trial") else None
+            
+            # Atualizar sessão local com dados mais recentes
+            user = result.get("user", {})
+            session_manager.save_session(
+                user_id=user.get("id", ""),
+                email=user.get("email", ""),
+                name=user.get("name", ""),
+                avatar=user.get("avatar", ""),
+                device_fingerprint=self._device_fingerprint,
+                plan_name=result.get("plan_name", ""),
+                expires_at=result.get("expires_at", ""),
+                is_trial=result.get("is_trial", False)
+            )
+        
+        result["has_session"] = True
+        return result
+    
+    def has_saved_session(self) -> bool:
+        """Verifica rapidamente se tem sessão salva localmente"""
+        return session_manager.has_session()
+    
+    def get_saved_session_email(self) -> Optional[str]:
+        """Retorna o email da sessão salva (para exibir na UI)"""
+        return session_manager.get_email()
+    
     def logout(self) -> Dict[str, Any]:
         """Faz logout e desativa sessão do dispositivo"""
-        if not self._current_user:
-            return {"success": True, "message": "Já deslogado"}
+        user_id = None
+        if self._current_user:
+            user_id = self._current_user.get("id")
+        elif session_manager.has_session():
+            user_id = session_manager.get_user_id()
         
-        result = self._api_request("logout", {
-            "user_id": self._current_user.get("id"),
-            "device_fingerprint": self._device_fingerprint
-        })
+        if user_id:
+            result = self._api_request("logout", {
+                "user_id": user_id,
+                "device_fingerprint": self._device_fingerprint
+            })
+        else:
+            result = {"success": True, "message": "Já deslogado"}
         
         # Limpar estado local
         self._current_user = None
@@ -303,7 +432,19 @@ class DLGApiClient:
         self._license_info = None
         self._trial_info = None
         
+        # Limpar sessão salva
+        session_manager.clear_session()
+        print("[Session] Logout completo - sessão local removida")
+        
         return result
+    
+    def clear_local_session(self):
+        """Limpa apenas a sessão local sem chamar o servidor"""
+        session_manager.clear_session()
+        self._current_user = None
+        self._access_token = None
+        self._license_info = None
+        self._trial_info = None
     
     # ========== LICENÇA ==========
     
