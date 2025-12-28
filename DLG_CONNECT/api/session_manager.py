@@ -31,15 +31,18 @@ class SessionManager:
         if self._initialized:
             return
             
+        self._app_data_path = self._get_app_data_path()
         self._session_path = self._get_session_path()
         self._session_data: Optional[Dict[str, Any]] = None
         self._initialized = True
         
         # Carregar sessão existente
         self._load_session()
+        
+        print(f"[Session] Pasta de dados: {self._app_data_path}")
     
-    def _get_session_path(self) -> Path:
-        """Retorna o caminho do arquivo de sessão baseado no SO"""
+    def _get_app_data_path(self) -> Path:
+        """Retorna o caminho da pasta de dados do app baseado no SO"""
         import platform
         
         system = platform.system()
@@ -52,13 +55,39 @@ class SessionManager:
             # macOS: ~/Library/Application Support/DLG Connect/
             base_path = Path.home() / "Library" / "Application Support" / self.APP_NAME
         else:
-            # Linux: ~/.dlg-connect/
+            # Linux (dev): ~/.dlg-connect/
             base_path = Path.home() / ".dlg-connect"
         
-        # Criar diretório se não existir
+        # Criar diretório principal se não existir
         base_path.mkdir(parents=True, exist_ok=True)
         
-        return base_path / self.SESSION_FILE
+        return base_path
+    
+    def _get_session_path(self) -> Path:
+        """Retorna o caminho do arquivo de sessão"""
+        return self._app_data_path / self.SESSION_FILE
+    
+    def get_app_data_path(self) -> Path:
+        """Retorna o caminho da pasta de dados do app (público)"""
+        return self._app_data_path
+    
+    def get_sessions_folder(self) -> Path:
+        """Retorna pasta para armazenar sessions do Telegram"""
+        sessions_path = self._app_data_path / "telegram_sessions"
+        sessions_path.mkdir(parents=True, exist_ok=True)
+        return sessions_path
+    
+    def get_logs_folder(self) -> Path:
+        """Retorna pasta para logs locais"""
+        logs_path = self._app_data_path / "logs"
+        logs_path.mkdir(parents=True, exist_ok=True)
+        return logs_path
+    
+    def get_cache_folder(self) -> Path:
+        """Retorna pasta para cache"""
+        cache_path = self._app_data_path / "cache"
+        cache_path.mkdir(parents=True, exist_ok=True)
+        return cache_path
     
     def _load_session(self) -> bool:
         """Carrega sessão do arquivo local"""
