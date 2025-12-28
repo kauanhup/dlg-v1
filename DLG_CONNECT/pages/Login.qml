@@ -51,7 +51,8 @@ Rectangle {
     
     // Connections com o backend
     Connections {
-        target: backend
+        target: root.backend
+        enabled: root.backend !== null
         
         function onLoginSuccess(userData) {
             console.log("Login success:", userData)
@@ -754,7 +755,7 @@ Rectangle {
                                     // Limpa erro e inicia login
                                     root.errorMessage = ""
                                     loginButton.enabled = false
-                                    backend.login(emailInput.text.trim(), passwordInput.text)
+                                    root.backend.login(emailInput.text.trim(), passwordInput.text)
                                 }
                             }
                         }
