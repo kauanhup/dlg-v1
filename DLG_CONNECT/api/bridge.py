@@ -29,6 +29,10 @@ class Backend(QObject):
     loginError = Signal(str)    # Emite mensagem de erro
     logoutSuccess = Signal()
     
+    # Ban/Device signals
+    userBanned = Signal(str)      # Emite motivo do ban
+    deviceLimitReached = Signal(str)  # Emite JSON com info de limite
+    
     # Data signals
     profileLoaded = Signal(str)      # JSON do perfil
     licenseLoaded = Signal(str)      # JSON da licença
@@ -74,28 +78,82 @@ class Backend(QObject):
             return supabase.user.get("email", "")
         return ""
     
+    @Property(str)
+    def deviceId(self) -> str:
+        """Retorna o ID único deste dispositivo"""
+        return supabase.device_id
+    
     # ========== SLOTS (QML -> Python) ==========
     
     @Slot(str, str)
     def login(self, email: str, password: str):
-        """Faz login com email e senha"""
+        """
+        Faz login com email e senha
+        Fluxo completo:
+        1. Autentica no Supabase
+        2. Verifica se usuário está banido
+        3. Verifica limite de dispositivos
+        4. Registra dispositivo
+        5. Loga atividade
+        """
         self.loading = True
         
+        # 1. Autenticação
         result = supabase.login(email, password)
         
-        self.loading = False
-        
-        if result["success"]:
-            self._user_data = result["user"]
-            self.loginSuccess.emit(json.dumps(result["user"] or {}))
-            # Carrega dados adicionais após login
-            self._loadUserData()
-        else:
+        if not result["success"]:
+            self.loading = False
             self.loginError.emit(result["error"] or "Erro desconhecido")
+            return
+        
+        self._user_data = result["user"]
+        
+        # 2. Verificar ban
+        ban_check = supabase.is_banned()
+        if ban_check["banned"]:
+            # Faz logout e emite sinal de ban
+            supabase.logout()
+            self._user_data = None
+            self.loading = False
+            self.userBanned.emit(ban_check["reason"] or "Conta suspensa")
+            return
+        
+        # 3. Verificar limite de dispositivos
+        device_check = supabase.can_register_device()
+        if not device_check["allowed"]:
+            # Faz logout e emite sinal de limite atingido
+            supabase.logout()
+            self._user_data = None
+            self.loading = False
+            self.deviceLimitReached.emit(json.dumps({
+                "active_count": device_check["active_count"],
+                "max_allowed": device_check["max_allowed"],
+                "error": device_check["error"]
+            }))
+            return
+        
+        # 4. Registrar dispositivo
+        if not device_check.get("already_registered"):
+            supabase.register_device_session()
+        
+        # 5. Logar atividade de login
+        supabase.log_activity("bot_login", {
+            "device_name": supabase._get_device_info()["device_name"],
+            "device_os": supabase._get_device_info()["device_os"]
+        })
+        
+        self.loading = False
+        self.loginSuccess.emit(json.dumps(result["user"] or {}))
+        
+        # Carrega dados adicionais após login
+        self._loadUserData()
     
     @Slot()
     def logout(self):
         """Faz logout"""
+        # Loga atividade de logout
+        supabase.log_activity("bot_logout")
+        
         result = supabase.logout()
         if result["success"]:
             self._user_data = None
@@ -193,6 +251,63 @@ class Backend(QObject):
         """Busca uma configuração do sistema"""
         value = supabase.get_system_setting(key)
         return value or ""
+    
+    # ========== DEVICE MANAGEMENT ==========
+    
+    @Slot(result=str)
+    def getDeviceInfo(self) -> str:
+        """Retorna informações do dispositivo atual"""
+        return json.dumps(supabase._get_device_info())
+    
+    @Slot(result=str)
+    def getUserDevices(self) -> str:
+        """Retorna lista de dispositivos do usuário"""
+        devices = supabase.get_user_devices()
+        return json.dumps(devices)
+    
+    @Slot(str, result=str)
+    def deactivateDevice(self, device_id: str) -> str:
+        """Desativa um dispositivo específico"""
+        result = supabase.deactivate_device(device_id)
+        return json.dumps(result)
+    
+    @Slot(result=str)
+    def getDeviceLimits(self) -> str:
+        """Retorna informações sobre limites de dispositivos"""
+        return json.dumps({
+            "active_count": supabase.get_active_device_count(),
+            "max_allowed": supabase.get_max_devices_allowed(),
+            "current_device_id": supabase.device_id
+        })
+    
+    # ========== ACTIVITY LOGGING ==========
+    
+    @Slot(str, str)
+    def logActivity(self, action: str, details_json: str = "{}"):
+        """
+        Registra uma atividade do bot
+        Chamado do QML para logar ações como extrair membros, adicionar, etc.
+        """
+        try:
+            details = json.loads(details_json) if details_json else {}
+        except Exception:
+            details = {}
+        
+        supabase.log_activity(action, details)
+    
+    @Slot(result=str)
+    def getActivityLogs(self) -> str:
+        """Retorna os últimos logs de atividade"""
+        logs = supabase.get_activity_logs()
+        return json.dumps(logs)
+    
+    # ========== RECAPTCHA ==========
+    
+    @Slot(result=str)
+    def getRecaptchaSettings(self) -> str:
+        """Retorna configurações do reCAPTCHA"""
+        settings = supabase.get_recaptcha_settings()
+        return json.dumps(settings)
     
     # ========== MÉTODOS PRIVADOS ==========
     
