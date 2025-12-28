@@ -134,7 +134,10 @@ class Backend(QObject):
         
         self.loading = False
         
-        if result.get("success"):
+        # LOG para debug
+        print(f"[Bridge] Login result: success={result.get('success')}, access={result.get('access')}, code={result.get('code')}")
+        
+        if result.get("success") and result.get("access", True):
             # Login bem-sucedido
             self.loginSuccess.emit(json.dumps({
                 "user": result.get("user"),
@@ -146,12 +149,16 @@ class Backend(QObject):
         
         # Trata os diferentes tipos de erro
         error_code = result.get("code", "UNKNOWN")
-        error_message = result.get("error", "Erro desconhecido")
+        error_message = result.get("error") or result.get("message", "Erro desconhecido")
+        
+        print(f"[Bridge] Erro no login: code={error_code}, message={error_message}")
         
         if error_code == "MAINTENANCE":
             self.maintenanceMode.emit(error_message)
         elif error_code == "BANNED":
-            self.userBanned.emit(result.get("ban_reason", error_message))
+            ban_reason = result.get("ban_reason") or result.get("message", "Conta suspensa")
+            print(f"[Bridge] Emitindo sinal userBanned: {ban_reason}")
+            self.userBanned.emit(ban_reason)
         elif error_code == "DEVICE_LIMIT":
             self.deviceLimitReached.emit(json.dumps({
                 "active_count": result.get("activeDevices", 0),

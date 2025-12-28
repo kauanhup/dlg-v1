@@ -167,6 +167,12 @@ class DLGApiClient:
             print(f"[API] Resposta: {response.status_code}")
             result = response.json()
             
+            # LOG DETALHADO para debug
+            if action in ["full_login_check", "verify_session"]:
+                print(f"[API] Resultado {action}: success={result.get('success')}, access={result.get('access')}, reason={result.get('reason')}")
+                if result.get("reason") == "banned":
+                    print(f"[API] USUÁRIO BANIDO - ban_reason: {result.get('ban_reason')}")
+            
             # Adiciona status code ao resultado
             result["_status_code"] = response.status_code
             
@@ -239,9 +245,14 @@ class DLGApiClient:
         
         # Mapear resposta da edge function para formato esperado pelo bridge
         # A edge function retorna 'reason', o bridge espera 'code'
-        if not result.get("success") or not result.get("access", True):
-            reason = result.get("reason", "")
-            
+        access = result.get("access", True)  # Default true para manter compatibilidade
+        reason = result.get("reason", "")
+        
+        # LOG para debug
+        print(f"[API] full_login_check result: success={result.get('success')}, access={access}, reason={reason}")
+        
+        # Se não tem acesso ou não teve sucesso, mapear o erro
+        if not result.get("success") or access == False:
             # Mapear reason -> code
             reason_to_code = {
                 "banned": "BANNED",
@@ -255,24 +266,24 @@ class DLGApiClient:
             
             code = result.get("code") or reason_to_code.get(reason, "UNKNOWN")
             result["code"] = code
+            result["success"] = False  # Garantir que success é False
+            
+            print(f"[API] Erro mapeado: code={code}, reason={reason}")
             
             # Mapear campos específicos de ban
-            if reason == "banned":
+            if reason == "banned" or code == "BANNED":
                 result["ban_reason"] = result.get("ban_reason") or result.get("message", "Conta suspensa")
+                print(f"[API] BANNED - ban_reason: {result.get('ban_reason')}")
             
             # Mapear campos de device limit
-            if reason == "device_limit":
+            if reason == "device_limit" or code == "DEVICE_LIMIT":
                 result["activeDevices"] = result.get("active_devices", 0)
                 result["maxDevices"] = result.get("max_devices", 1)
             
             # Mapear campos de trial
-            if reason == "no_license":
+            if reason == "no_license" or code == "NO_LICENSE":
                 result["canUseTrial"] = result.get("trial_eligible", False)
                 result["trialDays"] = result.get("trial_days", 3)
-            
-            # Garantir que success é False para erros
-            if not result.get("access", True) == False:
-                result["success"] = False
         
         if result.get("success") and result.get("access"):
             self._current_user = result.get("user")
