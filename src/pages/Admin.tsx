@@ -355,7 +355,7 @@ const SubscriptionsTabContent = () => {
     cancelPaymentAndOrder
   } = useAdminSubscriptions();
   
-  const [activeSubTab, setActiveSubTab] = useState<"subscribers" | "plans" | "payments">("subscribers");
+  const [activeSubTab, setActiveSubTab] = useState<"subscribers" | "plans" | "payments" | "trial">("subscribers");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<any>(null);
   const [planToDelete, setPlanToDelete] = useState<any>(null);
@@ -726,6 +726,18 @@ const SubscriptionsTabContent = () => {
             Planos
           </button>
           <button
+            onClick={() => setActiveSubTab("trial")}
+            className={cn(
+              "flex-1 px-2 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2",
+              activeSubTab === "trial" 
+                ? "bg-primary text-primary-foreground shadow-sm" 
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            )}
+          >
+            <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            Trial
+          </button>
+          <button
             onClick={() => setActiveSubTab("payments")}
             className={cn(
               "flex-1 px-2 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2",
@@ -1081,6 +1093,11 @@ const SubscriptionsTabContent = () => {
             </div>
           </motion.div>
         </div>
+      )}
+
+      {/* Trial Tab */}
+      {activeSubTab === "trial" && (
+        <TrialSettingsSection />
       )}
 
       {/* Payments Tab */}
@@ -1707,9 +1724,6 @@ const DashboardSection = () => {
         <h1 className="text-xl font-semibold text-foreground">Planos</h1>
         <p className="text-sm text-muted-foreground">Gerenciamento de assinaturas, planos e teste grátis</p>
       </div>
-
-      {/* Trial Settings */}
-      <TrialSettingsSection />
 
       {/* Subscriptions Content - Full Management */}
       <SubscriptionsTabContent />
