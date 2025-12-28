@@ -35,18 +35,6 @@ Rectangle {
     opacity: 0
     Component.onCompleted: {
         fadeIn.start()
-        loadRecaptchaSettings()
-    }
-    
-    function loadRecaptchaSettings() {
-        var settingsJson = backend.getRecaptchaSettings()
-        try {
-            var settings = JSON.parse(settingsJson)
-            recaptchaEnabled = settings.enabled || false
-            recaptchaSiteKey = settings.site_key || ""
-        } catch(e) {
-            console.log("Erro ao carregar reCAPTCHA:", e)
-        }
     }
     
     NumberAnimation {
@@ -63,10 +51,12 @@ Rectangle {
         target: backend
         
         function onLoginSuccess(userData) {
+            console.log("Login success:", userData)
             root.showAnimation = true
         }
         
-        function onLoginError(message) {
+        function onLoginError(message, code) {
+            console.log("Login error:", message, code)
             root.errorMessage = message
             loginButton.enabled = true
         }
@@ -87,6 +77,30 @@ Rectangle {
             } catch(e) {
                 console.log("Erro ao parsear limite:", e)
             }
+            loginButton.enabled = true
+        }
+        
+        function onMaintenanceMode(message) {
+            root.errorMessage = "🔧 Sistema em manutenção: " + message
+            loginButton.enabled = true
+        }
+        
+        function onTrialAvailable(infoJson) {
+            try {
+                var info = JSON.parse(infoJson)
+                root.isTrialEligible = true
+                root.trialDays = info.trial_days || 3
+                // Mostra modal de trial disponível ou redireciona
+                root.showAnimation = true  // Deixa entrar e mostrar opção de trial
+            } catch(e) {
+                console.log("Erro ao parsear trial:", e)
+            }
+            loginButton.enabled = true
+        }
+        
+        function onNoLicense(message) {
+            root.errorMessage = message
+            root.trialAlreadyUsed = true
             loginButton.enabled = true
         }
     }
