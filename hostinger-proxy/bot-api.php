@@ -2,7 +2,6 @@
 /**
  * BOT API - DLG Connect
  * API PHP para autenticação e verificação do bot
- * Hospedada na Hostinger - independente do Lovable Cloud
  * 
  * Actions disponíveis:
  * - login: Autenticação básica
@@ -12,6 +11,9 @@
  * - check_trial: Verificar elegibilidade de trial
  * - logout: Encerrar sessão do dispositivo
  */
+
+// Carregar configurações
+require_once __DIR__ . '/config.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -23,17 +25,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
-
-// =====================================================
-// CONFIGURAÇÃO - EDITE ESTAS VARIÁVEIS
-// =====================================================
-define('SUPABASE_URL', 'https://nydtfckvvslkbyolipsf.supabase.co');
-define('SUPABASE_SERVICE_KEY', 'SUA_SERVICE_ROLE_KEY_AQUI'); // Pegue no Supabase Dashboard
-define('API_SECRET', 'SUA_CHAVE_SECRETA_AQUI'); // Para validar requests do bot
-
-// Configurações de Trial
-define('TRIAL_DURATION_HOURS', 24);
-define('TRIAL_MAX_DEVICES', 1);
 
 // =====================================================
 // FUNÇÕES AUXILIARES
@@ -88,36 +79,10 @@ function supabaseRequest($endpoint, $method = 'GET', $body = null, $params = [])
     ];
 }
 
-function supabaseRPC($functionName, $params = []) {
-    $url = SUPABASE_URL . '/rest/v1/rpc/' . $functionName;
-    
-    $headers = [
-        'apikey: ' . SUPABASE_SERVICE_KEY,
-        'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
-        'Content-Type: application/json'
-    ];
-    
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
-    
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    
-    return [
-        'data' => json_decode($response, true),
-        'status' => $httpCode
-    ];
-}
-
 function validateApiKey($request) {
     $apiKey = $request['api_key'] ?? $_SERVER['HTTP_X_API_KEY'] ?? null;
     
-    if (!$apiKey || $apiKey !== API_SECRET) {
+    if (!$apiKey || $apiKey !== BOT_API_SECRET) {
         jsonResponse(['success' => false, 'error' => 'API key inválida'], 401);
     }
 }
