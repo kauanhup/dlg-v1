@@ -12,6 +12,7 @@ import { useAdminSessions } from "@/hooks/useAdminSessions";
 import { SessionsSection } from "@/components/admin/sessions";
 import { SystemDebugPanel } from "@/components/admin/debug";
 import { AdminDashboardSection } from "@/components/admin/dashboard";
+import { TrialSettingsSection } from "@/components/admin/trial";
 import { useAdminOrders } from "@/hooks/useAdminOrders";
 import { useAdminSubscriptions } from "@/hooks/useAdminSubscriptions";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
@@ -1704,8 +1705,11 @@ const DashboardSection = () => {
     <motion.div {...fadeIn} className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold text-foreground">Planos</h1>
-        <p className="text-sm text-muted-foreground">Gerenciamento de assinaturas e planos</p>
+        <p className="text-sm text-muted-foreground">Gerenciamento de assinaturas, planos e teste grátis</p>
       </div>
+
+      {/* Trial Settings */}
+      <TrialSettingsSection />
 
       {/* Subscriptions Content - Full Management */}
       <SubscriptionsTabContent />
