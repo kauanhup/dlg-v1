@@ -8,6 +8,9 @@ Rectangle {
     id: root
     color: Theme.background
     
+    // Backend property - injected from parent
+    property var backend: null
+    
     property int currentPage: 0
     property int pendingActionTab: -1
     
