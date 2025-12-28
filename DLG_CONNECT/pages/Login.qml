@@ -33,7 +33,7 @@ Rectangle {
     property bool showAnimation: false
     property bool showBannedModal: false
     property bool showDeviceLimitModal: false
-    property bool showTrialExpiredModal: false
+    property bool showNoLicenseModal: false
     property string banReason: ""
     property int activeDevices: 0
     property int maxDevices: 1
@@ -44,10 +44,11 @@ Rectangle {
     property string recaptchaToken: ""
     property string errorMessage: ""
     
-    // Trial properties
+    // Trial/License properties
     property bool isTrialEligible: false
     property bool trialAlreadyUsed: false
     property int trialDays: 0
+    property bool canActivateTrial: false
     
     // Simple fade in
     opacity: 0
@@ -132,9 +133,17 @@ Rectangle {
             root.isLoading = false
         }
         
-        function onNoLicense(message) {
-            root.errorMessage = message
-            root.trialAlreadyUsed = true
+        function onNoLicense(infoJson) {
+            try {
+                var info = JSON.parse(infoJson)
+                root.canActivateTrial = info.can_use_trial || false
+                root.trialDays = info.trial_days || 3
+                root.trialAlreadyUsed = !root.canActivateTrial
+            } catch(e) {
+                root.canActivateTrial = false
+                root.trialAlreadyUsed = true
+            }
+            root.showNoLicenseModal = true
             root.isLoading = false
         }
         
@@ -856,8 +865,12 @@ Rectangle {
         id: bannedModal
         visible: root.showBannedModal
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.8)
+        color: Qt.rgba(0, 0, 0, 0.85)
         z: 100
+        
+        // Fade in animation
+        opacity: visible ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
         
         MouseArea {
             anchors.fill: parent
@@ -865,134 +878,223 @@ Rectangle {
         }
         
         Rectangle {
+            id: bannedCard
             anchors.centerIn: parent
-            width: 420
-            height: bannedContent.height + 48
+            width: 440
+            height: bannedContent.height + 64
             color: Theme.card
-            border.width: 1
-            border.color: Theme.destructive
-            radius: 16
+            radius: 20
+            
+            // Glow effect
+            layer.enabled: true
+            layer.effect: Item {}
+            
+            // Gradient border effect
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: -2
+                radius: 22
+                z: -1
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: Theme.destructive }
+                    GradientStop { position: 0.5; color: Qt.lighter(Theme.destructive, 1.2) }
+                    GradientStop { position: 1.0; color: Theme.destructive }
+                }
+            }
+            
+            // Subtle inner shadow
+            Rectangle {
+                anchors.fill: parent
+                radius: 20
+                color: "transparent"
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.05)
+            }
             
             ColumnLayout {
                 id: bannedContent
                 anchors.centerIn: parent
-                width: parent.width - 48
-                spacing: 20
+                width: parent.width - 56
+                spacing: 24
                 
-                // Icon
+                // Animated icon container
                 Rectangle {
                     Layout.alignment: Qt.AlignHCenter
-                    Layout.preferredWidth: 64
-                    Layout.preferredHeight: 64
-                    radius: 32
-                    color: Qt.rgba(0.9, 0.2, 0.2, 0.15)
+                    Layout.preferredWidth: 80
+                    Layout.preferredHeight: 80
+                    radius: 40
+                    color: "transparent"
                     
-                    Icon {
+                    // Outer pulse ring
+                    Rectangle {
+                        id: pulseRing
                         anchors.centerIn: parent
-                        name: "ban"
-                        size: 32
-                        color: Theme.destructive
+                        width: 80
+                        height: 80
+                        radius: 40
+                        color: "transparent"
+                        border.width: 2
+                        border.color: Qt.rgba(0.9, 0.2, 0.2, 0.3)
+                        
+                        SequentialAnimation on scale {
+                            loops: Animation.Infinite
+                            NumberAnimation { from: 1; to: 1.2; duration: 1500; easing.type: Easing.OutCubic }
+                            NumberAnimation { from: 1.2; to: 1; duration: 1500; easing.type: Easing.InCubic }
+                        }
+                        
+                        SequentialAnimation on opacity {
+                            loops: Animation.Infinite
+                            NumberAnimation { from: 0.6; to: 0; duration: 1500 }
+                            NumberAnimation { from: 0; to: 0.6; duration: 1500 }
+                        }
+                    }
+                    
+                    // Icon background
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 72
+                        height: 72
+                        radius: 36
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: Qt.rgba(0.9, 0.2, 0.2, 0.25) }
+                            GradientStop { position: 1.0; color: Qt.rgba(0.9, 0.2, 0.2, 0.1) }
+                        }
+                        
+                        Icon {
+                            anchors.centerIn: parent
+                            name: "ban"
+                            size: 36
+                            color: Theme.destructive
+                        }
                     }
                 }
                 
-                // Title
-                Text {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: "Conta Suspensa"
-                    font.pixelSize: 22
-                    font.weight: Font.Bold
-                    color: Theme.destructive
-                }
-                
-                // Message
-                Text {
+                // Title with gradient effect
+                ColumnLayout {
                     Layout.fillWidth: true
-                    text: "Sua conta foi suspensa e você não pode acessar o sistema."
-                    font.pixelSize: 14
-                    color: Theme.mutedForeground
-                    wrapMode: Text.WordWrap
-                    horizontalAlignment: Text.AlignHCenter
+                    spacing: 8
+                    
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: "Conta Suspensa"
+                        font.pixelSize: 26
+                        font.weight: Font.Bold
+                        color: Theme.destructive
+                    }
+                    
+                    Text {
+                        Layout.fillWidth: true
+                        text: "Sua conta foi suspensa e você não pode acessar o sistema."
+                        font.pixelSize: 14
+                        color: Theme.mutedForeground
+                        wrapMode: Text.WordWrap
+                        horizontalAlignment: Text.AlignHCenter
+                        lineHeight: 1.4
+                    }
                 }
                 
-                // Reason box
+                // Reason box with modern styling
                 Rectangle {
                     visible: root.banReason !== ""
                     Layout.fillWidth: true
-                    Layout.preferredHeight: reasonText.height + 24
-                    color: Qt.rgba(0.9, 0.2, 0.2, 0.1)
+                    Layout.preferredHeight: reasonContent.height + 28
+                    radius: 12
+                    color: Qt.rgba(0.9, 0.2, 0.2, 0.08)
                     border.width: 1
-                    border.color: Qt.rgba(0.9, 0.2, 0.2, 0.3)
-                    radius: 8
+                    border.color: Qt.rgba(0.9, 0.2, 0.2, 0.25)
                     
                     ColumnLayout {
+                        id: reasonContent
                         anchors.centerIn: parent
-                        width: parent.width - 24
-                        spacing: 4
+                        width: parent.width - 28
+                        spacing: 6
                         
-                        Text {
-                            text: "Motivo:"
-                            font.pixelSize: 12
-                            font.weight: Font.Medium
-                            color: Theme.destructive
+                        RowLayout {
+                            spacing: 6
+                            
+                            Icon {
+                                name: "alertCircle"
+                                size: 14
+                                color: Theme.destructive
+                            }
+                            
+                            Text {
+                                text: "Motivo da suspensão"
+                                font.pixelSize: 12
+                                font.weight: Font.Medium
+                                color: Theme.destructive
+                            }
                         }
                         
                         Text {
                             id: reasonText
                             Layout.fillWidth: true
-                            text: root.banReason
-                            font.pixelSize: 13
+                            text: root.banReason || "Motivo não especificado"
+                            font.pixelSize: 14
                             color: Theme.foreground
                             wrapMode: Text.WordWrap
+                            lineHeight: 1.3
                         }
                     }
                 }
                 
-                // Separator
+                // Divider with gradient
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 1
-                    color: Theme.border
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: "transparent" }
+                        GradientStop { position: 0.5; color: Theme.border }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
                 }
                 
                 // Support section
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 12
+                    spacing: 14
                     
                     Text {
                         Layout.fillWidth: true
-                        text: "Entre em contato com o suporte:"
+                        text: "Precisa de ajuda? Entre em contato:"
                         font.pixelSize: 13
                         color: Theme.mutedForeground
                         horizontalAlignment: Text.AlignHCenter
                     }
                     
-                    // WhatsApp contact
+                    // WhatsApp contact card
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 52
-                        radius: 10
-                        color: whatsappMouse.containsMouse ? Qt.rgba(0.14, 0.75, 0.45, 0.2) : Qt.rgba(0.14, 0.75, 0.45, 0.1)
+                        Layout.preferredHeight: 56
+                        radius: 12
+                        color: whatsappBannedMouse.containsMouse ? Qt.rgba(0.14, 0.75, 0.45, 0.18) : Qt.rgba(0.14, 0.75, 0.45, 0.08)
                         border.width: 1
-                        border.color: Qt.rgba(0.14, 0.75, 0.45, 0.4)
+                        border.color: Qt.rgba(0.14, 0.75, 0.45, whatsappBannedMouse.containsMouse ? 0.5 : 0.3)
                         
                         Behavior on color { ColorAnimation { duration: 150 } }
+                        Behavior on border.color { ColorAnimation { duration: 150 } }
                         
                         RowLayout {
                             anchors.centerIn: parent
-                            spacing: 12
+                            spacing: 14
                             
-                            // WhatsApp icon
+                            // WhatsApp icon with glow
                             Rectangle {
-                                Layout.preferredWidth: 32
-                                Layout.preferredHeight: 32
-                                radius: 16
+                                Layout.preferredWidth: 36
+                                Layout.preferredHeight: 36
+                                radius: 18
                                 color: "#25D366"
                                 
-                                Text {
+                                // Subtle glow
+                                layer.enabled: whatsappBannedMouse.containsMouse
+                                
+                                Icon {
                                     anchors.centerIn: parent
-                                    text: "📱"
-                                    font.pixelSize: 16
+                                    name: "messageCircle"
+                                    size: 18
+                                    color: "#FFFFFF"
                                 }
                             }
                             
@@ -1001,21 +1103,29 @@ Rectangle {
                                 
                                 Text {
                                     text: "+55 65 99927-4528"
-                                    font.pixelSize: 15
+                                    font.pixelSize: 16
                                     font.weight: Font.Bold
                                     color: "#25D366"
                                 }
                                 
                                 Text {
-                                    text: "WhatsApp"
+                                    text: "Suporte via WhatsApp"
                                     font.pixelSize: 11
                                     color: Theme.mutedForeground
                                 }
                             }
+                            
+                            Icon {
+                                name: "externalLink"
+                                size: 16
+                                color: "#25D366"
+                                opacity: whatsappBannedMouse.containsMouse ? 1 : 0.5
+                                Behavior on opacity { NumberAnimation { duration: 150 } }
+                            }
                         }
                         
                         MouseArea {
-                            id: whatsappMouse
+                            id: whatsappBannedMouse
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
@@ -1027,12 +1137,14 @@ Rectangle {
                 // Close button
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 44
+                    Layout.preferredHeight: 48
                     Layout.topMargin: 4
-                    radius: 8
-                    color: closeBannedMouse.containsMouse ? Qt.lighter(Theme.muted, 1.1) : Theme.muted
+                    radius: 12
+                    color: closeBannedMouse.containsMouse ? Qt.lighter(Theme.secondary, 1.1) : Theme.secondary
                     border.width: 1
-                    border.color: Theme.border
+                    border.color: closeBannedMouse.containsMouse ? Theme.border : Qt.darker(Theme.border, 1.1)
+                    
+                    Behavior on color { ColorAnimation { duration: 150 } }
                     
                     Text {
                         anchors.centerIn: parent
@@ -1048,6 +1160,319 @@ Rectangle {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: root.showBannedModal = false
+                    }
+                }
+            }
+        }
+    }
+    
+    // ========== MODAL: SEM LICENÇA ==========
+    Rectangle {
+        id: noLicenseModal
+        visible: root.showNoLicenseModal
+        anchors.fill: parent
+        color: Qt.rgba(0, 0, 0, 0.85)
+        z: 100
+        
+        opacity: visible ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {}
+        }
+        
+        Rectangle {
+            anchors.centerIn: parent
+            width: 440
+            height: noLicenseContent.height + 64
+            color: Theme.card
+            radius: 20
+            
+            // Gradient border - warning/primary colors
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: -2
+                radius: 22
+                z: -1
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: Theme.warning }
+                    GradientStop { position: 0.5; color: Theme.primary }
+                    GradientStop { position: 1.0; color: Theme.warning }
+                }
+            }
+            
+            Rectangle {
+                anchors.fill: parent
+                radius: 20
+                color: "transparent"
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.05)
+            }
+            
+            ColumnLayout {
+                id: noLicenseContent
+                anchors.centerIn: parent
+                width: parent.width - 56
+                spacing: 24
+                
+                // Icon
+                Rectangle {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: 80
+                    Layout.preferredHeight: 80
+                    radius: 40
+                    color: "transparent"
+                    
+                    Rectangle {
+                        id: licensePulseRing
+                        anchors.centerIn: parent
+                        width: 80
+                        height: 80
+                        radius: 40
+                        color: "transparent"
+                        border.width: 2
+                        border.color: Qt.rgba(0.95, 0.6, 0.1, 0.3)
+                        
+                        SequentialAnimation on scale {
+                            loops: Animation.Infinite
+                            NumberAnimation { from: 1; to: 1.2; duration: 1500; easing.type: Easing.OutCubic }
+                            NumberAnimation { from: 1.2; to: 1; duration: 1500; easing.type: Easing.InCubic }
+                        }
+                        
+                        SequentialAnimation on opacity {
+                            loops: Animation.Infinite
+                            NumberAnimation { from: 0.6; to: 0; duration: 1500 }
+                            NumberAnimation { from: 0; to: 0.6; duration: 1500 }
+                        }
+                    }
+                    
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 72
+                        height: 72
+                        radius: 36
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: Qt.rgba(0.95, 0.6, 0.1, 0.25) }
+                            GradientStop { position: 1.0; color: Qt.rgba(0.95, 0.6, 0.1, 0.1) }
+                        }
+                        
+                        Icon {
+                            anchors.centerIn: parent
+                            name: "key"
+                            size: 36
+                            color: Theme.warning
+                        }
+                    }
+                }
+                
+                // Title
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+                    
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: "Licença Necessária"
+                        font.pixelSize: 26
+                        font.weight: Font.Bold
+                        color: Theme.warning
+                    }
+                    
+                    Text {
+                        Layout.fillWidth: true
+                        text: root.canActivateTrial 
+                            ? "Você ainda não possui uma licença ativa, mas pode ativar um período de teste gratuito!"
+                            : "Você não possui uma licença ativa e já utilizou seu período de teste."
+                        font.pixelSize: 14
+                        color: Theme.mutedForeground
+                        wrapMode: Text.WordWrap
+                        horizontalAlignment: Text.AlignHCenter
+                        lineHeight: 1.4
+                    }
+                }
+                
+                // Trial available box
+                Rectangle {
+                    visible: root.canActivateTrial
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: trialContent.height + 28
+                    radius: 12
+                    color: Qt.rgba(0.14, 0.75, 0.45, 0.08)
+                    border.width: 1
+                    border.color: Qt.rgba(0.14, 0.75, 0.45, 0.25)
+                    
+                    ColumnLayout {
+                        id: trialContent
+                        anchors.centerIn: parent
+                        width: parent.width - 28
+                        spacing: 8
+                        
+                        RowLayout {
+                            spacing: 8
+                            
+                            Icon {
+                                name: "gift"
+                                size: 18
+                                color: "#25D366"
+                            }
+                            
+                            Text {
+                                text: "Teste Gratuito Disponível"
+                                font.pixelSize: 14
+                                font.weight: Font.Bold
+                                color: "#25D366"
+                            }
+                        }
+                        
+                        Text {
+                            Layout.fillWidth: true
+                            text: "Você pode testar o DLG Connect por " + root.trialDays + " dias sem custo algum!"
+                            font.pixelSize: 13
+                            color: Theme.foreground
+                            wrapMode: Text.WordWrap
+                            lineHeight: 1.3
+                        }
+                    }
+                }
+                
+                // Already used trial box
+                Rectangle {
+                    visible: !root.canActivateTrial
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: noTrialContent.height + 28
+                    radius: 12
+                    color: Qt.rgba(0.95, 0.6, 0.1, 0.08)
+                    border.width: 1
+                    border.color: Qt.rgba(0.95, 0.6, 0.1, 0.25)
+                    
+                    ColumnLayout {
+                        id: noTrialContent
+                        anchors.centerIn: parent
+                        width: parent.width - 28
+                        spacing: 6
+                        
+                        RowLayout {
+                            spacing: 6
+                            
+                            Icon {
+                                name: "clock"
+                                size: 14
+                                color: Theme.warning
+                            }
+                            
+                            Text {
+                                text: "Período de teste expirado"
+                                font.pixelSize: 12
+                                font.weight: Font.Medium
+                                color: Theme.warning
+                            }
+                        }
+                        
+                        Text {
+                            Layout.fillWidth: true
+                            text: "Adquira uma licença para continuar usando todas as funcionalidades."
+                            font.pixelSize: 13
+                            color: Theme.foreground
+                            wrapMode: Text.WordWrap
+                            lineHeight: 1.3
+                        }
+                    }
+                }
+                
+                // Divider
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 1
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: "transparent" }
+                        GradientStop { position: 0.5; color: Theme.border }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                }
+                
+                // Buttons
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+                    
+                    // Primary action - Activate trial or Buy license
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 52
+                        radius: 12
+                        
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: buyLicenseMouse.containsMouse ? Qt.lighter(Theme.primary, 1.1) : Theme.primary }
+                            GradientStop { position: 1.0; color: buyLicenseMouse.containsMouse ? Qt.lighter(Theme.accent, 1.1) : Theme.accent }
+                        }
+                        
+                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                        
+                        RowLayout {
+                            anchors.centerIn: parent
+                            spacing: 10
+                            
+                            Icon {
+                                name: root.canActivateTrial ? "sparkles" : "shoppingCart"
+                                size: 18
+                                color: Theme.primaryForeground
+                            }
+                            
+                            Text {
+                                text: root.canActivateTrial ? "Ativar Teste Gratuito" : "Adquirir Licença"
+                                font.pixelSize: 15
+                                font.weight: Font.Bold
+                                color: Theme.primaryForeground
+                            }
+                        }
+                        
+                        MouseArea {
+                            id: buyLicenseMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (root.canActivateTrial) {
+                                    // TODO: Ativar trial
+                                    Qt.openUrlExternally("https://dlg-v1.lovable.app/dashboard")
+                                } else {
+                                    Qt.openUrlExternally("https://dlg-v1.lovable.app/comprar")
+                                }
+                                root.showNoLicenseModal = false
+                            }
+                        }
+                    }
+                    
+                    // Close button
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 48
+                        radius: 12
+                        color: closeNoLicenseMouse.containsMouse ? Qt.lighter(Theme.secondary, 1.1) : Theme.secondary
+                        border.width: 1
+                        border.color: closeNoLicenseMouse.containsMouse ? Theme.border : Qt.darker(Theme.border, 1.1)
+                        
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                        
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Fechar"
+                            font.pixelSize: 14
+                            font.weight: Font.Medium
+                            color: Theme.foreground
+                        }
+                        
+                        MouseArea {
+                            id: closeNoLicenseMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.showNoLicenseModal = false
+                        }
                     }
                 }
             }
