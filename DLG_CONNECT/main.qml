@@ -17,8 +17,10 @@ ApplicationWindow {
     color: "#080a0f"
     
     // Backend instance - accessible to all pages
+    property alias appBackend: backendInstance
+    
     Backend {
-        id: backend
+        id: backendInstance
     }
 
     // Stack view for navigation
@@ -106,7 +108,7 @@ ApplicationWindow {
     Component {
         id: loginPage
         Login {
-            backend: mainWindow.backend
+            backend: mainWindow.appBackend
             onLoginSuccess: mainWindow.navigateToMain()
         }
     }
@@ -115,7 +117,7 @@ ApplicationWindow {
     Component {
         id: mainApp
         MainLayout {
-            backend: mainWindow.backend
+            backend: mainWindow.appBackend
         }
     }
 
