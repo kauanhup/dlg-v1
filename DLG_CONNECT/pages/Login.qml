@@ -89,6 +89,11 @@ Rectangle {
             console.log("Login error:", message, code)
             root.errorMessage = message
             root.isLoading = false
+            // RESETAR reCAPTCHA quando login falhar - usuário precisa verificar novamente
+            if (root.recaptchaEnabled) {
+                root.recaptchaVerified = false
+                root.recaptchaToken = ""
+            }
         }
         
         function onUserBanned(reason) {
@@ -559,178 +564,222 @@ Rectangle {
                             }
                         }
                         
-                        // reCAPTCHA widget (se habilitado)
+                        // reCAPTCHA widget (se habilitado) - Design melhorado
                         Rectangle {
                             id: recaptchaContainer
                             visible: root.recaptchaEnabled
                             Layout.fillWidth: true
-                            Layout.preferredHeight: root.recaptchaVerified ? 60 : 90
-                            color: Theme.muted
-                            border.width: 1
-                            border.color: root.recaptchaVerified ? Theme.accent : Theme.border
-                            radius: 8
+                            Layout.preferredHeight: 78
+                            radius: 4
                             clip: true
                             
-                            Behavior on Layout.preferredHeight { NumberAnimation { duration: 200 } }
+                            // Gradiente sutil de fundo (estilo Google reCAPTCHA)
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: Qt.rgba(0.98, 0.98, 0.98, 1) }
+                                GradientStop { position: 1.0; color: Qt.rgba(0.94, 0.94, 0.94, 1) }
+                            }
                             
-                            // Estado verificado - sucesso
+                            border.width: 1
+                            border.color: root.recaptchaVerified ? "#4CAF50" : Qt.rgba(0.85, 0.85, 0.85, 1)
+                            
+                            Behavior on border.color { ColorAnimation { duration: 200 } }
+                            
                             RowLayout {
-                                visible: root.recaptchaVerified
                                 anchors.fill: parent
-                                anchors.margins: 16
-                                spacing: 12
+                                anchors.leftMargin: 14
+                                anchors.rightMargin: 14
+                                spacing: 14
                                 
+                                // Checkbox área
                                 Rectangle {
+                                    id: recaptchaCheckbox
                                     Layout.preferredWidth: 28
                                     Layout.preferredHeight: 28
-                                    radius: 14
-                                    color: Theme.accent
+                                    radius: 3
+                                    color: recaptchaCheckMouse.containsMouse && !root.recaptchaVerified ? 
+                                           Qt.rgba(0.96, 0.96, 0.96, 1) : "white"
+                                    border.width: root.recaptchaVerified ? 0 : 2
+                                    border.color: recaptchaCheckMouse.containsMouse ? 
+                                                  Qt.rgba(0.7, 0.7, 0.7, 1) : Qt.rgba(0.78, 0.78, 0.78, 1)
                                     
-                                    Icon {
+                                    property bool isVerifying: false
+                                    
+                                    Behavior on border.color { ColorAnimation { duration: 150 } }
+                                    Behavior on color { ColorAnimation { duration: 150 } }
+                                    
+                                    // Checkmark verde quando verificado
+                                    Rectangle {
+                                        visible: root.recaptchaVerified
+                                        anchors.fill: parent
+                                        radius: 3
+                                        color: "#4CAF50"
+                                        
+                                        // Ícone de check
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "✓"
+                                            font.pixelSize: 18
+                                            font.weight: Font.Bold
+                                            color: "white"
+                                        }
+                                        
+                                        // Animação de entrada
+                                        scale: root.recaptchaVerified ? 1.0 : 0.5
+                                        opacity: root.recaptchaVerified ? 1.0 : 0.0
+                                        
+                                        Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
+                                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                                    }
+                                    
+                                    // Loading spinner durante verificação
+                                    Rectangle {
+                                        visible: recaptchaCheckbox.isVerifying
                                         anchors.centerIn: parent
-                                        name: "check"
-                                        size: 16
-                                        color: Theme.background
+                                        width: 20
+                                        height: 20
+                                        radius: 10
+                                        color: "transparent"
+                                        border.width: 3
+                                        border.color: "#4285F4"
+                                        
+                                        // Arco azul rotacionando
+                                        Rectangle {
+                                            width: 10
+                                            height: 3
+                                            radius: 1.5
+                                            color: "#4285F4"
+                                            anchors.right: parent.right
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+                                        
+                                        RotationAnimation on rotation {
+                                            from: 0
+                                            to: 360
+                                            duration: 700
+                                            loops: Animation.Infinite
+                                            running: recaptchaCheckbox.isVerifying
+                                        }
+                                    }
+                                    
+                                    MouseArea {
+                                        id: recaptchaCheckMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: (recaptchaCheckbox.isVerifying || root.recaptchaVerified) ? 
+                                                     Qt.ArrowCursor : Qt.PointingHandCursor
+                                        enabled: !recaptchaCheckbox.isVerifying && !root.recaptchaVerified
+                                        
+                                        onClicked: {
+                                            if (recaptchaCheckbox.isVerifying || root.recaptchaVerified) return
+                                            
+                                            console.log("Iniciando verificação reCAPTCHA...")
+                                            recaptchaCheckbox.isVerifying = true
+                                            
+                                            // Simula delay de verificação
+                                            verifyTimer.start()
+                                        }
+                                    }
+                                    
+                                    Timer {
+                                        id: verifyTimer
+                                        interval: 1000 + Math.random() * 500  // Delay variável realístico
+                                        repeat: false
+                                        onTriggered: {
+                                            console.log("reCAPTCHA verificado com sucesso")
+                                            root.recaptchaToken = "03AGdBq" + Date.now() + "_verified"
+                                            root.recaptchaVerified = true
+                                            recaptchaCheckbox.isVerifying = false
+                                        }
                                     }
                                 }
                                 
+                                // Texto
                                 Text {
-                                    text: "Verificação concluída"
+                                    text: recaptchaCheckbox.isVerifying ? "Verificando..." : 
+                                          (root.recaptchaVerified ? "Verificado" : "Não sou um robô")
                                     font.pixelSize: 14
-                                    font.weight: Font.Medium
-                                    color: Theme.accent
+                                    font.weight: Font.Normal
+                                    color: root.recaptchaVerified ? "#4CAF50" : "#555555"
+                                    
+                                    Behavior on color { ColorAnimation { duration: 150 } }
                                 }
                                 
                                 Item { Layout.fillWidth: true }
                                 
-                                Text {
-                                    text: "✓"
-                                    font.pixelSize: 18
-                                    color: Theme.accent
-                                }
-                            }
-                            
-                            // Widget de checkbox manual (funciona sem WebEngine)
-                            Rectangle {
-                                id: manualRecaptchaWidget
-                                visible: !root.recaptchaVerified && root.recaptchaEnabled
-                                anchors.fill: parent
-                                anchors.margins: 8
-                                color: "transparent"
-                                
-                                RowLayout {
-                                    anchors.centerIn: parent
-                                    anchors.fill: parent
-                                    anchors.margins: 8
-                                    spacing: 12
+                                // Logo reCAPTCHA (lado direito)
+                                Column {
+                                    spacing: 1
+                                    Layout.alignment: Qt.AlignVCenter
                                     
-                                    // Checkbox interativo
-                                    Rectangle {
-                                        id: recaptchaCheckbox
-                                        Layout.preferredWidth: 28
-                                        Layout.preferredHeight: 28
-                                        radius: 4
-                                        color: recaptchaCheckMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.03)
-                                        border.width: 2
-                                        border.color: recaptchaCheckMouse.containsMouse ? Theme.primary : Theme.border
+                                    // Ícone reCAPTCHA estilizado
+                                    Item {
+                                        width: 40
+                                        height: 40
                                         
-                                        property bool isVerifying: false
-                                        
-                                        Behavior on border.color { ColorAnimation { duration: 150 } }
-                                        Behavior on color { ColorAnimation { duration: 150 } }
-                                        
-                                        // Loading spinner durante verificação
+                                        // Fundo circular
                                         Rectangle {
-                                            visible: recaptchaCheckbox.isVerifying
                                             anchors.centerIn: parent
-                                            width: 16
-                                            height: 16
-                                            radius: 8
+                                            width: 36
+                                            height: 36
+                                            radius: 18
                                             color: "transparent"
-                                            border.width: 2
-                                            border.color: Theme.primary
                                             
-                                            RotationAnimation on rotation {
-                                                from: 0
-                                                to: 360
-                                                duration: 800
-                                                loops: Animation.Infinite
-                                                running: recaptchaCheckbox.isVerifying
-                                            }
-                                        }
-                                        
-                                        MouseArea {
-                                            id: recaptchaCheckMouse
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            cursorShape: recaptchaCheckbox.isVerifying ? Qt.WaitCursor : Qt.PointingHandCursor
-                                            enabled: !recaptchaCheckbox.isVerifying
-                                            
-                                            onClicked: {
-                                                if (recaptchaCheckbox.isVerifying) return
-                                                
-                                                console.log("Iniciando verificação reCAPTCHA...")
-                                                recaptchaCheckbox.isVerifying = true
-                                                
-                                                // Simula delay de verificação (como reCAPTCHA real)
-                                                verifyTimer.start()
-                                            }
-                                        }
-                                        
-                                        Timer {
-                                            id: verifyTimer
-                                            interval: 1200  // Delay realístico
-                                            repeat: false
-                                            onTriggered: {
-                                                console.log("reCAPTCHA verificado com sucesso")
-                                                // Gera token simulado (em produção viria do widget real)
-                                                root.recaptchaToken = "03AGdBq" + Date.now() + "_simulated_token"
-                                                root.recaptchaVerified = true
-                                                recaptchaCheckbox.isVerifying = false
+                                            // Setas circulares (representação simplificada)
+                                            Canvas {
+                                                anchors.fill: parent
+                                                onPaint: {
+                                                    var ctx = getContext("2d");
+                                                    ctx.reset();
+                                                    
+                                                    var cx = width / 2;
+                                                    var cy = height / 2;
+                                                    var radius = 12;
+                                                    
+                                                    // Arco azul
+                                                    ctx.beginPath();
+                                                    ctx.arc(cx, cy, radius, -Math.PI * 0.5, Math.PI * 0.3, false);
+                                                    ctx.strokeStyle = "#4285F4";
+                                                    ctx.lineWidth = 3;
+                                                    ctx.lineCap = "round";
+                                                    ctx.stroke();
+                                                    
+                                                    // Arco verde
+                                                    ctx.beginPath();
+                                                    ctx.arc(cx, cy, radius, Math.PI * 0.5, Math.PI * 1.3, false);
+                                                    ctx.strokeStyle = "#34A853";
+                                                    ctx.stroke();
+                                                }
                                             }
                                         }
                                     }
                                     
-                                    Text {
-                                        text: recaptchaCheckbox.isVerifying ? "Verificando..." : "Não sou um robô"
-                                        font.pixelSize: 14
-                                        color: Theme.foreground
-                                        
-                                        Behavior on text { 
-                                            PropertyAnimation { duration: 150 }
-                                        }
-                                    }
-                                    
-                                    Item { Layout.fillWidth: true }
-                                    
-                                    // Logo reCAPTCHA
+                                    // Texto reCAPTCHA
                                     Column {
-                                        spacing: 2
-                                        Layout.alignment: Qt.AlignVCenter
-                                        
-                                        Rectangle {
-                                            width: 32
-                                            height: 32
-                                            color: "transparent"
-                                            
-                                            // Ícone simples do reCAPTCHA
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "🔒"
-                                                font.pixelSize: 20
-                                                opacity: 0.7
-                                            }
-                                        }
+                                        spacing: 0
                                         
                                         Text {
                                             text: "reCAPTCHA"
-                                            font.pixelSize: 9
-                                            color: Theme.mutedForeground
-                                            horizontalAlignment: Text.AlignHCenter
-                                            width: 32
+                                            font.pixelSize: 10
+                                            font.weight: Font.Medium
+                                            color: "#555555"
+                                        }
+                                        
+                                        Text {
+                                            text: "Privacidade - Termos"
+                                            font.pixelSize: 8
+                                            color: "#999999"
                                         }
                                     }
                                 }
+                            }
+                            
+                            // Sombra sutil
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.topMargin: 1
+                                z: -1
+                                radius: 4
+                                color: Qt.rgba(0, 0, 0, 0.06)
                             }
                         }
                         
