@@ -639,10 +639,6 @@ const SubscriptionsTabContent = () => {
     <div className="space-y-6">
       {/* Header with Title and Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Gestão de Assinaturas</h2>
-          <p className="text-sm text-muted-foreground mt-1">Gerencie planos, assinantes e pagamentos</p>
-        </div>
         <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefreshing} className="w-full sm:w-auto">
           <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
           Atualizar
