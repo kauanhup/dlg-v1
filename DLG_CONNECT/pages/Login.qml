@@ -50,16 +50,67 @@ Rectangle {
     property int trialDays: 0
     property bool canActivateTrial: false
     
+    // Auto-login properties
+    property bool isCheckingSession: false
+    property bool hasSessionToVerify: false
+    property string savedSessionEmail: ""
+    
     // Simple fade in
     opacity: 0
     Component.onCompleted: {
         fadeIn.start()
-        // Tentar carregar reCAPTCHA se backend já estiver disponível
+        // Tentar carregar reCAPTCHA e verificar sessão salva
         Qt.callLater(function() {
             if (root.backend !== null && root.backend !== undefined) {
                 loadRecaptchaSettings()
+                checkSavedSession()
             }
         })
+    }
+    
+    // Verificar se existe sessão salva para auto-login
+    function checkSavedSession() {
+        if (backend === null || backend === undefined) return
+        
+        if (backend.hasSavedSession()) {
+            console.log("Sessão salva encontrada, iniciando verificação...")
+            root.savedSessionEmail = backend.getSavedSessionEmail() || ""
+            root.hasSessionToVerify = true
+            root.isCheckingSession = true
+            
+            // Pequeno delay para mostrar a UI antes de verificar
+            autoLoginTimer.start()
+        } else {
+            console.log("Nenhuma sessão salva encontrada")
+            root.hasSessionToVerify = false
+        }
+    }
+    
+    Timer {
+        id: autoLoginTimer
+        interval: 500
+        repeat: false
+        onTriggered: {
+            if (root.backend !== null && root.backend !== undefined) {
+                console.log("Verificando sessão salva...")
+                root.backend.verifySession()
+            }
+        }
+    }
+    
+    // Handler para resultado da verificação de sessão
+    function onSessionVerified(success) {
+        root.isCheckingSession = false
+        if (success) {
+            // Login automático bem-sucedido
+            root.showAnimation = true
+        } else {
+            // Sessão inválida, limpar e mostrar login normal
+            root.hasSessionToVerify = false
+            if (root.backend) {
+                root.backend.clearLocalSession()
+            }
+        }
     }
     
     NumberAnimation {
@@ -83,6 +134,7 @@ Rectangle {
         function onLoginSuccess(userData) {
             console.log("Login success:", userData)
             root.isLoading = false
+            root.isCheckingSession = false
             root.showAnimation = true
         }
         
@@ -90,6 +142,8 @@ Rectangle {
             console.log("Login error:", message, code)
             root.errorMessage = message
             root.isLoading = false
+            root.isCheckingSession = false
+            root.hasSessionToVerify = false
             // RESETAR reCAPTCHA quando login falhar - usuário precisa verificar novamente
             if (root.recaptchaEnabled) {
                 root.recaptchaVerified = false
@@ -101,6 +155,10 @@ Rectangle {
             root.banReason = reason
             root.showBannedModal = true
             root.isLoading = false
+            root.isCheckingSession = false
+            root.hasSessionToVerify = false
+            // Limpar sessão local quando banido
+            if (root.backend) root.backend.clearLocalSession()
         }
         
         function onDeviceLimitReached(infoJson) {
@@ -114,11 +172,14 @@ Rectangle {
                 console.log("Erro ao parsear limite:", e)
             }
             root.isLoading = false
+            root.isCheckingSession = false
+            root.hasSessionToVerify = false
         }
         
         function onMaintenanceMode(message) {
             root.errorMessage = "🔧 Sistema em manutenção: " + message
             root.isLoading = false
+            root.isCheckingSession = false
         }
         
         function onTrialAvailable(infoJson) {
@@ -131,6 +192,7 @@ Rectangle {
                 console.log("Erro ao parsear trial:", e)
             }
             root.isLoading = false
+            root.isCheckingSession = false
         }
         
         function onNoLicense(infoJson) {
@@ -145,6 +207,10 @@ Rectangle {
             }
             root.showNoLicenseModal = true
             root.isLoading = false
+            root.isCheckingSession = false
+            root.hasSessionToVerify = false
+            // Limpar sessão local quando sem licença
+            if (root.backend) root.backend.clearLocalSession()
         }
         
         function onLoadingChanged(loading) {
@@ -340,6 +406,136 @@ Rectangle {
             Layout.fillHeight: true
             color: Theme.background
             
+            // Auto-login verification overlay
+            Rectangle {
+                id: sessionCheckOverlay
+                anchors.centerIn: parent
+                width: Math.min(400, parent.width * 0.85)
+                height: sessionCheckColumn.height
+                color: Theme.card
+                border.width: 1
+                border.color: Theme.border
+                radius: 12
+                visible: root.isCheckingSession
+                z: 10
+                
+                ColumnLayout {
+                    id: sessionCheckColumn
+                    width: parent.width
+                    spacing: 0
+                    
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.margins: 40
+                        spacing: 24
+                        Layout.alignment: Qt.AlignHCenter
+                        
+                        // Spinner animado
+                        Item {
+                            Layout.preferredWidth: 64
+                            Layout.preferredHeight: 64
+                            Layout.alignment: Qt.AlignHCenter
+                            
+                            Rectangle {
+                                id: spinnerOuter
+                                anchors.fill: parent
+                                radius: 32
+                                color: "transparent"
+                                border.width: 3
+                                border.color: Theme.border
+                            }
+                            
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: 32
+                                color: "transparent"
+                                border.width: 3
+                                border.color: Theme.primary
+                                
+                                // Máscara para criar efeito de arco
+                                layer.enabled: true
+                                layer.effect: Item {
+                                    Rectangle {
+                                        width: 32
+                                        height: 64
+                                        color: "transparent"
+                                    }
+                                }
+                                
+                                RotationAnimation on rotation {
+                                    from: 0
+                                    to: 360
+                                    duration: 1000
+                                    loops: Animation.Infinite
+                                    running: root.isCheckingSession
+                                }
+                            }
+                            
+                            // Ícone central
+                            Icon {
+                                anchors.centerIn: parent
+                                name: "user"
+                                size: 24
+                                color: Theme.primary
+                            }
+                        }
+                        
+                        // Texto
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+                            
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Verificando sessão..."
+                                font.pixelSize: 18
+                                font.weight: Font.DemiBold
+                                color: Theme.foreground
+                                horizontalAlignment: Text.AlignHCenter
+                            }
+                            
+                            Text {
+                                Layout.fillWidth: true
+                                text: root.savedSessionEmail ? "Entrando como " + root.savedSessionEmail : "Reconectando automaticamente"
+                                font.pixelSize: 13
+                                color: Theme.mutedForeground
+                                horizontalAlignment: Text.AlignHCenter
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+                        
+                        // Botão cancelar
+                        Rectangle {
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.preferredWidth: cancelText.width + 24
+                            Layout.preferredHeight: 36
+                            color: cancelMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent"
+                            radius: 6
+                            
+                            Text {
+                                id: cancelText
+                                anchors.centerIn: parent
+                                text: "Usar outra conta"
+                                font.pixelSize: 12
+                                color: Theme.mutedForeground
+                            }
+                            
+                            MouseArea {
+                                id: cancelMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    root.isCheckingSession = false
+                                    root.hasSessionToVerify = false
+                                    if (root.backend) root.backend.clearLocalSession()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
             // Form container
             Rectangle {
                 id: formCard
@@ -350,6 +546,7 @@ Rectangle {
                 border.width: 1
                 border.color: Theme.border
                 radius: 12
+                visible: !root.isCheckingSession
                 
                 ColumnLayout {
                     id: formColumn
