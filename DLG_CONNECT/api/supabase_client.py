@@ -13,13 +13,16 @@ from typing import Optional, Dict, Any, List
 
 
 class DLGApiClient:
-    """Cliente para a API PHP do DLG Connect (Hostinger)"""
+    """Cliente para a API do DLG Connect (Lovable Cloud Edge Function)"""
     
     # =====================================================
-    # CONFIGURAÇÃO - ALTERE PARA SEU DOMÍNIO
+    # CONFIGURAÇÃO - EDGE FUNCTION DO LOVABLE CLOUD
     # =====================================================
-    API_URL = "https://gldconnect.com/api/bot-api.php"
-    API_SECRET = "dlg_bot_2024_Xk9mP2nQ7rT3wY5zB8cD4fG6hJ"  # Mesma do config.php
+    # URL da Edge Function (automático, não precisa configurar nada)
+    API_URL = "https://nydtfckvvslkbyolipsf.supabase.co/functions/v1/bot-auth"
+    
+    # Anon key para autenticação (pública, pode ficar no código)
+    ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55ZHRmY2t2dnNsa2J5b2xpcHNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3OTMyNDMsImV4cCI6MjA4MTM2OTI0M30.1vHOv48yxJNkyjodlWA3l94mDVDMRwVa97a-0R_U4uI"
     
     _instance: Optional['DLGApiClient'] = None
     _current_user: Optional[Dict[str, Any]] = None
@@ -136,12 +139,18 @@ class DLGApiClient:
     
     def _api_request(self, action: str, data: Dict[str, Any] = None) -> Dict[str, Any]:
         """
-        Faz uma requisição para a API PHP
+        Faz uma requisição para a Edge Function do Lovable Cloud
         """
         payload = {
             "action": action,
-            "api_key": self.API_SECRET,
             **(data or {})
+        }
+        
+        # Headers para Edge Function
+        headers = {
+            "Content-Type": "application/json",
+            "apikey": self.ANON_KEY,
+            "Authorization": f"Bearer {self.ANON_KEY}"
         }
         
         try:
@@ -149,7 +158,7 @@ class DLGApiClient:
             response = requests.post(
                 self.API_URL,
                 json=payload,
-                headers={"Content-Type": "application/json"},
+                headers=headers,
                 timeout=30
             )
             
