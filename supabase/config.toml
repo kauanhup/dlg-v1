@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.reconciliation-global]
 verify_jwt = false
+
+[functions.bot-auth]
+verify_jwt = false
