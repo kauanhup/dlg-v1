@@ -26,12 +26,6 @@ define('SUPABASE_SERVICE_KEY', 'COLE_AQUI_SUA_SERVICE_ROLE_KEY');
 define('BOT_API_SECRET', 'dlg_bot_2024_Xk9mP2nQ7rT3wY5zB8cD4fG6hJ');
 
 // =====================================================
-// PIXUP / BSPAY - Gateway de Pagamento PIX
-// =====================================================
-// ⚠️ VOCÊ PRECISA PREENCHER SE USAR PIXUP:
-define('PIXUP_PROXY_SECRET', 'COLE_AQUI_SUA_CHAVE_PIXUP');
-
-// =====================================================
 // ASAAS - Gateway de Pagamento
 // =====================================================
 // ⚠️ VOCÊ PRECISA PREENCHER SE USAR ASAAS:
