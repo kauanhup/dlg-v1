@@ -796,20 +796,88 @@ Rectangle {
                     }
                 }
                 
-                // Support text
-                Text {
+                // Separator
+                Rectangle {
                     Layout.fillWidth: true
-                    text: "Se você acredita que isso é um erro, entre em contato com o suporte."
-                    font.pixelSize: 12
-                    color: Theme.subtleForeground
-                    wrapMode: Text.WordWrap
-                    horizontalAlignment: Text.AlignHCenter
+                    Layout.preferredHeight: 1
+                    color: Theme.border
+                }
+                
+                // Support section
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+                    
+                    Text {
+                        Layout.fillWidth: true
+                        text: "Entre em contato com o suporte:"
+                        font.pixelSize: 13
+                        color: Theme.mutedForeground
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                    
+                    // WhatsApp contact
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 52
+                        radius: 10
+                        color: whatsappMouse.containsMouse ? Qt.rgba(0.14, 0.75, 0.45, 0.2) : Qt.rgba(0.14, 0.75, 0.45, 0.1)
+                        border.width: 1
+                        border.color: Qt.rgba(0.14, 0.75, 0.45, 0.4)
+                        
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                        
+                        RowLayout {
+                            anchors.centerIn: parent
+                            spacing: 12
+                            
+                            // WhatsApp icon
+                            Rectangle {
+                                Layout.preferredWidth: 32
+                                Layout.preferredHeight: 32
+                                radius: 16
+                                color: "#25D366"
+                                
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "📱"
+                                    font.pixelSize: 16
+                                }
+                            }
+                            
+                            ColumnLayout {
+                                spacing: 2
+                                
+                                Text {
+                                    text: "+55 65 99927-4528"
+                                    font.pixelSize: 15
+                                    font.weight: Font.Bold
+                                    color: "#25D366"
+                                }
+                                
+                                Text {
+                                    text: "WhatsApp"
+                                    font.pixelSize: 11
+                                    color: Theme.mutedForeground
+                                }
+                            }
+                        }
+                        
+                        MouseArea {
+                            id: whatsappMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: Qt.openUrlExternally("https://wa.me/5565999274528")
+                        }
+                    }
                 }
                 
                 // Close button
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 44
+                    Layout.topMargin: 4
                     radius: 8
                     color: closeBannedMouse.containsMouse ? Qt.lighter(Theme.muted, 1.1) : Theme.muted
                     border.width: 1
@@ -817,7 +885,7 @@ Rectangle {
                     
                     Text {
                         anchors.centerIn: parent
-                        text: "Entendi"
+                        text: "Fechar"
                         font.pixelSize: 14
                         font.weight: Font.Medium
                         color: Theme.foreground
