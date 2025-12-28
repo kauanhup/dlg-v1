@@ -309,6 +309,106 @@ class Backend(QObject):
         settings = supabase.get_recaptcha_settings()
         return json.dumps(settings)
     
+    # ========== TRIAL SYSTEM ==========
+    
+    trialExpired = Signal(str)  # Emite JSON com info do trial expirado
+    trialNotEligible = Signal(str)  # Dispositivo já usou trial
+    
+    @Slot(result=str)
+    def checkTrialEligibility(self) -> str:
+        """
+        Verifica se o dispositivo pode usar trial
+        Retorna JSON: {"eligible": bool, "already_used": bool, "trial_days": int, ...}
+        """
+        result = supabase.check_trial_eligibility()
+        return json.dumps(result)
+    
+    @Slot(result=str)
+    def registerTrial(self) -> str:
+        """
+        Registra o dispositivo como tendo usado trial
+        Retorna JSON: {"success": bool, "trial_expires_at": str, ...}
+        """
+        user_id = supabase.user.get("id") if supabase.user else None
+        result = supabase.register_trial(user_id)
+        
+        if result.get("success"):
+            supabase.log_activity("trial_started", {
+                "duration_days": result.get("duration_days"),
+                "expires_at": result.get("trial_expires_at")
+            })
+        
+        return json.dumps(result)
+    
+    @Slot(result=str)
+    def getTrialStatus(self) -> str:
+        """
+        Verifica o status do trial para o dispositivo atual
+        Retorna JSON: {"active": bool, "expires_at": str, "days_remaining": int, ...}
+        """
+        result = supabase.get_trial_status()
+        return json.dumps(result)
+    
+    @Slot(result=str)
+    def getDeviceFingerprint(self) -> str:
+        """Retorna o fingerprint único do dispositivo"""
+        return supabase.get_device_fingerprint()
+    
+    @Slot(result=str)
+    def validateAccess(self) -> str:
+        """
+        Validação completa de acesso:
+        1. Verifica se está banido
+        2. Verifica se tem licença válida ou trial ativo
+        Retorna JSON: {"allowed": bool, "reason": str, ...}
+        """
+        # Verificar ban
+        ban_check = supabase.is_banned()
+        if ban_check["banned"]:
+            return json.dumps({
+                "allowed": False,
+                "reason": "banned",
+                "ban_reason": ban_check["reason"]
+            })
+        
+        # Verificar licença
+        license_check = supabase.is_license_valid()
+        if license_check["valid"]:
+            return json.dumps({
+                "allowed": True,
+                "reason": "license",
+                "days_remaining": license_check["days_remaining"]
+            })
+        
+        # Verificar trial
+        trial_status = supabase.get_trial_status()
+        if trial_status.get("active"):
+            return json.dumps({
+                "allowed": True,
+                "reason": "trial",
+                "is_trial": True,
+                "days_remaining": trial_status.get("days_remaining"),
+                "expires_at": trial_status.get("expires_at")
+            })
+        
+        # Verificar se pode iniciar trial
+        trial_eligible = supabase.check_trial_eligibility()
+        if trial_eligible.get("eligible"):
+            return json.dumps({
+                "allowed": False,
+                "reason": "no_license_trial_available",
+                "trial_days": trial_eligible.get("trial_days"),
+                "message": "Sem licença ativa. Inicie o período de teste gratuito."
+            })
+        
+        # Sem acesso
+        return json.dumps({
+            "allowed": False,
+            "reason": "no_access",
+            "trial_used": trial_eligible.get("already_used", False),
+            "message": "Licença expirada e período de teste já utilizado."
+        })
+    
     # ========== MÉTODOS PRIVADOS ==========
     
     def _loadUserData(self):
