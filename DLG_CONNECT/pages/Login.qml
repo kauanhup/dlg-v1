@@ -13,6 +13,16 @@ Rectangle {
     // Backend property - injected from parent
     property var backend: null
     
+    // Quando o backend for injetado, carregar configurações
+    onBackendChanged: {
+        if (backend) {
+            console.log("Backend disponível, carregando configurações do reCAPTCHA...")
+            root.recaptchaEnabled = backend.recaptchaEnabled
+            root.recaptchaSiteKey = backend.recaptchaSiteKey
+            console.log("reCAPTCHA enabled:", root.recaptchaEnabled, "Site key:", root.recaptchaSiteKey)
+        }
+    }
+    
     signal loginSuccess()
     
     property bool showAnimation: false
@@ -38,12 +48,6 @@ Rectangle {
     opacity: 0
     Component.onCompleted: {
         fadeIn.start()
-        // Carregar configurações do reCAPTCHA do backend
-        if (root.backend) {
-            root.recaptchaEnabled = root.backend.recaptchaEnabled
-            root.recaptchaSiteKey = root.backend.recaptchaSiteKey
-            console.log("reCAPTCHA enabled:", root.recaptchaEnabled, "Site key:", root.recaptchaSiteKey)
-        }
     }
     
     NumberAnimation {
@@ -58,9 +62,10 @@ Rectangle {
     // Estado de loading para desabilitar campos
     property bool isLoading: false
     
-    // Connections com o backend - usando ignoreUnknownSignals para evitar warnings
+    // Connections com o backend - só ativa quando backend existir
     Connections {
-        target: root.backend
+        target: root.backend ? root.backend : null
+        enabled: root.backend !== null
         ignoreUnknownSignals: true
         
         function onLoginSuccess(userData) {
