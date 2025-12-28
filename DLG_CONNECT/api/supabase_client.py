@@ -235,11 +235,55 @@ class DLGApiClient:
         
         result = self._api_request("full_login_check", payload)
         
-        if result.get("success"):
+        # Mapear resposta da edge function para formato esperado pelo bridge
+        # A edge function retorna 'reason', o bridge espera 'code'
+        if not result.get("success") or not result.get("access", True):
+            reason = result.get("reason", "")
+            
+            # Mapear reason -> code
+            reason_to_code = {
+                "banned": "BANNED",
+                "maintenance": "MAINTENANCE", 
+                "device_limit": "DEVICE_LIMIT",
+                "no_license": "NO_LICENSE",
+                "recaptcha_required": "RECAPTCHA_REQUIRED",
+                "recaptcha_failed": "RECAPTCHA_FAILED",
+                "invalid_credentials": "INVALID_CREDENTIALS",
+            }
+            
+            code = result.get("code") or reason_to_code.get(reason, "UNKNOWN")
+            result["code"] = code
+            
+            # Mapear campos específicos de ban
+            if reason == "banned":
+                result["ban_reason"] = result.get("ban_reason") or result.get("message", "Conta suspensa")
+            
+            # Mapear campos de device limit
+            if reason == "device_limit":
+                result["activeDevices"] = result.get("active_devices", 0)
+                result["maxDevices"] = result.get("max_devices", 1)
+            
+            # Mapear campos de trial
+            if reason == "no_license":
+                result["canUseTrial"] = result.get("trial_eligible", False)
+                result["trialDays"] = result.get("trial_days", 3)
+            
+            # Garantir que success é False para erros
+            if not result.get("access", True) == False:
+                result["success"] = False
+        
+        if result.get("success") and result.get("access"):
             self._current_user = result.get("user")
             self._access_token = result.get("access_token")
-            self._license_info = result.get("license")
-            self._trial_info = result.get("trial")
+            self._license_info = {
+                "plan_name": result.get("plan_name"),
+                "expires_at": result.get("expires_at"),
+                "is_trial": result.get("is_trial", False)
+            } if result.get("plan_name") else None
+            self._trial_info = {
+                "is_trial": result.get("is_trial", False),
+                "expires_at": result.get("expires_at")
+            } if result.get("is_trial") else None
         
         return result
     
