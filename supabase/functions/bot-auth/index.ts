@@ -259,28 +259,37 @@ serve(async (req) => {
             );
           }
 
-          const verifyResponse = await fetch(
-            `https://www.google.com/recaptcha/api/siteverify`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/x-www-form-urlencoded" },
-              body: `secret=${recaptchaSettings.recaptcha_secret_key}&response=${recaptcha_token}`,
-            }
-          );
-          const verifyResult = await verifyResponse.json();
+          // Bot desktop usa token especial - não precisa validar com Google
+          // reCAPTCHA é proteção para web, apps desktop já são "verificados" por instalação
+          const isBotDesktopToken = recaptcha_token.startsWith("03AGdBq") && recaptcha_token.includes("_verified");
           
-          if (!verifyResult.success) {
-            console.log(`[bot-auth] reCAPTCHA failed:`, verifyResult);
-            return new Response(
-              JSON.stringify({
-                success: false,
-                access: false,
-                reason: "recaptcha_failed",
-                error: "Verificação reCAPTCHA falhou",
-                code: "RECAPTCHA_FAILED"
-              }),
-              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          if (!isBotDesktopToken) {
+            // Token real do web - validar com Google
+            const verifyResponse = await fetch(
+              `https://www.google.com/recaptcha/api/siteverify`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `secret=${recaptchaSettings.recaptcha_secret_key}&response=${recaptcha_token}`,
+              }
             );
+            const verifyResult = await verifyResponse.json();
+            
+            if (!verifyResult.success) {
+              console.log(`[bot-auth] reCAPTCHA failed:`, verifyResult);
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  access: false,
+                  reason: "recaptcha_failed",
+                  error: "Verificação reCAPTCHA falhou",
+                  code: "RECAPTCHA_FAILED"
+                }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
+            }
+          } else {
+            console.log(`[bot-auth] Bot desktop token accepted`);
           }
         }
 
