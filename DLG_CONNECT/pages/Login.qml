@@ -49,26 +49,30 @@ Rectangle {
         easing.type: Easing.OutCubic
     }
     
-    // Connections com o backend
+    // Estado de loading para desabilitar campos
+    property bool isLoading: false
+    
+    // Connections com o backend - usando ignoreUnknownSignals para evitar warnings
     Connections {
         target: root.backend
-        enabled: root.backend !== null
+        ignoreUnknownSignals: true
         
         function onLoginSuccess(userData) {
             console.log("Login success:", userData)
+            root.isLoading = false
             root.showAnimation = true
         }
         
         function onLoginError(message, code) {
             console.log("Login error:", message, code)
             root.errorMessage = message
-            loginButton.enabled = true
+            root.isLoading = false
         }
         
         function onUserBanned(reason) {
             root.banReason = reason
             root.showBannedModal = true
-            loginButton.enabled = true
+            root.isLoading = false
         }
         
         function onDeviceLimitReached(infoJson) {
@@ -81,12 +85,12 @@ Rectangle {
             } catch(e) {
                 console.log("Erro ao parsear limite:", e)
             }
-            loginButton.enabled = true
+            root.isLoading = false
         }
         
         function onMaintenanceMode(message) {
             root.errorMessage = "🔧 Sistema em manutenção: " + message
-            loginButton.enabled = true
+            root.isLoading = false
         }
         
         function onTrialAvailable(infoJson) {
@@ -94,18 +98,21 @@ Rectangle {
                 var info = JSON.parse(infoJson)
                 root.isTrialEligible = true
                 root.trialDays = info.trial_days || 3
-                // Mostra modal de trial disponível ou redireciona
-                root.showAnimation = true  // Deixa entrar e mostrar opção de trial
+                root.showAnimation = true
             } catch(e) {
                 console.log("Erro ao parsear trial:", e)
             }
-            loginButton.enabled = true
+            root.isLoading = false
         }
         
         function onNoLicense(message) {
             root.errorMessage = message
             root.trialAlreadyUsed = true
-            loginButton.enabled = true
+            root.isLoading = false
+        }
+        
+        function onLoadingChanged(loading) {
+            root.isLoading = loading
         }
     }
     
@@ -411,6 +418,8 @@ Rectangle {
                                             clip: true
                                             verticalAlignment: TextInput.AlignVCenter
                                             selectByMouse: true
+                                            enabled: !root.isLoading
+                                            opacity: enabled ? 1.0 : 0.6
                                             
                                             Text {
                                                 visible: !emailInput.text && !emailInput.activeFocus
@@ -491,6 +500,8 @@ Rectangle {
                                             echoMode: TextInput.Password
                                             verticalAlignment: TextInput.AlignVCenter
                                             selectByMouse: true
+                                            enabled: !root.isLoading
+                                            opacity: enabled ? 1.0 : 0.6
                                             
                                             Text {
                                                 visible: !passwordInput.text && !passwordInput.activeFocus
@@ -679,11 +690,11 @@ Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 48
                             radius: 8
-                            color: loginButtonMouse.containsMouse && enabled ? 
+                            color: loginButtonMouse.containsMouse && !root.isLoading ? 
                                    Qt.lighter(Theme.primary, loginButtonMouse.pressed ? 0.9 : 1.1) : 
-                                   (enabled ? Theme.primary : Theme.muted)
+                                   (!root.isLoading ? Theme.primary : Theme.muted)
                             
-                            property bool enabled: true
+                            property bool enabled: !root.isLoading
                             
                             Behavior on color { ColorAnimation { duration: 150 } }
                             
@@ -752,9 +763,16 @@ Rectangle {
                                         return
                                     }
                                     
+                                    // Verifica se backend existe
+                                    if (!root.backend) {
+                                        root.errorMessage = "Erro interno: backend não disponível"
+                                        console.log("ERRO: root.backend é null/undefined")
+                                        return
+                                    }
+                                    
                                     // Limpa erro e inicia login
                                     root.errorMessage = ""
-                                    loginButton.enabled = false
+                                    root.isLoading = true
                                     root.backend.login(emailInput.text.trim(), passwordInput.text)
                                 }
                             }
