@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtWebEngine 1.10
 import ".."
 import "../components"
 
@@ -11,10 +12,34 @@ Rectangle {
     signal loginSuccess()
     
     property bool showAnimation: false
+    property bool showBannedModal: false
+    property bool showDeviceLimitModal: false
+    property string banReason: ""
+    property int activeDevices: 0
+    property int maxDevices: 1
+    property string deviceLimitError: ""
+    property bool recaptchaEnabled: false
+    property string recaptchaSiteKey: ""
+    property bool recaptchaVerified: false
+    property string errorMessage: ""
     
     // Simple fade in
     opacity: 0
-    Component.onCompleted: fadeIn.start()
+    Component.onCompleted: {
+        fadeIn.start()
+        loadRecaptchaSettings()
+    }
+    
+    function loadRecaptchaSettings() {
+        var settingsJson = backend.getRecaptchaSettings()
+        try {
+            var settings = JSON.parse(settingsJson)
+            recaptchaEnabled = settings.enabled || false
+            recaptchaSiteKey = settings.site_key || ""
+        } catch(e) {
+            console.log("Erro ao carregar reCAPTCHA:", e)
+        }
+    }
     
     NumberAnimation {
         id: fadeIn
@@ -23,6 +48,39 @@ Rectangle {
         from: 0; to: 1
         duration: 300
         easing.type: Easing.OutCubic
+    }
+    
+    // Connections com o backend
+    Connections {
+        target: backend
+        
+        function onLoginSuccess(userData) {
+            root.showAnimation = true
+        }
+        
+        function onLoginError(message) {
+            root.errorMessage = message
+            loginButton.enabled = true
+        }
+        
+        function onUserBanned(reason) {
+            root.banReason = reason
+            root.showBannedModal = true
+            loginButton.enabled = true
+        }
+        
+        function onDeviceLimitReached(infoJson) {
+            try {
+                var info = JSON.parse(infoJson)
+                root.activeDevices = info.active_count
+                root.maxDevices = info.max_allowed
+                root.deviceLimitError = info.error
+                root.showDeviceLimitModal = true
+            } catch(e) {
+                console.log("Erro ao parsear limite:", e)
+            }
+            loginButton.enabled = true
+        }
     }
     
     RowLayout {
@@ -235,6 +293,28 @@ Rectangle {
                         Layout.margins: 28
                         spacing: 24
                         
+                        // Error message
+                        Rectangle {
+                            visible: root.errorMessage !== ""
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: errorText.height + 20
+                            color: Qt.rgba(0.9, 0.2, 0.2, 0.1)
+                            border.width: 1
+                            border.color: Qt.rgba(0.9, 0.2, 0.2, 0.3)
+                            radius: 8
+                            
+                            Text {
+                                id: errorText
+                                anchors.centerIn: parent
+                                width: parent.width - 20
+                                text: root.errorMessage
+                                font.pixelSize: 12
+                                color: Theme.destructive
+                                wrapMode: Text.WordWrap
+                                horizontalAlignment: Text.AlignHCenter
+                            }
+                        }
+                        
                         // Fields
                         ColumnLayout {
                             Layout.fillWidth: true
@@ -312,6 +392,8 @@ Rectangle {
                                                 font.pixelSize: 14
                                                 color: Theme.subtleForeground
                                             }
+                                            
+                                            onTextChanged: root.errorMessage = ""
                                         }
                                     }
                                 }
@@ -390,90 +472,553 @@ Rectangle {
                                                 font.pixelSize: 14
                                                 color: Theme.subtleForeground
                                             }
+                                            
+                                            onTextChanged: root.errorMessage = ""
+                                        }
+                                        
+                                        Icon {
+                                            name: passwordInput.echoMode === TextInput.Password ? "eyeOff" : "eye"
+                                            size: 18
+                                            color: togglePasswordMouse.containsMouse ? Theme.foreground : Theme.mutedForeground
+                                            
+                                            Behavior on color { ColorAnimation { duration: 150 } }
+                                            
+                                            MouseArea {
+                                                id: togglePasswordMouse
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    passwordInput.echoMode = passwordInput.echoMode === TextInput.Password 
+                                                        ? TextInput.Normal 
+                                                        : TextInput.Password
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                         
-                        // Login Button
+                        // reCAPTCHA placeholder (se habilitado)
                         Rectangle {
-                            id: loginBtn
+                            visible: root.recaptchaEnabled
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 78
+                            color: Theme.muted
+                            border.width: 1
+                            border.color: root.recaptchaVerified ? Theme.accent : Theme.border
+                            radius: 8
+                            
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.margins: 16
+                                spacing: 12
+                                
+                                // Checkbox simulado
+                                Rectangle {
+                                    Layout.preferredWidth: 24
+                                    Layout.preferredHeight: 24
+                                    radius: 4
+                                    color: root.recaptchaVerified ? Theme.accent : "transparent"
+                                    border.width: 2
+                                    border.color: root.recaptchaVerified ? Theme.accent : Theme.border
+                                    
+                                    Icon {
+                                        visible: root.recaptchaVerified
+                                        anchors.centerIn: parent
+                                        name: "check"
+                                        size: 14
+                                        color: Theme.background
+                                    }
+                                    
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            // Simula verificação (em produção seria o widget real)
+                                            root.recaptchaVerified = !root.recaptchaVerified
+                                        }
+                                    }
+                                }
+                                
+                                Text {
+                                    text: "Não sou um robô"
+                                    font.pixelSize: 14
+                                    color: Theme.foreground
+                                }
+                                
+                                Item { Layout.fillWidth: true }
+                                
+                                // reCAPTCHA logo
+                                ColumnLayout {
+                                    spacing: 2
+                                    
+                                    Image {
+                                        Layout.preferredWidth: 32
+                                        Layout.preferredHeight: 32
+                                        source: "https://www.gstatic.com/recaptcha/api2/logo_48.png"
+                                        fillMode: Image.PreserveAspectFit
+                                    }
+                                    
+                                    Text {
+                                        text: "reCAPTCHA"
+                                        font.pixelSize: 8
+                                        color: Theme.mutedForeground
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Login button
+                        Rectangle {
+                            id: loginButton
                             Layout.fillWidth: true
                             Layout.preferredHeight: 48
                             radius: 8
-                            color: loginBtnMouse.pressed ? Qt.darker(Theme.primary, 1.1) : 
-                                   loginBtnMouse.containsMouse ? Qt.lighter(Theme.primary, 1.1) : Theme.primary
+                            color: loginButtonMouse.containsMouse && enabled ? 
+                                   Qt.lighter(Theme.primary, loginButtonMouse.pressed ? 0.9 : 1.1) : 
+                                   (enabled ? Theme.primary : Theme.muted)
+                            
+                            property bool enabled: true
                             
                             Behavior on color { ColorAnimation { duration: 150 } }
                             
                             RowLayout {
                                 anchors.centerIn: parent
-                                spacing: 10
+                                spacing: 8
                                 
-                                Icon {
-                                    name: "logIn"
-                                    size: 18
-                                    color: "#ffffff"
+                                // Loading indicator
+                                Rectangle {
+                                    visible: !loginButton.enabled
+                                    Layout.preferredWidth: 16
+                                    Layout.preferredHeight: 16
+                                    radius: 8
+                                    color: "transparent"
+                                    border.width: 2
+                                    border.color: Theme.background
+                                    
+                                    Rectangle {
+                                        width: 8
+                                        height: 2
+                                        radius: 1
+                                        color: Theme.background
+                                        anchors.centerIn: parent
+                                        
+                                        RotationAnimation on rotation {
+                                            from: 0
+                                            to: 360
+                                            duration: 1000
+                                            loops: Animation.Infinite
+                                            running: !loginButton.enabled
+                                        }
+                                    }
                                 }
                                 
                                 Text {
-                                    text: "Entrar"
+                                    text: loginButton.enabled ? "Entrar" : "Entrando..."
                                     font.pixelSize: 14
                                     font.weight: Font.DemiBold
-                                    color: "#ffffff"
+                                    color: loginButton.enabled ? Theme.primaryForeground : Theme.mutedForeground
                                 }
                             }
                             
                             MouseArea {
-                                id: loginBtnMouse
+                                id: loginButtonMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: loginButton.enabled ? Qt.PointingHandCursor : Qt.WaitCursor
+                                
+                                onClicked: {
+                                    if (!loginButton.enabled) return
+                                    
+                                    // Validações básicas
+                                    if (emailInput.text.trim() === "") {
+                                        root.errorMessage = "Por favor, informe seu email"
+                                        return
+                                    }
+                                    
+                                    if (passwordInput.text === "") {
+                                        root.errorMessage = "Por favor, informe sua senha"
+                                        return
+                                    }
+                                    
+                                    // Verificar reCAPTCHA se habilitado
+                                    if (root.recaptchaEnabled && !root.recaptchaVerified) {
+                                        root.errorMessage = "Por favor, complete a verificação reCAPTCHA"
+                                        return
+                                    }
+                                    
+                                    // Limpa erro e inicia login
+                                    root.errorMessage = ""
+                                    loginButton.enabled = false
+                                    backend.login(emailInput.text.trim(), passwordInput.text)
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Divider
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 1
+                        color: Theme.border
+                    }
+                    
+                    // Footer
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.margins: 20
+                        
+                        Text {
+                            text: "Não tem uma conta?"
+                            font.pixelSize: 13
+                            color: Theme.mutedForeground
+                        }
+                        
+                        Text {
+                            text: "Criar conta"
+                            font.pixelSize: 13
+                            font.weight: Font.DemiBold
+                            color: createAccountMouse.containsMouse ? Theme.primaryHover : Theme.primary
+                            
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                            
+                            MouseArea {
+                                id: createAccountMouse
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: root.showAnimation = true
+                                onClicked: Qt.openUrlExternally("https://dlg-v1.lovable.app/login")
                             }
                         }
                         
-                        // Divider
-                        RowLayout {
+                        Item { Layout.fillWidth: true }
+                    }
+                }
+            }
+        }
+    }
+    
+    // ========== MODAL: USUÁRIO BANIDO ==========
+    Rectangle {
+        id: bannedModal
+        visible: root.showBannedModal
+        anchors.fill: parent
+        color: Qt.rgba(0, 0, 0, 0.8)
+        z: 100
+        
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {} // Bloqueia cliques
+        }
+        
+        Rectangle {
+            anchors.centerIn: parent
+            width: 420
+            height: bannedContent.height + 48
+            color: Theme.card
+            border.width: 1
+            border.color: Theme.destructive
+            radius: 16
+            
+            ColumnLayout {
+                id: bannedContent
+                anchors.centerIn: parent
+                width: parent.width - 48
+                spacing: 20
+                
+                // Icon
+                Rectangle {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: 64
+                    Layout.preferredHeight: 64
+                    radius: 32
+                    color: Qt.rgba(0.9, 0.2, 0.2, 0.15)
+                    
+                    Icon {
+                        anchors.centerIn: parent
+                        name: "ban"
+                        size: 32
+                        color: Theme.destructive
+                    }
+                }
+                
+                // Title
+                Text {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: "Conta Suspensa"
+                    font.pixelSize: 22
+                    font.weight: Font.Bold
+                    color: Theme.destructive
+                }
+                
+                // Message
+                Text {
+                    Layout.fillWidth: true
+                    text: "Sua conta foi suspensa e você não pode acessar o sistema."
+                    font.pixelSize: 14
+                    color: Theme.mutedForeground
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                
+                // Reason box
+                Rectangle {
+                    visible: root.banReason !== ""
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: reasonText.height + 24
+                    color: Qt.rgba(0.9, 0.2, 0.2, 0.1)
+                    border.width: 1
+                    border.color: Qt.rgba(0.9, 0.2, 0.2, 0.3)
+                    radius: 8
+                    
+                    ColumnLayout {
+                        anchors.centerIn: parent
+                        width: parent.width - 24
+                        spacing: 4
+                        
+                        Text {
+                            text: "Motivo:"
+                            font.pixelSize: 12
+                            font.weight: Font.Medium
+                            color: Theme.destructive
+                        }
+                        
+                        Text {
+                            id: reasonText
                             Layout.fillWidth: true
-                            spacing: 16
-                            
-                            Rectangle {
-                                Layout.fillWidth: true
-                                height: 1
-                                color: Theme.border
-                            }
+                            text: root.banReason
+                            font.pixelSize: 13
+                            color: Theme.foreground
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+                }
+                
+                // Support text
+                Text {
+                    Layout.fillWidth: true
+                    text: "Se você acredita que isso é um erro, entre em contato com o suporte."
+                    font.pixelSize: 12
+                    color: Theme.subtleForeground
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                
+                // Close button
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 44
+                    radius: 8
+                    color: closeBannedMouse.containsMouse ? Qt.lighter(Theme.muted, 1.1) : Theme.muted
+                    border.width: 1
+                    border.color: Theme.border
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Entendi"
+                        font.pixelSize: 14
+                        font.weight: Font.Medium
+                        color: Theme.foreground
+                    }
+                    
+                    MouseArea {
+                        id: closeBannedMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.showBannedModal = false
+                    }
+                }
+            }
+        }
+    }
+    
+    // ========== MODAL: LIMITE DE DISPOSITIVOS ==========
+    Rectangle {
+        id: deviceLimitModal
+        visible: root.showDeviceLimitModal
+        anchors.fill: parent
+        color: Qt.rgba(0, 0, 0, 0.8)
+        z: 100
+        
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {} // Bloqueia cliques
+        }
+        
+        Rectangle {
+            anchors.centerIn: parent
+            width: 420
+            height: deviceLimitContent.height + 48
+            color: Theme.card
+            border.width: 1
+            border.color: Theme.warning
+            radius: 16
+            
+            ColumnLayout {
+                id: deviceLimitContent
+                anchors.centerIn: parent
+                width: parent.width - 48
+                spacing: 20
+                
+                // Icon
+                Rectangle {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: 64
+                    Layout.preferredHeight: 64
+                    radius: 32
+                    color: Qt.rgba(0.95, 0.6, 0.1, 0.15)
+                    
+                    Icon {
+                        anchors.centerIn: parent
+                        name: "monitor"
+                        size: 32
+                        color: Theme.warning
+                    }
+                }
+                
+                // Title
+                Text {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: "Limite de Dispositivos"
+                    font.pixelSize: 22
+                    font.weight: Font.Bold
+                    color: Theme.warning
+                }
+                
+                // Message
+                Text {
+                    Layout.fillWidth: true
+                    text: "Você atingiu o limite máximo de dispositivos conectados ao seu plano."
+                    font.pixelSize: 14
+                    color: Theme.mutedForeground
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                
+                // Stats box
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 80
+                    color: Theme.muted
+                    border.width: 1
+                    border.color: Theme.border
+                    radius: 8
+                    
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 16
+                        
+                        ColumnLayout {
+                            spacing: 4
+                            Layout.fillWidth: true
                             
                             Text {
-                                text: "ou"
+                                text: "Dispositivos ativos"
                                 font.pixelSize: 12
                                 color: Theme.mutedForeground
                             }
                             
-                            Rectangle {
-                                Layout.fillWidth: true
-                                height: 1
-                                color: Theme.border
+                            Text {
+                                text: root.activeDevices + " / " + root.maxDevices
+                                font.pixelSize: 24
+                                font.weight: Font.Bold
+                                color: Theme.destructive
                             }
                         }
                         
-                        // Create account link
-                        Text {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: "Não tem uma conta? <a href='https://dlgconnect.com/login' style='color: " + Theme.primary + "; text-decoration: none;'>Criar conta</a>"
-                            textFormat: Text.RichText
-                            font.pixelSize: 13
-                            color: Theme.mutedForeground
+                        Rectangle {
+                            Layout.preferredWidth: 1
+                            Layout.fillHeight: true
+                            color: Theme.border
+                        }
+                        
+                        ColumnLayout {
+                            spacing: 4
+                            Layout.fillWidth: true
                             
-                            onLinkActivated: function(link) {
-                                Qt.openUrlExternally(link)
+                            Text {
+                                text: "Seu plano permite"
+                                font.pixelSize: 12
+                                color: Theme.mutedForeground
                             }
                             
-                            MouseArea {
-                                anchors.fill: parent
-                                acceptedButtons: Qt.NoButton
-                                cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            Text {
+                                text: root.maxDevices + " dispositivo" + (root.maxDevices > 1 ? "s" : "")
+                                font.pixelSize: 16
+                                font.weight: Font.Medium
+                                color: Theme.foreground
+                            }
+                        }
+                    }
+                }
+                
+                // Instructions
+                Text {
+                    Layout.fillWidth: true
+                    text: "Para continuar, desconecte um dispositivo pelo painel web ou faça upgrade do seu plano."
+                    font.pixelSize: 12
+                    color: Theme.subtleForeground
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                
+                // Buttons
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+                    
+                    // Close button
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 44
+                        radius: 8
+                        color: closeDeviceMouse.containsMouse ? Qt.lighter(Theme.muted, 1.1) : Theme.muted
+                        border.width: 1
+                        border.color: Theme.border
+                        
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Fechar"
+                            font.pixelSize: 14
+                            font.weight: Font.Medium
+                            color: Theme.foreground
+                        }
+                        
+                        MouseArea {
+                            id: closeDeviceMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.showDeviceLimitModal = false
+                        }
+                    }
+                    
+                    // Upgrade button
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 44
+                        radius: 8
+                        color: upgradeMouse.containsMouse ? Qt.lighter(Theme.primary, 1.1) : Theme.primary
+                        
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Fazer Upgrade"
+                            font.pixelSize: 14
+                            font.weight: Font.Medium
+                            color: Theme.primaryForeground
+                        }
+                        
+                        MouseArea {
+                            id: upgradeMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                Qt.openUrlExternally("https://dlg-v1.lovable.app/dashboard")
+                                root.showDeviceLimitModal = false
                             }
                         }
                     }
@@ -482,16 +1027,13 @@ Rectangle {
         }
     }
     
-    // Telegram Animation Overlay
+    // Telegram animation overlay
     Loader {
-        id: animationLoader
         anchors.fill: parent
         active: root.showAnimation
         sourceComponent: TelegramAnimation {
-            onAnimationComplete: {
-                root.showAnimation = false
-                root.loginSuccess()
-            }
+            onAnimationComplete: root.loginSuccess()
         }
+        z: 200
     }
 }

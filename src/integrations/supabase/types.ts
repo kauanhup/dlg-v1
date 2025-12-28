@@ -47,6 +47,72 @@ export type Database = {
         }
         Relationships: []
       }
+      bot_activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          device_id: string | null
+          id: string
+          ip_address: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          device_id?: string | null
+          id?: string
+          ip_address?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          device_id?: string | null
+          id?: string
+          ip_address?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bot_device_sessions: {
+        Row: {
+          created_at: string
+          device_id: string
+          device_name: string | null
+          device_os: string | null
+          id: string
+          ip_address: string | null
+          is_active: boolean
+          last_activity_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          device_name?: string | null
+          device_os?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          last_activity_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          device_name?: string | null
+          device_os?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          last_activity_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bot_files: {
         Row: {
           file_name: string
@@ -751,6 +817,7 @@ export type Database = {
           features: string[] | null
           id: string
           is_active: boolean
+          max_devices: number | null
           max_subscriptions_per_user: number | null
           name: string
           period: number
@@ -763,6 +830,7 @@ export type Database = {
           features?: string[] | null
           id?: string
           is_active?: boolean
+          max_devices?: number | null
           max_subscriptions_per_user?: number | null
           name: string
           period: number
@@ -775,6 +843,7 @@ export type Database = {
           features?: string[] | null
           id?: string
           is_active?: boolean
+          max_devices?: number | null
           max_subscriptions_per_user?: number | null
           name?: string
           period?: number
