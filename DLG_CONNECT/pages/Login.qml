@@ -38,6 +38,12 @@ Rectangle {
     opacity: 0
     Component.onCompleted: {
         fadeIn.start()
+        // Carregar configurações do reCAPTCHA do backend
+        if (root.backend) {
+            root.recaptchaEnabled = root.backend.recaptchaEnabled
+            root.recaptchaSiteKey = root.backend.recaptchaSiteKey
+            console.log("reCAPTCHA enabled:", root.recaptchaEnabled, "Site key:", root.recaptchaSiteKey)
+        }
     }
     
     NumberAnimation {
@@ -773,7 +779,8 @@ Rectangle {
                                     // Limpa erro e inicia login
                                     root.errorMessage = ""
                                     root.isLoading = true
-                                    root.backend.login(emailInput.text.trim(), passwordInput.text)
+                                    // Passa o token do reCAPTCHA (vazio se não habilitado)
+                                    root.backend.login(emailInput.text.trim(), passwordInput.text, root.recaptchaToken)
                                 }
                             }
                         }

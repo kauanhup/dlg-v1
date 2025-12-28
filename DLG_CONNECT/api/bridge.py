@@ -52,6 +52,8 @@ class Backend(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._loading = False
+        # Carregar configurações do reCAPTCHA na inicialização
+        api.load_recaptcha_settings()
     
     # ========== PROPERTIES ==========
     
@@ -103,21 +105,32 @@ class Backend(QObject):
         """Retorna tipo de acesso: 'license', 'trial', ou 'none'"""
         return api.get_access_type()
     
+    @Property(bool)
+    def recaptchaEnabled(self) -> bool:
+        """Retorna se o reCAPTCHA está habilitado"""
+        return api.recaptcha_enabled
+    
+    @Property(str)
+    def recaptchaSiteKey(self) -> str:
+        """Retorna a site key do reCAPTCHA"""
+        return api.recaptcha_site_key
+    
     # ========== SLOTS (QML -> Python) ==========
     
-    @Slot(str, str)
-    def login(self, email: str, password: str):
+    @Slot(str, str, str)
+    def login(self, email: str, password: str, recaptcha_token: str = ""):
         """
         Faz login completo com todas as verificações:
-        1. Valida credenciais
-        2. Verifica manutenção
-        3. Verifica ban
-        4. Verifica licença/trial
-        5. Verifica limite de dispositivos
+        1. Valida reCAPTCHA (se habilitado)
+        2. Valida credenciais
+        3. Verifica manutenção
+        4. Verifica ban
+        5. Verifica licença/trial
+        6. Verifica limite de dispositivos
         """
         self.loading = True
         
-        result = api.full_login(email, password)
+        result = api.full_login(email, password, recaptcha_token)
         
         self.loading = False
         
