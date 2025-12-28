@@ -550,6 +550,7 @@ Rectangle {
                         
                         // reCAPTCHA widget (se habilitado)
                         Rectangle {
+                            id: recaptchaContainer
                             visible: root.recaptchaEnabled
                             Layout.fillWidth: true
                             Layout.preferredHeight: root.recaptchaVerified ? 60 : 90
@@ -601,56 +602,61 @@ Rectangle {
                             // WebView para reCAPTCHA
                             WebEngineView {
                                 id: recaptchaWebView
-                                visible: !root.recaptchaVerified && root.recaptchaEnabled
+                                visible: !root.recaptchaVerified && root.recaptchaEnabled && root.recaptchaSiteKey !== ""
                                 anchors.fill: parent
                                 anchors.margins: 4
                                 backgroundColor: "transparent"
                                 
-                                Component.onCompleted: {
-                                    if (root.recaptchaEnabled && root.recaptchaSiteKey) {
+                                // Carrega o HTML quando a siteKey estiver disponível
+                                onVisibleChanged: {
+                                    if (visible && root.recaptchaSiteKey !== "" && url.toString() === "") {
                                         loadRecaptchaHtml()
                                     }
                                 }
                                 
                                 function loadRecaptchaHtml() {
+                                    console.log("Loading reCAPTCHA with site key:", root.recaptchaSiteKey)
                                     var html = '<!DOCTYPE html>' +
                                         '<html><head>' +
+                                        '<meta charset="UTF-8">' +
                                         '<meta name="viewport" content="width=device-width, initial-scale=1">' +
                                         '<script src="https://www.google.com/recaptcha/api.js" async defer></script>' +
                                         '<style>' +
-                                        'body { margin: 0; padding: 8px; background: transparent; display: flex; justify-content: center; }' +
+                                        'body { margin: 0; padding: 8px; background: transparent; display: flex; justify-content: center; align-items: center; min-height: 70px; }' +
                                         '.g-recaptcha { transform: scale(0.85); transform-origin: center; }' +
                                         '</style>' +
                                         '</head><body>' +
-                                        '<div class="g-recaptcha" data-sitekey="' + root.recaptchaSiteKey + '" data-callback="onVerify" data-theme="dark"></div>' +
+                                        '<div class="g-recaptcha" data-sitekey="' + root.recaptchaSiteKey + '" data-callback="onRecaptchaVerify" data-theme="dark"></div>' +
                                         '<script>' +
-                                        'function onVerify(token) {' +
-                                        '  window.recaptchaChannel.postMessage(token);' +
+                                        'function onRecaptchaVerify(token) {' +
+                                        '  console.log("reCAPTCHA verified, token length:", token.length);' +
+                                        '  window.location.href = "recaptcha://verified/" + encodeURIComponent(token);' +
                                         '}' +
                                         '</script>' +
                                         '</body></html>';
-                                    loadHtml(html)
+                                    loadHtml(html, "https://recaptcha.local/")
                                 }
                                 
-                                webChannel: WebChannel {
-                                    id: recaptchaChannel
-                                    registeredObjects: [recaptchaHandler]
+                                // Intercepta navegação para capturar o token
+                                onNavigationRequested: function(request) {
+                                    var urlStr = request.url.toString()
+                                    console.log("Navigation requested:", urlStr)
+                                    
+                                    if (urlStr.indexOf("recaptcha://verified/") === 0) {
+                                        // Extrai o token da URL
+                                        var token = decodeURIComponent(urlStr.replace("recaptcha://verified/", ""))
+                                        console.log("reCAPTCHA token captured, length:", token.length)
+                                        root.recaptchaToken = token
+                                        root.recaptchaVerified = true
+                                        request.action = WebEngineNavigationRequest.IgnoreRequest
+                                    }
                                 }
-                            }
-                            
-                            // Handler para receber o token do reCAPTCHA
-                            QtObject {
-                                id: recaptchaHandler
-                                WebChannel.id: "recaptchaChannel"
                                 
-                                function postMessage(token) {
-                                    console.log("reCAPTCHA token received")
-                                    root.recaptchaToken = token
-                                    root.recaptchaVerified = true
-                                }
+                                settings.javascriptEnabled: true
+                                settings.localContentCanAccessRemoteUrls: true
                             }
                             
-                            // Fallback: botão manual caso WebView não funcione
+                            // Fallback: widget manual caso WebView não carregue
                             Rectangle {
                                 visible: !root.recaptchaVerified && !recaptchaWebView.visible
                                 anchors.fill: parent
@@ -660,20 +666,33 @@ Rectangle {
                                     anchors.centerIn: parent
                                     spacing: 12
                                     
+                                    // Checkbox visual
                                     Rectangle {
-                                        Layout.preferredWidth: 24
-                                        Layout.preferredHeight: 24
+                                        id: manualCheckbox
+                                        Layout.preferredWidth: 28
+                                        Layout.preferredHeight: 28
                                         radius: 4
-                                        color: "transparent"
+                                        color: manualCheckMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent"
                                         border.width: 2
-                                        border.color: Theme.border
+                                        border.color: manualCheckMouse.containsMouse ? Theme.primary : Theme.border
+                                        
+                                        Behavior on border.color { ColorAnimation { duration: 150 } }
                                         
                                         MouseArea {
+                                            id: manualCheckMouse
                                             anchors.fill: parent
+                                            hoverEnabled: true
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
-                                                // Fallback: marca como verificado (para testes)
-                                                root.recaptchaVerified = true
+                                                // Tenta abrir o reCAPTCHA no navegador externo
+                                                if (root.recaptchaSiteKey !== "") {
+                                                    recaptchaWebView.loadRecaptchaHtml()
+                                                    recaptchaWebView.visible = true
+                                                } else {
+                                                    // Fallback para testes locais
+                                                    root.recaptchaVerified = true
+                                                    root.recaptchaToken = "manual_verification_test"
+                                                }
                                             }
                                         }
                                     }
@@ -686,9 +705,58 @@ Rectangle {
                                     
                                     Item { Layout.fillWidth: true }
                                     
+                                    Column {
+                                        spacing: 2
+                                        
+                                        Image {
+                                            source: "https://www.gstatic.com/recaptcha/api2/logo_48.png"
+                                            width: 32
+                                            height: 32
+                                            fillMode: Image.PreserveAspectFit
+                                            opacity: 0.7
+                                        }
+                                        
+                                        Text {
+                                            text: "reCAPTCHA"
+                                            font.pixelSize: 9
+                                            color: Theme.mutedForeground
+                                            horizontalAlignment: Text.AlignHCenter
+                                            width: 32
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Loading indicator enquanto carrega
+                            Rectangle {
+                                visible: recaptchaWebView.loading
+                                anchors.fill: parent
+                                color: Theme.muted
+                                
+                                RowLayout {
+                                    anchors.centerIn: parent
+                                    spacing: 8
+                                    
+                                    Rectangle {
+                                        width: 16
+                                        height: 16
+                                        radius: 8
+                                        color: "transparent"
+                                        border.width: 2
+                                        border.color: Theme.primary
+                                        
+                                        RotationAnimation on rotation {
+                                            from: 0
+                                            to: 360
+                                            duration: 1000
+                                            loops: Animation.Infinite
+                                            running: recaptchaWebView.loading
+                                        }
+                                    }
+                                    
                                     Text {
-                                        text: "reCAPTCHA"
-                                        font.pixelSize: 10
+                                        text: "Carregando verificação..."
+                                        font.pixelSize: 12
                                         color: Theme.mutedForeground
                                     }
                                 }
