@@ -2,6 +2,7 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Window 2.15
+import DLGConnect 1.0
 import "pages"
 import "components"
 
@@ -14,6 +15,11 @@ ApplicationWindow {
     minimumHeight: 500
     title: "DLG Connect v2.0.1"
     color: "#080a0f"
+    
+    // Backend instance - accessible to all pages
+    Backend {
+        id: backend
+    }
 
     // Stack view for navigation
     StackView {
@@ -100,6 +106,7 @@ ApplicationWindow {
     Component {
         id: loginPage
         Login {
+            backend: mainWindow.backend
             onLoginSuccess: mainWindow.navigateToMain()
         }
     }
@@ -107,7 +114,9 @@ ApplicationWindow {
     // Main app component (after login)
     Component {
         id: mainApp
-        MainLayout {}
+        MainLayout {
+            backend: mainWindow.backend
+        }
     }
 
     // Navigation function

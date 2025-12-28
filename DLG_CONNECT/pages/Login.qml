@@ -10,6 +10,9 @@ Rectangle {
     id: root
     color: Theme.background
     
+    // Backend property - injected from parent
+    property var backend: null
+    
     signal loginSuccess()
     
     property bool showAnimation: false
