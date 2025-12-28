@@ -86,6 +86,32 @@ Rectangle {
         }
     }
     
+    // Ativar período de teste gratuito
+    function activateTrial() {
+        if (backend === null || backend === undefined) return
+        
+        console.log("Ativando período de teste...")
+        root.isLoading = true
+        
+        var result = backend.registerTrial()
+        try {
+            var data = JSON.parse(result)
+            if (data.success) {
+                console.log("Trial ativado com sucesso!")
+                root.showNoLicenseModal = false
+                // Tentar login novamente após ativar trial
+                backend.verifySession()
+            } else {
+                console.log("Erro ao ativar trial:", data.error)
+                root.errorMessage = data.error || "Erro ao ativar teste gratuito"
+            }
+        } catch(e) {
+            console.log("Erro ao processar resposta de trial:", e)
+            root.errorMessage = "Erro ao ativar teste gratuito"
+        }
+        root.isLoading = false
+    }
+    
     Timer {
         id: autoLoginTimer
         interval: 500
@@ -1628,12 +1654,12 @@ Rectangle {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
+                        onClicked: {
                                 if (root.canActivateTrial) {
-                                    // TODO: Ativar trial
-                                    Qt.openUrlExternally("https://dlg-v1.lovable.app/dashboard")
+                                    // Ativar trial no bot
+                                    activateTrial()
                                 } else {
-                                    Qt.openUrlExternally("https://dlg-v1.lovable.app/comprar")
+                                    Qt.openUrlExternally("https://dlgconnect.com/comprar")
                                 }
                                 root.showNoLicenseModal = false
                             }
