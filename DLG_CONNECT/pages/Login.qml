@@ -1082,10 +1082,6 @@ Rectangle {
             color: Theme.card
             radius: 20
             
-            // Glow effect
-            layer.enabled: true
-            layer.effect: Item {}
-            
             // Gradient border effect
             Rectangle {
                 anchors.fill: parent
