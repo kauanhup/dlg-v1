@@ -145,6 +145,7 @@ class DLGApiClient:
         }
         
         try:
+            print(f"[API] Requisição: {action} -> {self.API_URL}")
             response = requests.post(
                 self.API_URL,
                 json=payload,
@@ -152,6 +153,7 @@ class DLGApiClient:
                 timeout=30
             )
             
+            print(f"[API] Resposta: {response.status_code}")
             result = response.json()
             
             # Adiciona status code ao resultado
@@ -160,10 +162,16 @@ class DLGApiClient:
             return result
             
         except requests.exceptions.Timeout:
+            print(f"[API] Timeout ao conectar em: {self.API_URL}")
             return {"success": False, "error": "Timeout na conexão com o servidor"}
-        except requests.exceptions.ConnectionError:
-            return {"success": False, "error": "Erro de conexão. Verifique sua internet."}
+        except requests.exceptions.ConnectionError as e:
+            print(f"[API] Erro de conexão: {self.API_URL} - {str(e)}")
+            return {"success": False, "error": f"Erro de conexão com {self.API_URL}"}
+        except requests.exceptions.SSLError as e:
+            print(f"[API] Erro SSL: {str(e)}")
+            return {"success": False, "error": "Erro de certificado SSL"}
         except Exception as e:
+            print(f"[API] Erro: {str(e)}")
             return {"success": False, "error": f"Erro: {str(e)}"}
     
     # ========== AUTENTICAÇÃO ==========
