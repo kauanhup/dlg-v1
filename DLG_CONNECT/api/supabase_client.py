@@ -243,28 +243,36 @@ class DLGApiClient:
         
         result = self._api_request("full_login_check", payload)
         
+        # DEBUG: Log completo da resposta
+        print(f"[API] full_login_check RAW response: {result}")
+        
         # Mapear resposta da edge function para formato esperado pelo bridge
-        # A edge function retorna 'reason', o bridge espera 'code'
-        access = result.get("access", True)  # Default true para manter compatibilidade
+        success = result.get("success", False)
+        access = result.get("access")  # Não usar default aqui!
         reason = result.get("reason", "")
+        code = result.get("code", "")
         
         # LOG para debug
-        print(f"[API] full_login_check result: success={result.get('success')}, access={access}, reason={reason}")
+        print(f"[API] full_login_check parsed: success={success}, access={access}, reason={reason}, code={code}")
         
         # Se não tem acesso ou não teve sucesso, mapear o erro
-        if not result.get("success") or access == False:
-            # Mapear reason -> code
-            reason_to_code = {
-                "banned": "BANNED",
-                "maintenance": "MAINTENANCE", 
-                "device_limit": "DEVICE_LIMIT",
-                "no_license": "NO_LICENSE",
-                "recaptcha_required": "RECAPTCHA_REQUIRED",
-                "recaptcha_failed": "RECAPTCHA_FAILED",
-                "invalid_credentials": "INVALID_CREDENTIALS",
-            }
+        # access pode ser None, False, ou não existir - todos são "sem acesso"
+        has_access = access is True  # Só True explícito significa acesso
+        
+        if not success or not has_access:
+            # Mapear reason -> code se code não foi fornecido pela API
+            if not code:
+                reason_to_code = {
+                    "banned": "BANNED",
+                    "maintenance": "MAINTENANCE", 
+                    "device_limit": "DEVICE_LIMIT",
+                    "no_license": "NO_LICENSE",
+                    "recaptcha_required": "RECAPTCHA_REQUIRED",
+                    "recaptcha_failed": "RECAPTCHA_FAILED",
+                    "invalid_credentials": "INVALID_CREDENTIALS",
+                }
+                code = reason_to_code.get(reason, "UNKNOWN")
             
-            code = result.get("code") or reason_to_code.get(reason, "UNKNOWN")
             result["code"] = code
             result["success"] = False  # Garantir que success é False
             

@@ -135,9 +135,13 @@ class Backend(QObject):
         self.loading = False
         
         # LOG para debug
-        print(f"[Bridge] Login result: success={result.get('success')}, access={result.get('access')}, code={result.get('code')}")
+        success = result.get("success", False)
+        access = result.get("access")
+        code = result.get("code", "")
+        print(f"[Bridge] Login result: success={success}, access={access}, code={code}")
         
-        if result.get("success") and result.get("access", True):
+        # Sucesso APENAS se success=True E access=True explicitamente
+        if success is True and access is True:
             # Login bem-sucedido
             self.loginSuccess.emit(json.dumps({
                 "user": result.get("user"),

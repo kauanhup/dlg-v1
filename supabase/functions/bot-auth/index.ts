@@ -365,14 +365,15 @@ serve(async (req) => {
       }
 
       if (profile?.banned) {
-        console.log(`[bot-auth] User banned: ${userId}`);
+        console.log(`[bot-auth] User banned: ${userId}, reason: ${profile.ban_reason}`);
         return new Response(
           JSON.stringify({
             success: false,
             access: false,
             reason: "banned",
+            code: "BANNED",
             message: "Sua conta foi suspensa",
-            ban_reason: profile.ban_reason,
+            ban_reason: profile.ban_reason || "Violação dos termos de uso",
             banned_at: profile.banned_at,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
