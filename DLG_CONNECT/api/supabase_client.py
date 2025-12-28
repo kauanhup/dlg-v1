@@ -8,6 +8,7 @@ import platform
 import uuid
 import socket
 import hashlib
+import os
 from typing import Optional, Dict, Any, List
 
 
@@ -19,6 +20,7 @@ class DLGApiClient:
     # =====================================================
     API_URL = "https://gldconnect.com/api/bot-api.php"
     API_SECRET = "dlg_bot_2024_Xk9mP2nQ7rT3wY5zB8cD4fG6hJ"  # Mesma do config.php
+    RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
     
     _instance: Optional['DLGApiClient'] = None
     _current_user: Optional[Dict[str, Any]] = None
@@ -26,6 +28,11 @@ class DLGApiClient:
     _device_fingerprint: Optional[str] = None
     _license_info: Optional[Dict[str, Any]] = None
     _trial_info: Optional[Dict[str, Any]] = None
+    
+    # Configurações do reCAPTCHA (carregadas do servidor)
+    _recaptcha_enabled: bool = False
+    _recaptcha_site_key: Optional[str] = None
+    _recaptcha_secret_key: Optional[str] = None
     
     def __new__(cls):
         """Singleton pattern para garantir uma única instância"""
@@ -64,6 +71,16 @@ class DLGApiClient:
         """Retorna informações do trial"""
         return self._trial_info
     
+    @property
+    def recaptcha_enabled(self) -> bool:
+        """Retorna se o reCAPTCHA está habilitado"""
+        return self._recaptcha_enabled
+    
+    @property
+    def recaptcha_site_key(self) -> str:
+        """Retorna a site key do reCAPTCHA"""
+        return self._recaptcha_site_key or ""
+    
     # ========== DEVICE IDENTIFICATION ==========
     
     def _generate_device_fingerprint(self) -> str:
@@ -98,6 +115,70 @@ class DLGApiClient:
             "machine_id": platform.node(),
             "ip_address": ip_address
         }
+    
+    # ========== reCAPTCHA ==========
+    
+    def load_recaptcha_settings(self) -> Dict[str, Any]:
+        """
+        Carrega configurações do reCAPTCHA do servidor
+        Retorna: {"success": bool, "enabled": bool, "siteKey": str}
+        """
+        result = self._api_request("get_recaptcha_settings", {})
+        
+        if result.get("success"):
+            self._recaptcha_enabled = result.get("enabled", False)
+            self._recaptcha_site_key = result.get("siteKey", "")
+            self._recaptcha_secret_key = result.get("secretKey", "")
+        
+        return result
+    
+    def verify_recaptcha(self, token: str) -> Dict[str, Any]:
+        """
+        Valida token do reCAPTCHA com a API do Google
+        Retorna: {"success": bool, "score": float, "error": str | None}
+        """
+        if not self._recaptcha_enabled:
+            return {"success": True, "message": "reCAPTCHA desabilitado"}
+        
+        if not token:
+            return {"success": False, "error": "Token reCAPTCHA não fornecido"}
+        
+        if not self._recaptcha_secret_key:
+            # Tenta carregar as configurações primeiro
+            self.load_recaptcha_settings()
+            if not self._recaptcha_secret_key:
+                return {"success": False, "error": "Chave secreta do reCAPTCHA não configurada"}
+        
+        try:
+            response = requests.post(
+                self.RECAPTCHA_VERIFY_URL,
+                data={
+                    "secret": self._recaptcha_secret_key,
+                    "response": token
+                },
+                timeout=10
+            )
+            
+            result = response.json()
+            
+            if result.get("success"):
+                return {
+                    "success": True,
+                    "score": result.get("score", 1.0),
+                    "action": result.get("action", ""),
+                    "hostname": result.get("hostname", "")
+                }
+            else:
+                error_codes = result.get("error-codes", [])
+                return {
+                    "success": False,
+                    "error": f"Verificação falhou: {', '.join(error_codes)}"
+                }
+                
+        except requests.exceptions.Timeout:
+            return {"success": False, "error": "Timeout na verificação do reCAPTCHA"}
+        except Exception as e:
+            return {"success": False, "error": f"Erro na verificação: {str(e)}"}
     
     # ========== API COMMUNICATION ==========
     
@@ -151,9 +232,10 @@ class DLGApiClient:
         
         return result
     
-    def full_login(self, email: str, password: str) -> Dict[str, Any]:
+    def full_login(self, email: str, password: str, recaptcha_token: str = "") -> Dict[str, Any]:
         """
         Login completo com TODAS as verificações:
+        - reCAPTCHA (se habilitado)
         - Manutenção
         - Ban
         - Licença
@@ -169,9 +251,19 @@ class DLGApiClient:
             "maxDevices": int,
             "activeDevices": int,
             "error": str | None,
-            "code": str | None (MAINTENANCE, BANNED, NO_LICENSE, DEVICE_LIMIT, INVALID_CREDENTIALS)
+            "code": str | None (RECAPTCHA_FAILED, MAINTENANCE, BANNED, NO_LICENSE, DEVICE_LIMIT, INVALID_CREDENTIALS)
         }
         """
+        # Verificar reCAPTCHA primeiro (se habilitado)
+        if self._recaptcha_enabled:
+            recaptcha_result = self.verify_recaptcha(recaptcha_token)
+            if not recaptcha_result.get("success"):
+                return {
+                    "success": False,
+                    "error": recaptcha_result.get("error", "Verificação reCAPTCHA falhou"),
+                    "code": "RECAPTCHA_FAILED"
+                }
+        
         device_info = self._get_device_info()
         
         result = self._api_request("full_login_check", {
