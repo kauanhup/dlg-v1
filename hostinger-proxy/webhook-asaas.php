@@ -4,6 +4,9 @@
  * Recebe webhooks da Asaas e repassa para a Edge Function do Supabase
  */
 
+// Carregar configurações
+require_once __DIR__ . '/config.php';
+
 // Headers CORS
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -24,13 +27,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // URL da Edge Function
-$supabaseUrl = 'https://nydtfckvvslkbyolipsf.supabase.co/functions/v1/asaas-webhook';
+$supabaseUrl = SUPABASE_URL . '/functions/v1/asaas-webhook';
 
 // Ler o body da requisição
 $rawBody = file_get_contents('php://input');
 
-// Log para debug (opcional - remover em produção)
-error_log('[Asaas Webhook] Received: ' . substr($rawBody, 0, 500));
+// Log para debug (apenas se DEBUG_MODE estiver ativo)
+if (DEBUG_MODE) {
+    error_log('[Asaas Webhook] Received: ' . substr($rawBody, 0, 500));
+}
 
 // Preparar headers para repassar
 $headers = [
@@ -60,11 +65,15 @@ $error = curl_error($ch);
 curl_close($ch);
 
 // Log resultado
-error_log('[Asaas Webhook] Response code: ' . $httpCode);
+if (DEBUG_MODE) {
+    error_log('[Asaas Webhook] Response code: ' . $httpCode);
+}
 
 // Retornar resposta
 if ($error) {
-    error_log('[Asaas Webhook] cURL error: ' . $error);
+    if (DEBUG_MODE) {
+        error_log('[Asaas Webhook] cURL error: ' . $error);
+    }
     http_response_code(500);
     echo json_encode(['error' => 'Proxy error', 'details' => $error]);
 } else {
