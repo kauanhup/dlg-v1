@@ -159,13 +159,12 @@ class Backend(QObject):
                 "error": error_message
             }))
         elif error_code == "NO_LICENSE":
-            if result.get("canUseTrial"):
-                self.trialAvailable.emit(json.dumps({
-                    "trial_days": result.get("trialDays", 3),
-                    "message": error_message
-                }))
-            else:
-                self.noLicense.emit(error_message)
+            # Sempre emite noLicense com informações de trial
+            self.noLicense.emit(json.dumps({
+                "can_use_trial": result.get("canUseTrial", False),
+                "trial_days": result.get("trialDays", 3),
+                "message": error_message
+            }))
         else:
             self.loginError.emit(error_message, error_code)
     
