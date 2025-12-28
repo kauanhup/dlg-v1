@@ -23,29 +23,31 @@ class Backend(QObject):
     """
     
     # ========== SIGNALS (Python -> QML) ==========
+    # IMPORTANTE: Os nomes dos sinais devem corresponder exatamente
+    # aos handlers no QML (onLoginSuccess, onLoginError, etc.)
     
     # Auth signals
-    loginSuccess = Signal(str)  # Emite JSON com dados do usuário
-    loginError = Signal(str, str)  # Emite mensagem de erro e código
-    logoutSuccess = Signal()
+    loginSuccess = Signal(str, name="loginSuccess")  # Emite JSON com dados do usuário
+    loginError = Signal(str, str, name="loginError")  # Emite mensagem de erro e código
+    logoutSuccess = Signal(name="logoutSuccess")
     
     # Ban/Device signals
-    userBanned = Signal(str)      # Emite motivo do ban
-    deviceLimitReached = Signal(str)  # Emite JSON com info de limite
-    maintenanceMode = Signal(str)  # Emite mensagem de manutenção
+    userBanned = Signal(str, name="userBanned")      # Emite motivo do ban
+    deviceLimitReached = Signal(str, name="deviceLimitReached")  # Emite JSON com info de limite
+    maintenanceMode = Signal(str, name="maintenanceMode")  # Emite mensagem de manutenção
     
     # License/Trial signals
-    noLicense = Signal(str)  # Sem licença ativa
-    trialAvailable = Signal(str)  # Trial disponível
-    trialExpired = Signal(str)  # Trial expirado
+    noLicense = Signal(str, name="noLicense")  # Sem licença ativa
+    trialAvailable = Signal(str, name="trialAvailable")  # Trial disponível
+    trialExpired = Signal(str, name="trialExpired")  # Trial expirado
     
     # Data signals
-    profileLoaded = Signal(str)      # JSON do perfil
-    licenseLoaded = Signal(str)      # JSON da licença
+    profileLoaded = Signal(str, name="profileLoaded")      # JSON do perfil
+    licenseLoaded = Signal(str, name="licenseLoaded")      # JSON da licença
     
     # Status signals
-    loadingChanged = Signal(bool)
-    errorOccurred = Signal(str)
+    loadingChanged = Signal(bool, name="loadingChanged")
+    errorOccurred = Signal(str, name="errorOccurred")
     
     def __init__(self, parent=None):
         super().__init__(parent)
