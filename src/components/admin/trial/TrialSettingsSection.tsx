@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -7,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Clock, 
   Smartphone, 
-  Zap, 
   Save, 
   RefreshCw,
   Shield,
@@ -19,7 +17,6 @@ interface TrialSettings {
   trial_enabled: boolean;
   trial_duration_days: number;
   trial_max_devices: number;
-  trial_max_actions_per_day: number;
 }
 
 export const TrialSettingsSection = () => {
@@ -27,7 +24,6 @@ export const TrialSettingsSection = () => {
     trial_enabled: true,
     trial_duration_days: 3,
     trial_max_devices: 1,
-    trial_max_actions_per_day: 50,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -44,7 +40,6 @@ export const TrialSettingsSection = () => {
           "trial_enabled",
           "trial_duration_days",
           "trial_max_devices",
-          "trial_max_actions_per_day",
         ]);
 
       if (error) throw error;
@@ -53,7 +48,6 @@ export const TrialSettingsSection = () => {
         trial_enabled: true,
         trial_duration_days: 3,
         trial_max_devices: 1,
-        trial_max_actions_per_day: 50,
       };
 
       data?.forEach((item) => {
@@ -66,9 +60,6 @@ export const TrialSettingsSection = () => {
             break;
           case "trial_max_devices":
             newSettings.trial_max_devices = parseInt(item.value) || 1;
-            break;
-          case "trial_max_actions_per_day":
-            newSettings.trial_max_actions_per_day = parseInt(item.value) || 50;
             break;
         }
       });
@@ -93,8 +84,7 @@ export const TrialSettingsSection = () => {
       const changed = 
         settings.trial_enabled !== originalSettings.trial_enabled ||
         settings.trial_duration_days !== originalSettings.trial_duration_days ||
-        settings.trial_max_devices !== originalSettings.trial_max_devices ||
-        settings.trial_max_actions_per_day !== originalSettings.trial_max_actions_per_day;
+        settings.trial_max_devices !== originalSettings.trial_max_devices;
       setHasChanges(changed);
     }
   }, [settings, originalSettings]);
@@ -106,7 +96,6 @@ export const TrialSettingsSection = () => {
         { key: "trial_enabled", value: String(settings.trial_enabled) },
         { key: "trial_duration_days", value: String(settings.trial_duration_days) },
         { key: "trial_max_devices", value: String(settings.trial_max_devices) },
-        { key: "trial_max_actions_per_day", value: String(settings.trial_max_actions_per_day) },
       ];
 
       for (const update of updates) {
@@ -131,17 +120,16 @@ export const TrialSettingsSection = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center justify-center py-8">
-          <Spinner />
-        </div>
+      <div className="flex items-center justify-center py-12">
+        <Spinner />
       </div>
     );
   }
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
             <Shield className="w-5 h-5 text-primary" />
@@ -163,9 +151,9 @@ export const TrialSettingsSection = () => {
         </Button>
       </div>
 
-      <div className="space-y-6">
-        {/* Enable/Disable Trial */}
-        <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+      {/* Enable/Disable Trial */}
+      <div className="bg-card border border-border rounded-lg p-4">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {settings.trial_enabled ? (
               <ToggleRight className="w-6 h-6 text-success" />
@@ -189,100 +177,79 @@ export const TrialSettingsSection = () => {
             {settings.trial_enabled ? "Desativar" : "Ativar"}
           </Button>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Duration */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Clock className="w-4 h-4 text-primary" />
-              Duração (dias)
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="30"
-              value={settings.trial_duration_days}
-              onChange={(e) => setSettings(prev => ({ 
-                ...prev, 
-                trial_duration_days: Math.max(1, parseInt(e.target.value) || 1) 
-              }))}
-              className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-            />
-            <p className="text-xs text-muted-foreground">
-              Quantos dias o trial ficará ativo
-            </p>
-          </div>
-
-          {/* Max Devices */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Smartphone className="w-4 h-4 text-primary" />
-              Máx. Dispositivos
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="10"
-              value={settings.trial_max_devices}
-              onChange={(e) => setSettings(prev => ({ 
-                ...prev, 
-                trial_max_devices: Math.max(1, parseInt(e.target.value) || 1) 
-              }))}
-              className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-            />
-            <p className="text-xs text-muted-foreground">
-              Dispositivos simultâneos no trial
-            </p>
-          </div>
-
-          {/* Max Actions */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Zap className="w-4 h-4 text-primary" />
-              Ações por Dia
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="1000"
-              value={settings.trial_max_actions_per_day}
-              onChange={(e) => setSettings(prev => ({ 
-                ...prev, 
-                trial_max_actions_per_day: Math.max(1, parseInt(e.target.value) || 1) 
-              }))}
-              className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-            />
-            <p className="text-xs text-muted-foreground">
-              Limite de ações diárias no trial
-            </p>
-          </div>
-        </div>
-
-        {/* Anti-circumvention notice */}
-        <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
-          <p className="text-sm text-warning flex items-start gap-2">
-            <Shield className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <span>
-              <strong>Proteção anti-burla ativa:</strong> O sistema registra o fingerprint do dispositivo (MAC, ID da máquina, processador) para impedir que o mesmo dispositivo use o trial novamente.
-            </span>
+      {/* Settings Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Duration */}
+        <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+          <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Clock className="w-4 h-4 text-primary" />
+            Duração (dias)
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="30"
+            value={settings.trial_duration_days}
+            onChange={(e) => setSettings(prev => ({ 
+              ...prev, 
+              trial_duration_days: Math.max(1, parseInt(e.target.value) || 1) 
+            }))}
+            className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+          <p className="text-xs text-muted-foreground">
+            Quantos dias o trial ficará ativo após ativação
           </p>
         </div>
 
-        {/* Save Button */}
-        <div className="flex justify-end pt-4 border-t border-border">
-          <Button 
-            onClick={handleSave} 
-            disabled={!hasChanges || isSaving}
-            className="gap-2"
-          >
-            {isSaving ? (
-              <Spinner size="sm" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            {isSaving ? "Salvando..." : "Salvar Configurações"}
-          </Button>
+        {/* Max Devices */}
+        <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+          <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Smartphone className="w-4 h-4 text-primary" />
+            Máx. Dispositivos
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="10"
+            value={settings.trial_max_devices}
+            onChange={(e) => setSettings(prev => ({ 
+              ...prev, 
+              trial_max_devices: Math.max(1, parseInt(e.target.value) || 1) 
+            }))}
+            className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+          <p className="text-xs text-muted-foreground">
+            Dispositivos simultâneos permitidos no trial
+          </p>
         </div>
+      </div>
+
+      {/* Anti-circumvention notice */}
+      <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
+        <p className="text-sm text-warning flex items-start gap-2">
+          <Shield className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <span>
+            <strong>Proteção anti-burla ativa:</strong> O sistema registra o fingerprint do dispositivo para impedir que o mesmo dispositivo use o trial novamente.
+          </span>
+        </p>
+      </div>
+
+      {/* Save Button */}
+      <div className="flex justify-end">
+        <Button 
+          onClick={handleSave} 
+          disabled={!hasChanges || isSaving}
+          className="gap-2"
+        >
+          {isSaving ? (
+            <Spinner size="sm" />
+          ) : (
+            <Save className="w-4 h-4" />
+          )}
+          {isSaving ? "Salvando..." : "Salvar Configurações"}
+        </Button>
       </div>
     </div>
   );
