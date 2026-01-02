@@ -2169,6 +2169,7 @@ const ApiSection = () => {
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
   
   // Asaas state
+  const [asaasApiKey, setAsaasApiKey] = useState("");
   const [asaasEnabled, setAsaasEnabled] = useState(true);
   const [hasAsaasKey, setHasAsaasKey] = useState(false);
   const [showAsaasKey, setShowAsaasKey] = useState(false);
@@ -2251,9 +2252,12 @@ const ApiSection = () => {
           setTemplateAccentColor(settings.email_template_accent_color || "#4ade80");
           setTemplateShowLogo(settings.email_template_show_logo !== false);
           setTemplateLogoUrl(settings.email_template_logo_url || "");
+          // Asaas settings
+          setHasAsaasKey(!!settings.asaas_api_key);
+          setAsaasEnabled(settings.asaas_enabled !== false);
         }
 
-        // Test Asaas connection
+        // Test Asaas connection if key exists
         const { data: asaasData } = await supabase.functions.invoke('asaas', {
           body: { action: 'test_connection' }
         });
@@ -2272,24 +2276,43 @@ const ApiSection = () => {
     loadSettings();
   }, []);
 
-  // Asaas save handler - API key is managed via environment secrets
+  // Asaas save handler - saves API key to gateway_settings
   const handleSaveAsaas = async () => {
+    const trimmedApiKey = asaasApiKey.trim();
+    
+    if (!hasAsaasKey && !trimmedApiKey) {
+      toast.error("Preencha a API Key do Asaas");
+      return;
+    }
+
     setIsSavingAsaas(true);
     setAsaasSaveSuccess(false);
     try {
-      const { data, error } = await supabase.functions.invoke('asaas', {
-        body: { action: 'save_settings' }
-      });
+      // Save API key to gateway_settings table
+      const updateData: any = {
+        asaas_enabled: true,
+        updated_at: new Date().toISOString()
+      };
+      
+      if (trimmedApiKey) {
+        updateData.asaas_api_key = trimmedApiKey;
+      }
+
+      const { error } = await supabase
+        .from('gateway_settings')
+        .update(updateData)
+        .eq('provider', 'pixup');
 
       if (error) throw error;
 
-      if (data?.success) {
-        toast.success("Configurações salvas!");
-        setAsaasSaveSuccess(true);
-        setTimeout(() => setAsaasSaveSuccess(false), 2000);
-      } else {
-        toast.error(data?.error || "Erro ao salvar");
-      }
+      toast.success("API Key do Asaas salva!");
+      setHasAsaasKey(true);
+      setAsaasApiKey("");
+      setAsaasSaveSuccess(true);
+      setTimeout(() => setAsaasSaveSuccess(false), 2000);
+      
+      // Test connection after saving
+      handleTestAsaas();
     } catch (error) {
       console.error('Error saving Asaas settings:', error);
       toast.error("Erro ao salvar configurações");
@@ -2576,17 +2599,28 @@ const ApiSection = () => {
             </div>
 
             <div className="space-y-4">
-              {/* API Key Info */}
-              <div className="p-3 bg-amber-500/5 rounded-lg border border-amber-500/20">
-                <div className="flex items-start gap-2">
-                  <Info className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-muted-foreground">
-                    <p><strong>API Key:</strong> Configurada via secrets do Lovable Cloud (ASAAS_API_KEY).</p>
-                    <p className="mt-1">
-                      Obtenha em <a href="https://www.asaas.com" target="_blank" rel="noopener" className="text-amber-500 hover:underline">asaas.com</a> → Configurações → Integrações → API → Gerar chave.
-                    </p>
-                  </div>
+              {/* API Key Input */}
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">API Key do Asaas</label>
+                <div className="relative">
+                  <input
+                    type={showAsaasKey ? "text" : "password"}
+                    value={asaasApiKey}
+                    onChange={(e) => setAsaasApiKey(e.target.value)}
+                    placeholder={hasAsaasKey ? "••••••••• (já configurada)" : "$aact_xxxxxxxxxxxxxxxx..."}
+                    className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAsaasKey(!showAsaasKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showAsaasKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Obtenha em <a href="https://www.asaas.com/configuracoes/integracoes" target="_blank" rel="noopener" className="text-amber-500 hover:underline">asaas.com</a> → Configurações → Integrações → API → Gerar chave
+                </p>
               </div>
 
               {/* Webhook URL - Direct Edge Function */}
@@ -2638,9 +2672,17 @@ const ApiSection = () => {
               {/* Actions */}
               <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-border/50">
                 <Button 
+                  onClick={handleSaveAsaas} 
+                  disabled={isSavingAsaas}
+                  className={cn("gap-2 transition-colors", asaasSaveSuccess && "bg-green-600 hover:bg-green-600")}
+                >
+                  {isSavingAsaas ? <Spinner size="sm" /> : asaasSaveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                  {asaasSaveSuccess ? "Salvo!" : "Salvar"}
+                </Button>
+                <Button 
                   variant="outline" 
                   onClick={handleTestAsaas} 
-                  disabled={isTestingAsaas}
+                  disabled={isTestingAsaas || !hasAsaasKey}
                   className={cn("gap-2", asaasConnected && "border-green-500/50 text-green-500")}
                 >
                   {isTestingAsaas ? <Spinner size="sm" /> : asaasConnected ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
