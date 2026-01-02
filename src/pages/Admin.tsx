@@ -82,7 +82,8 @@ import {
   Bug,
   FileText,
   Activity,
-  Sliders
+  Sliders,
+  Percent
 } from "lucide-react";
 
 
@@ -2166,9 +2167,161 @@ const UsersSection = () => {
 
 // SessionsSection is now imported from src/components/admin/sessions
 
+// Installment Fees Section Component
+const InstallmentFeesSection = () => {
+  const [fees, setFees] = useState<{ installment_number: number; fee_percentage: number }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    const loadFees = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('installment_fees')
+          .select('installment_number, fee_percentage')
+          .order('installment_number', { ascending: true });
+        
+        if (!error && data) {
+          setFees(data);
+        }
+      } catch (err) {
+        console.error('Error loading fees:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadFees();
+  }, []);
+
+  const handleFeeChange = (installmentNumber: number, value: string) => {
+    const numValue = parseFloat(value) || 0;
+    setFees(prev => prev.map(f => 
+      f.installment_number === installmentNumber 
+        ? { ...f, fee_percentage: Math.min(100, Math.max(0, numValue)) }
+        : f
+    ));
+    setSaveSuccess(false);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      for (const fee of fees) {
+        const { error } = await supabase
+          .from('installment_fees')
+          .update({ fee_percentage: fee.fee_percentage })
+          .eq('installment_number', fee.installment_number);
+        
+        if (error) throw error;
+      }
+      setSaveSuccess(true);
+      toast.success('Taxas de juros salvas com sucesso!');
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (err) {
+      console.error('Error saving fees:', err);
+      toast.error('Erro ao salvar taxas');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-card border border-border rounded-lg p-6 flex items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
+            <Percent className="w-5 h-5 text-green-500" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">Taxas de Parcelamento</h3>
+            <p className="text-sm text-muted-foreground">Configure os juros por parcela (sincronize com a Asaas)</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="bg-muted/30 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Info className="w-4 h-4 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              Configure aqui os mesmos juros que você definiu no painel da Asaas para exibir corretamente no checkout.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="p-3 bg-muted/20 rounded-lg border border-border/50">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-foreground">1x (à vista)</span>
+              <span className="text-sm text-green-500 font-medium">Sem juros</span>
+            </div>
+          </div>
+          
+          {fees.map((fee) => (
+            <div key={fee.installment_number} className="p-3 bg-muted/20 rounded-lg border border-border/50">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                  {fee.installment_number}x
+                </span>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={fee.fee_percentage}
+                    onChange={(e) => handleFeeChange(fee.installment_number, e.target.value)}
+                    className="w-20 px-2 py-1 bg-background border border-border rounded text-sm text-foreground text-right focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+              {fee.fee_percentage > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  R$ 100 → R$ {(100 * (1 + fee.fee_percentage / 100)).toFixed(2)}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border/50">
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving}
+            className={cn("gap-2 transition-colors", saveSuccess && "bg-green-600 hover:bg-green-600")}
+          >
+            {isSaving ? <Spinner size="sm" /> : saveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+            {saveSuccess ? "Salvo!" : "Salvar Taxas"}
+          </Button>
+          <a 
+            href="https://www.asaas.com/transferenciaSettings/index" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground bg-muted/50 hover:bg-muted rounded-md transition-colors"
+          >
+            <Globe className="w-4 h-4" />
+            Configurar na Asaas
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // API Section - Asaas Gateway + Resend + reCAPTCHA
 const ApiSection = () => {
-  const [activeApiTab, setActiveApiTab] = useState<"gateway" | "email" | "security" | "audit">("gateway");
+  const [activeApiTab, setActiveApiTab] = useState<"gateway" | "email" | "security" | "audit" | "installments">("gateway");
   const [showTemplateEditor, setShowTemplateEditor] = useState(false);
   
   // Audit logs state
@@ -2521,6 +2674,7 @@ const ApiSection = () => {
     { id: "email" as const, label: "Email", icon: Zap },
     { id: "security" as const, label: "Segurança", icon: Shield },
     { id: "audit" as const, label: "Auditoria", icon: FileText },
+    { id: "installments" as const, label: "Parcelas", icon: Percent },
   ];
 
   // Load audit logs when audit tab is active
@@ -3239,6 +3393,11 @@ const ApiSection = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* Installments Tab */}
+      {activeApiTab === "installments" && (
+        <InstallmentFeesSection />
       )}
     </motion.div>
   );

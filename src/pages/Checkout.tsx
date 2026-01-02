@@ -8,6 +8,7 @@ import AnimatedShaderBackground from "@/components/ui/animated-shader-background
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { useUpgradeCredit } from "@/hooks/useUpgradeCredit";
+import { useInstallmentFees } from "@/hooks/useInstallmentFees";
 import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
 import { cn } from "@/lib/utils";
@@ -88,6 +89,7 @@ const Checkout = () => {
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const { activeSubscription, calculateFinalPrice, isValidUpgrade, isLoading: creditLoading } = useUpgradeCredit(user?.id);
+  const { fees: installmentFees, calculateInstallmentValue, isLoading: feesLoading } = useInstallmentFees();
 
   // Force dark theme
   useEffect(() => {
@@ -1587,10 +1589,11 @@ const Checkout = () => {
                                 >
                                   {Array.from({ length: maxInstallments }, (_, i) => {
                                     const parcela = i + 1;
-                                    const valor = currentAmount / parcela;
+                                    const { installmentValue, feePercentage } = calculateInstallmentValue(currentAmount, parcela);
+                                    const hasInterest = feePercentage > 0;
                                     return (
                                       <option key={parcela} value={parcela}>
-                                        {parcela}x de {formatPrice(valor)} {parcela === 1 ? '(à vista)' : 'sem juros'}
+                                        {parcela}x de {formatPrice(installmentValue)} {parcela === 1 ? '(à vista)' : hasInterest ? `(${feePercentage.toFixed(1)}% juros)` : 'sem juros'}
                                       </option>
                                     );
                                   })}
