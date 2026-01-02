@@ -610,6 +610,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          asaas_customer_id: string | null
           avatar: string | null
           ban_reason: string | null
           banned: boolean
@@ -623,6 +624,7 @@ export type Database = {
           whatsapp: string
         }
         Insert: {
+          asaas_customer_id?: string | null
           avatar?: string | null
           ban_reason?: string | null
           banned?: boolean
@@ -636,6 +638,7 @@ export type Database = {
           whatsapp: string
         }
         Update: {
+          asaas_customer_id?: string | null
           avatar?: string | null
           ban_reason?: string | null
           banned?: boolean
@@ -1023,6 +1026,9 @@ export type Database = {
       }
       user_subscriptions: {
         Row: {
+          asaas_customer_id: string | null
+          asaas_subscription_id: string | null
+          auto_renew: boolean
           created_at: string
           expiration_notified_at: string | null
           id: string
@@ -1034,6 +1040,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
+          auto_renew?: boolean
           created_at?: string
           expiration_notified_at?: string | null
           id?: string
@@ -1045,6 +1054,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
+          auto_renew?: boolean
           created_at?: string
           expiration_notified_at?: string | null
           id?: string

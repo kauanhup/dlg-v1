@@ -60,7 +60,6 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
 
 // Get Asaas API Key from database or env
 async function getAsaasApiKey(supabase: any): Promise<string | null> {
-  // First try to get from database (gateway_settings)
   try {
     const { data: settings } = await supabase
       .from('gateway_settings')
@@ -75,7 +74,6 @@ async function getAsaasApiKey(supabase: any): Promise<string | null> {
     console.log('[Asaas] Could not fetch API key from database, falling back to env');
   }
   
-  // Fallback to environment variable
   return Deno.env.get('ASAAS_API_KEY') || null;
 }
 
@@ -84,12 +82,47 @@ async function getOrCreateCustomer(supabase: any, userId: string, apiKey: string
   // First check if we have a cached customer ID in profiles
   const { data: profile } = await supabase
     .from('profiles')
-    .select('email, name, whatsapp')
+    .select('email, name, whatsapp, asaas_customer_id')
     .eq('user_id', userId)
     .single();
 
   if (!profile?.email) {
     return { success: false, error: 'Perfil não encontrado' };
+  }
+
+  // If we have a cached customer ID, verify it still exists
+  if (profile.asaas_customer_id) {
+    try {
+      const verifyResponse = await fetchWithTimeout(`${ASAAS_API_URL}/customers/${profile.asaas_customer_id}`, {
+        method: 'GET',
+        headers: {
+          'access_token': apiKey,
+          'Content-Type': 'application/json',
+        },
+      }, 15000);
+      
+      const verifyData = await verifyResponse.json();
+      if (verifyData.id) {
+        // Customer exists, update CPF if needed
+        if (cpfCnpj && !verifyData.cpfCnpj) {
+          try {
+            await fetchWithTimeout(`${ASAAS_API_URL}/customers/${profile.asaas_customer_id}`, {
+              method: 'PUT',
+              headers: {
+                'access_token': apiKey,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ cpfCnpj: cpfCnpj.replace(/\D/g, '') }),
+            }, 15000);
+          } catch (updateError) {
+            console.log('[Asaas] Could not update customer CPF:', updateError);
+          }
+        }
+        return { success: true, customerId: profile.asaas_customer_id };
+      }
+    } catch (error) {
+      console.log('[Asaas] Cached customer not found, will search/create');
+    }
   }
 
   // Search for existing customer by email
@@ -106,6 +139,9 @@ async function getOrCreateCustomer(supabase: any, userId: string, apiKey: string
     
     if (searchData.data && searchData.data.length > 0) {
       const existingCustomer = searchData.data[0];
+      
+      // Cache the customer ID in profile
+      await supabase.from('profiles').update({ asaas_customer_id: existingCustomer.id }).eq('user_id', userId);
       
       // If customer exists but doesn't have CPF and we have one, update it
       if (cpfCnpj && !existingCustomer.cpfCnpj) {
@@ -150,6 +186,8 @@ async function getOrCreateCustomer(supabase: any, userId: string, apiKey: string
     const createData = await createResponse.json();
 
     if (createData.id) {
+      // Cache the new customer ID
+      await supabase.from('profiles').update({ asaas_customer_id: createData.id }).eq('user_id', userId);
       return { success: true, customerId: createData.id };
     }
 
@@ -171,7 +209,6 @@ async function createPixPayment(
   description: string
 ): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    // Due date = today (immediate payment)
     const today = new Date();
     const dueDate = today.toISOString().split('T')[0];
 
@@ -231,7 +268,146 @@ async function createPixPayment(
   }
 }
 
-// Create Credit Card payment
+// Create Recurring Subscription (Credit Card)
+async function createSubscription(
+  supabase: any,
+  apiKey: string,
+  customerId: string,
+  orderId: string,
+  planName: string,
+  amount: number,
+  periodDays: number,
+  cardData: {
+    holderName: string;
+    number: string;
+    expiryMonth: string;
+    expiryYear: string;
+    ccv: string;
+  },
+  holderInfo: {
+    name: string;
+    email: string;
+    cpfCnpj: string;
+    phone?: string;
+    postalCode: string;
+    addressNumber: string;
+  },
+  remoteIp: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    // Determine billing cycle based on period days
+    let cycle: string;
+    if (periodDays <= 7) {
+      cycle = 'WEEKLY';
+    } else if (periodDays <= 15) {
+      cycle = 'BIWEEKLY';
+    } else if (periodDays <= 31) {
+      cycle = 'MONTHLY';
+    } else if (periodDays <= 60) {
+      cycle = 'BIMONTHLY';
+    } else if (periodDays <= 93) {
+      cycle = 'QUARTERLY';
+    } else if (periodDays <= 186) {
+      cycle = 'SEMIANNUALLY';
+    } else {
+      cycle = 'YEARLY';
+    }
+
+    const nextDueDate = new Date();
+    nextDueDate.setDate(nextDueDate.getDate() + 1); // First charge tomorrow to give time for card processing
+
+    const payload = {
+      customer: customerId,
+      billingType: 'CREDIT_CARD',
+      value: amount,
+      nextDueDate: nextDueDate.toISOString().split('T')[0],
+      cycle: cycle,
+      description: `Assinatura: ${planName}`,
+      externalReference: orderId,
+      creditCard: {
+        holderName: cardData.holderName,
+        number: cardData.number.replace(/\s/g, ''),
+        expiryMonth: cardData.expiryMonth,
+        expiryYear: cardData.expiryYear,
+        ccv: cardData.ccv,
+      },
+      creditCardHolderInfo: {
+        name: holderInfo.name,
+        email: holderInfo.email,
+        cpfCnpj: holderInfo.cpfCnpj.replace(/\D/g, ''),
+        phone: holderInfo.phone?.replace(/\D/g, '') || undefined,
+        postalCode: holderInfo.postalCode.replace(/\D/g, ''),
+        addressNumber: holderInfo.addressNumber,
+      },
+      remoteIp: remoteIp,
+    };
+
+    console.log('[Asaas] Creating subscription with cycle:', cycle, 'for order:', orderId);
+
+    const response = await fetchWithTimeout(`${ASAAS_API_URL}/subscriptions`, {
+      method: 'POST',
+      headers: {
+        'access_token': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    }, 30000);
+
+    const data = await response.json();
+    console.log('[Asaas] Subscription response:', JSON.stringify(data));
+
+    if (data.errors) {
+      const errorMsg = data.errors[0]?.description || 'Erro ao criar assinatura';
+      return { success: false, error: errorMsg };
+    }
+
+    if (!data.id) {
+      return { success: false, error: 'Resposta inválida do gateway' };
+    }
+
+    return {
+      success: true,
+      data: {
+        subscriptionId: data.id,
+        customerId: customerId,
+        status: data.status,
+        cycle: data.cycle,
+        value: data.value,
+        nextDueDate: data.nextDueDate,
+        externalReference: data.externalReference,
+      },
+    };
+  } catch (error: any) {
+    console.error('[Asaas] Subscription creation error:', error);
+    return { success: false, error: error.message || 'Erro de conexão' };
+  }
+}
+
+// Cancel subscription
+async function cancelSubscription(apiKey: string, subscriptionId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetchWithTimeout(`${ASAAS_API_URL}/subscriptions/${subscriptionId}`, {
+      method: 'DELETE',
+      headers: {
+        'access_token': apiKey,
+        'Content-Type': 'application/json',
+      },
+    }, 15000);
+
+    const data = await response.json();
+
+    if (data.deleted || data.id) {
+      return { success: true };
+    }
+
+    return { success: false, error: data.errors?.[0]?.description || 'Erro ao cancelar assinatura' };
+  } catch (error: any) {
+    console.error('[Asaas] Cancel subscription error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Create Credit Card payment (one-time)
 async function createCreditCardPayment(
   supabase: any,
   apiKey: string,
@@ -254,7 +430,6 @@ async function createCreditCardPayment(
     postalCode: string;
     addressNumber: string;
   },
-  installmentCount: number = 1,
   remoteIp: string
 ): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
@@ -285,12 +460,6 @@ async function createCreditCardPayment(
       },
       remoteIp: remoteIp,
     };
-
-    // Add installments if more than 1
-    if (installmentCount > 1) {
-      payload.installmentCount = installmentCount;
-      payload.installmentValue = Math.ceil((amount / installmentCount) * 100) / 100;
-    }
 
     console.log('[Asaas] Creating credit card payment for order:', orderId);
 
@@ -342,7 +511,6 @@ async function createBoletoPayment(
   description: string
 ): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    // Due date = 3 days from now
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 3);
     const dueDateStr = dueDate.toISOString().split('T')[0];
@@ -374,7 +542,6 @@ async function createBoletoPayment(
       return { success: false, error: 'Resposta inválida do gateway' };
     }
 
-    // Get boleto identificationField (linha digitável)
     const identResponse = await fetchWithTimeout(`${ASAAS_API_URL}/payments/${data.id}/identificationField`, {
       method: 'GET',
       headers: {
@@ -502,7 +669,7 @@ serve(async (req) => {
 
     // Admin-only actions
     const adminOnlyActions = ['test_connection', 'get_balance', 'save_settings'];
-    const authRequiredActions = ['create_pix', 'create_credit_card', 'check_status'];
+    const authRequiredActions = ['create_pix', 'create_credit_card', 'create_subscription', 'cancel_subscription', 'check_status'];
 
     if (adminOnlyActions.includes(action)) {
       if (!isAuthenticated || !userId) {
@@ -530,10 +697,7 @@ serve(async (req) => {
       }
     }
 
-    // save_settings doesn't require apiKey to be set (it's about enabling/disabling)
     if (action === 'save_settings') {
-      // Asaas API key is stored in secrets, not in DB
-      // This action just acknowledges the setting was saved
       console.log('[Asaas] save_settings called - API key is stored in secrets');
       return new Response(
         JSON.stringify({ success: true, message: 'Configurações do Asaas são gerenciadas via secrets' }),
@@ -575,7 +739,6 @@ serve(async (req) => {
           );
         }
 
-        // Validate order ownership
         const { data: order, error: orderError } = await supabaseAdmin
           .from('orders')
           .select('id, user_id, amount, product_name')
@@ -596,7 +759,6 @@ serve(async (req) => {
           );
         }
 
-        // Validate amount
         if (Math.abs(Number(order.amount) - amount) > 0.01) {
           return new Response(
             JSON.stringify({ error: 'Valor não confere com o pedido' }),
@@ -604,7 +766,6 @@ serve(async (req) => {
           );
         }
 
-        // Get or create customer
         const customerResult = await getOrCreateCustomer(supabaseAdmin, userId!, apiKey);
         if (!customerResult.success) {
           return new Response(
@@ -613,7 +774,6 @@ serve(async (req) => {
           );
         }
 
-        // Create PIX payment
         const pixResult = await createPixPayment(
           supabaseAdmin,
           apiKey,
@@ -630,12 +790,11 @@ serve(async (req) => {
           );
         }
 
-        // Update payment record
         await supabaseAdmin.from('payments').update({
           pix_code: pixResult.data.pixCode,
           qr_code_base64: pixResult.data.qrCodeBase64,
           payment_method: 'asaas_pix',
-          evopay_transaction_id: pixResult.data.paymentId, // Reusing this field for Asaas ID
+          evopay_transaction_id: pixResult.data.paymentId,
         }).eq('order_id', order_id);
 
         return new Response(
@@ -653,20 +812,19 @@ serve(async (req) => {
         );
       }
 
-      case 'create_credit_card': {
-        const { order_id, amount, description, card_data, holder_info, installments } = params;
+      case 'create_subscription': {
+        const { order_id, amount, plan_name, period_days, card_data, holder_info } = params;
 
-        if (!order_id || !amount || !card_data || !holder_info) {
+        if (!order_id || !amount || !card_data || !holder_info || !plan_name || !period_days) {
           return new Response(
-            JSON.stringify({ error: 'Dados incompletos para pagamento com cartão' }),
+            JSON.stringify({ error: 'Dados incompletos para criar assinatura' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
-        // Validate order ownership
         const { data: order, error: orderError } = await supabaseAdmin
           .from('orders')
-          .select('id, user_id, amount, product_name, status')
+          .select('id, user_id, amount, product_name, status, product_type')
           .eq('id', order_id)
           .single();
 
@@ -691,7 +849,13 @@ serve(async (req) => {
           );
         }
 
-        // Validate amount
+        if (order.product_type !== 'subscription') {
+          return new Response(
+            JSON.stringify({ error: 'Pedido não é de assinatura' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
         if (Math.abs(Number(order.amount) - amount) > 0.01) {
           return new Response(
             JSON.stringify({ error: 'Valor não confere com o pedido' }),
@@ -699,8 +863,7 @@ serve(async (req) => {
           );
         }
 
-        // Get or create customer
-        const customerResult = await getOrCreateCustomer(supabaseAdmin, userId!, apiKey);
+        const customerResult = await getOrCreateCustomer(supabaseAdmin, userId!, apiKey, holder_info.cpfCnpj);
         if (!customerResult.success) {
           return new Response(
             JSON.stringify({ success: false, error: customerResult.error }),
@@ -708,12 +871,187 @@ serve(async (req) => {
           );
         }
 
-        // Get client IP
         const remoteIp = req.headers.get('x-forwarded-for')?.split(',')[0] || 
                          req.headers.get('x-real-ip') || 
                          '127.0.0.1';
 
-        // Create credit card payment
+        const subscriptionResult = await createSubscription(
+          supabaseAdmin,
+          apiKey,
+          customerResult.customerId!,
+          order_id,
+          plan_name,
+          amount,
+          period_days,
+          card_data,
+          holder_info,
+          remoteIp
+        );
+
+        if (!subscriptionResult.success) {
+          return new Response(
+            JSON.stringify({ success: false, error: subscriptionResult.error }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Update payment record
+        await supabaseAdmin.from('payments').update({
+          payment_method: 'asaas_subscription',
+          evopay_transaction_id: subscriptionResult.data.subscriptionId,
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+        }).eq('order_id', order_id);
+
+        // Complete order - create subscription and license
+        const { data: fullOrder } = await supabaseAdmin
+          .from('orders')
+          .select('product_type, quantity, plan_id_snapshot, plan_period_days, product_name')
+          .eq('id', order_id)
+          .single();
+
+        if (fullOrder) {
+          const { data: completeResult, error: completeError } = await supabaseAdmin.rpc('complete_order_atomic', {
+            _order_id: order_id,
+            _user_id: userId,
+            _product_type: fullOrder.product_type,
+            _quantity: fullOrder.quantity,
+          });
+
+          if (completeError) {
+            console.error('[Asaas] Error completing subscription order:', completeError);
+          } else {
+            console.log('[Asaas] Subscription order completed:', JSON.stringify(completeResult));
+
+            // Update the user_subscription with Asaas subscription ID
+            await supabaseAdmin.from('user_subscriptions')
+              .update({ 
+                asaas_subscription_id: subscriptionResult.data.subscriptionId,
+                asaas_customer_id: customerResult.customerId,
+                auto_renew: true
+              })
+              .eq('user_id', userId)
+              .eq('status', 'active');
+          }
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              subscriptionId: subscriptionResult.data.subscriptionId,
+              status: subscriptionResult.data.status,
+              nextDueDate: subscriptionResult.data.nextDueDate,
+              confirmed: true,
+            },
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'cancel_subscription': {
+        const { subscription_id } = params;
+
+        if (!subscription_id) {
+          return new Response(
+            JSON.stringify({ error: 'subscription_id é obrigatório' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Verify ownership
+        const { data: subscription } = await supabaseAdmin
+          .from('user_subscriptions')
+          .select('id, user_id, asaas_subscription_id')
+          .eq('asaas_subscription_id', subscription_id)
+          .single();
+
+        if (!subscription || subscription.user_id !== userId) {
+          const adminCheck = await isAdmin(supabaseAdmin, userId!);
+          if (!adminCheck) {
+            return new Response(
+              JSON.stringify({ error: 'Assinatura não encontrada ou não pertence ao usuário' }),
+              { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+
+        const cancelResult = await cancelSubscription(apiKey, subscription_id);
+
+        if (!cancelResult.success) {
+          return new Response(
+            JSON.stringify({ success: false, error: cancelResult.error }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Update local subscription
+        await supabaseAdmin.from('user_subscriptions')
+          .update({ auto_renew: false })
+          .eq('asaas_subscription_id', subscription_id);
+
+        return new Response(
+          JSON.stringify({ success: true, message: 'Assinatura cancelada com sucesso' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'create_credit_card': {
+        const { order_id, amount, description, card_data, holder_info } = params;
+
+        if (!order_id || !amount || !card_data || !holder_info) {
+          return new Response(
+            JSON.stringify({ error: 'Dados incompletos para pagamento com cartão' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const { data: order, error: orderError } = await supabaseAdmin
+          .from('orders')
+          .select('id, user_id, amount, product_name, status, product_type')
+          .eq('id', order_id)
+          .single();
+
+        if (orderError || !order) {
+          return new Response(
+            JSON.stringify({ error: 'Pedido não encontrado' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        if (order.user_id !== userId) {
+          return new Response(
+            JSON.stringify({ error: 'Pedido não pertence ao usuário' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        if (order.status !== 'pending') {
+          return new Response(
+            JSON.stringify({ error: 'Pedido não está pendente' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        if (Math.abs(Number(order.amount) - amount) > 0.01) {
+          return new Response(
+            JSON.stringify({ error: 'Valor não confere com o pedido' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const customerResult = await getOrCreateCustomer(supabaseAdmin, userId!, apiKey, holder_info.cpfCnpj);
+        if (!customerResult.success) {
+          return new Response(
+            JSON.stringify({ success: false, error: customerResult.error }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const remoteIp = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                         req.headers.get('x-real-ip') || 
+                         '127.0.0.1';
+
         const cardResult = await createCreditCardPayment(
           supabaseAdmin,
           apiKey,
@@ -723,7 +1061,6 @@ serve(async (req) => {
           description || order.product_name,
           card_data,
           holder_info,
-          installments || 1,
           remoteIp
         );
 
@@ -734,13 +1071,11 @@ serve(async (req) => {
           );
         }
 
-        // Update payment record
         await supabaseAdmin.from('payments').update({
           payment_method: 'asaas_credit_card',
           evopay_transaction_id: cardResult.data.paymentId,
         }).eq('order_id', order_id);
 
-        // If payment was confirmed immediately, complete the order
         const confirmedStatuses = ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH'];
         if (confirmedStatuses.includes(cardResult.data.status)) {
           console.log('[Asaas] Credit card payment confirmed, completing order...');
@@ -750,7 +1085,6 @@ serve(async (req) => {
             paid_at: new Date().toISOString(),
           }).eq('order_id', order_id);
 
-          // Get full order details for completion
           const { data: fullOrder } = await supabaseAdmin
             .from('orders')
             .select('product_type, quantity')
@@ -758,7 +1092,6 @@ serve(async (req) => {
             .single();
 
           if (fullOrder) {
-            // Complete order atomically
             const { data: completeResult, error: completeError } = await supabaseAdmin.rpc('complete_order_atomic', {
               _order_id: order_id,
               _user_id: userId,
@@ -793,7 +1126,6 @@ serve(async (req) => {
 
         let paymentIdToCheck = payment_id;
 
-        // If no payment_id, get it from order
         if (!paymentIdToCheck && order_id) {
           const { data: payment } = await supabaseAdmin
             .from('payments')
@@ -856,7 +1188,6 @@ serve(async (req) => {
           );
         }
 
-        // Pass CPF to customer creation/update
         const customerResult = await getOrCreateCustomer(supabaseAdmin, userId!, apiKey, cpf_cnpj);
         if (!customerResult.success) {
           return new Response(
