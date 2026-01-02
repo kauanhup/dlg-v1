@@ -1580,24 +1580,86 @@ const Checkout = () => {
 
                             {/* Installments */}
                             {maxInstallments > 1 && (
-                              <div>
-                                <label className="text-xs text-muted-foreground mb-1 block">Parcelas</label>
-                                <select
-                                  value={installments}
-                                  onChange={(e) => setInstallments(Number(e.target.value))}
-                                  className="w-full px-3 py-2.5 rounded-lg border border-border/50 bg-muted/30 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                >
+                              <div className="space-y-2">
+                                <label className="text-xs text-muted-foreground block">Parcelas</label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                                   {Array.from({ length: maxInstallments }, (_, i) => {
                                     const parcela = i + 1;
-                                    const { installmentValue, feePercentage } = calculateInstallmentValue(currentAmount, parcela);
+                                    const { installmentValue, feePercentage, totalWithFees } = calculateInstallmentValue(currentAmount, parcela);
                                     const hasInterest = feePercentage > 0;
+                                    const isSelected = installments === parcela;
+                                    
                                     return (
-                                      <option key={parcela} value={parcela}>
-                                        {parcela}x de {formatPrice(installmentValue)} {parcela === 1 ? '(à vista)' : hasInterest ? `(${feePercentage.toFixed(1)}% juros)` : 'sem juros'}
-                                      </option>
+                                      <button
+                                        key={parcela}
+                                        type="button"
+                                        onClick={() => setInstallments(parcela)}
+                                        className={cn(
+                                          "relative flex flex-col items-start p-2.5 rounded-lg border-2 transition-all text-left",
+                                          isSelected 
+                                            ? "border-primary bg-primary/10" 
+                                            : "border-border/50 hover:border-border bg-muted/20 hover:bg-muted/40"
+                                        )}
+                                      >
+                                        {/* Badge sem juros */}
+                                        {parcela > 1 && !hasInterest && (
+                                          <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 text-[9px] font-bold bg-success text-success-foreground rounded-full">
+                                            0%
+                                          </span>
+                                        )}
+                                        
+                                        <div className="flex items-baseline gap-1">
+                                          <span className={cn(
+                                            "text-lg font-bold",
+                                            isSelected ? "text-primary" : "text-foreground"
+                                          )}>
+                                            {parcela}x
+                                          </span>
+                                          <span className="text-xs text-muted-foreground">de</span>
+                                        </div>
+                                        
+                                        <span className={cn(
+                                          "text-sm font-semibold",
+                                          isSelected ? "text-primary" : "text-foreground"
+                                        )}>
+                                          {formatPrice(installmentValue)}
+                                        </span>
+                                        
+                                        {parcela === 1 ? (
+                                          <span className="text-[10px] text-success font-medium">à vista</span>
+                                        ) : hasInterest ? (
+                                          <span className="text-[10px] text-warning font-medium">
+                                            +{feePercentage.toFixed(0)}% juros
+                                          </span>
+                                        ) : (
+                                          <span className="text-[10px] text-success font-medium">sem juros</span>
+                                        )}
+                                      </button>
                                     );
                                   })}
-                                </select>
+                                </div>
+                                
+                                {/* Resumo da parcela selecionada */}
+                                {installments > 1 && (
+                                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-muted/40 border border-border/30">
+                                    <div className="flex items-center gap-2">
+                                      <CreditCard className="w-4 h-4 text-muted-foreground" />
+                                      <span className="text-xs text-muted-foreground">
+                                        Total em {installments}x:
+                                      </span>
+                                    </div>
+                                    <div className="text-right">
+                                      <span className="text-sm font-bold text-foreground">
+                                        {formatPrice(calculateInstallmentValue(currentAmount, installments).totalWithFees)}
+                                      </span>
+                                      {calculateInstallmentValue(currentAmount, installments).feePercentage > 0 && (
+                                        <span className="text-[10px] text-warning ml-1">
+                                          (+{formatPrice(calculateInstallmentValue(currentAmount, installments).totalWithFees - currentAmount)})
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </motion.div>
