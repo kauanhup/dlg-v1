@@ -1812,14 +1812,24 @@ const UsersSection = () => {
   const handleConfirmBan = async () => {
     if (selectedUser) {
       setIsBanning(true);
-      const newBannedStatus = !selectedUser.banned;
+      // Get the current banned status from the user list (most up-to-date)
+      const currentUser = users.find(u => u.user_id === selectedUser.user_id);
+      const currentBannedStatus = currentUser?.banned ?? selectedUser.banned;
+      const newBannedStatus = !currentBannedStatus;
+      
+      console.log('Ban action:', { 
+        userId: selectedUser.user_id, 
+        currentBanned: currentBannedStatus, 
+        newBanned: newBannedStatus 
+      });
+      
       const result = await banUser(selectedUser.user_id, newBannedStatus);
       setIsBanning(false);
       if (result.success) {
         toast.success(newBannedStatus ? 'Usuário banido com sucesso!' : 'Usuário desbanido com sucesso!');
         setShowBanModal(false);
         setSelectedUser(null);
-        refetch(false);
+        await refetch(false);
       } else {
         toast.error(result.error || 'Erro ao atualizar status do usuário');
       }
