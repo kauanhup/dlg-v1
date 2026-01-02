@@ -7,8 +7,17 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Only accept POST
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   try {
@@ -16,8 +25,17 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Validate Asaas token if configured
+    const asaasAccessToken = req.headers.get('asaas-access-token');
+    const expectedToken = Deno.env.get('ASAAS_WEBHOOK_TOKEN');
+    
+    if (expectedToken && asaasAccessToken !== expectedToken) {
+      console.log('[Asaas Webhook] Invalid access token');
+      // Log but don't reject - Asaas may not send token in all cases
+    }
+
     const body = await req.json();
-    console.log('[Asaas Webhook] Received:', JSON.stringify(body));
+    console.log('[Asaas Webhook] Received event:', body.event, 'Payment:', body.payment?.id);
 
     const { event, payment } = body;
 

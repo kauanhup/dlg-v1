@@ -639,15 +639,28 @@ serve(async (req) => {
             paid_at: new Date().toISOString(),
           }).eq('order_id', order_id);
 
-          // Complete order atomically
-          await supabaseAdmin.rpc('complete_order_atomic', {
-            _order_id: order_id,
-            _user_id: userId,
-            _product_type: order.product_name.toLowerCase().includes('session') ? 
-              (order.product_name.toLowerCase().includes('brasileir') ? 'session_brasileiras' : 'session_estrangeiras') : 
-              'subscription',
-            _quantity: 1,
-          });
+          // Get full order details for completion
+          const { data: fullOrder } = await supabaseAdmin
+            .from('orders')
+            .select('product_type, quantity')
+            .eq('id', order_id)
+            .single();
+
+          if (fullOrder) {
+            // Complete order atomically
+            const { data: completeResult, error: completeError } = await supabaseAdmin.rpc('complete_order_atomic', {
+              _order_id: order_id,
+              _user_id: userId,
+              _product_type: fullOrder.product_type,
+              _quantity: fullOrder.quantity,
+            });
+
+            if (completeError) {
+              console.error('[Asaas] Error completing order:', completeError);
+            } else {
+              console.log('[Asaas] Order completed:', JSON.stringify(completeResult));
+            }
+          }
         }
 
         return new Response(
