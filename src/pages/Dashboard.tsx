@@ -728,7 +728,7 @@ const LojaSection = ({
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading, signOut, updateProfile, isAdmin } = useAuth();
-  const { license, licenseInfo, sessionFiles, orders, combos, inventory, loginHistory, isLoading: dashboardLoading, downloadSessionFile } = useUserDashboard(user?.id);
+  const { license, licenseInfo, sessionFiles, orders, combos, inventory, loginHistory, isLoading: dashboardLoading, downloadSessionFile, refetch } = useUserDashboard(user?.id);
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [activeTab, setActiveTab] = useState("licencas");
@@ -1569,6 +1569,67 @@ const Dashboard = () => {
                   })}
                 </div>
               </div>
+
+              {/* Assinatura */}
+              {license && license.status === 'active' && (
+                <div className="bg-card border border-border rounded-md p-5 space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-primary" />
+                    Assinatura
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Renovação automática</p>
+                        <p className="text-xs text-muted-foreground">
+                          {license.auto_renew 
+                            ? "Sua assinatura será renovada automaticamente" 
+                            : "Sua assinatura não será renovada"
+                          }
+                        </p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const { error } = await supabase
+                              .from('licenses')
+                              .update({ auto_renew: !license.auto_renew })
+                              .eq('id', license.id);
+                            
+                            if (error) throw error;
+                            
+                            // Also update user_subscriptions if exists
+                            await supabase
+                              .from('user_subscriptions')
+                              .update({ auto_renew: !license.auto_renew })
+                              .eq('user_id', user?.id)
+                              .eq('status', 'active');
+                            
+                            toast.success(
+                              license.auto_renew 
+                                ? "Renovação automática desativada" 
+                                : "Renovação automática ativada"
+                            );
+                            refetch();
+                          } catch (err) {
+                            console.error('Error updating auto_renew:', err);
+                            toast.error("Erro ao atualizar configuração");
+                          }
+                        }}
+                        className={cn(
+                          "w-10 h-5 rounded-full relative cursor-pointer transition-colors",
+                          license.auto_renew ? "bg-primary" : "bg-muted-foreground/30"
+                        )}
+                      >
+                        <div className={cn(
+                          "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                          license.auto_renew ? "right-0.5" : "left-0.5"
+                        )} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

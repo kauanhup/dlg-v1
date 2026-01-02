@@ -1607,14 +1607,14 @@ const Checkout = () => {
                                 <div className="flex items-start gap-2">
                                   <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                                   <div>
-                                    <p className="text-xs font-medium text-foreground">Renovação automática</p>
+                                    <p className="text-xs font-medium text-foreground">Renovação automática ativada</p>
                                     <p className="text-xs text-muted-foreground mt-0.5">
                                       Sua assinatura será renovada automaticamente a cada {
                                         plan.period <= 7 ? 'semana' :
                                         plan.period <= 31 ? 'mês' :
                                         plan.period <= 93 ? 'trimestre' :
                                         plan.period <= 186 ? 'semestre' : 'ano'
-                                      }. Você pode cancelar a qualquer momento.
+                                      }. Para desativar, acesse <span className="text-primary font-medium">Dashboard → Preferências → Assinatura</span>.
                                     </p>
                                   </div>
                                 </div>
