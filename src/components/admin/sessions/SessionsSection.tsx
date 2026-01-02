@@ -434,17 +434,6 @@ export const SessionsSection = () => {
               onClick={handleFullSync} 
               disabled={isRefreshing || isLoading}
               className="w-full xs:w-auto"
-              title="Sincroniza o inventário com a contagem real de arquivos no banco"
-            >
-              <Database className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
-              Sync DB
-            </Button>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              onClick={handleRefresh} 
-              disabled={isRefreshing || isLoading}
-              className="w-full xs:w-auto"
             >
               <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
               Atualizar
