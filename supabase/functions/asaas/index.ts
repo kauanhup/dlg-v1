@@ -308,6 +308,77 @@ async function createCreditCardPayment(
   }
 }
 
+// Create Boleto payment
+async function createBoletoPayment(
+  supabase: any,
+  apiKey: string,
+  customerId: string,
+  orderId: string,
+  amount: number,
+  description: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    // Due date = 3 days from now
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 3);
+    const dueDateStr = dueDate.toISOString().split('T')[0];
+
+    const response = await fetchWithTimeout(`${ASAAS_API_URL}/payments`, {
+      method: 'POST',
+      headers: {
+        'access_token': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        customer: customerId,
+        billingType: 'BOLETO',
+        value: amount,
+        dueDate: dueDateStr,
+        description: description,
+        externalReference: orderId,
+      }),
+    }, 30000);
+
+    const data = await response.json();
+    console.log('[Asaas] Boleto payment response:', JSON.stringify(data));
+
+    if (data.errors) {
+      return { success: false, error: data.errors[0]?.description || 'Erro ao criar boleto' };
+    }
+
+    if (!data.id) {
+      return { success: false, error: 'Resposta inválida do gateway' };
+    }
+
+    // Get boleto identificationField (linha digitável)
+    const identResponse = await fetchWithTimeout(`${ASAAS_API_URL}/payments/${data.id}/identificationField`, {
+      method: 'GET',
+      headers: {
+        'access_token': apiKey,
+        'Content-Type': 'application/json',
+      },
+    }, 15000);
+
+    const identData = await identResponse.json();
+
+    return {
+      success: true,
+      data: {
+        paymentId: data.id,
+        boletoCode: identData.identificationField || data.nossoNumero,
+        boletoUrl: data.bankSlipUrl,
+        dueDate: data.dueDate,
+        value: data.value,
+        status: data.status,
+        externalReference: data.externalReference,
+      },
+    };
+  } catch (error: any) {
+    console.error('[Asaas] Boleto creation error:', error);
+    return { success: false, error: error.message || 'Erro de conexão' };
+  }
+}
+
 // Check payment status
 async function checkPaymentStatus(apiKey: string, paymentId: string): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
@@ -720,6 +791,81 @@ serve(async (req) => {
 
         return new Response(
           JSON.stringify(statusResult),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'create_boleto': {
+        const { order_id, amount, description } = params;
+
+        if (!order_id || !amount) {
+          return new Response(
+            JSON.stringify({ error: 'order_id e amount são obrigatórios' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const { data: order, error: orderError } = await supabaseAdmin
+          .from('orders')
+          .select('id, user_id, amount, product_name')
+          .eq('id', order_id)
+          .single();
+
+        if (orderError || !order) {
+          return new Response(
+            JSON.stringify({ error: 'Pedido não encontrado' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        if (order.user_id !== userId) {
+          return new Response(
+            JSON.stringify({ error: 'Pedido não pertence ao usuário' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const customerResult = await getOrCreateCustomer(supabaseAdmin, userId!, apiKey);
+        if (!customerResult.success) {
+          return new Response(
+            JSON.stringify({ success: false, error: customerResult.error }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const boletoResult = await createBoletoPayment(
+          supabaseAdmin,
+          apiKey,
+          customerResult.customerId!,
+          order_id,
+          amount,
+          description || order.product_name
+        );
+
+        if (!boletoResult.success) {
+          return new Response(
+            JSON.stringify({ success: false, error: boletoResult.error }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        await supabaseAdmin.from('payments').update({
+          payment_method: 'asaas_boleto',
+          evopay_transaction_id: boletoResult.data.paymentId,
+        }).eq('order_id', order_id);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              boletoCode: boletoResult.data.boletoCode,
+              boletoUrl: boletoResult.data.boletoUrl,
+              transactionId: boletoResult.data.paymentId,
+              dueDate: boletoResult.data.dueDate,
+              amount: boletoResult.data.value,
+              status: boletoResult.data.status,
+            },
+          }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
