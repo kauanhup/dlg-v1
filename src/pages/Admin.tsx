@@ -4,7 +4,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { UserProfileSidebar } from "@/components/ui/menu";
-import { avatars } from "@/components/ui/avatar-picker";
+import { avatars, Avatar } from "@/components/ui/avatar-picker";
+
+// Helper para buscar avatar SVG pelo alt text
+const getAvatarSvg = (avatarAlt: string | null | undefined): React.ReactNode => {
+  if (!avatarAlt) return avatars[0].svg;
+  const found = avatars.find(a => a.alt === avatarAlt);
+  return found ? found.svg : avatars[0].svg;
+};
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
@@ -1867,7 +1874,7 @@ const UsersSection = () => {
                   <tr key={user.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <span className="text-xl">{user.avatar}</span>
+                        <div className="w-10 h-10 flex items-center justify-center">{getAvatarSvg(user.avatar)}</div>
                         <div>
                           <p className="text-sm font-medium text-foreground">{user.name}</p>
                           <p className="text-xs text-muted-foreground">{user.email}</p>
@@ -1946,8 +1953,8 @@ const UsersSection = () => {
                 
                 {/* Header com Avatar */}
                 <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
-                  <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full flex items-center justify-center flex-shrink-0 ring-4 ring-primary/10">
-                    <span className="text-4xl">{selectedUser.avatar}</span>
+                  <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full flex items-center justify-center flex-shrink-0 ring-4 ring-primary/10 [&_svg]:w-12 [&_svg]:h-12">
+                    {getAvatarSvg(selectedUser.avatar)}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xl font-semibold text-foreground truncate">{selectedUser.name}</p>
