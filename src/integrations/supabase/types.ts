@@ -317,6 +317,33 @@ export type Database = {
         }
         Relationships: []
       }
+      installment_fees: {
+        Row: {
+          created_at: string
+          fee_percentage: number
+          id: string
+          installment_number: number
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fee_percentage?: number
+          id?: string
+          installment_number: number
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fee_percentage?: number
+          id?: string
+          installment_number?: number
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ip_login_attempts: {
         Row: {
           created_at: string
