@@ -2658,7 +2658,7 @@ const ApiSection = () => {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Use esta URL ao criar o webhook no Asaas (versão V3)
+                  Use esta URL ao criar o webhook no Asaas (API V2)
                 </p>
               </div>
 
@@ -2682,7 +2682,7 @@ const ApiSection = () => {
                   {asaasConnected ? "Conexão OK" : "Testar Conexão"}
                 </Button>
                 <a 
-                  href="https://www.asaas.com/configuracoes/integracoes" 
+                  href="https://www.asaas.com/customerIntegrations/list" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground bg-muted/50 hover:bg-muted rounded-md transition-colors"
