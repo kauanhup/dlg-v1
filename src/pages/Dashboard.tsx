@@ -1591,9 +1591,11 @@ const Dashboard = () => {
                       <button
                         onClick={async () => {
                           try {
+                            const newAutoRenew = !license.auto_renew;
+                            
                             const { error } = await supabase
                               .from('licenses')
-                              .update({ auto_renew: !license.auto_renew })
+                              .update({ auto_renew: newAutoRenew })
                               .eq('id', license.id);
                             
                             if (error) throw error;
@@ -1601,14 +1603,35 @@ const Dashboard = () => {
                             // Also update user_subscriptions if exists
                             await supabase
                               .from('user_subscriptions')
-                              .update({ auto_renew: !license.auto_renew })
+                              .update({ auto_renew: newAutoRenew })
                               .eq('user_id', user?.id)
                               .eq('status', 'active');
                             
+                            // Send confirmation email when disabling auto-renew
+                            if (!newAutoRenew && profile?.email) {
+                              const expirationDate = new Date(license.end_date).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: 'long',
+                                year: 'numeric'
+                              });
+                              
+                              supabase.functions.invoke('send-email', {
+                                body: {
+                                  action: 'auto_renew_disabled',
+                                  to: profile.email,
+                                  name: profile.name,
+                                  subscriptionDetails: {
+                                    planName: license.plan_name,
+                                    expirationDate
+                                  }
+                                }
+                              }).catch(err => console.log('Email notification failed:', err));
+                            }
+                            
                             toast.success(
-                              license.auto_renew 
-                                ? "Renovação automática desativada" 
-                                : "Renovação automática ativada"
+                              newAutoRenew 
+                                ? "Renovação automática ativada" 
+                                : "Renovação automática desativada"
                             );
                             refetch();
                           } catch (err) {

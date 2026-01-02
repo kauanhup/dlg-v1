@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface EmailRequest {
-  action: 'test' | 'send_code' | 'verify_code' | 'reset_password' | 'order_confirmation';
+  action: 'test' | 'send_code' | 'verify_code' | 'reset_password' | 'order_confirmation' | 'renewal_reminder' | 'auto_renew_disabled';
   type?: 'password_reset' | 'email_verification';
   to?: string;
   email?: string;
@@ -18,6 +18,12 @@ interface EmailRequest {
     orderId: string;
     productName: string;
     amount: number;
+  };
+  subscriptionDetails?: {
+    planName: string;
+    expirationDate: string;
+    daysLeft: number;
+    cancelUrl?: string;
   };
 }
 
@@ -70,7 +76,7 @@ serve(async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const body: EmailRequest = await req.json();
-    const { action, type, to, email, name, code, newPassword, orderDetails } = body;
+    const { action, type, to, email, name, code, newPassword, orderDetails, subscriptionDetails } = body;
 
     console.log(`send-email action: ${action}, type: ${type}`);
 
@@ -301,6 +307,110 @@ serve(async (req: Request): Promise<Response> => {
           </div>
         `;
         await sendEmail(settings.resend_api_key, fromEmail, to!, "✅ Pedido Confirmado - DLG Connect", html);
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case 'renewal_reminder': {
+        const bgColor = settings.email_template_bg_color || '#0a0a0a';
+        const accentColor = settings.email_template_accent_color || '#4ade80';
+        const footer = settings.email_template_footer || 'DLG Connect - Sistema de Gestão';
+        const daysLeft = subscriptionDetails?.daysLeft || 3;
+        const urgencyColor = daysLeft <= 1 ? '#ef4444' : '#f59e0b';
+        
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: ${bgColor}; color: #fff;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <span style="background: ${urgencyColor}; color: #fff; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 14px;">
+                🔄 RENOVAÇÃO EM ${daysLeft} DIA${daysLeft > 1 ? 'S' : ''}
+              </span>
+            </div>
+            
+            <h1 style="color: ${urgencyColor}; text-align: center;">Sua assinatura será renovada automaticamente</h1>
+            
+            <p style="text-align: center; color: #ccc;">Olá${name ? `, ${name}` : ''}!</p>
+            
+            <div style="background: #111; border: 1px solid #333; border-radius: 12px; padding: 20px; margin: 20px 0;">
+              <p style="margin: 0 0 10px 0; color: #888;">Plano:</p>
+              <p style="margin: 0 0 15px 0; color: #fff; font-size: 18px; font-weight: bold;">${subscriptionDetails?.planName}</p>
+              
+              <p style="margin: 0 0 10px 0; color: #888;">Data de renovação:</p>
+              <p style="margin: 0; color: ${accentColor}; font-size: 20px; font-weight: bold;">${subscriptionDetails?.expirationDate}</p>
+            </div>
+            
+            <p style="text-align: center; color: #ccc; margin-bottom: 25px;">
+              Sua assinatura será renovada automaticamente na data acima. Se você não deseja continuar, 
+              pode desativar a renovação automática no seu painel.
+            </p>
+            
+            <div style="text-align: center; margin-bottom: 15px;">
+              <a href="https://dlgconnect.com/dashboard" 
+                 style="display: inline-block; background: #333; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; border: 1px solid #444;">
+                ⚙️ Gerenciar assinatura
+              </a>
+            </div>
+            
+            <p style="text-align: center; color: #888; font-size: 12px;">
+              Para desativar a renovação automática: Dashboard → Preferências → Assinatura
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
+            <p style="color: #666; font-size: 12px; text-align: center;">${footer}</p>
+          </div>
+        `;
+        
+        await sendEmail(settings.resend_api_key, fromEmail, to!, `🔄 Renovação automática em ${daysLeft} dia${daysLeft > 1 ? 's' : ''} - DLG Connect`, html);
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case 'auto_renew_disabled': {
+        const bgColor = settings.email_template_bg_color || '#0a0a0a';
+        const accentColor = settings.email_template_accent_color || '#4ade80';
+        const footer = settings.email_template_footer || 'DLG Connect - Sistema de Gestão';
+        
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: ${bgColor}; color: #fff;">
+            <h1 style="color: #f59e0b; text-align: center;">⚠️ Renovação automática desativada</h1>
+            
+            <p style="text-align: center; color: #ccc;">Olá${name ? `, ${name}` : ''}!</p>
+            
+            <div style="background: #111; border: 1px solid #333; border-radius: 12px; padding: 20px; margin: 20px 0;">
+              <p style="margin: 0 0 10px 0; color: #888;">Plano:</p>
+              <p style="margin: 0 0 15px 0; color: #fff; font-size: 18px; font-weight: bold;">${subscriptionDetails?.planName}</p>
+              
+              <p style="margin: 0 0 10px 0; color: #888;">Expira em:</p>
+              <p style="margin: 0; color: #f59e0b; font-size: 20px; font-weight: bold;">${subscriptionDetails?.expirationDate}</p>
+            </div>
+            
+            <div style="background: #1a1a1a; border: 1px solid #f59e0b30; border-radius: 8px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #f59e0b; font-size: 14px; text-align: center;">
+                ⚠️ <strong>Importante:</strong> Sua licença NÃO será renovada automaticamente. 
+                Após a data de expiração, você perderá acesso às funcionalidades premium.
+              </p>
+            </div>
+            
+            <p style="text-align: center; color: #ccc; margin-bottom: 25px;">
+              Se mudar de ideia, você pode reativar a renovação automática a qualquer momento.
+            </p>
+            
+            <div style="text-align: center; margin-bottom: 15px;">
+              <a href="https://dlgconnect.com/dashboard" 
+                 style="display: inline-block; background: ${accentColor}; color: #000; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold;">
+                🔄 Reativar renovação
+              </a>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
+            <p style="color: #666; font-size: 12px; text-align: center;">${footer}</p>
+          </div>
+        `;
+        
+        await sendEmail(settings.resend_api_key, fromEmail, to!, "⚠️ Renovação automática desativada - DLG Connect", html);
         return new Response(
           JSON.stringify({ success: true }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

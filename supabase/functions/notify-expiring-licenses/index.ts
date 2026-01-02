@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const NOTIFICATION_DAYS = [7, 3, 1]; // Notify 7, 3, and 1 day before expiration
+const NOTIFICATION_DAYS = [3]; // Notify 3 days before renewal (as requested by user)
 
 interface NotificationResult {
   success: boolean;
@@ -60,7 +60,7 @@ async function sendEmail(apiKey: string, from: string, to: string, subject: stri
   }
 }
 
-function getExpirationEmailTemplate(
+function getRenewalReminderTemplate(
   userName: string,
   planName: string,
   daysLeft: number,
@@ -73,8 +73,7 @@ function getExpirationEmailTemplate(
   const logoUrl = settings?.email_template_logo_url || '';
   const showLogo = settings?.email_template_show_logo !== false;
 
-  const urgencyColor = daysLeft === 1 ? '#ef4444' : daysLeft <= 3 ? '#f59e0b' : accentColor;
-  const urgencyText = daysLeft === 1 ? '⚠️ URGENTE' : daysLeft <= 3 ? '⚠️ ATENÇÃO' : '📅 LEMBRETE';
+  const urgencyColor = daysLeft <= 1 ? '#ef4444' : '#f59e0b';
 
   const logoHtml = showLogo && logoUrl 
     ? `<div style="text-align: center; margin-bottom: 20px;">
@@ -95,12 +94,12 @@ function getExpirationEmailTemplate(
         
         <div style="text-align: center; margin-bottom: 20px;">
           <span style="background: ${urgencyColor}; color: #fff; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 14px;">
-            ${urgencyText}
+            🔄 RENOVAÇÃO EM ${daysLeft} DIA${daysLeft > 1 ? 'S' : ''}
           </span>
         </div>
 
         <h1 style="color: ${urgencyColor}; text-align: center; margin-bottom: 10px;">
-          Sua licença expira em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}
+          Sua assinatura será renovada automaticamente
         </h1>
 
         <p style="color: #ccc; text-align: center; margin-bottom: 30px;">
@@ -111,23 +110,25 @@ function getExpirationEmailTemplate(
           <p style="margin: 0 0 10px 0; color: #888;">Plano atual:</p>
           <p style="margin: 0 0 20px 0; color: #fff; font-size: 18px; font-weight: bold;">${planName}</p>
           
-          <p style="margin: 0 0 10px 0; color: #888;">Data de expiração:</p>
-          <p style="margin: 0; color: ${urgencyColor}; font-size: 24px; font-weight: bold;">${expirationDate}</p>
+          <p style="margin: 0 0 10px 0; color: #888;">Data de renovação:</p>
+          <p style="margin: 0; color: ${accentColor}; font-size: 24px; font-weight: bold;">${expirationDate}</p>
         </div>
 
         <div style="text-align: center; margin-bottom: 30px;">
           <p style="color: #ccc; margin-bottom: 20px;">
-            ${daysLeft === 1 
-              ? 'Sua licença expira amanhã! Renove agora para não perder acesso.' 
-              : daysLeft <= 3 
-                ? 'Sua licença está prestes a expirar. Renove para continuar aproveitando todos os recursos.'
-                : 'Renove agora para garantir acesso ininterrupto aos nossos serviços.'}
+            Sua assinatura será renovada automaticamente na data acima. 
+            Se você não deseja continuar, pode desativar a renovação no seu painel.
           </p>
-          <a href="https://dlgconnect.com/comprar" 
-             style="display: inline-block; background: ${accentColor}; color: #000; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: bold; font-size: 16px;">
-            🔄 RENOVAR AGORA
+          
+          <a href="https://dlgconnect.com/dashboard" 
+             style="display: inline-block; background: #333; color: #fff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: bold; font-size: 16px; border: 1px solid #444;">
+            ⚙️ Gerenciar assinatura
           </a>
         </div>
+        
+        <p style="text-align: center; color: #888; font-size: 12px; margin-bottom: 20px;">
+          Para desativar: Dashboard → Preferências → Assinatura
+        </p>
 
         <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
         
@@ -136,8 +137,7 @@ function getExpirationEmailTemplate(
         </p>
         
         <p style="color: #555; font-size: 11px; text-align: center; margin-top: 10px;">
-          Você recebeu este email porque tem uma assinatura ativa. 
-          Para não receber mais, desative as notificações de licença no seu dashboard.
+          Você recebeu este email porque tem renovação automática ativada.
         </p>
       </div>
     </body>
@@ -184,7 +184,7 @@ serve(async (req: Request): Promise<Response> => {
       const targetDateEnd = new Date(targetDateStart);
       targetDateEnd.setHours(23, 59, 59, 999);
 
-      // Find active subscriptions expiring on this day that haven't been notified
+      // Find active subscriptions with auto_renew=true expiring on this day that haven't been notified
       const { data: expiringSubscriptions, error: fetchError } = await supabase
         .from('user_subscriptions')
         .select(`
@@ -192,11 +192,13 @@ serve(async (req: Request): Promise<Response> => {
           user_id,
           next_billing_date,
           expiration_notified_at,
+          auto_renew,
           subscription_plans (
             name
           )
         `)
         .eq('status', 'active')
+        .eq('auto_renew', true)
         .gte('next_billing_date', targetDateStart.toISOString())
         .lt('next_billing_date', targetDateEnd.toISOString())
         .is('expiration_notified_at', null);
@@ -242,13 +244,9 @@ serve(async (req: Request): Promise<Response> => {
           year: 'numeric'
         });
 
-        const subject = days === 1 
-          ? `⚠️ URGENTE: Sua licença expira AMANHÃ!`
-          : days <= 3 
-            ? `⚠️ Atenção: Sua licença expira em ${days} dias`
-            : `📅 Lembrete: Sua licença expira em ${days} dias`;
+        const subject = `🔄 Renovação automática em ${days} dia${days > 1 ? 's' : ''} - DLG Connect`;
 
-        const emailHtml = getExpirationEmailTemplate(
+        const emailHtml = getRenewalReminderTemplate(
           profile.name || 'Cliente',
           planName,
           days,
