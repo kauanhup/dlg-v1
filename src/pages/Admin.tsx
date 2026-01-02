@@ -2304,15 +2304,6 @@ const InstallmentFeesSection = () => {
             {isSaving ? <Spinner size="sm" /> : saveSuccess ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
             {saveSuccess ? "Salvo!" : "Salvar Taxas"}
           </Button>
-          <a 
-            href="https://www.asaas.com/transferenciaSettings/index" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground bg-muted/50 hover:bg-muted rounded-md transition-colors"
-          >
-            <Globe className="w-4 h-4" />
-            Configurar na Asaas
-          </a>
         </div>
       </div>
     </div>
