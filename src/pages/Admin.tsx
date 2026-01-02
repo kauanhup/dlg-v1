@@ -2184,6 +2184,7 @@ const ApiSection = () => {
   const [asaasSaveSuccess, setAsaasSaveSuccess] = useState(false);
   const [isTestingAsaas, setIsTestingAsaas] = useState(false);
   const [asaasConnected, setAsaasConnected] = useState(false);
+  const [webhookCopied, setWebhookCopied] = useState(false);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
   // Resend state
@@ -2629,7 +2630,7 @@ const ApiSection = () => {
 
               {/* Webhook URL - Direct Edge Function */}
               <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">URL do Webhook</label>
+                <label className="text-sm font-medium text-foreground mb-2 block">URL do Webhook (V3)</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -2639,17 +2640,26 @@ const ApiSection = () => {
                   />
                   <Button
                     type="button"
-                    variant="outline"
+                    variant={webhookCopied ? "default" : "outline"}
                     size="icon"
                     onClick={() => {
                       navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/asaas-webhook`);
-                      toast.success("URL do webhook copiada!");
+                      setWebhookCopied(true);
+                      toast.success("URL copiada!");
+                      setTimeout(() => setWebhookCopied(false), 2000);
                     }}
                     title="Copiar URL do webhook"
+                    className={cn(
+                      "transition-all",
+                      webhookCopied && "bg-green-600 hover:bg-green-600 border-green-600"
+                    )}
                   >
-                    <Copy className="w-4 h-4" />
+                    {webhookCopied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Use esta URL ao criar o webhook no Asaas (versão V3)
+                </p>
               </div>
 
               {/* Actions */}
