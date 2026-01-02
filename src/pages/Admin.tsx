@@ -2682,7 +2682,7 @@ const ApiSection = () => {
                   {asaasConnected ? "Conexão OK" : "Testar Conexão"}
                 </Button>
                 <a 
-                  href="https://www.asaas.com/webhooks/list" 
+                  href="https://www.asaas.com/dashboard/home?format=" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground bg-muted/50 hover:bg-muted rounded-md transition-colors"
