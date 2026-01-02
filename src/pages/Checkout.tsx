@@ -1348,7 +1348,7 @@ const Checkout = () => {
         </div>
 
         {/* Right Side - Payment Form */}
-        <div className="flex-1 lg:w-1/2 flex items-start lg:items-center justify-center p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12 bg-background relative min-h-screen lg:min-h-0 overflow-y-auto">
+        <div className="flex-1 lg:w-1/2 flex items-start justify-center p-4 sm:p-6 md:p-8 lg:py-16 lg:px-10 xl:px-12 bg-background relative min-h-screen lg:min-h-0">
           <div className="absolute inset-0 lg:hidden">
             <AnimatedShaderBackground className="w-full h-full opacity-20" />
           </div>
@@ -1357,7 +1357,7 @@ const Checkout = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="w-full max-w-[400px] sm:max-w-[440px] relative z-10 my-4 lg:my-auto"
+            className="w-full max-w-[400px] sm:max-w-[440px] relative z-10 my-4 lg:mt-0"
           >
             <div className="lg:hidden mb-4">
               <Link 
