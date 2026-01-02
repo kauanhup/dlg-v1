@@ -193,6 +193,11 @@ export type Database = {
       }
       gateway_settings: {
         Row: {
+          asaas_api_key: string | null
+          asaas_enabled: boolean | null
+          asaas_environment: string | null
+          asaas_wallet_id: string | null
+          asaas_webhook_url: string | null
           client_id: string | null
           client_secret: string | null
           created_at: string
@@ -229,6 +234,11 @@ export type Database = {
           webhook_url: string | null
         }
         Insert: {
+          asaas_api_key?: string | null
+          asaas_enabled?: boolean | null
+          asaas_environment?: string | null
+          asaas_wallet_id?: string | null
+          asaas_webhook_url?: string | null
           client_id?: string | null
           client_secret?: string | null
           created_at?: string
@@ -265,6 +275,11 @@ export type Database = {
           webhook_url?: string | null
         }
         Update: {
+          asaas_api_key?: string | null
+          asaas_enabled?: boolean | null
+          asaas_environment?: string | null
+          asaas_wallet_id?: string | null
+          asaas_webhook_url?: string | null
           client_id?: string | null
           client_secret?: string | null
           created_at?: string
