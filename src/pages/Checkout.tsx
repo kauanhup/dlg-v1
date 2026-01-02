@@ -66,6 +66,7 @@ const Checkout = () => {
   const [user, setUser] = useState<any>(null);
   const [pixData, setPixData] = useState<PixData | null>(null);
   const [boletoData, setBoletoData] = useState<BoletoData | null>(null);
+  const [boletoCpf, setBoletoCpf] = useState<string>('');
   const [copied, setCopied] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<string>('pending');
@@ -632,6 +633,13 @@ const Checkout = () => {
 
   // Generate boleto for an existing order
   const generateBoletoForOrder = async (existingOrderId: string, amount: number, productName: string, quantity: number) => {
+    // Validate CPF for boleto
+    const cpfClean = boletoCpf.replace(/\D/g, '');
+    if (!cpfClean || (cpfClean.length !== 11 && cpfClean.length !== 14)) {
+      toast.error("CPF/CNPJ inválido", "Informe um CPF ou CNPJ válido para gerar o boleto.");
+      return;
+    }
+
     const description = isPlanPurchase ? `Licença: ${productName}` : `${quantity}x ${productName}`;
 
     console.log('[Checkout] Generating Boleto via Asaas for order:', existingOrderId);
@@ -648,6 +656,7 @@ const Checkout = () => {
         order_id: existingOrderId,
         amount: amount,
         description: description,
+        cpf_cnpj: cpfClean,
       },
       headers: {
         Authorization: `Bearer ${session.session.access_token}`
@@ -662,7 +671,7 @@ const Checkout = () => {
 
     if (!response?.success) {
       console.error('[Checkout] Asaas boleto failed:', response);
-      toast.error("Sistema indisponível", response?.error || "Sistema de pagamento temporariamente indisponível.");
+      toast.error("Erro ao gerar boleto", response?.error || "Verifique o CPF/CNPJ informado.");
       return;
     }
 
@@ -1502,14 +1511,21 @@ const Checkout = () => {
                                 <select
                                   value={cardData.expiryMonth}
                                   onChange={(e) => setCardData({ ...cardData, expiryMonth: e.target.value })}
-                                  className="w-full px-3 py-2.5 rounded-lg border border-border/50 bg-muted/30 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                  className="w-full px-3 py-2.5 rounded-lg border border-border/50 bg-muted/30 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
                                 >
                                   <option value="">MM</option>
-                                  {Array.from({ length: 12 }, (_, i) => (
-                                    <option key={i} value={String(i + 1).padStart(2, '0')}>
-                                      {String(i + 1).padStart(2, '0')}
-                                    </option>
-                                  ))}
+                                  <option value="01">01</option>
+                                  <option value="02">02</option>
+                                  <option value="03">03</option>
+                                  <option value="04">04</option>
+                                  <option value="05">05</option>
+                                  <option value="06">06</option>
+                                  <option value="07">07</option>
+                                  <option value="08">08</option>
+                                  <option value="09">09</option>
+                                  <option value="10">10</option>
+                                  <option value="11">11</option>
+                                  <option value="12">12</option>
                                 </select>
                               </div>
                               <div>
@@ -1517,17 +1533,24 @@ const Checkout = () => {
                                 <select
                                   value={cardData.expiryYear}
                                   onChange={(e) => setCardData({ ...cardData, expiryYear: e.target.value })}
-                                  className="w-full px-3 py-2.5 rounded-lg border border-border/50 bg-muted/30 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                  className="w-full px-3 py-2.5 rounded-lg border border-border/50 bg-muted/30 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
                                 >
                                   <option value="">AAAA</option>
-                                  {Array.from({ length: 15 }, (_, i) => {
-                                    const year = new Date().getFullYear() + i;
-                                    return (
-                                      <option key={year} value={String(year)}>
-                                        {year}
-                                      </option>
-                                    );
-                                  })}
+                                  <option value="2025">2025</option>
+                                  <option value="2026">2026</option>
+                                  <option value="2027">2027</option>
+                                  <option value="2028">2028</option>
+                                  <option value="2029">2029</option>
+                                  <option value="2030">2030</option>
+                                  <option value="2031">2031</option>
+                                  <option value="2032">2032</option>
+                                  <option value="2033">2033</option>
+                                  <option value="2034">2034</option>
+                                  <option value="2035">2035</option>
+                                  <option value="2036">2036</option>
+                                  <option value="2037">2037</option>
+                                  <option value="2038">2038</option>
+                                  <option value="2039">2039</option>
                                 </select>
                               </div>
                               <div>
@@ -1662,6 +1685,39 @@ const Checkout = () => {
                                 )}
                               </div>
                             )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Boleto CPF Input */}
+                      <AnimatePresence mode="wait">
+                        {selectedPaymentMethod === 'boleto' && (
+                          <motion.div
+                            key="boleto_cpf_form"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            <div>
+                              <label className="text-xs text-muted-foreground mb-1 block">CPF/CNPJ para o boleto</label>
+                              <input
+                                type="text"
+                                maxLength={18}
+                                placeholder="000.000.000-00"
+                                value={boletoCpf}
+                                onChange={(e) => {
+                                  const v = e.target.value.replace(/\D/g, '');
+                                  if (v.length <= 11) {
+                                    setBoletoCpf(v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'));
+                                  } else {
+                                    setBoletoCpf(v.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5'));
+                                  }
+                                }}
+                                className="w-full px-3 py-2.5 rounded-lg border border-border/50 bg-muted/30 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                              />
+                            </div>
                           </motion.div>
                         )}
                       </AnimatePresence>

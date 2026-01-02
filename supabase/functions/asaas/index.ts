@@ -80,7 +80,7 @@ async function getAsaasApiKey(supabase: any): Promise<string | null> {
 }
 
 // Get or create Asaas customer for a user
-async function getOrCreateCustomer(supabase: any, userId: string, apiKey: string): Promise<{ success: boolean; customerId?: string; error?: string }> {
+async function getOrCreateCustomer(supabase: any, userId: string, apiKey: string, cpfCnpj?: string): Promise<{ success: boolean; customerId?: string; error?: string }> {
   // First check if we have a cached customer ID in profiles
   const { data: profile } = await supabase
     .from('profiles')
@@ -105,22 +105,46 @@ async function getOrCreateCustomer(supabase: any, userId: string, apiKey: string
     const searchData = await searchResponse.json();
     
     if (searchData.data && searchData.data.length > 0) {
-      return { success: true, customerId: searchData.data[0].id };
+      const existingCustomer = searchData.data[0];
+      
+      // If customer exists but doesn't have CPF and we have one, update it
+      if (cpfCnpj && !existingCustomer.cpfCnpj) {
+        try {
+          await fetchWithTimeout(`${ASAAS_API_URL}/customers/${existingCustomer.id}`, {
+            method: 'PUT',
+            headers: {
+              'access_token': apiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ cpfCnpj: cpfCnpj.replace(/\D/g, '') }),
+          }, 15000);
+        } catch (updateError) {
+          console.log('[Asaas] Could not update customer CPF:', updateError);
+        }
+      }
+      
+      return { success: true, customerId: existingCustomer.id };
     }
 
-    // Create new customer
+    // Create new customer with CPF if provided
+    const customerData: any = {
+      name: profile.name || profile.email.split('@')[0],
+      email: profile.email,
+      mobilePhone: profile.whatsapp?.replace(/\D/g, '') || undefined,
+      notificationDisabled: false,
+    };
+    
+    if (cpfCnpj) {
+      customerData.cpfCnpj = cpfCnpj.replace(/\D/g, '');
+    }
+
     const createResponse = await fetchWithTimeout(`${ASAAS_API_URL}/customers`, {
       method: 'POST',
       headers: {
         'access_token': apiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        name: profile.name || profile.email.split('@')[0],
-        email: profile.email,
-        mobilePhone: profile.whatsapp?.replace(/\D/g, '') || undefined,
-        notificationDisabled: false,
-      }),
+      body: JSON.stringify(customerData),
     }, 15000);
 
     const createData = await createResponse.json();
@@ -796,11 +820,18 @@ serve(async (req) => {
       }
 
       case 'create_boleto': {
-        const { order_id, amount, description } = params;
+        const { order_id, amount, description, cpf_cnpj } = params;
 
         if (!order_id || !amount) {
           return new Response(
             JSON.stringify({ error: 'order_id e amount são obrigatórios' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        if (!cpf_cnpj) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'CPF/CNPJ é obrigatório para boleto' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
@@ -825,7 +856,8 @@ serve(async (req) => {
           );
         }
 
-        const customerResult = await getOrCreateCustomer(supabaseAdmin, userId!, apiKey);
+        // Pass CPF to customer creation/update
+        const customerResult = await getOrCreateCustomer(supabaseAdmin, userId!, apiKey, cpf_cnpj);
         if (!customerResult.success) {
           return new Response(
             JSON.stringify({ success: false, error: customerResult.error }),
