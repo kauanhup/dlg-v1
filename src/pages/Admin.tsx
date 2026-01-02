@@ -2634,7 +2634,7 @@ const ApiSection = () => {
                   <input
                     type="text"
                     readOnly
-                    value="https://nydtfckvvslkbyolipsf.supabase.co/functions/v1/asaas-webhook"
+                    value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/asaas-webhook`}
                     className="flex-1 px-3 py-2 bg-muted/50 border border-border rounded-md text-foreground text-sm font-mono"
                   />
                   <Button
@@ -2642,7 +2642,7 @@ const ApiSection = () => {
                     variant="outline"
                     size="icon"
                     onClick={() => {
-                      navigator.clipboard.writeText("https://nydtfckvvslkbyolipsf.supabase.co/functions/v1/asaas-webhook");
+                      navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/asaas-webhook`);
                       toast.success("URL do webhook copiada!");
                     }}
                     title="Copiar URL do webhook"
