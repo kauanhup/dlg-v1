@@ -58,8 +58,24 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
   }
 }
 
-// Get Asaas API Key from env
-function getAsaasApiKey(): string | null {
+// Get Asaas API Key from database or env
+async function getAsaasApiKey(supabase: any): Promise<string | null> {
+  // First try to get from database (gateway_settings)
+  try {
+    const { data: settings } = await supabase
+      .from('gateway_settings')
+      .select('asaas_api_key')
+      .eq('provider', 'pixup')
+      .maybeSingle();
+    
+    if (settings?.asaas_api_key) {
+      return settings.asaas_api_key;
+    }
+  } catch (error) {
+    console.log('[Asaas] Could not fetch API key from database, falling back to env');
+  }
+  
+  // Fallback to environment variable
   return Deno.env.get('ASAAS_API_KEY') || null;
 }
 
@@ -371,7 +387,7 @@ serve(async (req) => {
     
     console.log(`[Asaas] Action: ${action}`);
 
-    const apiKey = getAsaasApiKey();
+    const apiKey = await getAsaasApiKey(supabaseAdmin);
 
     // Public actions (no auth required)
     if (action === 'get_public_settings') {
