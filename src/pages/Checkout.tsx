@@ -1429,47 +1429,47 @@ const Checkout = () => {
                     <>
                       {/* Payment Method Selection */}
                       <div className="space-y-3">
-                        <label className="text-sm font-medium text-foreground">Forma de pagamento</label>
-                        <div className="grid grid-cols-3 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedPaymentMethod('pix')}
-                            className={cn(
-                              "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
-                              selectedPaymentMethod === 'pix' 
-                                ? "border-primary bg-primary/10" 
-                                : "border-border/50 hover:border-border bg-muted/30"
-                            )}
-                          >
-                            <Smartphone className="w-5 h-5" />
-                            <span className="text-xs font-medium">PIX</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedPaymentMethod('credit_card')}
-                            className={cn(
-                              "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
-                              selectedPaymentMethod === 'credit_card' 
-                                ? "border-primary bg-primary/10" 
-                                : "border-border/50 hover:border-border bg-muted/30"
-                            )}
-                          >
-                            <CreditCard className="w-5 h-5" />
-                            <span className="text-xs font-medium">Cartão</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedPaymentMethod('boleto')}
-                            className={cn(
-                              "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
-                              selectedPaymentMethod === 'boleto' 
-                                ? "border-primary bg-primary/10" 
-                                : "border-border/50 hover:border-border bg-muted/30"
-                            )}
-                          >
-                            <Receipt className="w-5 h-5" />
-                            <span className="text-xs font-medium">Boleto</span>
-                          </button>
+                        <div className="flex items-center gap-3">
+                          {[
+                            { id: 'pix' as const, label: 'PIX', icon: Smartphone, desc: 'Aprovação instantânea' },
+                            { id: 'credit_card' as const, label: 'Cartão', icon: CreditCard, desc: 'Até 12x' },
+                            { id: 'boleto' as const, label: 'Boleto', icon: Receipt, desc: '3 dias úteis' },
+                          ].map((method) => (
+                            <button
+                              key={method.id}
+                              type="button"
+                              onClick={() => setSelectedPaymentMethod(method.id)}
+                              className={cn(
+                                "flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border transition-all",
+                                selectedPaymentMethod === method.id 
+                                  ? "border-primary bg-primary/5 shadow-sm" 
+                                  : "border-border/40 hover:border-border/80 bg-card hover:bg-muted/30"
+                              )}
+                            >
+                              <div className={cn(
+                                "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                                selectedPaymentMethod === method.id 
+                                  ? "bg-primary/10" 
+                                  : "bg-muted/50"
+                              )}>
+                                <method.icon className={cn(
+                                  "w-5 h-5 transition-colors",
+                                  selectedPaymentMethod === method.id 
+                                    ? "text-primary" 
+                                    : "text-muted-foreground"
+                                )} />
+                              </div>
+                              <div className="text-center">
+                                <span className={cn(
+                                  "text-sm font-medium block",
+                                  selectedPaymentMethod === method.id 
+                                    ? "text-foreground" 
+                                    : "text-muted-foreground"
+                                )}>{method.label}</span>
+                                <span className="text-[10px] text-muted-foreground">{method.desc}</span>
+                              </div>
+                            </button>
+                          ))}
                         </div>
                       </div>
 
@@ -1482,206 +1482,143 @@ const Checkout = () => {
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="space-y-3 overflow-hidden"
+                            className="space-y-4 overflow-hidden"
                           >
-                            <div>
-                              <label className="text-xs text-muted-foreground mb-1 block">Número do cartão</label>
+                            {/* Card Number */}
+                            <div className="relative">
                               <input
                                 type="text"
                                 maxLength={19}
-                                placeholder="0000 0000 0000 0000"
+                                placeholder="Número do cartão"
                                 value={cardData.number}
                                 onChange={(e) => setCardData({ ...cardData, number: formatCardNumber(e.target.value) })}
-                                className="w-full px-3 py-2.5 rounded-lg border border-border/50 bg-muted/30 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                className="w-full h-12 px-4 rounded-xl border border-border/50 bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                               />
-                            </div>
-                            <div>
-                              <label className="text-xs text-muted-foreground mb-1 block">Nome no cartão</label>
-                              <input
-                                type="text"
-                                placeholder="NOME COMO NO CARTÃO"
-                                value={cardData.holderName}
-                                onChange={(e) => setCardData({ ...cardData, holderName: e.target.value.toUpperCase() })}
-                                className="w-full px-3 py-2.5 rounded-lg border border-border/50 bg-muted/30 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                              />
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                              <div>
-                                <label className="text-xs text-muted-foreground mb-1 block">Mês</label>
-                                <select
-                                  value={cardData.expiryMonth}
-                                  onChange={(e) => setCardData({ ...cardData, expiryMonth: e.target.value })}
-                                  className="w-full px-3 py-2.5 rounded-lg border border-border/50 bg-muted/30 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
-                                >
-                                  <option value="">MM</option>
-                                  <option value="01">01</option>
-                                  <option value="02">02</option>
-                                  <option value="03">03</option>
-                                  <option value="04">04</option>
-                                  <option value="05">05</option>
-                                  <option value="06">06</option>
-                                  <option value="07">07</option>
-                                  <option value="08">08</option>
-                                  <option value="09">09</option>
-                                  <option value="10">10</option>
-                                  <option value="11">11</option>
-                                  <option value="12">12</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="text-xs text-muted-foreground mb-1 block">Ano</label>
-                                <select
-                                  value={cardData.expiryYear}
-                                  onChange={(e) => setCardData({ ...cardData, expiryYear: e.target.value })}
-                                  className="w-full px-3 py-2.5 rounded-lg border border-border/50 bg-muted/30 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
-                                >
-                                  <option value="">AAAA</option>
-                                  <option value="2025">2025</option>
-                                  <option value="2026">2026</option>
-                                  <option value="2027">2027</option>
-                                  <option value="2028">2028</option>
-                                  <option value="2029">2029</option>
-                                  <option value="2030">2030</option>
-                                  <option value="2031">2031</option>
-                                  <option value="2032">2032</option>
-                                  <option value="2033">2033</option>
-                                  <option value="2034">2034</option>
-                                  <option value="2035">2035</option>
-                                  <option value="2036">2036</option>
-                                  <option value="2037">2037</option>
-                                  <option value="2038">2038</option>
-                                  <option value="2039">2039</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="text-xs text-muted-foreground mb-1 block">CVV</label>
-                                <input
-                                  type="text"
-                                  maxLength={4}
-                                  placeholder="***"
-                                  value={cardData.ccv}
-                                  onChange={(e) => setCardData({ ...cardData, ccv: e.target.value.replace(/\D/g, '') })}
-                                  className="w-full px-3 py-2.5 rounded-lg border border-border/50 bg-muted/30 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                />
-                              </div>
+                              <CreditCard className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground/50" />
                             </div>
 
-                            <div className="border-t border-border/50 pt-3 mt-3">
-                              <label className="text-xs text-muted-foreground mb-1 block">CPF/CNPJ do titular</label>
+                            {/* Card Holder Name */}
+                            <input
+                              type="text"
+                              placeholder="Nome impresso no cartão"
+                              value={cardData.holderName}
+                              onChange={(e) => setCardData({ ...cardData, holderName: e.target.value.toUpperCase() })}
+                              className="w-full h-12 px-4 rounded-xl border border-border/50 bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                            />
+
+                            {/* Expiry & CVV */}
+                            <div className="grid grid-cols-3 gap-3">
+                              <select
+                                value={cardData.expiryMonth}
+                                onChange={(e) => setCardData({ ...cardData, expiryMonth: e.target.value })}
+                                className="h-12 px-3 rounded-xl border border-border/50 bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all appearance-none cursor-pointer text-center"
+                              >
+                                <option value="">Mês</option>
+                                <option value="01">01</option>
+                                <option value="02">02</option>
+                                <option value="03">03</option>
+                                <option value="04">04</option>
+                                <option value="05">05</option>
+                                <option value="06">06</option>
+                                <option value="07">07</option>
+                                <option value="08">08</option>
+                                <option value="09">09</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                              </select>
+                              <select
+                                value={cardData.expiryYear}
+                                onChange={(e) => setCardData({ ...cardData, expiryYear: e.target.value })}
+                                className="h-12 px-3 rounded-xl border border-border/50 bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all appearance-none cursor-pointer text-center"
+                              >
+                                <option value="">Ano</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                                <option value="2027">2027</option>
+                                <option value="2028">2028</option>
+                                <option value="2029">2029</option>
+                                <option value="2030">2030</option>
+                                <option value="2031">2031</option>
+                                <option value="2032">2032</option>
+                                <option value="2033">2033</option>
+                                <option value="2034">2034</option>
+                              </select>
                               <input
                                 type="text"
-                                maxLength={18}
-                                placeholder="000.000.000-00"
-                                value={cardData.cpfCnpj}
-                                onChange={(e) => setCardData({ ...cardData, cpfCnpj: formatCpfCnpj(e.target.value) })}
-                                className="w-full px-3 py-2.5 rounded-lg border border-border/50 bg-muted/30 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                maxLength={4}
+                                placeholder="CVV"
+                                value={cardData.ccv}
+                                onChange={(e) => setCardData({ ...cardData, ccv: e.target.value.replace(/\D/g, '') })}
+                                className="h-12 px-4 rounded-xl border border-border/50 bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-center"
                               />
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="text-xs text-muted-foreground mb-1 block">CEP</label>
-                                <input
-                                  type="text"
-                                  maxLength={9}
-                                  placeholder="00000-000"
-                                  value={cardData.postalCode}
-                                  onChange={(e) => setCardData({ ...cardData, postalCode: formatCep(e.target.value) })}
-                                  className="w-full px-3 py-2.5 rounded-lg border border-border/50 bg-muted/30 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-xs text-muted-foreground mb-1 block">Número</label>
-                                <input
-                                  type="text"
-                                  placeholder="123"
-                                  value={cardData.addressNumber}
-                                  onChange={(e) => setCardData({ ...cardData, addressNumber: e.target.value })}
-                                  className="w-full px-3 py-2.5 rounded-lg border border-border/50 bg-muted/30 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                />
-                              </div>
+
+                            {/* Divider */}
+                            <div className="h-px bg-border/50" />
+
+                            {/* CPF */}
+                            <input
+                              type="text"
+                              maxLength={18}
+                              placeholder="CPF/CNPJ do titular"
+                              value={cardData.cpfCnpj}
+                              onChange={(e) => setCardData({ ...cardData, cpfCnpj: formatCpfCnpj(e.target.value) })}
+                              className="w-full h-12 px-4 rounded-xl border border-border/50 bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                            />
+
+                            {/* Address */}
+                            <div className="grid grid-cols-2 gap-3">
+                              <input
+                                type="text"
+                                maxLength={9}
+                                placeholder="CEP"
+                                value={cardData.postalCode}
+                                onChange={(e) => setCardData({ ...cardData, postalCode: formatCep(e.target.value) })}
+                                className="h-12 px-4 rounded-xl border border-border/50 bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                              />
+                              <input
+                                type="text"
+                                placeholder="Nº endereço"
+                                value={cardData.addressNumber}
+                                onChange={(e) => setCardData({ ...cardData, addressNumber: e.target.value })}
+                                className="h-12 px-4 rounded-xl border border-border/50 bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                              />
                             </div>
 
-                            {/* Installments */}
+                            {/* Installments - Simplified */}
                             {maxInstallments > 1 && (
-                              <div className="space-y-2">
-                                <label className="text-xs text-muted-foreground block">Parcelas</label>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                              <div className="space-y-2 pt-2 border-t border-border/30">
+                                <label className="text-xs text-muted-foreground block">Parcelamento</label>
+                                <select
+                                  value={installments}
+                                  onChange={(e) => setInstallments(Number(e.target.value))}
+                                  className="w-full h-12 px-4 rounded-xl border border-border/50 bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none cursor-pointer"
+                                  style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '20px'
+                                  }}
+                                >
                                   {Array.from({ length: maxInstallments }, (_, i) => {
                                     const parcela = i + 1;
-                                    const { installmentValue, feePercentage, totalWithFees } = calculateInstallmentValue(currentAmount, parcela);
+                                    const { installmentValue, feePercentage } = calculateInstallmentValue(currentAmount, parcela);
                                     const hasInterest = feePercentage > 0;
-                                    const isSelected = installments === parcela;
                                     
                                     return (
-                                      <button
-                                        key={parcela}
-                                        type="button"
-                                        onClick={() => setInstallments(parcela)}
-                                        className={cn(
-                                          "relative flex flex-col items-start p-2.5 rounded-lg border-2 transition-all text-left",
-                                          isSelected 
-                                            ? "border-primary bg-primary/10" 
-                                            : "border-border/50 hover:border-border bg-muted/20 hover:bg-muted/40"
-                                        )}
-                                      >
-                                        {/* Badge sem juros */}
-                                        {parcela > 1 && !hasInterest && (
-                                          <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 text-[9px] font-bold bg-success text-success-foreground rounded-full">
-                                            0%
-                                          </span>
-                                        )}
-                                        
-                                        <div className="flex items-baseline gap-1">
-                                          <span className={cn(
-                                            "text-lg font-bold",
-                                            isSelected ? "text-primary" : "text-foreground"
-                                          )}>
-                                            {parcela}x
-                                          </span>
-                                          <span className="text-xs text-muted-foreground">de</span>
-                                        </div>
-                                        
-                                        <span className={cn(
-                                          "text-sm font-semibold",
-                                          isSelected ? "text-primary" : "text-foreground"
-                                        )}>
-                                          {formatPrice(installmentValue)}
-                                        </span>
-                                        
-                                        {parcela === 1 ? (
-                                          <span className="text-[10px] text-success font-medium">à vista</span>
-                                        ) : hasInterest ? (
-                                          <span className="text-[10px] text-warning font-medium">
-                                            +{feePercentage.toFixed(0)}% juros
-                                          </span>
-                                        ) : (
-                                          <span className="text-[10px] text-success font-medium">sem juros</span>
-                                        )}
-                                      </button>
+                                      <option key={parcela} value={parcela}>
+                                        {parcela}x de {formatPrice(installmentValue)} {parcela === 1 ? '(à vista)' : hasInterest ? `(+${feePercentage.toFixed(1)}% juros)` : '(sem juros)'}
+                                      </option>
                                     );
                                   })}
-                                </div>
+                                </select>
                                 
-                                {/* Resumo da parcela selecionada */}
-                                {installments > 1 && (
-                                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-muted/40 border border-border/30">
-                                    <div className="flex items-center gap-2">
-                                      <CreditCard className="w-4 h-4 text-muted-foreground" />
-                                      <span className="text-xs text-muted-foreground">
-                                        Total em {installments}x:
-                                      </span>
-                                    </div>
-                                    <div className="text-right">
-                                      <span className="text-sm font-bold text-foreground">
-                                        {formatPrice(calculateInstallmentValue(currentAmount, installments).totalWithFees)}
-                                      </span>
-                                      {calculateInstallmentValue(currentAmount, installments).feePercentage > 0 && (
-                                        <span className="text-[10px] text-warning ml-1">
-                                          (+{formatPrice(calculateInstallmentValue(currentAmount, installments).totalWithFees - currentAmount)})
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
+                                {/* Summary when interest applies */}
+                                {installments > 1 && calculateInstallmentValue(currentAmount, installments).feePercentage > 0 && (
+                                  <p className="text-xs text-muted-foreground text-right">
+                                    Total: <span className="font-medium text-foreground">{formatPrice(calculateInstallmentValue(currentAmount, installments).totalWithFees)}</span>
+                                  </p>
                                 )}
                               </div>
                             )}
@@ -1700,24 +1637,21 @@ const Checkout = () => {
                             transition={{ duration: 0.2 }}
                             className="overflow-hidden"
                           >
-                            <div>
-                              <label className="text-xs text-muted-foreground mb-1 block">CPF/CNPJ para o boleto</label>
-                              <input
-                                type="text"
-                                maxLength={18}
-                                placeholder="000.000.000-00"
-                                value={boletoCpf}
-                                onChange={(e) => {
-                                  const v = e.target.value.replace(/\D/g, '');
-                                  if (v.length <= 11) {
-                                    setBoletoCpf(v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'));
-                                  } else {
-                                    setBoletoCpf(v.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5'));
-                                  }
-                                }}
-                                className="w-full px-3 py-2.5 rounded-lg border border-border/50 bg-muted/30 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                              />
-                            </div>
+                            <input
+                              type="text"
+                              maxLength={18}
+                              placeholder="CPF/CNPJ para o boleto"
+                              value={boletoCpf}
+                              onChange={(e) => {
+                                const v = e.target.value.replace(/\D/g, '');
+                                if (v.length <= 11) {
+                                  setBoletoCpf(v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'));
+                                } else {
+                                  setBoletoCpf(v.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5'));
+                                }
+                              }}
+                              className="w-full h-12 px-4 rounded-xl border border-border/50 bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                            />
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -1750,36 +1684,39 @@ const Checkout = () => {
                       </Link>
                     </>
                   ) : (
-                    <>
+                    <div className="space-y-4 pt-2">
                       <Button 
                         onClick={handlePayment}
                         disabled={isProcessing || !displayInfo}
                         size="lg"
-                        className={`w-full h-11 text-sm font-medium ${
-                          isFreeProduct ? 'bg-success hover:bg-success/90' : 'bg-primary hover:bg-primary/90'
-                        }`}
+                        className={cn(
+                          "w-full h-14 text-base font-semibold rounded-xl shadow-lg transition-all",
+                          isFreeProduct 
+                            ? 'bg-success hover:bg-success/90 shadow-success/20' 
+                            : 'bg-primary hover:bg-primary/90 shadow-primary/20 hover:shadow-primary/30 hover:scale-[1.01]'
+                        )}
                       >
                         {isProcessing ? (
                           <span className="flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            {isFreeProduct ? "Ativando..." : selectedPaymentMethod === 'credit_card' ? "Processando..." : "Gerando..."}
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            {isFreeProduct ? "Ativando..." : selectedPaymentMethod === 'credit_card' ? "Processando pagamento..." : "Gerando..."}
                           </span>
                         ) : isFreeProduct ? (
                           "Ativar Agora"
                         ) : selectedPaymentMethod === 'pix' ? (
-                          "Gerar código PIX"
+                          <>Pagar com PIX</>
                         ) : selectedPaymentMethod === 'credit_card' ? (
-                          "Pagar com Cartão"
+                          <>Finalizar Pagamento</>
                         ) : (
-                          "Gerar Boleto"
+                          <>Gerar Boleto</>
                         )}
                       </Button>
 
                       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>Pagamento 100% seguro</span>
+                        <ShieldCheck className="w-4 h-4 text-success" />
+                        <span>Pagamento 100% seguro e criptografado</span>
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
               ) : (
