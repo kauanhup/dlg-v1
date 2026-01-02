@@ -1428,49 +1428,27 @@ const Checkout = () => {
                   ) : (
                     <>
                       {/* Payment Method Selection */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          {[
-                            { id: 'pix' as const, label: 'PIX', icon: Smartphone, desc: 'Aprovação instantânea' },
-                            { id: 'credit_card' as const, label: 'Cartão', icon: CreditCard, desc: 'Até 12x' },
-                            { id: 'boleto' as const, label: 'Boleto', icon: Receipt, desc: '3 dias úteis' },
-                          ].map((method) => (
-                            <button
-                              key={method.id}
-                              type="button"
-                              onClick={() => setSelectedPaymentMethod(method.id)}
-                              className={cn(
-                                "flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border transition-all",
-                                selectedPaymentMethod === method.id 
-                                  ? "border-primary bg-primary/5 shadow-sm" 
-                                  : "border-border/40 hover:border-border/80 bg-card hover:bg-muted/30"
-                              )}
-                            >
-                              <div className={cn(
-                                "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-                                selectedPaymentMethod === method.id 
-                                  ? "bg-primary/10" 
-                                  : "bg-muted/50"
-                              )}>
-                                <method.icon className={cn(
-                                  "w-5 h-5 transition-colors",
-                                  selectedPaymentMethod === method.id 
-                                    ? "text-primary" 
-                                    : "text-muted-foreground"
-                                )} />
-                              </div>
-                              <div className="text-center">
-                                <span className={cn(
-                                  "text-sm font-medium block",
-                                  selectedPaymentMethod === method.id 
-                                    ? "text-foreground" 
-                                    : "text-muted-foreground"
-                                )}>{method.label}</span>
-                                <span className="text-[10px] text-muted-foreground">{method.desc}</span>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: 'pix' as const, label: 'PIX', icon: Smartphone },
+                          { id: 'credit_card' as const, label: 'Cartão', icon: CreditCard },
+                          { id: 'boleto' as const, label: 'Boleto', icon: Receipt },
+                        ].map((method) => (
+                          <button
+                            key={method.id}
+                            type="button"
+                            onClick={() => setSelectedPaymentMethod(method.id)}
+                            className={cn(
+                              "flex items-center justify-center gap-2 py-3 px-4 rounded-xl border transition-all",
+                              selectedPaymentMethod === method.id 
+                                ? "border-primary bg-primary/10 text-foreground" 
+                                : "border-border/50 hover:border-border bg-card text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            <method.icon className="w-4 h-4" />
+                            <span className="text-sm font-medium">{method.label}</span>
+                          </button>
+                        ))}
                       </div>
 
                       {/* Credit Card Form */}
