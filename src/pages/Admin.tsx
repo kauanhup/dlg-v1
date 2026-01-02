@@ -2625,14 +2625,11 @@ const ApiSection = () => {
                     {showAsaasKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Obtenha em <a href="https://www.asaas.com/configuracoes/integracoes" target="_blank" rel="noopener" className="text-amber-500 hover:underline">asaas.com</a> → Configurações → Integrações → API → Gerar chave
-                </p>
               </div>
 
               {/* Webhook URL - Direct Edge Function */}
               <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">URL do Webhook (Edge Function)</label>
+                <label className="text-sm font-medium text-foreground mb-2 block">URL do Webhook</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -2653,27 +2650,6 @@ const ApiSection = () => {
                     <Copy className="w-4 h-4" />
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Configure esta URL no painel Asaas → Integrações → Webhooks → Nova configuração.
-                </p>
-              </div>
-
-              {/* Webhook Events Info */}
-              <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
-                <p className="text-xs font-medium text-foreground mb-2">Eventos recomendados para o Webhook:</p>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded">PAYMENT_RECEIVED</span>
-                  <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded">PAYMENT_CONFIRMED</span>
-                  <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded">PAYMENT_OVERDUE</span>
-                  <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded">PAYMENT_REFUNDED</span>
-                </div>
-              </div>
-
-              {/* Payment Methods Info */}
-              <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
-                <p className="text-xs text-muted-foreground">
-                  <strong>Métodos suportados:</strong> PIX (taxa ~0,99%) e Cartão de Crédito (taxa ~2,99%).
-                </p>
               </div>
 
               {/* Actions */}
@@ -2706,36 +2682,6 @@ const ApiSection = () => {
                 </a>
               </div>
             </div>
-          </div>
-
-          {/* Instructions Card */}
-          <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              Como Configurar
-            </h3>
-            <ol className="space-y-3 text-sm text-muted-foreground">
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center justify-center">1</span>
-                <span>Acesse o <a href="https://www.asaas.com" target="_blank" rel="noopener" className="text-primary hover:underline">Asaas</a> e vá em Configurações → Integrações → API</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center justify-center">2</span>
-                <span>Clique em "Gerar nova chave de acesso" e copie a chave gerada</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center justify-center">3</span>
-                <span>No Lovable, adicione a chave como secret <code className="px-1 py-0.5 bg-muted rounded text-xs">ASAAS_API_KEY</code></span>
-              </li>
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center justify-center">4</span>
-                <span>Configure o Webhook no Asaas com a URL acima e selecione os eventos de pagamento</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center justify-center">5</span>
-                <span>Clique em "Testar Conexão" para verificar se está tudo funcionando</span>
-              </li>
-            </ol>
           </div>
         </div>
       )}
