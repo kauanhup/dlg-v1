@@ -1205,9 +1205,9 @@ const Checkout = () => {
         description="Finalize sua compra de forma segura. Pagamento via PIX, Cartão ou Boleto."
         canonical="/checkout"
       />
-      <div className="min-h-screen min-h-[100dvh] w-full flex flex-col lg:flex-row overflow-hidden">
-        {/* Left Side - Branding & Product Info (hidden on mobile/tablet) */}
-        <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-primary/10 via-background to-background overflow-hidden">
+      <div className="min-h-screen min-h-[100dvh] w-full flex flex-col lg:flex-row">
+        {/* Left Side - Branding & Product Info (hidden on mobile/tablet) - STICKY */}
+        <div className="hidden lg:block lg:w-1/2 lg:h-screen lg:sticky lg:top-0 relative bg-gradient-to-br from-primary/10 via-background to-background overflow-hidden">
           <div className="absolute inset-0">
             <div className="absolute top-0 left-0 w-full h-full">
               <div className="absolute top-[20%] left-[20%] w-48 xl:w-72 h-48 xl:h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
