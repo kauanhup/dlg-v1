@@ -31,13 +31,17 @@ serve(async (req) => {
     
     if (expectedToken && asaasAccessToken !== expectedToken) {
       console.log('[Asaas Webhook] Invalid access token');
-      // Log but don't reject - Asaas may not send token in all cases
     }
 
     const body = await req.json();
     console.log('[Asaas Webhook] Received event:', body.event, 'Payment:', body.payment?.id);
 
-    const { event, payment } = body;
+    const { event, payment, subscription } = body;
+
+    // Handle subscription events
+    if (event?.startsWith('SUBSCRIPTION_') || subscription) {
+      return await handleSubscriptionEvent(supabase, body);
+    }
 
     if (!event || !payment) {
       console.log('[Asaas Webhook] Invalid payload, missing event or payment');
@@ -171,3 +175,116 @@ serve(async (req) => {
     );
   }
 });
+
+// Handle subscription-specific events (renewal, cancellation, etc.)
+async function handleSubscriptionEvent(supabase: any, body: any) {
+  const { event, subscription, payment } = body;
+  
+  console.log(`[Asaas Webhook] Subscription event: ${event}, Subscription: ${subscription?.id}`);
+
+  if (!subscription?.id) {
+    return new Response(
+      JSON.stringify({ error: 'No subscription ID' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const subscriptionId = subscription.id;
+
+  // Find local subscription by Asaas subscription ID
+  const { data: localSubscription, error: subError } = await supabase
+    .from('user_subscriptions')
+    .select('id, user_id, plan_id, status, next_billing_date')
+    .eq('asaas_subscription_id', subscriptionId)
+    .maybeSingle();
+
+  if (subError || !localSubscription) {
+    console.log('[Asaas Webhook] Local subscription not found for:', subscriptionId);
+    return new Response(
+      JSON.stringify({ error: 'Subscription not found' }),
+      { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Handle different subscription events
+  switch (event) {
+    case 'PAYMENT_RECEIVED':
+    case 'PAYMENT_CONFIRMED':
+      // Recurring payment received - renew subscription
+      if (payment) {
+        console.log(`[Asaas Webhook] Recurring payment received for subscription ${subscriptionId}`);
+        
+        // Get plan details
+        const { data: plan } = await supabase
+          .from('subscription_plans')
+          .select('period, name')
+          .eq('id', localSubscription.plan_id)
+          .single();
+
+        if (plan) {
+          const newEndDate = new Date();
+          newEndDate.setDate(newEndDate.getDate() + plan.period);
+
+          // Update subscription
+          await supabase.from('user_subscriptions').update({
+            status: 'active',
+            next_billing_date: newEndDate.toISOString(),
+            updated_at: new Date().toISOString(),
+          }).eq('id', localSubscription.id);
+
+          // Update license
+          await supabase.from('licenses').update({
+            status: 'active',
+            end_date: newEndDate.toISOString(),
+            updated_at: new Date().toISOString(),
+          }).eq('user_id', localSubscription.user_id).eq('status', 'active');
+
+          // Record payment
+          await supabase.from('payments').insert({
+            user_id: localSubscription.user_id,
+            subscription_id: localSubscription.id,
+            amount: payment.value,
+            payment_method: 'asaas_subscription',
+            status: 'paid',
+            paid_at: new Date().toISOString(),
+            evopay_transaction_id: payment.id,
+          });
+
+          console.log(`[Asaas Webhook] Subscription renewed until ${newEndDate.toISOString()}`);
+        }
+      }
+      break;
+
+    case 'SUBSCRIPTION_DELETED':
+    case 'SUBSCRIPTION_INACTIVATED':
+      // Subscription cancelled
+      console.log(`[Asaas Webhook] Subscription cancelled: ${subscriptionId}`);
+      
+      await supabase.from('user_subscriptions').update({
+        auto_renew: false,
+        updated_at: new Date().toISOString(),
+      }).eq('id', localSubscription.id);
+      break;
+
+    case 'PAYMENT_OVERDUE':
+    case 'PAYMENT_DELETED':
+      // Payment failed - might need to suspend
+      console.log(`[Asaas Webhook] Subscription payment issue: ${event}`);
+      
+      await supabase.from('gateway_logs').insert({
+        gateway: 'asaas',
+        status: 'subscription_payment_issue',
+        error: `Event: ${event}`,
+        attempt: 1,
+      });
+      break;
+
+    default:
+      console.log(`[Asaas Webhook] Unhandled subscription event: ${event}`);
+  }
+
+  return new Response(
+    JSON.stringify({ success: true, message: 'Subscription event processed' }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}

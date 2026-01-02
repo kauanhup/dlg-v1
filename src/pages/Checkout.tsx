@@ -8,7 +8,7 @@ import AnimatedShaderBackground from "@/components/ui/animated-shader-background
 import { useAlertToast } from "@/hooks/use-alert-toast";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { useUpgradeCredit } from "@/hooks/useUpgradeCredit";
-import { useInstallmentFees } from "@/hooks/useInstallmentFees";
+// Removed: useInstallmentFees (parcelamento removido)
 import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
 import { cn } from "@/lib/utils";
@@ -74,7 +74,7 @@ const Checkout = () => {
   const [timeLeft, setTimeLeft] = useState<{ minutes: number; seconds: number } | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('pix');
-  const [installments, setInstallments] = useState<number>(1);
+  // Removed: installments state (parcelamento removido)
   const [cardData, setCardData] = useState<CardFormData>({
     holderName: '',
     number: '',
@@ -90,7 +90,7 @@ const Checkout = () => {
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const { activeSubscription, calculateFinalPrice, isValidUpgrade, isLoading: creditLoading } = useUpgradeCredit(user?.id);
-  const { fees: installmentFees, calculateInstallmentValue, isLoading: feesLoading } = useInstallmentFees();
+  // Removed: useInstallmentFees hook (parcelamento removido)
 
   // Force dark theme
   useEffect(() => {
@@ -207,12 +207,7 @@ const Checkout = () => {
     return 0;
   }, [isSessionPurchase, sessionInfo, isPlanPurchase, plan, planPrice]);
 
-  // Calculate max installments (min R$5 per installment)
-  const maxInstallments = useMemo(() => {
-    if (currentAmount < 10) return 1;
-    const max = Math.floor(currentAmount / 5);
-    return Math.min(max, 12);
-  }, [currentAmount]);
+  // Removed: maxInstallments calculation (parcelamento removido)
 
   // Warning before leaving checkout with pending payment
   useEffect(() => {
@@ -690,8 +685,8 @@ const Checkout = () => {
     }
   };
 
-  // Process credit card payment
-  const processCreditCardPayment = async (existingOrderId: string, amount: number, productName: string) => {
+  // Process credit card payment (or subscription for plans)
+  const processCreditCardPayment = async (existingOrderId: string, amount: number, productName: string, periodDays?: number) => {
     // Validate card data
     if (!cardData.holderName || !cardData.number || !cardData.expiryMonth || !cardData.expiryYear || !cardData.ccv) {
       toast.error("Dados incompletos", "Preencha todos os dados do cartão.");
@@ -702,8 +697,6 @@ const Checkout = () => {
       toast.error("Dados incompletos", "Preencha CPF, CEP e número do endereço.");
       return false;
     }
-
-    console.log('[Checkout] Processing credit card via Asaas for order:', existingOrderId);
 
     const { data: session } = await supabase.auth.getSession();
     if (!session?.session?.access_token) {
@@ -718,28 +711,72 @@ const Checkout = () => {
       .eq('user_id', user.id)
       .single();
 
+    const holderInfo = {
+      name: cardData.holderName,
+      email: profile?.email || user.email,
+      cpfCnpj: cardData.cpfCnpj.replace(/\D/g, ''),
+      phone: cardData.phone?.replace(/\D/g, '') || undefined,
+      postalCode: cardData.postalCode.replace(/\D/g, ''),
+      addressNumber: cardData.addressNumber,
+    };
+
+    const cardInfo = {
+      holderName: cardData.holderName,
+      number: cardData.number.replace(/\s/g, ''),
+      expiryMonth: cardData.expiryMonth,
+      expiryYear: cardData.expiryYear,
+      ccv: cardData.ccv,
+    };
+
+    // For subscription plans, use create_subscription for recurring billing
+    if (isPlanPurchase && periodDays && periodDays > 0) {
+      console.log('[Checkout] Creating subscription via Asaas for order:', existingOrderId);
+
+      const { data: response, error } = await supabase.functions.invoke('asaas', {
+        body: {
+          action: 'create_subscription',
+          order_id: existingOrderId,
+          amount: amount,
+          plan_name: productName,
+          period_days: periodDays,
+          card_data: cardInfo,
+          holder_info: holderInfo,
+        },
+        headers: {
+          Authorization: `Bearer ${session.session.access_token}`
+        }
+      });
+
+      if (error) {
+        console.error('[Checkout] Asaas subscription error:', error);
+        toast.error("Erro de conexão", "Não foi possível processar a assinatura. Tente novamente.");
+        return false;
+      }
+
+      if (!response?.success) {
+        console.error('[Checkout] Asaas subscription failed:', response);
+        toast.error("Assinatura recusada", response?.error || "Verifique os dados do cartão e tente novamente.");
+        return false;
+      }
+
+      console.log('[Checkout] Subscription created successfully!');
+      setPaymentStatus('completed');
+      toast.success("Assinatura ativada!", "Sua licença foi ativada com renovação automática.");
+      setTimeout(() => navigate('/dashboard'), 2000);
+      return true;
+    }
+
+    // For sessions or one-time purchases, use regular credit card payment
+    console.log('[Checkout] Processing credit card via Asaas for order:', existingOrderId);
+
     const { data: response, error } = await supabase.functions.invoke('asaas', {
       body: {
         action: 'create_credit_card',
         order_id: existingOrderId,
         amount: amount,
-        description: `Licença: ${productName}`,
-        installments: installments,
-        card_data: {
-          holderName: cardData.holderName,
-          number: cardData.number.replace(/\s/g, ''),
-          expiryMonth: cardData.expiryMonth,
-          expiryYear: cardData.expiryYear,
-          ccv: cardData.ccv,
-        },
-        holder_info: {
-          name: cardData.holderName,
-          email: profile?.email || user.email,
-          cpfCnpj: cardData.cpfCnpj.replace(/\D/g, ''),
-          phone: cardData.phone?.replace(/\D/g, '') || undefined,
-          postalCode: cardData.postalCode.replace(/\D/g, ''),
-          addressNumber: cardData.addressNumber,
-        },
+        description: `Compra: ${productName}`,
+        card_data: cardInfo,
+        holder_info: holderInfo,
       },
       headers: {
         Authorization: `Bearer ${session.session.access_token}`
@@ -761,7 +798,7 @@ const Checkout = () => {
     if (response.data?.confirmed) {
       console.log('[Checkout] Credit card payment confirmed!');
       setPaymentStatus('completed');
-      toast.success("Pagamento aprovado!", isPlanPurchase ? "Sua licença foi ativada." : "Suas sessions foram liberadas.");
+      toast.success("Pagamento aprovado!", "Suas sessions foram liberadas.");
       setTimeout(() => navigate('/dashboard'), 2000);
       return true;
     } else {
@@ -825,7 +862,7 @@ const Checkout = () => {
         } else if (selectedPaymentMethod === 'boleto') {
           await generateBoletoForOrder(orderId, existingOrder.amount, existingOrder.product_name, existingOrder.quantity);
         } else if (selectedPaymentMethod === 'credit_card') {
-          await processCreditCardPayment(orderId, existingOrder.amount, existingOrder.product_name);
+          await processCreditCardPayment(orderId, existingOrder.amount, existingOrder.product_name, isPlanPurchase && plan ? plan.period : undefined);
         }
         setIsProcessing(false);
         return;
@@ -1018,7 +1055,7 @@ const Checkout = () => {
       } else if (selectedPaymentMethod === 'boleto') {
         await generateBoletoForOrder(orderData.id, amount, productName, quantity);
       } else if (selectedPaymentMethod === 'credit_card') {
-        await processCreditCardPayment(orderData.id, amount, productName);
+        await processCreditCardPayment(orderData.id, amount, productName, isPlanPurchase && plan ? plan.period : undefined);
       }
     } catch (error) {
       console.error('Error creating order:', error);
@@ -1564,40 +1601,23 @@ const Checkout = () => {
                               />
                             </div>
 
-                            {/* Installments - Simplified */}
-                            {maxInstallments > 1 && (
-                              <div className="space-y-2 pt-2 border-t border-border/30">
-                                <label className="text-xs text-muted-foreground block">Parcelamento</label>
-                                <select
-                                  value={installments}
-                                  onChange={(e) => setInstallments(Number(e.target.value))}
-                                  className="w-full h-12 px-4 rounded-xl border border-border/50 bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none cursor-pointer"
-                                  style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 12px center',
-                                    backgroundSize: '20px'
-                                  }}
-                                >
-                                  {Array.from({ length: maxInstallments }, (_, i) => {
-                                    const parcela = i + 1;
-                                    const { installmentValue, feePercentage } = calculateInstallmentValue(currentAmount, parcela);
-                                    const hasInterest = feePercentage > 0;
-                                    
-                                    return (
-                                      <option key={parcela} value={parcela}>
-                                        {parcela}x de {formatPrice(installmentValue)} {parcela === 1 ? '(à vista)' : hasInterest ? `(+${feePercentage.toFixed(1)}% juros)` : '(sem juros)'}
-                                      </option>
-                                    );
-                                  })}
-                                </select>
-                                
-                                {/* Summary when interest applies */}
-                                {installments > 1 && calculateInstallmentValue(currentAmount, installments).feePercentage > 0 && (
-                                  <p className="text-xs text-muted-foreground text-right">
-                                    Total: <span className="font-medium text-foreground">{formatPrice(calculateInstallmentValue(currentAmount, installments).totalWithFees)}</span>
-                                  </p>
-                                )}
+                            {/* Auto-renewal notice for subscriptions */}
+                            {isPlanPurchase && plan && plan.period > 0 && (
+                              <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 mt-2">
+                                <div className="flex items-start gap-2">
+                                  <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                                  <div>
+                                    <p className="text-xs font-medium text-foreground">Renovação automática</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                      Sua assinatura será renovada automaticamente a cada {
+                                        plan.period <= 7 ? 'semana' :
+                                        plan.period <= 31 ? 'mês' :
+                                        plan.period <= 93 ? 'trimestre' :
+                                        plan.period <= 186 ? 'semestre' : 'ano'
+                                      }. Você pode cancelar a qualquer momento.
+                                    </p>
+                                  </div>
+                                </div>
                               </div>
                             )}
                           </motion.div>
@@ -1637,7 +1657,9 @@ const Checkout = () => {
                       <div className="text-center py-1">
                         <p className="text-xs text-muted-foreground">
                           {selectedPaymentMethod === 'pix' && "Pagamento instantâneo via PIX."}
-                          {selectedPaymentMethod === 'credit_card' && "Aprovação imediata."}
+                          {selectedPaymentMethod === 'credit_card' && (isPlanPurchase && plan && plan.period > 0 
+                            ? "Cobrança recorrente com renovação automática." 
+                            : "Aprovação imediata.")}
                           {selectedPaymentMethod === 'boleto' && "Compensação em até 3 dias úteis."}
                         </p>
                       </div>
