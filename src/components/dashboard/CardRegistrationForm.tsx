@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { CreditCard, Loader2, CheckCircle, X, MapPin, User, Mail, Phone } from "lucide-react";
+import { CreditCard, Loader2, CheckCircle, X, MapPin, User, Phone, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface CardRegistrationFormProps {
   onSuccess: () => void;
@@ -171,23 +172,57 @@ export function CardRegistrationForm({
 
   if (step === 'success') {
     return (
-      <div className="flex flex-col items-center justify-center py-8 space-y-4">
-        <div className="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="flex flex-col items-center justify-center py-8 space-y-4"
+      >
+        <motion.div 
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+          className="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center"
+        >
           <CheckCircle className="w-8 h-8 text-success" />
-        </div>
-        <div className="text-center">
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="text-center"
+        >
           <h3 className="font-semibold text-foreground">Cartão Cadastrado!</h3>
           <p className="text-sm text-muted-foreground mt-1">
             Sua renovação automática está ativa
           </p>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     );
   }
 
+  const inputVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      x: 0,
+      transition: { delay: i * 0.05, duration: 0.3 }
+    })
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
+    <motion.form 
+      onSubmit={handleSubmit} 
+      className="space-y-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between mb-4"
+      >
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <CreditCard className="w-4 h-4 text-primary" />
           Cadastrar Cartão
@@ -195,19 +230,33 @@ export function CardRegistrationForm({
         <button
           type="button"
           onClick={onCancel}
-          className="text-muted-foreground hover:text-foreground transition-colors"
+          className="text-muted-foreground hover:text-foreground transition-colors hover:rotate-90 duration-200"
         >
           <X className="w-4 h-4" />
         </button>
-      </div>
+      </motion.div>
 
-      <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
-        Cadastre seu cartão para ativar a renovação automática. 
-        Você será cobrado apenas na data de renovação do seu plano.
-      </p>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md flex items-start gap-2"
+      >
+        <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+        <span>
+          Cadastre seu cartão para ativar a renovação automática. 
+          Você será cobrado apenas na data de renovação do seu plano.
+        </span>
+      </motion.div>
 
       {/* Card Number */}
-      <div className="space-y-1.5">
+      <motion.div 
+        custom={0}
+        variants={inputVariants}
+        initial="hidden"
+        animate="visible"
+        className="space-y-1.5"
+      >
         <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
           <CreditCard className="w-3 h-3" />
           Número do Cartão
@@ -217,13 +266,19 @@ export function CardRegistrationForm({
           value={cardNumber}
           onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
           placeholder="0000 0000 0000 0000"
-          className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-200 focus:border-primary"
           disabled={loading}
         />
-      </div>
+      </motion.div>
 
       {/* Card Name */}
-      <div className="space-y-1.5">
+      <motion.div 
+        custom={1}
+        variants={inputVariants}
+        initial="hidden"
+        animate="visible"
+        className="space-y-1.5"
+      >
         <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
           <User className="w-3 h-3" />
           Nome no Cartão
@@ -233,13 +288,19 @@ export function CardRegistrationForm({
           value={cardName}
           onChange={(e) => setCardName(e.target.value.toUpperCase())}
           placeholder="NOME COMO ESTÁ NO CARTÃO"
-          className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 uppercase"
+          className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 uppercase transition-all duration-200 focus:border-primary"
           disabled={loading}
         />
-      </div>
+      </motion.div>
 
       {/* Expiry and CVV */}
-      <div className="grid grid-cols-2 gap-3">
+      <motion.div 
+        custom={2}
+        variants={inputVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-2 gap-3"
+      >
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground">Validade</label>
           <input
@@ -247,7 +308,7 @@ export function CardRegistrationForm({
             value={cardExpiry}
             onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
             placeholder="MM/AA"
-            className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-200 focus:border-primary"
             disabled={loading}
           />
         </div>
@@ -258,27 +319,39 @@ export function CardRegistrationForm({
             value={cardCvv}
             onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
             placeholder="123"
-            className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-200 focus:border-primary"
             disabled={loading}
           />
         </div>
-      </div>
+      </motion.div>
 
       {/* CPF */}
-      <div className="space-y-1.5">
+      <motion.div 
+        custom={3}
+        variants={inputVariants}
+        initial="hidden"
+        animate="visible"
+        className="space-y-1.5"
+      >
         <label className="text-xs font-medium text-muted-foreground">CPF do Titular</label>
         <input
           type="text"
           value={cpf}
           onChange={(e) => setCpf(formatCpf(e.target.value))}
           placeholder="000.000.000-00"
-          className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-200 focus:border-primary"
           disabled={loading}
         />
-      </div>
+      </motion.div>
 
       {/* Phone */}
-      <div className="space-y-1.5">
+      <motion.div 
+        custom={4}
+        variants={inputVariants}
+        initial="hidden"
+        animate="visible"
+        className="space-y-1.5"
+      >
         <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
           <Phone className="w-3 h-3" />
           Telefone (opcional)
@@ -288,13 +361,19 @@ export function CardRegistrationForm({
           value={phone}
           onChange={(e) => setPhone(formatPhone(e.target.value))}
           placeholder="(00) 00000-0000"
-          className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-200 focus:border-primary"
           disabled={loading}
         />
-      </div>
+      </motion.div>
 
       {/* CEP and Address Number */}
-      <div className="grid grid-cols-2 gap-3">
+      <motion.div 
+        custom={5}
+        variants={inputVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-2 gap-3"
+      >
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
             <MapPin className="w-3 h-3" />
@@ -305,7 +384,7 @@ export function CardRegistrationForm({
             value={cep}
             onChange={(e) => setCep(formatCep(e.target.value))}
             placeholder="00000-000"
-            className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-200 focus:border-primary"
             disabled={loading}
           />
         </div>
@@ -316,29 +395,35 @@ export function CardRegistrationForm({
             value={addressNumber}
             onChange={(e) => setAddressNumber(e.target.value.replace(/\D/g, ''))}
             placeholder="123"
-            className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-200 focus:border-primary"
             disabled={loading}
           />
         </div>
-      </div>
+      </motion.div>
 
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={loading || !isValid()}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35 }}
       >
-        {loading ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Cadastrando...
-          </>
-        ) : (
-          <>
-            <CreditCard className="w-4 h-4 mr-2" />
-            Cadastrar Cartão
-          </>
-        )}
-      </Button>
-    </form>
+        <Button
+          type="submit"
+          className="w-full transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          disabled={loading || !isValid()}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Cadastrando...
+            </>
+          ) : (
+            <>
+              <CreditCard className="w-4 h-4 mr-2" />
+              Cadastrar Cartão
+            </>
+          )}
+        </Button>
+      </motion.div>
+    </motion.form>
   );
 }
