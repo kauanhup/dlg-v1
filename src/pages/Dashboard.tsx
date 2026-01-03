@@ -728,9 +728,10 @@ const LojaSection = ({
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading, signOut, updateProfile, isAdmin } = useAuth();
-  const { license, licenseInfo, sessionFiles, orders, combos, inventory, loginHistory, isLoading: dashboardLoading, downloadSessionFile, refetch } = useUserDashboard(user?.id);
+  const { license, licenseInfo, subscription, hasCardForAutoRenewal, sessionFiles, orders, combos, inventory, loginHistory, isLoading: dashboardLoading, downloadSessionFile, refetch } = useUserDashboard(user?.id);
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+  const [showAutoRenewCardModal, setShowAutoRenewCardModal] = useState(false);
   const [activeTab, setActiveTab] = useState("licencas");
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -1583,7 +1584,9 @@ const Dashboard = () => {
                         <p className="text-sm font-medium text-foreground">Renovação automática</p>
                         <p className="text-xs text-muted-foreground">
                           {license.auto_renew 
-                            ? "Sua assinatura será renovada automaticamente" 
+                            ? hasCardForAutoRenewal 
+                              ? "Sua assinatura será renovada automaticamente via cartão" 
+                              : "Ativada, mas você precisa cadastrar um cartão"
                             : "Sua assinatura não será renovada"
                           }
                         </p>
@@ -1592,6 +1595,12 @@ const Dashboard = () => {
                         onClick={async () => {
                           try {
                             const newAutoRenew = !license.auto_renew;
+                            
+                            // Se está tentando ativar mas não tem cartão, mostrar modal
+                            if (newAutoRenew && !hasCardForAutoRenewal) {
+                              setShowAutoRenewCardModal(true);
+                              return;
+                            }
                             
                             const { error } = await supabase
                               .from('licenses')
@@ -1650,6 +1659,12 @@ const Dashboard = () => {
                         )} />
                       </button>
                     </div>
+                    {!hasCardForAutoRenewal && (
+                      <p className="text-xs text-warning flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        Você pagou com PIX. Para renovação automática, cadastre um cartão.
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -2071,6 +2086,40 @@ const Dashboard = () => {
             </a>
           </p>
         </footer>
+
+        {/* Modal para cadastrar cartão */}
+        <AlertDialog open={showAutoRenewCardModal} onOpenChange={setShowAutoRenewCardModal}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-primary" />
+                Cadastrar Cartão para Renovação
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-3">
+                <p>
+                  Você pagou seu plano atual com PIX. Para ativar a renovação automática, 
+                  é necessário cadastrar um cartão de crédito.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Na próxima renovação, você poderá escolher pagar com cartão para ativar 
+                  a cobrança automática.
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Entendi</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => {
+                  setShowAutoRenewCardModal(false);
+                  navigate('/comprar');
+                }}
+                className="bg-primary hover:bg-primary/90"
+              >
+                Ver Planos
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
       </div>
     </PageTransition>
