@@ -36,9 +36,12 @@ serve(async (req: Request): Promise<Response> => {
     
     // Get authorization header to verify admin
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.log('No authorization header');
       return new Response(
-        JSON.stringify({ success: false, error: "Não autorizado" }),
+        JSON.stringify({ success: false, error: "Token de autenticação não encontrado. Por favor, faça login novamente." }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -49,9 +52,12 @@ serve(async (req: Request): Promise<Response> => {
     });
     
     const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    console.log('User verification:', { userId: user?.id, error: userError?.message });
+    
     if (userError || !user) {
+      console.log('User verification failed:', userError?.message);
       return new Response(
-        JSON.stringify({ success: false, error: "Não autorizado" }),
+        JSON.stringify({ success: false, error: "Sessão expirada. Por favor, faça login novamente." }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
