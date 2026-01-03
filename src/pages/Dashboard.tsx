@@ -1571,6 +1571,58 @@ const Dashboard = () => {
                 </div>
               </div>
 
+              {/* Métodos de Pagamento */}
+              <div className="bg-card border border-border rounded-md p-5 space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-primary" />
+                  Métodos de Pagamento
+                </h3>
+                <div className="space-y-3">
+                  {hasCardForAutoRenewal ? (
+                    <div className="flex items-center justify-between p-3 bg-success/10 border border-success/20 rounded-md">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-success/20 rounded-md flex items-center justify-center">
+                          <CreditCard className="w-4 h-4 text-success" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Cartão cadastrado</p>
+                          <p className="text-xs text-muted-foreground">Pagamento recorrente ativo</p>
+                        </div>
+                      </div>
+                      <CheckCircle className="w-5 h-5 text-success" />
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-muted rounded-md flex items-center justify-center">
+                            <CreditCard className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-foreground">Nenhum cartão cadastrado</p>
+                            <p className="text-xs text-muted-foreground">Seus pagamentos são via PIX</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-3 bg-primary/5 border border-primary/20 rounded-md">
+                        <p className="text-xs text-muted-foreground mb-3">
+                          Para ativar a renovação automática, renove seu plano usando cartão de crédito.
+                        </p>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => navigate('/comprar')}
+                        >
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Renovar com Cartão
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Assinatura */}
               {license && license.status === 'active' && (
                 <div className="bg-card border border-border rounded-md p-5 space-y-4">
@@ -2093,21 +2145,26 @@ const Dashboard = () => {
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-primary" />
-                Cadastrar Cartão para Renovação
+                Ativar Renovação Automática
               </AlertDialogTitle>
-              <AlertDialogDescription className="space-y-3">
-                <p>
-                  Você pagou seu plano atual com PIX. Para ativar a renovação automática, 
-                  é necessário cadastrar um cartão de crédito.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Na próxima renovação, você poderá escolher pagar com cartão para ativar 
-                  a cobrança automática.
-                </p>
+              <AlertDialogDescription asChild>
+                <div className="space-y-4">
+                  <p>
+                    Para ativar a renovação automática, você precisa ter um cartão de crédito cadastrado.
+                  </p>
+                  <div className="bg-muted/50 p-3 rounded-md space-y-2">
+                    <p className="text-sm font-medium text-foreground">Como funciona:</p>
+                    <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                      <li>Renove seu plano usando cartão de crédito</li>
+                      <li>O cartão será salvo automaticamente</li>
+                      <li>A renovação automática será ativada</li>
+                    </ol>
+                  </div>
+                </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Entendi</AlertDialogCancel>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction 
                 onClick={() => {
                   setShowAutoRenewCardModal(false);
@@ -2115,7 +2172,8 @@ const Dashboard = () => {
                 }}
                 className="bg-primary hover:bg-primary/90"
               >
-                Ver Planos
+                <CreditCard className="w-4 h-4 mr-2" />
+                Renovar com Cartão
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
