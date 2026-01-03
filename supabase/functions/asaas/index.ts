@@ -58,6 +58,23 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
   }
 }
 
+// Detect card brand from number
+function detectCardBrand(cardNumber: string): string {
+  const number = cardNumber.replace(/\D/g, '');
+  
+  if (/^4/.test(number)) return 'visa';
+  if (/^5[1-5]/.test(number) || /^2[2-7]/.test(number)) return 'mastercard';
+  if (/^3[47]/.test(number)) return 'amex';
+  if (/^6(?:011|5)/.test(number)) return 'discover';
+  if (/^(?:2131|1800|35)/.test(number)) return 'jcb';
+  if (/^3(?:0[0-5]|[68])/.test(number)) return 'diners';
+  if (/^(?:5[0678]|6304|6390|67)/.test(number)) return 'maestro';
+  if (/^(636368|636369|438935|504175|451416|636297|5067|4576|4011)/.test(number)) return 'elo';
+  if (/^606282/.test(number)) return 'hipercard';
+  
+  return 'card';
+}
+
 // Get Asaas API Key from database or env
 async function getAsaasApiKey(supabase: any): Promise<string | null> {
   try {
@@ -1383,13 +1400,20 @@ serve(async (req) => {
           );
         }
 
-        // Update user_subscription with Asaas subscription ID
+        // Extract card info for display
+        const cardNumber = card_data.number.replace(/\s/g, '');
+        const cardLastFour = cardNumber.slice(-4);
+        const cardBrand = detectCardBrand(cardNumber);
+
+        // Update user_subscription with Asaas subscription ID and card info
         await supabaseAdmin.from('user_subscriptions')
           .update({ 
             asaas_subscription_id: data.id,
             asaas_customer_id: customerResult.customerId,
             auto_renew: true,
             next_billing_date: nextDueDate.toISOString(),
+            card_last_four: cardLastFour,
+            card_brand: cardBrand,
           })
           .eq('id', existingSubscription.id);
 
@@ -1407,8 +1431,55 @@ serve(async (req) => {
               customerId: customerResult.customerId,
               nextDueDate: data.nextDueDate,
               cardRegistered: true,
+              cardLastFour,
+              cardBrand,
             },
           }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'remove_card': {
+        // Remove card by cancelling the Asaas subscription
+        const { data: existingSubscription } = await supabaseAdmin
+          .from('user_subscriptions')
+          .select('id, asaas_subscription_id')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (!existingSubscription?.asaas_subscription_id) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Nenhum cartão cadastrado' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Cancel the subscription in Asaas
+        const cancelResult = await cancelSubscription(apiKey, existingSubscription.asaas_subscription_id);
+        
+        if (!cancelResult.success) {
+          console.log('[Asaas] Failed to cancel subscription, but will remove from DB:', cancelResult.error);
+        }
+
+        // Remove card info from user_subscription
+        await supabaseAdmin.from('user_subscriptions')
+          .update({ 
+            asaas_subscription_id: null,
+            auto_renew: false,
+            card_last_four: null,
+            card_brand: null,
+          })
+          .eq('id', existingSubscription.id);
+
+        // Also update license auto_renew
+        await supabaseAdmin.from('licenses')
+          .update({ auto_renew: false })
+          .eq('user_id', userId)
+          .eq('status', 'active');
+
+        return new Response(
+          JSON.stringify({ success: true, message: 'Cartão removido com sucesso' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

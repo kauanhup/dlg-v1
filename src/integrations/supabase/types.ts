@@ -1029,6 +1029,8 @@ export type Database = {
           asaas_customer_id: string | null
           asaas_subscription_id: string | null
           auto_renew: boolean
+          card_brand: string | null
+          card_last_four: string | null
           created_at: string
           expiration_notified_at: string | null
           id: string
@@ -1043,6 +1045,8 @@ export type Database = {
           asaas_customer_id?: string | null
           asaas_subscription_id?: string | null
           auto_renew?: boolean
+          card_brand?: string | null
+          card_last_four?: string | null
           created_at?: string
           expiration_notified_at?: string | null
           id?: string
@@ -1057,6 +1061,8 @@ export type Database = {
           asaas_customer_id?: string | null
           asaas_subscription_id?: string | null
           auto_renew?: boolean
+          card_brand?: string | null
+          card_last_four?: string | null
           created_at?: string
           expiration_notified_at?: string | null
           id?: string
