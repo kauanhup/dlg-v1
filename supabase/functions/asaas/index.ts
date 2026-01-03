@@ -1233,6 +1233,186 @@ serve(async (req) => {
         );
       }
 
+      case 'tokenize_card': {
+        // Tokenize card for future recurring payments
+        // This creates a subscription with the card for auto-renewal
+        const { card_data, holder_info, plan_name, period_days, current_price } = params;
+
+        if (!card_data || !holder_info) {
+          return new Response(
+            JSON.stringify({ error: 'Dados do cartão e titular são obrigatórios' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Get or create customer
+        const customerResult = await getOrCreateCustomer(supabaseAdmin, userId!, apiKey, holder_info.cpfCnpj);
+        if (!customerResult.success) {
+          return new Response(
+            JSON.stringify({ success: false, error: customerResult.error }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Get current active subscription
+        const { data: existingSubscription } = await supabaseAdmin
+          .from('user_subscriptions')
+          .select('id, plan_id, status, next_billing_date')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (!existingSubscription) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Você precisa ter uma assinatura ativa para cadastrar um cartão' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Get plan details
+        const { data: plan } = await supabaseAdmin
+          .from('subscription_plans')
+          .select('name, price, period, promotional_price')
+          .eq('id', existingSubscription.plan_id)
+          .single();
+
+        if (!plan) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Plano não encontrado' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Determine billing cycle
+        let cycle: string;
+        const periodDaysValue = plan.period || period_days || 30;
+        if (periodDaysValue <= 7) {
+          cycle = 'WEEKLY';
+        } else if (periodDaysValue <= 15) {
+          cycle = 'BIWEEKLY';
+        } else if (periodDaysValue <= 31) {
+          cycle = 'MONTHLY';
+        } else if (periodDaysValue <= 60) {
+          cycle = 'BIMONTHLY';
+        } else if (periodDaysValue <= 93) {
+          cycle = 'QUARTERLY';
+        } else if (periodDaysValue <= 186) {
+          cycle = 'SEMIANNUALLY';
+        } else {
+          cycle = 'YEARLY';
+        }
+
+        // Calculate next due date (use existing next_billing_date if available)
+        let nextDueDate: Date;
+        if (existingSubscription.next_billing_date) {
+          nextDueDate = new Date(existingSubscription.next_billing_date);
+        } else {
+          // Use license end date
+          const { data: license } = await supabaseAdmin
+            .from('licenses')
+            .select('end_date')
+            .eq('user_id', userId)
+            .eq('status', 'active')
+            .maybeSingle();
+          
+          if (license?.end_date) {
+            nextDueDate = new Date(license.end_date);
+          } else {
+            nextDueDate = new Date();
+            nextDueDate.setDate(nextDueDate.getDate() + periodDaysValue);
+          }
+        }
+
+        const remoteIp = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                         req.headers.get('x-real-ip') || 
+                         '127.0.0.1';
+
+        const price = plan.promotional_price || plan.price || current_price;
+
+        const payload = {
+          customer: customerResult.customerId,
+          billingType: 'CREDIT_CARD',
+          value: price,
+          nextDueDate: nextDueDate.toISOString().split('T')[0],
+          cycle: cycle,
+          description: `Renovação automática: ${plan.name || plan_name}`,
+          creditCard: {
+            holderName: card_data.holderName,
+            number: card_data.number.replace(/\s/g, ''),
+            expiryMonth: card_data.expiryMonth,
+            expiryYear: card_data.expiryYear,
+            ccv: card_data.ccv,
+          },
+          creditCardHolderInfo: {
+            name: holder_info.name,
+            email: holder_info.email,
+            cpfCnpj: holder_info.cpfCnpj.replace(/\D/g, ''),
+            phone: holder_info.phone?.replace(/\D/g, '') || undefined,
+            postalCode: holder_info.postalCode.replace(/\D/g, ''),
+            addressNumber: holder_info.addressNumber,
+          },
+          remoteIp: remoteIp,
+        };
+
+        console.log('[Asaas] Creating subscription for card tokenization, cycle:', cycle, 'nextDueDate:', nextDueDate.toISOString().split('T')[0]);
+
+        const response = await fetchWithTimeout(`${ASAAS_API_URL}/subscriptions`, {
+          method: 'POST',
+          headers: {
+            'access_token': apiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        }, 30000);
+
+        const data = await response.json();
+        console.log('[Asaas] Subscription response:', JSON.stringify(data));
+
+        if (data.errors) {
+          const errorMsg = data.errors[0]?.description || 'Erro ao cadastrar cartão';
+          return new Response(
+            JSON.stringify({ success: false, error: errorMsg }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        if (!data.id) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Resposta inválida do gateway' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Update user_subscription with Asaas subscription ID
+        await supabaseAdmin.from('user_subscriptions')
+          .update({ 
+            asaas_subscription_id: data.id,
+            asaas_customer_id: customerResult.customerId,
+            auto_renew: true,
+            next_billing_date: nextDueDate.toISOString(),
+          })
+          .eq('id', existingSubscription.id);
+
+        // Also update license auto_renew
+        await supabaseAdmin.from('licenses')
+          .update({ auto_renew: true })
+          .eq('user_id', userId)
+          .eq('status', 'active');
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              subscriptionId: data.id,
+              customerId: customerResult.customerId,
+              nextDueDate: data.nextDueDate,
+              cardRegistered: true,
+            },
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       default:
         return new Response(
           JSON.stringify({ error: 'Ação inválida' }),

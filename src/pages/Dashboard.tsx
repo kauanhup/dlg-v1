@@ -68,6 +68,7 @@ import {
   EyeOff,
   Wrench
 } from "lucide-react";
+import { CardRegistrationForm } from "@/components/dashboard/CardRegistrationForm";
 
 const fadeIn = {
   initial: { opacity: 0, y: 12 },
@@ -732,6 +733,7 @@ const Dashboard = () => {
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showAutoRenewCardModal, setShowAutoRenewCardModal] = useState(false);
+  const [showCardForm, setShowCardForm] = useState(false);
   const [activeTab, setActiveTab] = useState("licencas");
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -1573,54 +1575,69 @@ const Dashboard = () => {
 
               {/* Métodos de Pagamento */}
               <div className="bg-card border border-border rounded-md p-5 space-y-4">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-primary" />
-                  Métodos de Pagamento
-                </h3>
-                <div className="space-y-3">
-                  {hasCardForAutoRenewal ? (
-                    <div className="flex items-center justify-between p-3 bg-success/10 border border-success/20 rounded-md">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-success/20 rounded-md flex items-center justify-center">
-                          <CreditCard className="w-4 h-4 text-success" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">Cartão cadastrado</p>
-                          <p className="text-xs text-muted-foreground">Pagamento recorrente ativo</p>
-                        </div>
-                      </div>
-                      <CheckCircle className="w-5 h-5 text-success" />
-                    </div>
-                  ) : (
+                {showCardForm ? (
+                  <CardRegistrationForm
+                    onSuccess={() => {
+                      setShowCardForm(false);
+                      refetch();
+                    }}
+                    onCancel={() => setShowCardForm(false)}
+                    planName={license?.plan_name}
+                    periodDays={subscription?.plan?.period}
+                    currentPrice={subscription?.plan?.promotional_price || subscription?.plan?.price}
+                  />
+                ) : (
+                  <>
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-primary" />
+                      Métodos de Pagamento
+                    </h3>
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-muted rounded-md flex items-center justify-center">
-                            <CreditCard className="w-4 h-4 text-muted-foreground" />
+                      {hasCardForAutoRenewal ? (
+                        <div className="flex items-center justify-between p-3 bg-success/10 border border-success/20 rounded-md">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-success/20 rounded-md flex items-center justify-center">
+                              <CreditCard className="w-4 h-4 text-success" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-foreground">Cartão cadastrado</p>
+                              <p className="text-xs text-muted-foreground">Renovação automática ativa</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-foreground">Nenhum cartão cadastrado</p>
-                            <p className="text-xs text-muted-foreground">Seus pagamentos são via PIX</p>
+                          <CheckCircle className="w-5 h-5 text-success" />
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-muted rounded-md flex items-center justify-center">
+                                <CreditCard className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-foreground">Nenhum cartão cadastrado</p>
+                                <p className="text-xs text-muted-foreground">Seus pagamentos são via PIX</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="p-3 bg-primary/5 border border-primary/20 rounded-md">
+                            <p className="text-xs text-muted-foreground mb-3">
+                              Cadastre um cartão para ativar a renovação automática.
+                            </p>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="w-full"
+                              onClick={() => setShowCardForm(true)}
+                            >
+                              <CreditCard className="w-4 h-4 mr-2" />
+                              Cadastrar Cartão
+                            </Button>
                           </div>
                         </div>
-                      </div>
-                      <div className="p-3 bg-primary/5 border border-primary/20 rounded-md">
-                        <p className="text-xs text-muted-foreground mb-3">
-                          Para ativar a renovação automática, renove seu plano usando cartão de crédito.
-                        </p>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => navigate('/comprar')}
-                        >
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          Renovar com Cartão
-                        </Button>
-                      </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
 
               {/* Assinatura */}

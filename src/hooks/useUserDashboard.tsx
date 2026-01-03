@@ -14,6 +14,15 @@ export interface License {
   updated_at: string;
 }
 
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  price: number;
+  promotional_price: number | null;
+  period: number;
+  features: string[] | null;
+}
+
 export interface UserSubscription {
   id: string;
   user_id: string;
@@ -26,6 +35,7 @@ export interface UserSubscription {
   asaas_customer_id: string | null;
   created_at: string;
   updated_at: string;
+  plan?: SubscriptionPlan | null;
 }
 
 export interface SessionFile {
@@ -110,17 +120,27 @@ export const useUserDashboard = (userId: string | undefined) => {
       if (licenseError) throw licenseError;
       setLicense(licenseData);
 
-      // Fetch user subscription (to check if has card for auto-renewal)
+      // Fetch user subscription with plan details (to check if has card for auto-renewal)
       const { data: subscriptionData, error: subscriptionError } = await supabase
         .from('user_subscriptions')
-        .select('*')
+        .select(`
+          *,
+          plan:subscription_plans(id, name, price, promotional_price, period, features)
+        `)
         .eq('user_id', userId)
         .eq('status', 'active')
         .limit(1)
         .maybeSingle();
 
       if (subscriptionError) throw subscriptionError;
-      setSubscription(subscriptionData);
+      
+      // Transform the data to match our interface
+      const transformedSubscription: UserSubscription | null = subscriptionData ? {
+        ...subscriptionData,
+        plan: subscriptionData.plan as SubscriptionPlan | null
+      } : null;
+      
+      setSubscription(transformedSubscription);
 
       // Fetch user's purchased session files (from session_files table)
       const { data: sessionFilesData, error: sessionFilesError } = await supabase
