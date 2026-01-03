@@ -33,6 +33,8 @@ export interface UserSubscription {
   auto_renew: boolean;
   asaas_subscription_id: string | null;
   asaas_customer_id: string | null;
+  card_last_four: string | null;
+  card_brand: string | null;
   created_at: string;
   updated_at: string;
   plan?: SubscriptionPlan | null;
@@ -437,6 +439,8 @@ export const useUserDashboard = (userId: string | undefined) => {
     licenseInfo,
     subscription,
     hasCardForAutoRenewal: !!subscription?.asaas_subscription_id,
+    cardLastFour: subscription?.card_last_four || null,
+    cardBrand: subscription?.card_brand || null,
     sessionFiles,
     orders,
     combos,

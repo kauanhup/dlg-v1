@@ -729,11 +729,13 @@ const LojaSection = ({
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, profile, isLoading, signOut, updateProfile, isAdmin } = useAuth();
-  const { license, licenseInfo, subscription, hasCardForAutoRenewal, sessionFiles, orders, combos, inventory, loginHistory, isLoading: dashboardLoading, downloadSessionFile, refetch } = useUserDashboard(user?.id);
+  const { license, licenseInfo, subscription, hasCardForAutoRenewal, cardLastFour, cardBrand, sessionFiles, orders, combos, inventory, loginHistory, isLoading: dashboardLoading, downloadSessionFile, refetch } = useUserDashboard(user?.id);
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showAutoRenewCardModal, setShowAutoRenewCardModal] = useState(false);
   const [showCardForm, setShowCardForm] = useState(false);
+  const [showRemoveCardDialog, setShowRemoveCardDialog] = useState(false);
+  const [removingCard, setRemovingCard] = useState(false);
   const [activeTab, setActiveTab] = useState("licencas");
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -1594,17 +1596,36 @@ const Dashboard = () => {
                     </h3>
                     <div className="space-y-3">
                       {hasCardForAutoRenewal ? (
-                        <div className="flex items-center justify-between p-3 bg-success/10 border border-success/20 rounded-md">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-success/20 rounded-md flex items-center justify-center">
-                              <CreditCard className="w-4 h-4 text-success" />
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between p-3 bg-success/10 border border-success/20 rounded-md">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-7 bg-gradient-to-br from-muted to-muted/50 rounded flex items-center justify-center border border-border">
+                                {cardBrand === 'visa' && <span className="text-xs font-bold text-blue-600">VISA</span>}
+                                {cardBrand === 'mastercard' && <span className="text-xs font-bold text-orange-500">MC</span>}
+                                {cardBrand === 'amex' && <span className="text-xs font-bold text-blue-500">AMEX</span>}
+                                {cardBrand === 'elo' && <span className="text-xs font-bold text-yellow-600">ELO</span>}
+                                {cardBrand === 'hipercard' && <span className="text-xs font-bold text-red-500">HIPER</span>}
+                                {!['visa', 'mastercard', 'amex', 'elo', 'hipercard'].includes(cardBrand || '') && (
+                                  <CreditCard className="w-4 h-4 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-foreground">
+                                  {cardBrand ? cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1) : 'Cartão'} •••• {cardLastFour || '****'}
+                                </p>
+                                <p className="text-xs text-success">Renovação automática ativa</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-sm font-medium text-foreground">Cartão cadastrado</p>
-                              <p className="text-xs text-muted-foreground">Renovação automática ativa</p>
-                            </div>
+                            <CheckCircle className="w-5 h-5 text-success" />
                           </div>
-                          <CheckCircle className="w-5 h-5 text-success" />
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setShowRemoveCardDialog(true)}
+                          >
+                            Remover Cartão
+                          </Button>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -2180,6 +2201,51 @@ const Dashboard = () => {
               >
                 <CreditCard className="w-4 h-4 mr-2" />
                 Cadastrar Cartão
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Modal para remover cartão */}
+        <AlertDialog open={showRemoveCardDialog} onOpenChange={setShowRemoveCardDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-destructive" />
+                Remover Cartão
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja remover seu cartão? A renovação automática será desativada e você precisará renovar manualmente via PIX.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={removingCard}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={async () => {
+                  setRemovingCard(true);
+                  try {
+                    const response = await supabase.functions.invoke('asaas', {
+                      body: { action: 'remove_card' },
+                    });
+                    
+                    if (response.error || !response.data?.success) {
+                      throw new Error(response.data?.error || 'Erro ao remover cartão');
+                    }
+                    
+                    toast.success("Cartão removido com sucesso");
+                    setShowRemoveCardDialog(false);
+                    refetch();
+                  } catch (error: any) {
+                    console.error('Remove card error:', error);
+                    toast.error(error.message || "Erro ao remover cartão");
+                  } finally {
+                    setRemovingCard(false);
+                  }
+                }}
+                disabled={removingCard}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                {removingCard ? "Removendo..." : "Remover Cartão"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
