@@ -85,6 +85,8 @@ export const useAdminUsers = () => {
 
   const banUser = async (userId: string, banned: boolean = true, banReason?: string) => {
     try {
+      console.log('[banUser] Starting ban action:', { userId, banned, banReason });
+      
       // Use edge function to ban user AND invalidate sessions
       const { data, error } = await supabase.functions.invoke('admin-actions', {
         body: {
@@ -95,8 +97,17 @@ export const useAdminUsers = () => {
         }
       });
 
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || 'Erro ao banir usuário');
+      console.log('[banUser] Edge function response:', { data, error });
+
+      if (error) {
+        console.error('[banUser] Edge function error:', error);
+        throw error;
+      }
+      
+      if (!data?.success) {
+        console.error('[banUser] Edge function returned failure:', data);
+        throw new Error(data?.error || 'Erro ao banir usuário');
+      }
 
       // Log the action
       await logAdminAction(
@@ -112,10 +123,11 @@ export const useAdminUsers = () => {
         user.user_id === userId ? { ...user, banned } : user
       ));
 
+      console.log('[banUser] Success! User banned status updated to:', banned);
       return { success: true };
-    } catch (err) {
-      console.error('Error banning user:', err);
-      return { success: false, error: 'Erro ao banir usuário' };
+    } catch (err: any) {
+      console.error('[banUser] Error:', err);
+      return { success: false, error: err?.message || 'Erro ao banir usuário' };
     }
   };
 
