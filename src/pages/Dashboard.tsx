@@ -2162,22 +2162,10 @@ const Dashboard = () => {
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-primary" />
-                Ativar Renovação Automática
+                Cadastrar Cartão
               </AlertDialogTitle>
-              <AlertDialogDescription asChild>
-                <div className="space-y-4">
-                  <p>
-                    Para ativar a renovação automática, você precisa ter um cartão de crédito cadastrado.
-                  </p>
-                  <div className="bg-muted/50 p-3 rounded-md space-y-2">
-                    <p className="text-sm font-medium text-foreground">Como funciona:</p>
-                    <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                      <li>Renove seu plano usando cartão de crédito</li>
-                      <li>O cartão será salvo automaticamente</li>
-                      <li>A renovação automática será ativada</li>
-                    </ol>
-                  </div>
-                </div>
+              <AlertDialogDescription>
+                Para ativar a renovação automática, você precisa cadastrar um cartão de crédito. O cartão será usado para cobranças futuras.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -2185,12 +2173,13 @@ const Dashboard = () => {
               <AlertDialogAction 
                 onClick={() => {
                   setShowAutoRenewCardModal(false);
-                  navigate('/comprar');
+                  setShowCardForm(true);
+                  setActiveTab("preferencias");
                 }}
                 className="bg-primary hover:bg-primary/90"
               >
                 <CreditCard className="w-4 h-4 mr-2" />
-                Renovar com Cartão
+                Cadastrar Cartão
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
