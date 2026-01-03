@@ -14,6 +14,20 @@ export interface License {
   updated_at: string;
 }
 
+export interface UserSubscription {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  status: string;
+  start_date: string;
+  next_billing_date: string | null;
+  auto_renew: boolean;
+  asaas_subscription_id: string | null;
+  asaas_customer_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SessionFile {
   id: string;
   file_name: string;
@@ -67,6 +81,7 @@ export interface LoginHistory {
 
 export const useUserDashboard = (userId: string | undefined) => {
   const [license, setLicense] = useState<License | null>(null);
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [sessionFiles, setSessionFiles] = useState<SessionFile[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [combos, setCombos] = useState<SessionCombo[]>([]);
@@ -94,6 +109,18 @@ export const useUserDashboard = (userId: string | undefined) => {
 
       if (licenseError) throw licenseError;
       setLicense(licenseData);
+
+      // Fetch user subscription (to check if has card for auto-renewal)
+      const { data: subscriptionData, error: subscriptionError } = await supabase
+        .from('user_subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .limit(1)
+        .maybeSingle();
+
+      if (subscriptionError) throw subscriptionError;
+      setSubscription(subscriptionData);
 
       // Fetch user's purchased session files (from session_files table)
       const { data: sessionFilesData, error: sessionFilesError } = await supabase
@@ -388,6 +415,8 @@ export const useUserDashboard = (userId: string | undefined) => {
   return {
     license,
     licenseInfo,
+    subscription,
+    hasCardForAutoRenewal: !!subscription?.asaas_subscription_id,
     sessionFiles,
     orders,
     combos,
